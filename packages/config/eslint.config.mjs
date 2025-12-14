@@ -1,5 +1,4 @@
 import js from "@eslint/js";
-import nextPlugin from "eslint-config-next";
 import importPlugin from "eslint-plugin-import";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
@@ -28,6 +27,20 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
+      },
+      globals: {
+        React: "readonly",
+        console: "readonly",
+        process: "readonly",
+        module: "readonly",
+        require: "readonly",
+        fetch: "readonly",
+        RequestInit: "readonly",
+        URLSearchParams: "readonly",
+        HTMLDivElement: "readonly",
+        HTMLButtonElement: "readonly",
+        HTMLParagraphElement: "readonly",
+        HTMLHeadingElement: "readonly",
       },
     },
     rules: {

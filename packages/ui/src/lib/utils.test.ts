@@ -8,7 +8,8 @@ describe("cn utility", () => {
   });
 
   it("handles conditional classes", () => {
-    expect(cn("px-2", false && "py-1", "py-2")).toBe("px-2 py-2");
+    const shouldApply = false;
+    expect(cn("px-2", shouldApply && "py-1", "py-2")).toBe("px-2 py-2");
   });
 
   it("handles undefined and null", () => {
