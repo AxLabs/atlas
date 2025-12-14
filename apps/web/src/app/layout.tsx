@@ -1,4 +1,4 @@
-import "@thedanielmark/ui/styles";
+import "@atlas/ui/styles";
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";

@@ -1,4 +1,4 @@
-import { Button } from "@thedanielmark/ui";
+import { Button } from "@atlas/ui";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -16,7 +16,7 @@ export default function HomePage() {
             <Button size="lg">View Demo</Button>
           </Link>
           <a
-            href="https://github.com/thedanielmark/frontend-platform"
+            href="https://github.com/thedanielmark/atlas"
             target="_blank"
             rel="noopener noreferrer"
           >

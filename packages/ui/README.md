@@ -1,4 +1,4 @@
-# @thedanielmark/ui
+# @atlas/ui
 
 Shared UI component library built with React, TypeScript, and Tailwind CSS.
 
@@ -14,7 +14,7 @@ Shared UI component library built with React, TypeScript, and Tailwind CSS.
 ## Usage
 
 ```tsx
-import { Button, Card } from "@thedanielmark/ui";
+import { Button, Card } from "@atlas/ui";
 
 function MyComponent() {
   return (
@@ -30,7 +30,7 @@ function MyComponent() {
 Import the global styles in your app:
 
 ```tsx
-import "@thedanielmark/ui/styles";
+import "@atlas/ui/styles";
 ```
 
 This automatically imports Tailwind CSS v4 with all the design tokens and theme variables. No additional configuration needed.

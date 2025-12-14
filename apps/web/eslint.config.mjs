@@ -1,1 +1,1 @@
-export { default } from "@thedanielmark/config/eslint";
+export { default } from "@atlas/config/eslint";

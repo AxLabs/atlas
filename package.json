@@ -1,5 +1,5 @@
 {
-  "name": "@thedanielmark/frontend-platform",
+  "name": "@atlas/monorepo",
   "version": "0.1.0",
   "private": true,
   "description": "Enterprise frontend platform monorepo",

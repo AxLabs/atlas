@@ -1,4 +1,4 @@
-# Frontend Platform
+# Atlas
 
 Enterprise-grade frontend platform monorepo built with Next.js, TypeScript, Tailwind CSS, and modern tooling.
 
@@ -9,7 +9,7 @@ This is a **soft monorepo** using pnpm workspaces and Turborepo, designed for st
 ### Structure
 
 ```
-frontend-platform/
+atlas/
 ├── apps/
 │   └── web/              # Next.js App Router application
 ├── packages/
@@ -46,7 +46,7 @@ The web app will be available at [http://localhost:3000](http://localhost:3000).
 
 ### Apps
 
-- **`@thedanielmark/web`** - Main Next.js application
+- **`@atlas/web`** - Main Next.js application
   - App Router with `/src` directory
   - Feature-based organization recommended
   - Full provider setup (Theme, React Query, Toast)
@@ -54,14 +54,14 @@ The web app will be available at [http://localhost:3000](http://localhost:3000).
 
 ### Packages
 
-- **`@thedanielmark/ui`** - Shared UI components
+- **`@atlas/ui`** - Shared UI components
 
   - Built with Tailwind CSS, CVA, and clsx
   - Components: Button, Card, Alert, Skeleton, EmptyState, ErrorMessage
   - Full test coverage with Jest + RTL
   - Tailwind preset export for consumption
 
-- **`@thedanielmark/config`** - Shared configurations
+- **`@atlas/config`** - Shared configurations
   - ESLint config (TypeScript, React, a11y, import sorting)
   - TypeScript configs (base, Next.js, React library)
   - Prettier config (with Tailwind plugin)
@@ -148,7 +148,7 @@ mkdir -p apps/new-app
 - Using Tailwind CSS v4 with `@tailwindcss/postcss`
 - Design tokens defined in `packages/ui/src/styles/globals.css` (CSS variables)
 - Dark mode via `class` strategy
-- Configuration is CSS-based - simply import `@thedanielmark/ui/styles` in your app
+- Configuration is CSS-based - simply import `@atlas/ui/styles` in your app
 
 ## Quality Gates
 

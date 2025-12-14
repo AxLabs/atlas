@@ -15,7 +15,7 @@ import {
   EmptyState,
   ErrorMessage,
   Skeleton,
-} from "@thedanielmark/ui";
+} from "@atlas/ui";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
