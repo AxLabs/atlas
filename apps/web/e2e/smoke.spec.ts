@@ -28,8 +28,8 @@ test.describe("Smoke Tests", () => {
     // Test button click
     await page.getByRole("button", { name: "Success Toast" }).click();
 
-    // Test error toggle
+    // Test error toggle - verify error message appears
     await page.getByRole("button", { name: "Toggle Error" }).click();
-    await expect(page.getByText(/Something went wrong/i)).toBeVisible();
+    await expect(page.getByText("Something went wrong with your request")).toBeVisible();
   });
 });
