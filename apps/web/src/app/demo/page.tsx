@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
@@ -16,6 +15,7 @@ import {
   ErrorMessage,
   Skeleton,
 } from "@atlas/ui";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
