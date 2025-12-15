@@ -3,6 +3,7 @@ const nextConfig = {
   transpilePackages: ["@atlas/ui"],
   reactStrictMode: true,
   poweredByHeader: false,
+  output: "standalone",
   eslint: {
     dirs: ["src"],
   },
