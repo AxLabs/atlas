@@ -35,12 +35,16 @@ pnpm install
 
 # Setup environment variables
 cp apps/web/.env.example apps/web/.env.local
+# Fill in values, then validate:
+pnpm --filter @atlas/web validate:env
 
 # Start development server
 pnpm dev
 ```
 
 The web app will be available at [http://localhost:3000](http://localhost:3000).
+
+> **Environment Variables**: See [Environment Variables Guide](docs/ENVIRONMENT_VARIABLES.md) for complete documentation on setup, validation, and best practices.
 
 ## Workspace Packages
 
@@ -172,15 +176,11 @@ All commits must pass:
    - Build
    - E2E tests
 
-## Platform Principles
+## Documentation
 
-See [docs/platform-principles.md](./docs/platform-principles.md) for detailed guidelines on:
-
-- Code organization
-- Component boundaries
-- Shared vs app-specific logic
-- Testing strategies
-- Performance considerations
+- **[Platform Principles](docs/platform-principles.md)** - Code organization, component boundaries, testing strategies
+- **[Environment Variables](docs/ENVIRONMENT_VARIABLES.md)** - Complete guide to setup, validation, and security
+- **[Atlas Context](docs/ATLAS_CONTEXT.md)** - Platform philosophy and goals
 
 ## Contributing
 

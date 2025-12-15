@@ -2,7 +2,7 @@
 
 This document outlines the core principles and conventions for the Frontend Platform monorepo.
 
-## 🎯 Goals
+## Goals
 
 1. **Consistency** - Predictable structure and patterns across all apps and packages
 2. **Maintainability** - Clear boundaries and ownership
@@ -10,7 +10,7 @@ This document outlines the core principles and conventions for the Frontend Plat
 4. **Developer Experience** - Fast feedback loops, clear documentation
 5. **Scalability** - Support multiple teams and applications
 
-## 📐 Architecture Boundaries
+## Architecture Boundaries
 
 ### What Goes in `packages/ui`?
 
@@ -60,7 +60,7 @@ This document outlines the core principles and conventions for the Frontend Plat
 - Reusable UI components (promote to `packages/ui`)
 - Shared utilities used by multiple apps (create new package)
 
-## 🧱 Code Organization
+## Code Organization
 
 ### Feature-Sliced Design
 
@@ -115,7 +115,7 @@ export function Button({ variant = "primary", ...props }: ButtonProps) {
 }
 ```
 
-## 🧪 Testing Strategy
+## Testing Strategy
 
 ### Unit Tests
 
@@ -152,7 +152,7 @@ export function Button({ variant = "primary", ...props }: ButtonProps) {
 - Run in CI on every PR
 - Test in real browser environments
 
-## 🎨 Styling Conventions
+## Styling Conventions
 
 ### Tailwind Usage
 
@@ -176,7 +176,7 @@ export function Button({ variant = "primary", ...props }: ButtonProps) {
 - Use semantic color tokens (`bg-background`, `text-foreground`)
 - Avoid hardcoded colors
 
-## 🔧 Tooling Conventions
+## Tooling Conventions
 
 ### ESLint
 
@@ -203,7 +203,7 @@ Enforced by ESLint:
 5. Relative imports (sibling)
 6. Type imports (separate group)
 
-## 📊 Performance
+## Performance
 
 ### Bundle Size
 
@@ -218,7 +218,7 @@ Enforced by ESLint:
 - Lazy load below-the-fold content
 - Prefetch critical data
 
-## 🚀 Deployment
+## Deployment
 
 ### Environment Variables
 
@@ -233,7 +233,7 @@ Enforced by ESLint:
 
 All steps must pass in CI before merge.
 
-## 🤝 Team Collaboration
+## Team Collaboration
 
 ### Pull Requests
 
@@ -256,7 +256,7 @@ All steps must pass in CI before merge.
 - Keep docs close to code (feature README if needed)
 - Update this doc when patterns evolve
 
-## 🔄 Migration Strategy
+## Migration Strategy
 
 When patterns change:
 
@@ -266,7 +266,7 @@ When patterns change:
 4. Provide codemod if possible
 5. Deprecate old pattern with warnings
 
-## 📞 Support
+## Support
 
 For questions or discussions:
 
