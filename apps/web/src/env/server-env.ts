@@ -1,0 +1,79 @@
+/**
+ * Server-only environment configuration.
+ *
+ * This file validates all sensitive backend-only environment variables
+ * (e.g., database URLs, secrets, internal API keys) using Zod and `@t3-oss/env-nextjs`.
+ *
+ * No `NEXT_PUBLIC_` variables should be used here — this file must not expose client-safe vars.
+ */
+
+import { createEnv } from "@t3-oss/env-nextjs";
+
+import { ServerEnvSchema } from "@/schemas/env/server-runtime-config";
+
+/**
+ * Validates and exposes server-only environment variables.
+ *
+ * These variables are only available in server-side contexts (e.g. API routes,
+ * getServerSideProps, middleware, etc.) and are never exposed to the client bundle.
+ *
+ * @example
+ * ```typescript
+ * // Usage in API routes
+ * import { env } from '@/env/server-env';
+ *
+ * export async function GET(request: NextRequest) {
+ *   const dbUrl = env.DATABASE_URL;
+ *   // Type-safe access to server-only variables
+ * }
+ * ```
+ *
+ * @security All variables accessed through this export are server-only
+ */
+export const env = createEnv({
+  /**
+   * Server-only environment variables schema.
+   *
+   * Defined separately in `schemas/env/server-runtime-config.ts` for reusability.
+   * Contains validation rules for all server-side environment variables.
+   */
+  server: {
+    ...ServerEnvSchema,
+  },
+
+  /**
+   * Client-side variables (empty for server-only config).
+   *
+   * No public vars here — they belong in `env/public-env.ts`.
+   * This ensures complete separation between server and client environments.
+   */
+  client: {},
+
+  /**
+   * Runtime values from process.env.
+   *
+   * Maps environment variable names to their `process.env` values.
+   * These should never be exposed to the client and must match the
+   * schema keys defined in `ServerEnvSchema`.
+   */
+  runtimeEnv: {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL,
+  },
+
+  /**
+   * Skip environment validation flag.
+   *
+   * When `SKIP_ENV_VALIDATION` is set to 'true', validation is bypassed.
+   * Useful in CI environments or when using dynamic environment injection.
+   */
+  skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
+
+  /**
+   * Treat empty strings as `undefined`.
+   *
+   * Common in Docker/CI environments where empty strings are passed
+   * instead of undefined values.
+   */
+  emptyStringAsUndefined: true,
+});
