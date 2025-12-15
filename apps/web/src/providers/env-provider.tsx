@@ -3,7 +3,9 @@
 import type React from "react";
 import { createContext, useContext } from "react";
 
-import { env, type Env } from "@/lib/env";
+import { env } from "@/env/public-env";
+
+type Env = typeof env;
 
 const EnvContext = createContext<Env | undefined>(undefined);
 
