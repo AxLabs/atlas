@@ -15,4 +15,11 @@ if command -v nvm >/dev/null 2>&1; then
   fi
 fi
 
+# Enable Corepack to ensure correct pnpm version from package.json
+if command -v corepack >/dev/null 2>&1; then
+  corepack enable
+else
+  echo "⚠️  Warning: Corepack not available. Attempting to use system pnpm..."
+fi
+
 pnpm typecheck && pnpm test

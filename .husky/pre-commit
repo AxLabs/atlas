@@ -17,6 +17,11 @@ if command -v nvm >/dev/null 2>&1; then
   fi
 fi
 
+# Enable Corepack to ensure correct pnpm version from package.json
+if command -v corepack >/dev/null 2>&1; then
+  corepack enable
+fi
+
 MSYS_NO_PATHCONV=1 docker run --rm --network=none \
   -v "$(pwd):/repo:ro" -w /repo \
   ghcr.io/gitleaks/gitleaks:latest \
