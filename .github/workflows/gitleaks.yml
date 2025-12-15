@@ -4,13 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    types: [opened, synchronize, reopened]
 
 jobs:
   gitleaks:
     name: Detect Secrets with Gitleaks
     runs-on: ubuntu-latest
-
     steps:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v4
