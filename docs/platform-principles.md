@@ -138,6 +138,13 @@ export function Button({ variant = "primary", ...props }: ButtonProps) {
 - Avoid testing internal state
 - Aim for 70%+ coverage on critical paths
 
+**Coverage Thresholds (Quality Gates):**
+
+- **Global minimum**: 60-70% (branches/functions/lines/statements)
+- **Critical paths** (components, lib): 70-80%
+- Enforced in CI - builds fail if thresholds not met
+- Run `pnpm test:coverage` to check locally
+
 ### E2E Tests
 
 **Required for:**

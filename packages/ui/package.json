@@ -15,8 +15,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=lcov",
     "test:watch": "jest --watch",
-    "clean": "rm -rf .turbo node_modules"
+    "clean": "rm -rf .turbo node_modules coverage"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",

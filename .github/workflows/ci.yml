@@ -104,8 +104,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run tests with coverage
+        run: pnpm test -- --coverage
+        env:
+          CI: true
+
+      - name: Check coverage thresholds
+        run: pnpm --filter @atlas/ui test:coverage
         env:
           CI: true
 
@@ -114,6 +119,7 @@ jobs:
         if: always()
         with:
           files: ./packages/ui/coverage/coverage-final.json
+          fail_ci_if_error: false
 
   build:
     name: Build
