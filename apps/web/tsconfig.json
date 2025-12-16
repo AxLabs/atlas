@@ -4,7 +4,10 @@
     "baseUrl": "./",
     "skipLibCheck": true,
     "paths": {
-      "@/*": ["./src/*", "../../packages/ui/src/*"]
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"]
     },
     "noEmit": true
   },

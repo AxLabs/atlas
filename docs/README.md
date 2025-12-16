@@ -23,6 +23,7 @@ Welcome to the Atlas platform documentation. This directory contains platform pr
 ### Guides
 
 - **[ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)** - Complete environment variables guide
+
   - Architecture and design
   - Quick start and setup
   - Adding new variables
@@ -30,6 +31,13 @@ Welcome to the Atlas platform documentation. This directory contains platform pr
   - CI/CD integration
   - Security best practices
   - Troubleshooting
+
+- **[SHADCN_SETUP.md](SHADCN_SETUP.md)** - shadcn/ui component library setup
+  - Next.js 16 compatibility
+  - 24 pre-installed components
+  - Theming and customization
+  - Usage examples and demo page
+  - Adding new components
 
 ## Quick Start
 
@@ -73,6 +81,7 @@ Practical how-to documentation:
 | Platform Philosophy   | [ATLAS_CONTEXT.md](ATLAS_CONTEXT.md)                               |
 | Coding Standards      | [platform-principles.md](platform-principles.md)                   |
 | Environment Variables | [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)               |
+| UI Components         | [SHADCN_SETUP.md](SHADCN_SETUP.md)                                 |
 | Testing Strategy      | [platform-principles.md](platform-principles.md#-testing-strategy) |
 | Component Design      | [platform-principles.md](platform-principles.md#component-design)  |
 
