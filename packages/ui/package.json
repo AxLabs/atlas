@@ -17,7 +17,9 @@
     "test": "jest",
     "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=lcov",
     "test:watch": "jest --watch",
-    "clean": "rm -rf .turbo node_modules coverage"
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "clean": "rm -rf .turbo node_modules coverage storybook-static"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -53,6 +55,16 @@
   },
   "devDependencies": {
     "@atlas/config": "workspace:*",
+    "@chromatic-com/storybook": "^3.2.2",
+    "@storybook/addon-a11y": "^8.4.7",
+    "@storybook/addon-essentials": "^8.4.7",
+    "@storybook/addon-interactions": "^8.4.7",
+    "@storybook/addon-onboarding": "^8.4.7",
+    "@storybook/addon-themes": "^8.4.7",
+    "@storybook/blocks": "^8.4.7",
+    "@storybook/react": "^8.4.7",
+    "@storybook/react-vite": "^8.4.7",
+    "@storybook/test": "^8.4.7",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.1.0",
@@ -69,9 +81,11 @@
     "prettier": "3.4.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "storybook": "^8.4.7",
     "tailwindcss": "4.1.18",
     "ts-jest": "29.2.5",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "vite": "^6.0.7"
   },
   "peerDependencies": {
     "react": "^18.0.0",

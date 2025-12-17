@@ -61,9 +61,10 @@ The web app will be available at [http://localhost:3000](http://localhost:3000).
 - **`@atlas/ui`** - Shared UI components
 
   - Built with Tailwind CSS, CVA, and clsx
-  - Components: Button, Card, Alert, Skeleton, EmptyState, ErrorMessage
+  - Components: Button, Card, Alert, Skeleton, EmptyState, ErrorMessage, and more
   - Full test coverage with Jest + RTL
   - Tailwind preset export for consumption
+  - **Interactive documentation with Storybook** - Run `pnpm storybook` to view all components
 
 - **`@atlas/config`** - Shared configurations
   - ESLint config (TypeScript, React, a11y, import sorting)
@@ -80,6 +81,7 @@ The web app will be available at [http://localhost:3000](http://localhost:3000).
 pnpm dev                  # Start all apps in dev mode
 pnpm build                # Build all apps and packages
 pnpm start                # Start production server (web app)
+pnpm storybook            # Start Storybook for UI components
 
 # Code Quality
 pnpm lint                 # Run ESLint across workspace
@@ -92,6 +94,9 @@ pnpm typecheck            # Run TypeScript type checking
 pnpm test                 # Run unit tests
 pnpm test:watch           # Run tests in watch mode
 pnpm test:e2e             # Run Playwright E2E tests
+
+# Documentation
+pnpm build-storybook      # Build static Storybook documentation
 
 # Maintenance
 pnpm clean                # Clean all build artifacts and node_modules
@@ -144,6 +149,36 @@ mkdir -p apps/new-app
 - Located in `apps/web/e2e/`
 - Run with `pnpm test:e2e`
 - Smoke tests cover critical user paths
+
+## Component Documentation (Storybook)
+
+Atlas UI components are documented and showcased using **Storybook**, providing:
+
+- **Interactive component playground** - Test components with different props and states
+- **Automatic documentation** - Props tables and usage examples
+- **Dark mode testing** - Toggle between light and dark themes
+- **Accessibility testing** - Built-in a11y checks for WCAG compliance
+- **Responsive testing** - View components at different viewport sizes
+
+### Running Storybook
+
+```bash
+# Start Storybook development server
+pnpm storybook
+
+# Available at http://localhost:6006
+```
+
+### Building Storybook
+
+```bash
+# Build static documentation site
+pnpm build-storybook
+
+# Output: packages/ui/storybook-static/
+```
+
+See [Storybook README](packages/ui/.storybook/README.md) for more details on writing stories and deployment.
 
 ## Styling
 
