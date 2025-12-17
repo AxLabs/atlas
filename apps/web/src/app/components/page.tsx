@@ -43,7 +43,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-} from "@/components";
+} from "@atlas/ui";
 
 export default function ComponentsPage() {
   return (

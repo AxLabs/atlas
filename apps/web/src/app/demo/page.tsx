@@ -11,13 +11,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  EmptyState,
-  ErrorMessage,
   Skeleton,
 } from "@atlas/ui";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
 import { toast } from "sonner";
 
 interface Post {
@@ -27,8 +24,6 @@ interface Post {
 }
 
 export default function DemoPage() {
-  const [showError, setShowError] = useState(false);
-
   const { data, isLoading, error, refetch } = useQuery<Post[]>({
     queryKey: ["posts"],
     queryFn: async () => {
@@ -63,7 +58,6 @@ export default function DemoPage() {
               <Button variant="outline">Outline</Button>
               <Button variant="ghost">Ghost</Button>
               <Button variant="link">Link</Button>
-              <Button loading>Loading</Button>
               <Button disabled>Disabled</Button>
             </div>
           </CardContent>
@@ -84,14 +78,6 @@ export default function DemoPage() {
               <AlertTitle>Error Alert</AlertTitle>
               <AlertDescription>This is an error alert message.</AlertDescription>
             </Alert>
-            <Alert variant="warning">
-              <AlertTitle>Warning Alert</AlertTitle>
-              <AlertDescription>This is a warning alert message.</AlertDescription>
-            </Alert>
-            <Alert variant="success">
-              <AlertTitle>Success Alert</AlertTitle>
-              <AlertDescription>This is a success alert message.</AlertDescription>
-            </Alert>
           </CardContent>
         </Card>
 
@@ -105,39 +91,6 @@ export default function DemoPage() {
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-3/4" />
             <Skeleton className="h-12 w-1/2" />
-          </CardContent>
-        </Card>
-
-        {/* Empty State */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Empty State</CardTitle>
-            <CardDescription>Display when no data is available</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EmptyState
-              title="No items found"
-              description="Get started by creating your first item"
-              action={<Button onClick={() => toast.success("Item created!")}>Create Item</Button>}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Error Message */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Error Message</CardTitle>
-            <CardDescription>Error display component</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button onClick={() => setShowError(!showError)}>Toggle Error</Button>
-            <ErrorMessage
-              error={showError ? "Something went wrong with your request" : null}
-              retry={() => {
-                setShowError(false);
-                toast.success("Retried successfully!");
-              }}
-            />
           </CardContent>
         </Card>
 
@@ -155,7 +108,15 @@ export default function DemoPage() {
                 <Skeleton className="h-20 w-full" />
               </div>
             ) : error ? (
-              <ErrorMessage error={error as Error} retry={() => refetch()} />
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {(error as Error).message}
+                  <Button onClick={() => refetch()} variant="outline" size="sm" className="ml-4">
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
             ) : (
               <div className="space-y-4">
                 {data?.map((post) => (
