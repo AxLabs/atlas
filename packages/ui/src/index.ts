@@ -21,6 +21,7 @@ export {
   BreadcrumbSeparator,
 } from "./components/ui/breadcrumb";
 export { Button, buttonVariants } from "./components/ui/button";
+export { Calendar } from "./components/ui/calendar";
 export {
   ButtonGroup,
   ButtonGroupSeparator,

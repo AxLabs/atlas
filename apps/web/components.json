@@ -11,10 +11,17 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@atlas/ui",
-    "utils": "@atlas/ui",
+    "components": "../../packages/ui/src/components",
+    "utils": "../../packages/ui/src/lib/utils",
     "ui": "../../packages/ui/src/components/ui",
     "lib": "../../packages/ui/src/lib",
     "hooks": "@/hooks"
+  },
+  "resolvedPaths": {
+    "utils": "../../packages/ui/src/lib/utils.ts",
+    "components": "../../packages/ui/src/components",
+    "ui": "../../packages/ui/src/components/ui",
+    "lib": "../../packages/ui/src/lib",
+    "hooks": "src/hooks"
   }
 }
