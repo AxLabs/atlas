@@ -62,6 +62,18 @@ export {
   DialogTrigger,
 } from "./components/ui/dialog";
 export {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerPortal,
+  DrawerTitle,
+  DrawerTrigger,
+} from "./components/ui/drawer";
+export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
