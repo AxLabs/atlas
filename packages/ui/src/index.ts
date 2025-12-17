@@ -91,6 +91,18 @@ export {
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu";
 export {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+} from "./components/ui/field";
+export {
   Form,
   FormControl,
   FormDescription,
