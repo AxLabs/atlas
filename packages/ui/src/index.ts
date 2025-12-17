@@ -183,6 +183,7 @@ export {
   SheetTrigger,
 } from "./components/ui/sheet";
 export { Skeleton } from "./components/ui/skeleton";
+export { Slider } from "./components/ui/slider";
 export { Toaster } from "./components/ui/sonner";
 export { Switch } from "./components/ui/switch";
 export {
