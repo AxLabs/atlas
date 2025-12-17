@@ -145,6 +145,15 @@ export {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "./components/ui/menubar";
+export {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./components/ui/pagination";
 export { Popover, PopoverContent, PopoverTrigger } from "./components/ui/popover";
 export { RadioGroup, RadioGroupItem } from "./components/ui/radio-group";
 export {
