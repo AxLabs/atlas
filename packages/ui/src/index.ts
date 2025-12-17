@@ -28,6 +28,18 @@ export {
   ButtonGroupText,
   buttonGroupVariants,
 } from "./components/ui/button-group";
+export { ComboboxDemo } from "./components/ui/combobox";
+export {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "./components/ui/command";
 export {
   Card,
   CardContent,
