@@ -4,9 +4,6 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
-  eslint: {
-    dirs: ["src"],
-  },
 };
 
 module.exports = nextConfig;

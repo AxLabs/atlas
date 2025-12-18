@@ -2,6 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import type { StorybookConfig } from "@storybook/react-vite";
+import tailwindcss from "@tailwindcss/vite";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,10 +24,7 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     return {
       ...config,
-      css: {
-        ...config.css,
-        postcss: path.resolve(__dirname, "../postcss.config.mjs"),
-      },
+      plugins: [...(config.plugins || []), tailwindcss()],
       resolve: {
         ...config.resolve,
         alias: {

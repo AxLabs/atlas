@@ -1,9 +1,9 @@
-import "./globals.css";
+import "@atlas/ui/globals.css";
 
+import { Toaster } from "@atlas/ui";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import { Toaster } from "@atlas/ui";
 import { MainProvider } from "@/providers";
 
 const inter = Inter({ subsets: ["latin"] });
