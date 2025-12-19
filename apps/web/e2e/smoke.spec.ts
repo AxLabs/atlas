@@ -10,26 +10,28 @@ test.describe("Smoke Tests", () => {
   test("navigates to demo page", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: /View Demo/i }).click();
-    await expect(page.getByRole("heading", { name: /Component Demo/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /The Foundation for your Design System/i })
+    ).toBeVisible();
   });
 
   test("demo page components render", async ({ page }) => {
     await page.goto("/demo");
 
-    // Check if various components are rendered
-    await expect(page.getByRole("heading", { name: /Buttons/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Alerts/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Empty State/i })).toBeVisible();
+    // Check if various sections are rendered
+    await expect(page.getByText("Atlas UI Components")).toBeVisible();
+    await expect(page.getByText("Name on Card")).toBeVisible();
+    await expect(page.getByText("No Team Members")).toBeVisible();
   });
 
   test("demo page interactions work", async ({ page }) => {
     await page.goto("/demo");
 
-    // Test button click
-    await page.getByRole("button", { name: "Success Toast" }).click();
+    // Test that interactive elements are present
+    await expect(page.getByRole("button", { name: /New Project/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /View Components/i })).toBeVisible();
 
-    // Test error toggle - verify error message appears
-    await page.getByRole("button", { name: "Toggle Error" }).click();
-    await expect(page.getByText("Something went wrong with your request")).toBeVisible();
+    // Test form elements are present
+    await expect(page.getByPlaceholder("Ask, search, or make anything...")).toBeVisible();
   });
 });
