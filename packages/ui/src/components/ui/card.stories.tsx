@@ -19,7 +19,7 @@ type Story = StoryObj<typeof Card>;
 
 export const Default: Story = {
   render: () => (
-    <Card className="w-[87.5%]">
+    <Card className="w-87.5">
       <CardHeader>
         <CardTitle>Card Title</CardTitle>
         <CardDescription>Card Description</CardDescription>
@@ -36,7 +36,7 @@ export const Default: Story = {
 
 export const LoginForm: Story = {
   render: () => (
-    <Card className="w-[87.5%]">
+    <Card className="w-95">
       <CardHeader>
         <CardTitle>Login</CardTitle>
         <CardDescription>Enter your credentials to access your account.</CardDescription>
@@ -65,7 +65,7 @@ export const LoginForm: Story = {
 
 export const Simple: Story = {
   render: () => (
-    <Card className="w-[87.5%]">
+    <Card className="w-87.5">
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
       </CardHeader>

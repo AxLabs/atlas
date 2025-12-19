@@ -17,6 +17,7 @@ out
 # Production
 dist
 build
+storybook-static
 
 # Misc
 .DS_Store
