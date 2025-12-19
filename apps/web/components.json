@@ -1,12 +1,12 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "vega",
   "rsc": true,
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/app/globals.css",
-    "baseColor": "slate",
+    "css": "../../packages/ui/src/styles/globals.css",
+    "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
   },
@@ -23,5 +23,7 @@
     "ui": "../../packages/ui/src/components/ui",
     "lib": "../../packages/ui/src/lib",
     "hooks": "src/hooks"
-  }
+  },
+  "iconLibrary": "lucide",
+  "theme": "cyan"
 }
