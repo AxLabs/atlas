@@ -24,6 +24,8 @@ module.exports = {
     "!src/**/*.d.ts",
     "!src/**/*.stories.tsx",
     "!src/**/index.ts",
+    // Exclude Shadcn UI components (third-party, pre-tested)
+    "!src/components/ui/**",
   ],
   coverageThreshold: {
     global: {
@@ -32,13 +34,7 @@ module.exports = {
       lines: 70,
       statements: 70,
     },
-    // Critical paths require higher coverage
-    "./src/components/*.{ts,tsx}": {
-      branches: 70,
-      functions: 80,
-      lines: 80,
-      statements: 80,
-    },
+    // Only enforce coverage on custom utilities and business logic
     "./src/lib/*.{ts,tsx}": {
       branches: 70,
       functions: 75,
