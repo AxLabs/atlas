@@ -1,7 +1,5 @@
 "use client";
 
-import { toast } from "sonner";
-
 import {
   Accordion,
   AccordionContent,
@@ -44,6 +42,7 @@ import {
   TabsTrigger,
   Textarea,
 } from "@atlas/ui";
+import { toast } from "sonner";
 
 export default function ComponentsPage() {
   return (
