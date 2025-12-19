@@ -39,57 +39,102 @@ function ComboboxDemo() {
   const [value, setValue] = React.useState("");
 
   return (
-    <div style={{ padding: "100px" }}>
-      <Popover open={open} onOpenChange={setOpen} modal={false}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-50 justify-between"
-            style={{ backgroundColor: "white", color: "black", border: "1px solid #e5e7eb" }}
-          >
-            {value
-              ? frameworks.find((framework) => framework.value === value)?.label
-              : "Select framework..."}
-            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-50 p-0">
-          <Command>
-            <CommandInput placeholder="Search framework..." />
-            <CommandList>
-              <CommandEmpty>No framework found.</CommandEmpty>
-              <CommandGroup>
-                {frameworks.map((framework) => (
-                  <CommandItem
-                    key={framework.value}
-                    value={framework.value}
-                    onSelect={(currentValue) => {
-                      setValue(currentValue === value ? "" : currentValue);
-                      setOpen(false);
-                    }}
-                  >
-                    <CheckIcon
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === framework.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {framework.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-50 justify-between"
+        >
+          {value
+            ? frameworks.find((framework) => framework.value === value)?.label
+            : "Select framework..."}
+          <ChevronsUpDownIcon className="ml-2 size-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-50 p-0">
+        <Command>
+          <CommandInput placeholder="Search framework..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandGroup>
+              {frameworks.map((framework) => (
+                <CommandItem
+                  key={framework.value}
+                  value={framework.value}
+                  onSelect={(currentValue) => {
+                    setValue(currentValue === value ? "" : currentValue);
+                    setOpen(false);
+                  }}
+                >
+                  {framework.label}
+                  <CheckIcon
+                    className={cn(
+                      "ml-auto size-4",
+                      value === framework.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ComboboxOpenDemo() {
+  const [value, setValue] = React.useState("");
+
+  return (
+    <Popover defaultOpen>
+      <PopoverTrigger>
+        <Button variant="outline" role="combobox" className="w-50 justify-between">
+          {value
+            ? frameworks.find((framework) => framework.value === value)?.label
+            : "Select framework..."}
+          <ChevronsUpDownIcon className="ml-2 size-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-50 p-0">
+        <Command>
+          <CommandInput placeholder="Search framework..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandGroup>
+              {frameworks.map((framework) => (
+                <CommandItem
+                  key={framework.value}
+                  value={framework.value}
+                  onSelect={(currentValue) => {
+                    setValue(currentValue === value ? "" : currentValue);
+                  }}
+                >
+                  {framework.label}
+                  <CheckIcon
+                    className={cn(
+                      "ml-auto size-4",
+                      value === framework.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
 export const Default: Story = {
   render: () => <ComboboxDemo />,
+};
+
+export const StartOpen: Story = {
+  render: () => <ComboboxOpenDemo />,
 };
 
 const languages = [
@@ -109,50 +154,47 @@ function LanguageCombobox() {
   const [value, setValue] = React.useState("en");
 
   return (
-    <div style={{ padding: "100px" }}>
-      <Popover open={open} onOpenChange={setOpen} modal={false}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-50 justify-between"
-            style={{ backgroundColor: "white", color: "black", border: "1px solid #e5e7eb" }}
-          >
-            {value ? languages.find((lang) => lang.value === value)?.label : "Select language..."}
-            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-50 p-0">
-          <Command>
-            <CommandInput placeholder="Search language..." />
-            <CommandList>
-              <CommandEmpty>No language found.</CommandEmpty>
-              <CommandGroup>
-                {languages.map((lang) => (
-                  <CommandItem
-                    key={lang.value}
-                    value={lang.value}
-                    onSelect={(currentValue) => {
-                      setValue(currentValue === value ? "" : currentValue);
-                      setOpen(false);
-                    }}
-                  >
-                    <CheckIcon
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === lang.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {lang.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-50 justify-between"
+        >
+          {value ? languages.find((lang) => lang.value === value)?.label : "Select language..."}
+          <ChevronsUpDownIcon className="ml-2 size-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-50 p-0">
+        <Command>
+          <CommandInput placeholder="Search language..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No language found.</CommandEmpty>
+            <CommandGroup>
+              {languages.map((lang) => (
+                <CommandItem
+                  key={lang.value}
+                  value={lang.value}
+                  onSelect={(currentValue) => {
+                    setValue(currentValue === value ? "" : currentValue);
+                    setOpen(false);
+                  }}
+                >
+                  {lang.label}
+                  <CheckIcon
+                    className={cn(
+                      "ml-auto size-4",
+                      value === lang.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
