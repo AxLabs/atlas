@@ -17,7 +17,7 @@ const meta: Meta<typeof NavigationMenu> = {
   title: "UI/NavigationMenu",
   component: NavigationMenu,
   parameters: {
-    layout: "centered",
+    layout: "padded",
   },
   tags: ["autodocs"],
 };
@@ -81,8 +81,16 @@ const ListItem = React.forwardRef<
 ListItem.displayName = "ListItem";
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      story: {
+        inline: false,
+        iframeHeight: 500,
+      },
+    },
+  },
   render: () => (
-    <div style={{ padding: "100px" }}>
+    <div style={{ paddingTop: "20px", minHeight: "500px" }}>
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
@@ -141,7 +149,7 @@ export const Default: Story = {
 
 export const Simple: Story = {
   render: () => (
-    <div style={{ padding: "20px" }}>
+    <div style={{ paddingTop: "20px" }}>
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
