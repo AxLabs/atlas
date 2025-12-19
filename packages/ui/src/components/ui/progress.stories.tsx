@@ -25,22 +25,34 @@ type Story = StoryObj<typeof Progress>;
 export const Default: Story = {
   args: {
     value: 33,
-    className: "w-[60%]",
   },
+  render: (args) => (
+    <div style={{ width: "400px" }}>
+      <Progress {...args} />
+    </div>
+  ),
 };
 
 export const Half: Story = {
   args: {
     value: 50,
-    className: "w-[60%]",
   },
+  render: (args) => (
+    <div style={{ width: "400px" }}>
+      <Progress {...args} />
+    </div>
+  ),
 };
 
 export const Complete: Story = {
   args: {
     value: 100,
-    className: "w-[60%]",
   },
+  render: (args) => (
+    <div style={{ width: "400px" }}>
+      <Progress {...args} />
+    </div>
+  ),
 };
 
 const AnimatedProgress = () => {
@@ -62,9 +74,13 @@ const AnimatedProgress = () => {
     };
   }, []);
 
-  return <Progress value={progress} className="w-[60%]" />;
+  return <Progress value={progress} className="w-full" />;
 };
 
 export const Animated: Story = {
-  render: () => <AnimatedProgress />,
+  render: () => (
+    <div style={{ width: "400px" }}>
+      <AnimatedProgress />
+    </div>
+  ),
 };
