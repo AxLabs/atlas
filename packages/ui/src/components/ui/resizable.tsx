@@ -2,11 +2,11 @@
 
 import { GripVerticalIcon } from "lucide-react";
 import * as React from "react";
-import { Panel, Group, Separator } from "react-resizable-panels";
+import { Panel, Group, Separator, type GroupProps } from "react-resizable-panels";
 
 import { cn } from "../../lib/utils";
 
-function ResizablePanelGroup({ className, ...props }: React.ComponentProps<typeof Group>) {
+function ResizablePanelGroup({ className, ...props }: GroupProps) {
   return (
     <Group
       data-slot="resizable-panel-group"

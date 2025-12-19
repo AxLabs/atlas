@@ -41,6 +41,10 @@ export default [
         HTMLButtonElement: "readonly",
         HTMLParagraphElement: "readonly",
         HTMLHeadingElement: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
       },
     },
     rules: {
