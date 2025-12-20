@@ -12,6 +12,70 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  repo-policies:
+    name: Repository Policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check lockfile exists
+        run: |
+          if [ ! -f "pnpm-lock.yaml" ]; then
+            echo "❌ Error: pnpm-lock.yaml is required but not found"
+            exit 1
+          fi
+          echo "✅ Lockfile exists"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify lockfile is up-to-date
+        run: |
+          # Check if lockfile has changed after install
+          if ! git diff --exit-code pnpm-lock.yaml; then
+            echo "❌ Error: pnpm-lock.yaml is out of date"
+            echo "Please run 'pnpm install' and commit the updated lockfile"
+            exit 1
+          fi
+          echo "✅ Lockfile is up-to-date"
+
+      - name: Check for package.json changes without lockfile update
+        if: github.event_name == 'pull_request'
+        run: |
+          # Get list of changed files
+          git fetch origin ${{ github.base_ref }}
+          
+          # Check if any package.json changed
+          PACKAGE_JSON_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E 'package\.json$' || true)
+          
+          # Check if lockfile changed
+          LOCKFILE_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep 'pnpm-lock.yaml' || true)
+          
+          if [ -n "$PACKAGE_JSON_CHANGED" ] && [ -z "$LOCKFILE_CHANGED" ]; then
+            echo "❌ Error: package.json was modified but pnpm-lock.yaml was not updated"
+            echo "Changed package.json files:"
+            echo "$PACKAGE_JSON_CHANGED"
+            echo ""
+            echo "Please run 'pnpm install' and commit the updated lockfile"
+            exit 1
+          fi
+          
+          if [ -n "$PACKAGE_JSON_CHANGED" ]; then
+            echo "✅ Both package.json and lockfile were updated"
+          else
+            echo "✅ No package.json changes detected"
+          fi
+
   validate-env:
     name: Validate Environment Variables
     runs-on: ubuntu-latest
