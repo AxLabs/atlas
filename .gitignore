@@ -19,6 +19,10 @@ playwright-report
 .next
 out
 
+# Performance Budgets
+.lighthouseci
+apps/web/.next/analyze
+
 # Production
 dist
 build

@@ -1,3 +1,8 @@
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: false,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@atlas/ui"],
@@ -6,4 +11,4 @@ const nextConfig = {
   output: "standalone",
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

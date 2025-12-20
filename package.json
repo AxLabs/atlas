@@ -21,7 +21,11 @@
     "test:watch": "turbo run test:watch",
     "test:e2e": "turbo run test:e2e",
     "clean": "turbo run clean && rm -rf node_modules",
-    "prepare": "husky"
+    "prepare": "husky",
+    "perf:lhci": "pnpm --filter @atlas/web perf:lhci",
+    "perf:analyze": "pnpm --filter @atlas/web perf:analyze",
+    "perf:enable": "node tools/perf/enable.js",
+    "perf:disable": "node tools/perf/disable.js"
   },
   "devDependencies": {
     "@turbo/gen": "2.3.3",
