@@ -27,9 +27,14 @@ atlas/
 - **Node.js** >= 22.0.0 (LTS)
 - **pnpm** >= 10.0.0
 
+> **⚠️ Package Manager Policy**: Atlas enforces pnpm as the only supported package manager. npm, yarn, and bun are not supported. See [Toolchain Policy](docs/TOOLCHAIN_POLICY.md) for details.
+
 ### Installation
 
 ```bash
+# Enable Corepack (one-time setup)
+corepack enable
+
 # Install dependencies
 pnpm install
 
@@ -213,6 +218,7 @@ All commits must pass:
 
 ## Documentation
 
+- **[Toolchain Policy](docs/TOOLCHAIN_POLICY.md)** - Package manager enforcement and setup guide
 - **[Platform Principles](docs/platform-principles.md)** - Code organization, component boundaries, testing strategies
 - **[Environment Variables](docs/ENVIRONMENT_VARIABLES.md)** - Complete guide to setup, validation, and security
 - **[Atlas Context](docs/ATLAS_CONTEXT.md)** - Platform philosophy and goals

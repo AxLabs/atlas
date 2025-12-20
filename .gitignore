@@ -4,6 +4,11 @@ node_modules
 .pnp.js
 .pnpm
 
+# Forbidden lockfiles (pnpm-lock.yaml is the only allowed lockfile)
+package-lock.json
+yarn.lock
+bun.lockb
+
 # Testing
 coverage
 test-results

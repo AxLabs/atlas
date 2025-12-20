@@ -19,6 +19,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check for forbidden lockfiles
+        run: |
+          FORBIDDEN_LOCKFILES=""
+          
+          if [ -f "package-lock.json" ]; then
+            FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES package-lock.json"
+          fi
+          
+          if [ -f "yarn.lock" ]; then
+            FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES yarn.lock"
+          fi
+          
+          if [ -f "bun.lockb" ]; then
+            FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES bun.lockb"
+          fi
+          
+          if [ -n "$FORBIDDEN_LOCKFILES" ]; then
+            echo "❌ Error: Forbidden lockfiles detected:$FORBIDDEN_LOCKFILES"
+            echo ""
+            echo "Atlas enforces pnpm as the only package manager."
+            echo "Please remove these files and use 'pnpm install' instead."
+            echo ""
+            echo "Only pnpm-lock.yaml is allowed in this repository."
+            exit 1
+          fi
+          
+          echo "✅ No forbidden lockfiles found"
+
       - name: Check lockfile exists
         run: |
           if [ ! -f "pnpm-lock.yaml" ]; then
