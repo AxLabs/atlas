@@ -4,6 +4,7 @@
     "baseUrl": "./",
     "skipLibCheck": true,
     "types": ["jest", "@testing-library/jest-dom"],
+    "lib": ["ES2022", "DOM"],
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],

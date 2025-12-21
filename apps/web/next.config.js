@@ -9,6 +9,8 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
+  // Externalize pino to avoid bundling test dependencies
+  serverExternalPackages: ["pino", "pino-pretty"],
 };
 
 module.exports = withBundleAnalyzer(nextConfig);

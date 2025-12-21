@@ -35,8 +35,15 @@ export default [
         module: "readonly",
         require: "readonly",
         fetch: "readonly",
+        Request: "readonly",
+        Response: "readonly",
+        Headers: "readonly",
         RequestInit: "readonly",
+        RequestInfo: "readonly",
+        URL: "readonly",
         URLSearchParams: "readonly",
+        performance: "readonly",
+        crypto: "readonly",
         HTMLDivElement: "readonly",
         HTMLButtonElement: "readonly",
         HTMLParagraphElement: "readonly",
@@ -86,6 +93,9 @@ export default [
         },
       ],
       "import/no-duplicates": "error",
+      
+      // Ban console usage - use structured logging instead
+      "no-console": "error",
       
       // Accessibility
       "jsx-a11y/anchor-is-valid": [
