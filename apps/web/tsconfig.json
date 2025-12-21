@@ -3,6 +3,7 @@
   "compilerOptions": {
     "baseUrl": "./",
     "skipLibCheck": true,
+    "types": ["jest", "@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],

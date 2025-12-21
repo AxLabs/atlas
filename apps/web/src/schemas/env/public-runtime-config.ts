@@ -21,4 +21,56 @@ export const ClientEnvSchema = {
    * @example 'https://api.example.com', 'http://localhost:3001/api'
    */
   NEXT_PUBLIC_API_URL: z.string().url(),
+
+  /**
+   * Environment identifier for telemetry and feature flags.
+   *
+   * @example 'development', 'staging', 'production'
+   */
+  NEXT_PUBLIC_APP_ENV: z.enum(["development", "staging", "production"]).optional(),
+
+  /**
+   * Build ID or Git SHA for version tracking.
+   *
+   * @example 'abc123def', 'v1.2.3'
+   */
+  NEXT_PUBLIC_BUILD_ID: z.string().optional(),
+
+  /**
+   * Enable/disable Web Vitals reporting.
+   *
+   * @default Enabled in production/staging, disabled in development
+   */
+  NEXT_PUBLIC_WEB_VITALS_ENABLED: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
+
+  /**
+   * Web Vitals sampling rate (0-1).
+   *
+   * @default 0.05 (5%) in production, 0.25 (25%) in staging
+   */
+  NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE: z
+    .string()
+    .regex(/^(0|1|0\.\d+)$/)
+    .transform(Number)
+    .optional(),
+
+  /**
+   * Web Vitals endpoint override.
+   *
+   * @default '/api/telemetry/web-vitals'
+   */
+  NEXT_PUBLIC_WEB_VITALS_ENDPOINT: z.string().optional(),
+
+  /**
+   * Enable debug logging for Web Vitals.
+   *
+   * @default false
+   */
+  NEXT_PUBLIC_WEB_VITALS_DEBUG: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
 };
