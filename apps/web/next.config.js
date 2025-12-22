@@ -11,6 +11,8 @@ const nextConfig = {
   output: "standalone",
   // Externalize pino to avoid bundling test dependencies
   serverExternalPackages: ["pino", "pino-pretty"],
+  // Empty turbopack config to acknowledge Turbopack while using webpack plugins
+  turbopack: {},
 };
 
 module.exports = withBundleAnalyzer(nextConfig);
