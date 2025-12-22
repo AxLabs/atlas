@@ -1,10 +1,11 @@
 "use client";
 
-import type { Meta, StoryObj } from "@storybook/react";
 import { ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Collapsible> = {
   title: "UI/Collapsible",

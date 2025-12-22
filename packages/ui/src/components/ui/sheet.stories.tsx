@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import {
   Sheet,
   SheetClose,
@@ -10,6 +8,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "./sheet";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Sheet> = {
   title: "UI/Sheet",

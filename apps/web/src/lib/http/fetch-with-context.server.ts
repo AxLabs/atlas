@@ -15,7 +15,16 @@ export async function fetchWithContext(
   input: Parameters<typeof fetch>[0],
   init?: Parameters<typeof fetch>[1]
 ): Promise<Awaited<ReturnType<typeof fetch>>> {
-  const url = typeof input === "string" ? input : "url" in input ? input.url : input.toString();
+  // Extract URL for logging
+  let url: string;
+  if (typeof input === "string") {
+    url = input;
+  } else if ("url" in input) {
+    url = input.url;
+  } else {
+    url = input.toString();
+  }
+
   const startTime = performance.now();
 
   // Get request context to propagate correlation ID
@@ -23,8 +32,7 @@ export async function fetchWithContext(
   const requestId = ctx?.requestId;
 
   // Merge x-request-id header if we have one
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const headers = new (globalThis as any).Headers(init?.headers);
+  const headers = new Headers(init?.headers);
   if (requestId) {
     headers.set("x-request-id", requestId);
   }

@@ -20,8 +20,10 @@
   --breakpoint-4xl: 2000px;
 
   /* Fonts */
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
@@ -103,7 +105,7 @@
   --ring: oklch(0.61 0.11 222);
   /* Theme: Cyan - Chart colors */
   --chart-1: oklch(0.87 0.12 207);
-  --chart-2: oklch(0.80 0.13 212);
+  --chart-2: oklch(0.8 0.13 212);
   --chart-3: oklch(0.71 0.13 215);
   --chart-4: oklch(0.61 0.11 222);
   --chart-5: oklch(0.52 0.09 223);
@@ -134,7 +136,7 @@
   --popover-foreground: oklch(0.985 0 0);
   /* Theme: Cyan - Primary colors (dark) */
   --primary: oklch(0.71 0.13 215);
-  --primary-foreground: oklch(0.30 0.05 230);
+  --primary-foreground: oklch(0.3 0.05 230);
   /* Base: Neutral - Secondary/muted/accent (dark) */
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -149,15 +151,15 @@
   --ring: oklch(0.71 0.13 215);
   /* Theme: Cyan - Chart colors (dark) */
   --chart-1: oklch(0.87 0.12 207);
-  --chart-2: oklch(0.80 0.13 212);
+  --chart-2: oklch(0.8 0.13 212);
   --chart-3: oklch(0.71 0.13 215);
   --chart-4: oklch(0.61 0.11 222);
   --chart-5: oklch(0.52 0.09 223);
   /* Sidebar (dark) */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.80 0.13 212);
-  --sidebar-primary-foreground: oklch(0.30 0.05 230);
+  --sidebar-primary: oklch(0.8 0.13 212);
+  --sidebar-primary-foreground: oklch(0.3 0.05 230);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);

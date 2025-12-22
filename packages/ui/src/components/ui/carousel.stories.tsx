@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import { Card, CardContent } from "./card";
 import {
   Carousel,
@@ -8,6 +6,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "./carousel";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Carousel> = {
   title: "UI/Carousel",

@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import {
   Drawer,
   DrawerClose,
@@ -10,6 +8,8 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "./drawer";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Drawer> = {
   title: "UI/Drawer",

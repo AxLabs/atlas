@@ -1,26 +1,56 @@
 import js from "@eslint/js";
+import prettier from "eslint-config-prettier";
 import importPlugin from "eslint-plugin-import";
 import jsxA11y from "eslint-plugin-jsx-a11y";
+import promisePlugin from "eslint-plugin-promise";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
-import prettier from "eslint-config-prettier";
+import securityPlugin from "eslint-plugin-security";
+import unusedImports from "eslint-plugin-unused-imports";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+
+/**
+ * Atlas Enterprise ESLint Configuration
+ * 
+ * Modern, TypeScript-first, enterprise-ready linting setup.
+ * - Uses ESLint Flat Config
+ * - TypeScript type-checked rules
+ * - Next.js App Router compatible
+ * - Low noise, high signal
+ * - NO Airbnb config
+ */
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  // Base recommended rules
   js.configs.recommended,
+  
+  // TypeScript recommended (non-type-checked) for TS files
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["**/*.ts", "**/*.tsx"],
+  })),
+  
+  // Stylistic rules for TS files
+  ...tseslint.configs.stylistic.map((config) => ({
+    ...config,
+    files: ["**/*.ts", "**/*.tsx"],
+  })),
+  
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ["**/*.{js,jsx,mjs,cjs}"],
     plugins: {
-      "@typescript-eslint": tseslint,
       react,
       "react-hooks": reactHooks,
       "jsx-a11y": jsxA11y,
       import: importPlugin,
+      "unused-imports": unusedImports,
+      promise: promisePlugin,
+      security: securityPlugin,
     },
+    
     languageOptions: {
-      parser: tsparser,
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
@@ -29,54 +59,50 @@ export default [
         },
       },
       globals: {
-        React: "readonly",
-        console: "readonly",
-        process: "readonly",
-        module: "readonly",
-        require: "readonly",
-        fetch: "readonly",
-        Request: "readonly",
-        Response: "readonly",
-        Headers: "readonly",
-        RequestInit: "readonly",
-        RequestInfo: "readonly",
-        URL: "readonly",
-        URLSearchParams: "readonly",
-        performance: "readonly",
-        crypto: "readonly",
-        HTMLDivElement: "readonly",
-        HTMLButtonElement: "readonly",
-        HTMLParagraphElement: "readonly",
-        HTMLHeadingElement: "readonly",
-        setTimeout: "readonly",
-        clearTimeout: "readonly",
-        setInterval: "readonly",
-        clearInterval: "readonly",
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2021,
       },
     },
+    
+    settings: {
+      react: {
+        version: "detect",
+      },
+      "import/resolver": {
+        node: true,
+      },
+    },
+    
     rules: {
-      ...tseslint.configs.recommended.rules,
+      // ========================================
+      // React Rules
+      // ========================================
+      
       ...react.configs.recommended.rules,
       ...react.configs["jsx-runtime"].rules,
       ...reactHooks.configs.recommended.rules,
-      ...jsxA11y.configs.recommended.rules,
       
-      // TypeScript
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-      ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/consistent-type-imports": [
-        "error",
-        { prefer: "type-imports" },
-      ],
-      
-      // React
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
+      "react/display-name": "warn",
+      "react/jsx-no-target-blank": ["error", { allowReferrer: true }],
+      "react/jsx-curly-brace-presence": ["warn", { props: "never", children: "never" }],
       
-      // Import sorting
+      // React Hooks
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      
+      // ========================================
+      // Accessibility (jsx-a11y)
+      // ========================================
+      
+      ...jsxA11y.configs.recommended.rules,
+      
+      // ========================================
+      // Import Rules
+      // ========================================
+      
       "import/order": [
         "error",
         {
@@ -84,20 +110,189 @@ export default [
             "builtin",
             "external",
             "internal",
-            "parent",
-            "sibling",
+            ["parent", "sibling"],
             "index",
+            "object",
+            "type",
           ],
           "newlines-between": "always",
           alphabetize: { order: "asc", caseInsensitive: true },
         },
       ],
       "import/no-duplicates": "error",
+      "import/no-unresolved": "off",
+      "import/first": "error",
+      "import/newline-after-import": "error",
       
-      // Ban console usage - use structured logging instead
+      // ========================================
+      // Unused Imports (Auto-fixable)
+      // ========================================
+      
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": [
+        "warn",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
+        },
+      ],
+      
+      // ========================================
+      // Promise Rules (Async Safety)
+      // ========================================
+      
+      "promise/always-return": "off",
+      "promise/catch-or-return": "warn",
+      "promise/no-return-wrap": "error",
+      "promise/param-names": "error",
+      "promise/no-nesting": "warn",
+      "promise/no-promise-in-callback": "warn",
+      "promise/valid-params": "error",
+      
+      // ========================================
+      // Security Rules (Low Noise)
+      // ========================================
+      
+      "security/detect-object-injection": "off",
+      "security/detect-non-literal-regexp": "warn",
+      "security/detect-unsafe-regex": "error",
+      "security/detect-buffer-noassert": "error",
+      "security/detect-eval-with-expression": "error",
+      "security/detect-no-csrf-before-method-override": "error",
+      "security/detect-possible-timing-attacks": "warn",
+      
+      // ========================================
+      // General Best Practices
+      // ========================================
+      
       "no-console": "error",
+      "no-debugger": "error",
+      "no-alert": "error",
+      "no-var": "error",
+      "prefer-const": "error",
+      "prefer-template": "warn",
+      "object-shorthand": "warn",
+      "no-nested-ternary": "warn",
+      "eqeqeq": ["error", "always", { null: "ignore" }],
+      "no-implicit-coercion": "warn",
+    },
+  },
+  
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    ignores: [
+      "**/scripts/**/*.ts",
+      "**/*.config.{ts,mts,cts}",
+      "**/*.setup.{ts,mts}",
+      "**/.storybook/**",
+      "**/__tests__/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+    ],
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+      react,
+      "react-hooks": reactHooks,
+      "jsx-a11y": jsxA11y,
+      import: importPlugin,
+      "unused-imports": unusedImports,
+      promise: promisePlugin,
+      security: securityPlugin,
+    },
+    
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2021,
+      },
+    },
+    
+    settings: {
+      react: {
+        version: "detect",
+      },
+      "import/resolver": {
+        typescript: true,
+        node: true,
+      },
+    },
+    
+    rules: {
+      // ========================================
+      // TypeScript Rules (Non-Type-Checked)
+      // ========================================
       
-      // Accessibility
+      // Enforce type safety (non-type-checked versions)
+      "@typescript-eslint/no-explicit-any": "warn",
+      
+      // Unused variables with underscore prefix support
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      
+      // Enforce consistent type imports
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          prefer: "type-imports",
+          fixStyle: "separate-type-imports",
+        },
+      ],
+      
+      // Enforce consistent type exports
+      "@typescript-eslint/consistent-type-exports": [
+        "error",
+        { fixMixedExportsWithInlineTypeSpecifier: true },
+      ],
+      
+      // Enforce naming conventions
+      "@typescript-eslint/naming-convention": [
+        "warn",
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+      ],
+      
+      // ========================================
+      // React Rules
+      // ========================================
+      
+      ...react.configs.recommended.rules,
+      ...react.configs["jsx-runtime"].rules,
+      ...reactHooks.configs.recommended.rules,
+      
+      "react/prop-types": "off", // TypeScript handles this
+      "react/react-in-jsx-scope": "off", // Not needed in Next.js
+      "react/display-name": "warn",
+      "react/jsx-no-target-blank": ["error", { allowReferrer: true }],
+      "react/jsx-curly-brace-presence": ["warn", { props: "never", children: "never" }],
+      
+      // React Hooks
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      
+      // ========================================
+      // Accessibility (jsx-a11y)
+      // ========================================
+      
+      ...jsxA11y.configs.recommended.rules,
+      
       "jsx-a11y/anchor-is-valid": [
         "error",
         {
@@ -106,22 +301,173 @@ export default [
           aspects: ["invalidHref", "preferButton"],
         },
       ],
-    },
-    settings: {
-      react: {
-        version: "detect",
-      },
+      
+      // ========================================
+      // Import Rules
+      // ========================================
+      
+      "import/order": [
+        "error",
+        {
+          groups: [
+            "builtin",
+            "external",
+            "internal",
+            ["parent", "sibling"],
+            "index",
+            "object",
+            "type",
+          ],
+          "newlines-between": "always",
+          alphabetize: { order: "asc", caseInsensitive: true },
+        },
+      ],
+      "import/no-duplicates": "error",
+      "import/no-unresolved": "off", // TypeScript handles this
+      "import/first": "error",
+      "import/newline-after-import": "error",
+      
+      // ========================================
+      // Unused Imports (Auto-fixable)
+      // ========================================
+      
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": [
+        "warn",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
+        },
+      ],
+      
+      // ========================================
+      // Promise Rules (Async Safety)
+      // ========================================
+      
+      "promise/always-return": "off", // Too strict for modern async/await
+      "promise/catch-or-return": "warn",
+      "promise/no-return-wrap": "error",
+      "promise/param-names": "error",
+      "promise/no-nesting": "warn",
+      "promise/no-promise-in-callback": "warn",
+      "promise/valid-params": "error",
+      
+      // ========================================
+      // Security Rules (Low Noise)
+      // ========================================
+      
+      "security/detect-object-injection": "off", // Too many false positives
+      "security/detect-non-literal-regexp": "warn",
+      "security/detect-unsafe-regex": "error",
+      "security/detect-buffer-noassert": "error",
+      "security/detect-eval-with-expression": "error",
+      "security/detect-no-csrf-before-method-override": "error",
+      "security/detect-possible-timing-attacks": "warn",
+      
+      // ========================================
+      // General Best Practices
+      // ========================================
+      
+      "no-console": "error", // Use structured logging
+      "no-debugger": "error",
+      "no-alert": "error",
+      "no-var": "error",
+      "prefer-const": "error",
+      "prefer-template": "warn",
+      "object-shorthand": "warn",
+      "no-nested-ternary": "warn",
+      "eqeqeq": ["error", "always", { null: "ignore" }],
+      "no-implicit-coercion": "warn",
     },
   },
+  
+  // ========================================
+  // Test Files Overrides
+  // ========================================
+  {
+    files: [
+      "**/__tests__/**/*.{ts,tsx}",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+      "**/jest.setup.ts",
+      "**/jest.config.ts",
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+        ...globals.node,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/require-await": "off",
+      "no-console": "off",
+    },
+  },
+  
+  {
+    files: [
+      "**/__tests__/**/*.{js,jsx}",
+      "**/*.test.{js,jsx}",
+      "**/*.spec.{js,jsx}",
+      "**/jest.setup.js",
+      "**/jest.config.js",
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+        ...globals.node,
+      },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
+  
+  // ========================================
+  // Config Files Overrides
+  // ========================================
+  {
+    files: [
+      "**/*.config.{js,mjs,cjs}",
+      "**/*.setup.{js,mjs}",
+    ],
+    rules: {
+      "no-console": "off",
+      "import/no-default-export": "off",
+    },
+  },
+  
+  // ========================================
+  // Ignore Patterns
+  // ========================================
   {
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
       "**/.next/**",
+      "**/out/**",
       "**/build/**",
       "**/coverage/**",
       "**/.turbo/**",
+      "**/storybook-static/**",
+      "**/.storybook/public/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
+      "**/*.min.js",
+      "**/generated/**",
+      "**/.contentlayer/**",
+      "**/jest.config.js",
+      "**/jest.setup.js",
     ],
   },
+  
+  // Prettier must be last to override conflicting rules
   prettier,
 ];

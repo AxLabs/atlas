@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import { Checkbox } from "./checkbox";
 import {
   Field,
@@ -14,6 +12,8 @@ import {
   FieldTitle,
 } from "./field";
 import { Input } from "./input";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Field> = {
   title: "UI/Field",

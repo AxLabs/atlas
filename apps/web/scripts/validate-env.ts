@@ -36,7 +36,7 @@ const colors = {
 /**
  * Format error messages for better readability
  */
-function formatZodError(error: z.ZodError, prefix: string = ""): string {
+function formatZodError(error: z.ZodError, prefix = ""): string {
   return error.issues
     .map((issue) => {
       const path = issue.path.join(".");
@@ -181,7 +181,7 @@ async function main() {
 }
 
 // Execute
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(`${colors.red}Fatal error:${colors.reset}`, error);
   process.exit(1);
 });

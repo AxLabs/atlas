@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import { Button } from "./button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 import { Input } from "./input";
 import { Label } from "./label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Tabs> = {
   title: "UI/Tabs",

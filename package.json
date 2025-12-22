@@ -14,7 +14,8 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "turbo run format:check",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
@@ -28,11 +29,17 @@
     "perf:disable": "node tools/perf/disable.js"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@turbo/gen": "2.3.3",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "globals": "^16.5.0",
     "husky": "9.1.7",
     "lint-staged": "15.2.10",
     "prettier": "3.4.2",
     "prettier-plugin-tailwindcss": "0.6.10",
-    "turbo": "2.3.3"
+    "turbo": "2.3.3",
+    "typescript-eslint": "^8.50.0"
   }
 }

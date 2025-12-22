@@ -8,12 +8,13 @@
  */
 
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
-import type { Metric } from "web-vitals";
 
 import { getWebVitalsConfig, shouldReportVitals } from "./config";
 import { initTransport, sendMetric } from "./transport";
-import type { WebVitalMetric, MetricName } from "./types";
 import { sanitizeRoute, getNavigationType } from "./types";
+
+import type { WebVitalMetric, MetricName } from "./types";
+import type { Metric } from "web-vitals";
 
 /**
  * Web Vitals initialization options

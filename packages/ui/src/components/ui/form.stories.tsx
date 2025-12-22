@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Meta, StoryObj } from "@storybook/react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -15,6 +14,8 @@ import {
   FormMessage,
 } from "./form";
 import { Input } from "./input";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Form> = {
   title: "UI/Form",
@@ -147,7 +148,7 @@ function ErrorFormDemo() {
 
   // Trigger validation on mount to show error state
   React.useEffect(() => {
-    form.trigger();
+    void form.trigger();
   }, [form]);
 
   return (

@@ -4,7 +4,8 @@ This directory contains the Storybook setup for the Atlas UI component library.
 
 ## What is Storybook?
 
-Storybook is an open-source tool for developing UI components in isolation. It makes building stunning UIs organized and efficient by providing:
+Storybook is an open-source tool for developing UI components in isolation. It makes building
+stunning UIs organized and efficient by providing:
 
 - **Component Playground**: Interactively develop and test components in isolation
 - **Visual Documentation**: Auto-generated docs for all component props and variants
@@ -125,7 +126,8 @@ export const LoginForm: Story = {
 
 ### Core Addons
 
-- **@storybook/addon-essentials**: Controls, Actions, Viewport, Backgrounds, Toolbars, Measure, Outline
+- **@storybook/addon-essentials**: Controls, Actions, Viewport, Backgrounds, Toolbars, Measure,
+  Outline
 - **@storybook/addon-interactions**: Interactive component testing
 - **@storybook/addon-a11y**: Accessibility testing and reporting
 - **@storybook/addon-themes**: Dark/light theme switching

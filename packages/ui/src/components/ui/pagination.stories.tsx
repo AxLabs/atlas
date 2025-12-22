@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import {
   Pagination,
   PaginationContent,
@@ -9,6 +7,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "./pagination";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Pagination> = {
   title: "UI/Pagination",

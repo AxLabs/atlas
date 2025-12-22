@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { FileTextIcon, ImageIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
@@ -13,6 +12,8 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "./item";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Item> = {
   title: "UI/Item",

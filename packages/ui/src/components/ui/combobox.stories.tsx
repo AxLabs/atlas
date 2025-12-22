@@ -1,8 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import * as React from "react";
-
-import { cn } from "../../lib/utils";
 
 import { Button } from "./button";
 import {
@@ -14,6 +11,9 @@ import {
   CommandList,
 } from "./command";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { cn } from "../../lib/utils";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta = {
   title: "UI/Combobox",

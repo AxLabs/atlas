@@ -1,7 +1,8 @@
 "use client";
 
-import type React from "react";
 import { Toaster } from "sonner";
+
+import type React from "react";
 
 export function ToasterProvider({ children }: { children: React.ReactNode }) {
   return (

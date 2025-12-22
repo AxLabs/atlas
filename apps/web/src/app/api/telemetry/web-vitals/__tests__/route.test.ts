@@ -10,7 +10,7 @@ import { POST, GET } from "../route";
 describe("Web Vitals API Route", () => {
   describe("GET /api/telemetry/web-vitals", () => {
     it("should return health check status", async () => {
-      const response = await GET();
+      const response = GET();
       const data = await response.json();
 
       expect(response.status).toBe(200);

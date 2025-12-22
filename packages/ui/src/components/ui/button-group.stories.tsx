@@ -1,8 +1,9 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { Bold, Italic, Underline } from "lucide-react";
 
 import { Button } from "./button";
 import { ButtonGroup, ButtonGroupSeparator } from "./button-group";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof ButtonGroup> = {
   title: "UI/ButtonGroup",

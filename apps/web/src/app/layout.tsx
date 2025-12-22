@@ -1,10 +1,11 @@
 import "@atlas/ui/globals.css";
 
 import { Toaster } from "@atlas/ui";
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { MainProvider } from "@/providers";
+
+import type { Metadata } from "next";
 
 const geistSans = Geist({
   subsets: ["latin"],

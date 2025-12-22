@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import { Card, CardContent, CardHeader } from "./card";
 import { Skeleton } from "./skeleton";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Skeleton> = {
   title: "UI/Skeleton",

@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { EyeIcon, EyeOffIcon, MailIcon, SearchIcon } from "lucide-react";
 import * as React from "react";
 
@@ -11,6 +10,8 @@ import {
   InputGroupTextarea,
 } from "./input-group";
 import { Kbd } from "./kbd";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof InputGroup> = {
   title: "UI/InputGroup",

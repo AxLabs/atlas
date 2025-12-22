@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import {
   Cloud,
   CreditCard,
@@ -29,6 +28,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof DropdownMenu> = {
   title: "UI/DropdownMenu",

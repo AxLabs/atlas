@@ -2,9 +2,8 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { cn } from "../../lib/utils";
-
 import { Separator } from "./separator";
+import { cn } from "../../lib/utils";
 
 const itemVariants = cva("flex w-full items-start gap-4 rounded-md p-4 transition-colors", {
   variants: {

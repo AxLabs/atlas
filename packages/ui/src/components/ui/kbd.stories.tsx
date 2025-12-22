@@ -1,7 +1,8 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { Command } from "lucide-react";
 
 import { Kbd, KbdGroup } from "./kbd";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Kbd> = {
   title: "UI/Kbd",

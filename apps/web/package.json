@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "format": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\"",
+    "format:write": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "validate:env": "tsx scripts/validate-env.ts",

@@ -1,8 +1,8 @@
-/* eslint-disable no-undef */
-import type { Meta, StoryObj } from "@storybook/react";
 import { useState, useEffect } from "react";
 
 import { Progress } from "./progress";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Progress> = {
   title: "UI/Progress",

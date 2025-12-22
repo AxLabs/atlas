@@ -1,7 +1,27 @@
 import baseConfig from "@atlas/config/eslint";
+import tseslint from "typescript-eslint";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default [
   ...baseConfig,
+  {
+    // Override parser options to specify this package's tsconfig
+    files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        tsconfigRootDir: __dirname,
+        project: "./tsconfig.json",
+      },
+    },
+  },
+  {
+    ignores: ["eslint.config.mjs"], // Don't lint the config file itself
+  },
   {
     // Ban console.* usage - use structured logging instead
     rules: {
@@ -19,14 +39,42 @@ export default [
     },
   },
   {
-    files: ["next.config.js", "jest.config.js", "jest.setup.js"],
+    files: ["next.config.js", "jest.config.js", "jest.setup.js", "postcss.config.mjs", "eslint.config.mjs", "playwright.config.ts"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false, // These files are not in tsconfig
+      },
+      globals: {
+        process: "readonly",
+        __dirname: "readonly",
+      },
+    },
     rules: {
       // Config files require CommonJS
       "@typescript-eslint/no-require-imports": "off",
+      // Disable type-checked rules for non-TS files
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "no-undef": "off",
     },
   },
   {
-    files: ["scripts/**/*.ts", "scripts/**/*.js"],
+    files: ["scripts/**/*.ts"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+      globals: {
+        console: "readonly",
+        process: "readonly",
+      },
+    },
     rules: {
       // Scripts are allowed to use console for user feedback
       "no-console": "off",

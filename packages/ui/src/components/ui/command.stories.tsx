@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { CalendarIcon, CreditCardIcon, SettingsIcon, SmileIcon, UserIcon } from "lucide-react";
 
 import {
@@ -11,6 +10,8 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "./command";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Command> = {
   title: "UI/Command",

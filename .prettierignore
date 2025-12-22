@@ -1,7 +1,26 @@
+# Dependencies
 node_modules
+pnpm-lock.yaml
+
+# Build outputs
 .next
+out
 dist
 build
-coverage
 .turbo
-pnpm-lock.yaml
+
+# Generated files
+coverage
+storybook-static
+playwright-report
+test-results
+.contentlayer
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea

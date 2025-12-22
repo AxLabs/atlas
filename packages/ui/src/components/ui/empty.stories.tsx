@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { FileIcon, InboxIcon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { Button } from "./button";
@@ -10,6 +9,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "./empty";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Empty> = {
   title: "UI/Empty",

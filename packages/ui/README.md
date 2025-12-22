@@ -33,4 +33,5 @@ Import the global styles in your app:
 import "@atlas/ui/styles";
 ```
 
-This automatically imports Tailwind CSS v4 with all the design tokens and theme variables. No additional configuration needed.
+This automatically imports Tailwind CSS v4 with all the design tokens and theme variables. No
+additional configuration needed.

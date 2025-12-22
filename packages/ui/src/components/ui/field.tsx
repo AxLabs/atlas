@@ -2,9 +2,8 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { cn } from "../../lib/utils";
-
 import { Separator } from "./separator";
+import { cn } from "../../lib/utils";
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -166,7 +165,7 @@ function FieldError({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  errors?: Array<{ message?: string } | undefined>;
+  errors?: ({ message?: string } | undefined)[];
 }) {
   const errorMessages = errors?.filter((e) => e?.message).map((e) => e!.message);
   const body = errorMessages?.length ? errorMessages : children;

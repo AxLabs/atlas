@@ -5,8 +5,9 @@
  * with sendBeacon-first strategy and fetch keepalive fallback.
  */
 
-import type { WebVitalMetric, WebVitalsBatch } from "./types";
 import { getSessionId, getUserAgentHint } from "./types";
+
+import type { WebVitalMetric, WebVitalsBatch } from "./types";
 
 /**
  * Transport configuration
@@ -44,7 +45,7 @@ class MetricQueue {
 
     // Flush if batch size reached
     if (this.queue.length >= this.config.batchSize) {
-      this.flush();
+      void this.flush();
     } else {
       // Schedule flush
       this.scheduleFlush();
@@ -58,7 +59,7 @@ class MetricQueue {
     if (this.flushTimer) return;
 
     this.flushTimer = setTimeout(() => {
-      this.flush();
+      void this.flush();
     }, this.config.flushInterval);
   }
 
@@ -166,13 +167,13 @@ class MetricQueue {
     // Flush when page becomes hidden
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        this.flush();
+        void this.flush();
       }
     };
 
     // Flush on page hide (covers more cases than unload)
     const handlePageHide = () => {
-      this.flush();
+      void this.flush();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -190,10 +191,10 @@ let transportInstance: MetricQueue | null = null;
  */
 export function initTransport(config: Partial<TransportConfig> = {}): void {
   const fullConfig: TransportConfig = {
-    endpoint: config.endpoint || "/api/telemetry/web-vitals",
-    batchSize: config.batchSize || 5,
-    flushInterval: config.flushInterval || 10000, // 10 seconds
-    debug: config.debug || false,
+    endpoint: config.endpoint ?? "/api/telemetry/web-vitals",
+    batchSize: config.batchSize ?? 5,
+    flushInterval: config.flushInterval ?? 10000, // 10 seconds
+    debug: config.debug ?? false,
   };
 
   transportInstance = new MetricQueue(fullConfig);

@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import { Badge } from "./badge";
 import {
   Table,
@@ -11,6 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "./table";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Table> = {
   title: "UI/Table",

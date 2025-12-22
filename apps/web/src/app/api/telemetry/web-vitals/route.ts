@@ -7,10 +7,11 @@
  * @route POST /api/telemetry/web-vitals
  */
 
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { WebVitalsBatchSchema, type WebVitalsBatchDTO } from "@/lib/telemetry/validation";
+
+import type { NextRequest } from "next/server";
 
 /**
  * Maximum request body size (100KB)
@@ -51,9 +52,9 @@ function checkRateLimit(ip: string): boolean {
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "unknown";
+    return forwarded.split(",")[0]?.trim() ?? "unknown";
   }
-  return request.headers.get("x-real-ip") || "unknown";
+  return request.headers.get("x-real-ip") ?? "unknown";
 }
 
 /**
@@ -62,7 +63,7 @@ function getClientIp(request: NextRequest): string {
  * Currently logs to stdout in structured format.
  * TODO: Implement database persistence or forward to analytics service.
  */
-async function processMetrics(batch: WebVitalsBatchDTO): Promise<void> {
+function processMetrics(batch: WebVitalsBatchDTO): void {
   // Log structured data for collection by log aggregators (e.g., Loki, CloudWatch)
   console.log(
     JSON.stringify({
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse and validate request body
-    const body = await request.json();
+    const body = (await request.json()) as unknown;
     const validationResult = WebVitalsBatchSchema.safeParse(body);
 
     if (!validationResult.success) {
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process metrics
-    await processMetrics(validationResult.data);
+    processMetrics(validationResult.data);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
  *
  * Health check endpoint
  */
-export async function GET() {
+export function GET() {
   return NextResponse.json(
     {
       status: "ok",

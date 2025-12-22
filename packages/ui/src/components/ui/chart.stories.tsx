@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { Bar, BarChart, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import {
@@ -9,6 +8,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "./chart";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof ChartContainer> = {
   title: "UI/Chart",

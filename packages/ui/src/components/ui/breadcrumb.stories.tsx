@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from "@storybook/react";
-
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -9,6 +7,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./breadcrumb";
+
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Breadcrumb> = {
   title: "UI/Breadcrumb",
