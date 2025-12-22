@@ -1,10 +1,13 @@
 # shadcn/ui Setup for Next.js 16
 
-This document describes the shadcn/ui setup in the Atlas project, configured for Next.js 16 compatibility.
+This document describes the shadcn/ui setup in the Atlas project, configured for Next.js 16
+compatibility.
 
 ## Overview
 
-shadcn/ui is a collection of re-usable components built using Radix UI and Tailwind CSS. Components are not installed as dependencies but are added to your project's source code, giving you full control and ownership.
+shadcn/ui is a collection of re-usable components built using Radix UI and Tailwind CSS. Components
+are not installed as dependencies but are added to your project's source code, giving you full
+control and ownership.
 
 ## Installation Details
 
@@ -126,7 +129,8 @@ export default function MyPage() {
 
 ## Theming
 
-The project uses CSS custom properties for theming, supporting both light and dark modes. Colors are defined in [src/app/globals.css](../../apps/web/src/app/globals.css).
+The project uses CSS custom properties for theming, supporting both light and dark modes. Colors are
+defined in [src/app/globals.css](../../apps/web/src/app/globals.css).
 
 ### Theme Variables
 
@@ -143,11 +147,14 @@ The project uses CSS custom properties for theming, supporting both light and da
 
 ### Dark Mode
 
-Dark mode is handled by the `ThemeProvider` in [src/providers/theme-provider.tsx](../../apps/web/src/providers/theme-provider.tsx). Toggle between themes using the `next-themes` library.
+Dark mode is handled by the `ThemeProvider` in
+[src/providers/theme-provider.tsx](../../apps/web/src/providers/theme-provider.tsx). Toggle between
+themes using the `next-themes` library.
 
 ## Toast Notifications
 
-Toast notifications are provided by the `sonner` library. The `<Toaster />` component is included in the root layout.
+Toast notifications are provided by the `sonner` library. The `<Toaster />` component is included in
+the root layout.
 
 ### Using Toasts
 

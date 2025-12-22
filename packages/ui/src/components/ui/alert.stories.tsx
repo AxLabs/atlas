@@ -1,4 +1,4 @@
-import { Terminal, AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Terminal } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "./alert";
 

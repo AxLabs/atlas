@@ -1,10 +1,12 @@
 # Atlas
 
-Enterprise-grade frontend platform monorepo built with Next.js, TypeScript, Tailwind CSS, and modern tooling.
+Enterprise-grade frontend platform monorepo built with Next.js, TypeScript, Tailwind CSS, and modern
+tooling.
 
 ## Architecture
 
-This is a **soft monorepo** using pnpm workspaces and Turborepo, designed for stability, maintainability, and team productivity.
+This is a **soft monorepo** using pnpm workspaces and Turborepo, designed for stability,
+maintainability, and team productivity.
 
 ### Structure
 
@@ -27,7 +29,8 @@ atlas/
 - **Node.js** >= 22.0.0 (LTS)
 - **pnpm** >= 10.0.0
 
-> **⚠️ Package Manager Policy**: Atlas enforces pnpm as the only supported package manager. npm, yarn, and bun are not supported. See [Toolchain Policy](docs/TOOLCHAIN_POLICY.md) for details.
+> **⚠️ Package Manager Policy**: Atlas enforces pnpm as the only supported package manager. npm,
+> yarn, and bun are not supported. See [Toolchain Policy](docs/TOOLCHAIN_POLICY.md) for details.
 
 ### Installation
 
@@ -49,7 +52,8 @@ pnpm dev
 
 The web app will be available at [http://localhost:3000](http://localhost:3000).
 
-> **Environment Variables**: See [Environment Variables Guide](docs/ENVIRONMENT_VARIABLES.md) for complete documentation on setup, validation, and best practices.
+> **Environment Variables**: See [Environment Variables Guide](docs/ENVIRONMENT_VARIABLES.md) for
+> complete documentation on setup, validation, and best practices.
 
 ## Workspace Packages
 
@@ -183,7 +187,8 @@ pnpm build-storybook
 # Output: packages/ui/storybook-static/
 ```
 
-See [Storybook README](packages/ui/.storybook/README.md) for more details on writing stories and deployment.
+See [Storybook README](packages/ui/.storybook/README.md) for more details on writing stories and
+deployment.
 
 ## Styling
 
@@ -219,8 +224,10 @@ All commits must pass:
 ## Documentation
 
 - **[Toolchain Policy](docs/TOOLCHAIN_POLICY.md)** - Package manager enforcement and setup guide
-- **[Platform Principles](docs/platform-principles.md)** - Code organization, component boundaries, testing strategies
-- **[Environment Variables](docs/ENVIRONMENT_VARIABLES.md)** - Complete guide to setup, validation, and security
+- **[Platform Principles](docs/platform-principles.md)** - Code organization, component boundaries,
+  testing strategies
+- **[Environment Variables](docs/ENVIRONMENT_VARIABLES.md)** - Complete guide to setup, validation,
+  and security
 - **[Atlas Context](docs/ATLAS_CONTEXT.md)** - Platform philosophy and goals
 
 ## Contributing

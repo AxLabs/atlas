@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   atlas-app:
@@ -6,7 +6,7 @@ services:
     container_name: atlas-production
     restart: unless-stopped
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -17,7 +17,7 @@ services:
     env_file:
       - .env.production
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -25,12 +25,12 @@ services:
     networks:
       - atlas-network
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.docker.network=atlas-network'
-      - 'traefik.http.routers.atlas.rule=Host(`atlas.yourdomain.com`)'
-      - 'traefik.http.routers.atlas.entrypoints=websecure'
-      - 'traefik.http.routers.atlas.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.atlas.loadbalancer.server.port=3000'
+      - "traefik.enable=true"
+      - "traefik.docker.network=atlas-network"
+      - "traefik.http.routers.atlas.rule=Host(`atlas.yourdomain.com`)"
+      - "traefik.http.routers.atlas.entrypoints=websecure"
+      - "traefik.http.routers.atlas.tls.certresolver=letsencrypt"
+      - "traefik.http.services.atlas.loadbalancer.server.port=3000"
 
   # Optional: Nginx reverse proxy (if not using Traefik)
   nginx:
@@ -38,8 +38,8 @@ services:
     container_name: atlas-nginx
     restart: unless-stopped
     ports:
-      - '80:80'
-      - '443:443'
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
@@ -65,7 +65,7 @@ services:
     networks:
       - atlas-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-atlas} -d atlas']
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-atlas} -d atlas"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -83,7 +83,7 @@ services:
     networks:
       - atlas-network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3

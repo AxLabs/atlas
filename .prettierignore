@@ -24,3 +24,12 @@ test-results
 # IDE
 .vscode
 .idea
+
+# Lock files and auto-generated
+package-lock.json
+yarn.lock
+bun.lockb
+
+# Other
+*.min.js
+*.min.css

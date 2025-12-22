@@ -22,7 +22,8 @@
 
 ### What This Is
 
-Atlas implements a **type-safe, validated environment variable system** that prevents configuration errors and security vulnerabilities. This system ensures that:
+Atlas implements a **type-safe, validated environment variable system** that prevents configuration
+errors and security vulnerabilities. This system ensures that:
 
 - Environment variables are validated **before** runtime
 - Client and server variables are strictly separated
@@ -194,7 +195,8 @@ Validating client environment variables...
 
 ### For CI/CD
 
-Environment variables are automatically validated before build/test steps. No action required beyond configuring secrets in your CI platform.
+Environment variables are automatically validated before build/test steps. No action required beyond
+configuring secrets in your CI platform.
 
 ---
 
@@ -867,8 +869,7 @@ Property 'NEW_VAR' does not exist on type '{ ... }'
 
 #### Issue: Variables Not Updating
 
-**Symptoms**:
-Old variable values persist after changes
+**Symptoms**: Old variable values persist after changes
 
 **Solutions**:
 
@@ -879,8 +880,7 @@ Old variable values persist after changes
 
 #### Issue: Client Variable Undefined in Browser
 
-**Symptoms**:
-`env.NEXT_PUBLIC_VAR` is `undefined` in client code
+**Symptoms**: `env.NEXT_PUBLIC_VAR` is `undefined` in client code
 
 **Solutions**:
 
@@ -891,8 +891,7 @@ Old variable values persist after changes
 
 #### Issue: Server Variable Accessible in Client
 
-**Symptoms**:
-Security warning or unexpected behavior
+**Symptoms**: Security warning or unexpected behavior
 
 **Solutions**:
 
@@ -980,7 +979,8 @@ pnpm --filter @atlas/web validate:env
 
 - **[T3 Env Documentation](https://env.t3.gg/)** - Official T3 Env guide
 - **[Zod Documentation](https://zod.dev/)** - Schema validation library
-- **[Next.js Environment Variables](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)** - Next.js official guide
+- **[Next.js Environment Variables](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)** -
+  Next.js official guide
 - **[The Twelve-Factor App: Config](https://12factor.net/config)** - Configuration best practices
 
 ### Internal Documentation

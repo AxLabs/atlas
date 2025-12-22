@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import { cn } from "@/lib/utils";
+
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -9,7 +11,6 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "./navigation-menu";
-import { cn } from "../../lib/utils";
 
 import type { Meta, StoryObj } from "@storybook/react";
 

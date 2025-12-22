@@ -1,6 +1,7 @@
 # Pull Request Review Checklist
 
-This document serves as a comprehensive guide for reviewing pull requests in the Atlas project. Use this checklist to ensure thorough and consistent code reviews.
+This document serves as a comprehensive guide for reviewing pull requests in the Atlas project. Use
+this checklist to ensure thorough and consistent code reviews.
 
 ## Review Objectives
 

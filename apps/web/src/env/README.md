@@ -1,6 +1,7 @@
 # Environment Variables - Quick Reference
 
-> **For complete documentation, see [ENVIRONMENT_VARIABLES.md](../../docs/ENVIRONMENT_VARIABLES.md)**
+> **For complete documentation, see
+> [ENVIRONMENT_VARIABLES.md](../../docs/ENVIRONMENT_VARIABLES.md)**
 
 ## Quick Start
 
@@ -145,4 +146,5 @@ z.string().default("default_value");
 
 ---
 
-**Need more?** See [Complete Guide](../../docs/ENVIRONMENT_VARIABLES.md) for architecture, CI/CD, security, and detailed troubleshooting.
+**Need more?** See [Complete Guide](../../docs/ENVIRONMENT_VARIABLES.md) for architecture, CI/CD,
+security, and detailed troubleshooting.

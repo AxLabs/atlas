@@ -4,7 +4,8 @@ Production-grade Real User Monitoring (RUM) for Core Web Vitals in the Atlas pla
 
 ## Overview
 
-This module collects and reports Core Web Vitals metrics from real users to help monitor and improve frontend performance. It provides:
+This module collects and reports Core Web Vitals metrics from real users to help monitor and improve
+frontend performance. It provides:
 
 - **Client-side collection** of LCP, CLS, INP, FCP, and TTFB
 - **Privacy-conscious** data handling (no PII, sanitized routes)
@@ -127,7 +128,8 @@ Open the browser console to see debug logs.
 NEXT_PUBLIC_WEB_VITALS_ENABLED=false
 ```
 
-Or remove the `WebVitalsReporter` component from [src/providers/index.tsx](../apps/web/src/providers/index.tsx).
+Or remove the `WebVitalsReporter` component from
+[src/providers/index.tsx](../apps/web/src/providers/index.tsx).
 
 ## Local Testing
 
@@ -245,7 +247,8 @@ Set a lower sample rate:
 NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE=0.5
 ```
 
-Restart the server and open multiple incognito windows. About 50% should show debug logs, others should be silent (not sampled).
+Restart the server and open multiple incognito windows. About 50% should show debug logs, others
+should be silent (not sampled).
 
 ### 8. Test invalid payload (should fail)
 
@@ -270,7 +273,8 @@ Expected response (400):
 }
 ```
 
-For more comprehensive testing strategies, see [apps/web/src/lib/telemetry/TESTING.md](../apps/web/src/lib/telemetry/TESTING.md).
+For more comprehensive testing strategies, see
+[apps/web/src/lib/telemetry/TESTING.md](../apps/web/src/lib/telemetry/TESTING.md).
 
 ## Viewing Results
 
@@ -311,7 +315,8 @@ model WebVital {
 }
 ```
 
-2. Update [src/app/api/telemetry/web-vitals/route.ts](../apps/web/src/app/api/telemetry/web-vitals/route.ts):
+2. Update
+   [src/app/api/telemetry/web-vitals/route.ts](../apps/web/src/app/api/telemetry/web-vitals/route.ts):
 
 ```typescript
 async function processMetrics(batch: WebVitalsBatchDTO): Promise<void> {
@@ -496,7 +501,8 @@ async function processMetrics(batch: WebVitalsBatchDTO): Promise<void> {
 
 **Solutions:**
 
-- Check validation schema in [src/lib/telemetry/validation.ts](../apps/web/src/lib/telemetry/validation.ts)
+- Check validation schema in
+  [src/lib/telemetry/validation.ts](../apps/web/src/lib/telemetry/validation.ts)
 - Enable debug mode to see exact payload being sent
 - Ensure web-vitals library is up to date
 

@@ -6,6 +6,7 @@ import promisePlugin from "eslint-plugin-promise";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import securityPlugin from "eslint-plugin-security";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import unusedImports from "eslint-plugin-unused-imports";
 import globals from "globals";
 import tseslint from "typescript-eslint";
@@ -17,6 +18,7 @@ import tseslint from "typescript-eslint";
  * - Uses ESLint Flat Config
  * - TypeScript type-checked rules
  * - Next.js App Router compatible
+ * - Deterministic import sorting via simple-import-sort
  * - Low noise, high signal
  * - NO Airbnb config
  */
@@ -45,6 +47,7 @@ export default [
       "react-hooks": reactHooks,
       "jsx-a11y": jsxA11y,
       import: importPlugin,
+      "simple-import-sort": simpleImportSort,
       "unused-imports": unusedImports,
       promise: promisePlugin,
       security: securityPlugin,
@@ -100,28 +103,42 @@ export default [
       ...jsxA11y.configs.recommended.rules,
       
       // ========================================
-      // Import Rules
+      // Import Rules (Deterministic Sorting)
       // ========================================
       
-      "import/order": [
+      // Simple import sort provides deterministic, autofixable import ordering
+      "simple-import-sort/imports": [
         "error",
         {
           groups: [
-            "builtin",
-            "external",
-            "internal",
-            ["parent", "sibling"],
-            "index",
-            "object",
-            "type",
+            // Side effect imports (e.g. CSS, polyfills) come first
+            ["^\\u0000"],
+            // Node.js built-ins (use node: prefix)
+            ["^node:"],
+            // External packages (react, next, etc.)
+            ["^@?\\w"],
+            // Internal packages (@atlas/*)
+            ["^@atlas(/.*|$)"],
+            // Absolute imports using path aliases (@/, ~/)
+            ["^@/", "^~/"],
+            // Parent imports (..)
+            ["^\\.\\.(?!/?$)", "^\\.\\./?$"],
+            // Same-folder imports (./)
+            ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$"],
+            // Type imports (keep separate)
+            ["^.+\\u0000$"],
           ],
-          "newlines-between": "always",
-          alphabetize: { order: "asc", caseInsensitive: true },
         },
       ],
+      "simple-import-sort/exports": "error",
+      
+      // Enforce no duplicate imports
       "import/no-duplicates": "error",
-      "import/no-unresolved": "off",
+      
+      // Ensure imports come first
       "import/first": "error",
+      
+      // Newline after imports
       "import/newline-after-import": "error",
       
       // ========================================
@@ -197,6 +214,7 @@ export default [
       "react-hooks": reactHooks,
       "jsx-a11y": jsxA11y,
       import: importPlugin,
+      "simple-import-sort": simpleImportSort,
       "unused-imports": unusedImports,
       promise: promisePlugin,
       security: securityPlugin,
@@ -303,28 +321,42 @@ export default [
       ],
       
       // ========================================
-      // Import Rules
+      // Import Rules (Deterministic Sorting)
       // ========================================
       
-      "import/order": [
+      // Simple import sort provides deterministic, autofixable import ordering
+      "simple-import-sort/imports": [
         "error",
         {
           groups: [
-            "builtin",
-            "external",
-            "internal",
-            ["parent", "sibling"],
-            "index",
-            "object",
-            "type",
+            // Side effect imports (e.g. CSS, polyfills) come first
+            ["^\\u0000"],
+            // Node.js built-ins (use node: prefix)
+            ["^node:"],
+            // External packages (react, next, etc.)
+            ["^@?\\w"],
+            // Internal packages (@atlas/*)
+            ["^@atlas(/.*|$)"],
+            // Absolute imports using path aliases (@/, ~/)
+            ["^@/", "^~/"],
+            // Parent imports (..)
+            ["^\\.\\.(?!/?$)", "^\\.\\./?$"],
+            // Same-folder imports (./)
+            ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$"],
+            // Type imports (keep separate)
+            ["^.+\\u0000$"],
           ],
-          "newlines-between": "always",
-          alphabetize: { order: "asc", caseInsensitive: true },
         },
       ],
+      "simple-import-sort/exports": "error",
+      
+      // Enforce no duplicate imports
       "import/no-duplicates": "error",
-      "import/no-unresolved": "off", // TypeScript handles this
+      
+      // Ensure imports come first
       "import/first": "error",
+      
+      // Newline after imports
       "import/newline-after-import": "error",
       
       // ========================================

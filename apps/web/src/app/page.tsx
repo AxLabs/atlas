@@ -1,5 +1,6 @@
-import { Button } from "@atlas/ui";
 import Link from "next/link";
+
+import { Button } from "@atlas/ui";
 
 export default function HomePage() {
   return (

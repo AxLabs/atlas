@@ -11,9 +11,9 @@ import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { getWebVitalsConfig, shouldReportVitals } from "./config";
 import { initTransport, sendMetric } from "./transport";
-import { sanitizeRoute, getNavigationType } from "./types";
+import { getNavigationType, sanitizeRoute } from "./types";
 
-import type { WebVitalMetric, MetricName } from "./types";
+import type { MetricName, WebVitalMetric } from "./types";
 import type { Metric } from "web-vitals";
 
 /**

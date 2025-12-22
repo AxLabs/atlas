@@ -6,7 +6,8 @@ Atlas uses a standardized structured logging system based on **Pino** that provi
 
 - **Structured JSON logs** for server-side operations
 - **Correlation IDs** (`x-request-id`) generated and propagated across all requests
-- **Request-scoped context** via AsyncLocalStorage (requestId, route, method, and optionally userId/tenantId)
+- **Request-scoped context** via AsyncLocalStorage (requestId, route, method, and optionally
+  userId/tenantId)
 - **Type-safe logging** with required `event` field
 - **Secret redaction** to prevent leaking sensitive data
 - **Hard enforcement** via ESLint and CI to prevent console usage
@@ -15,7 +16,8 @@ Atlas uses a standardized structured logging system based on **Pino** that provi
 
 Structured logs are:
 
-- **Queryable**: Filter and search by specific fields (e.g., all errors for a user, all slow requests)
+- **Queryable**: Filter and search by specific fields (e.g., all errors for a user, all slow
+  requests)
 - **Machine-readable**: Integrate with log aggregation tools (Datadog, CloudWatch, Splunk)
 - **Consistent**: Every log entry has the same structure
 - **Traceable**: Correlation IDs connect related operations across services
@@ -25,7 +27,8 @@ Structured logs are:
 1. **"One Blessed Way"**: All server logs go through `log.*` — never use `console.*`
 2. **Required `event` field**: Every log call must include a descriptive event name (snake_case)
 3. **No secrets in logs**: Tokens, passwords, auth headers, and PII are automatically redacted
-4. **Request-scoped context**: Logs automatically include `requestId`, `route`, and `method` when available
+4. **Request-scoped context**: Logs automatically include `requestId`, `route`, and `method` when
+   available
 
 ---
 
@@ -393,15 +396,18 @@ export async function processBatchJob(batchId: string) {
 
 ### Q: Can I use console.log in development?
 
-**No.** The ESLint rule and CI guard are strict. Use `log.debug()` instead — it won't appear in production logs (based on `LOG_LEVEL` env var).
+**No.** The ESLint rule and CI guard are strict. Use `log.debug()` instead — it won't appear in
+production logs (based on `LOG_LEVEL` env var).
 
 ### Q: How do I view logs in development?
 
-Logs are pretty-printed in development via `pino-pretty`. You'll see colorized, human-readable output in your terminal.
+Logs are pretty-printed in development via `pino-pretty`. You'll see colorized, human-readable
+output in your terminal.
 
 ### Q: How do I filter logs in production?
 
-Production logs are structured JSON. Use your log aggregation tool (Datadog, CloudWatch, etc.) to query by fields:
+Production logs are structured JSON. Use your log aggregation tool (Datadog, CloudWatch, etc.) to
+query by fields:
 
 - All errors for a specific user: `level=error AND userId=123`
 - All slow requests: `event=outbound_http AND durationMs>1000`
@@ -436,7 +442,8 @@ log.info(
 
 ### Q: Can I disable redaction for debugging?
 
-**No.** Redaction is a security feature and should never be disabled. If you need to debug specific values, log them separately with careful consideration (and remove before committing).
+**No.** Redaction is a security feature and should never be disabled. If you need to debug specific
+values, log them separately with careful consideration (and remove before committing).
 
 ---
 

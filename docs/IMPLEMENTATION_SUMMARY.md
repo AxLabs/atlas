@@ -2,7 +2,8 @@
 
 ## Complete Implementation
 
-A production-grade Real User Monitoring (RUM) system for Core Web Vitals has been successfully implemented in the Atlas repository.
+A production-grade Real User Monitoring (RUM) system for Core Web Vitals has been successfully
+implemented in the Atlas repository.
 
 ## Files Added/Modified
 
@@ -22,18 +23,22 @@ A production-grade Real User Monitoring (RUM) system for Core Web Vitals has bee
 
 ### React Integration
 
-- **[apps/web/src/components/WebVitalsReporter.tsx](apps/web/src/components/WebVitalsReporter.tsx)** - Client component
-- **[apps/web/src/providers/index.tsx](apps/web/src/providers/index.tsx)** - Updated to include WebVitalsReporter
+- **[apps/web/src/components/WebVitalsReporter.tsx](apps/web/src/components/WebVitalsReporter.tsx)** -
+  Client component
+- **[apps/web/src/providers/index.tsx](apps/web/src/providers/index.tsx)** - Updated to include
+  WebVitalsReporter
 
 ### API Endpoint
 
-- **[apps/web/src/app/api/telemetry/web-vitals/route.ts](apps/web/src/app/api/telemetry/web-vitals/route.ts)** - Next.js API route
+- **[apps/web/src/app/api/telemetry/web-vitals/route.ts](apps/web/src/app/api/telemetry/web-vitals/route.ts)** -
+  Next.js API route
   - POST endpoint with validation & rate limiting
   - GET endpoint for health checks
 
 ### Environment Configuration
 
-- **[apps/web/src/schemas/env/public-runtime-config.ts](apps/web/src/schemas/env/public-runtime-config.ts)** - Extended with Web Vitals vars
+- **[apps/web/src/schemas/env/public-runtime-config.ts](apps/web/src/schemas/env/public-runtime-config.ts)** -
+  Extended with Web Vitals vars
 - **[apps/web/src/env/public-env.ts](apps/web/src/env/public-env.ts)** - Updated runtime env
 - **[.env.production.example](.env.production.example)** - Production config template
 - **[.env.staging.example](.env.staging.example)** - Staging config template
@@ -46,7 +51,8 @@ A production-grade Real User Monitoring (RUM) system for Core Web Vitals has bee
 
 ### Documentation
 
-- **[docs/web-vitals-reporting.md](docs/web-vitals-reporting.md)** - Comprehensive guide (5000+ words)
+- **[docs/web-vitals-reporting.md](docs/web-vitals-reporting.md)** - Comprehensive guide (5000+
+  words)
 - **[apps/web/src/lib/telemetry/README.md](apps/web/src/lib/telemetry/README.md)** - Module README
 
 ## How to Enable Locally
@@ -280,11 +286,13 @@ Pipe to log aggregators: Loki, CloudWatch, Datadog, etc.
 
 ### Future: Database Persistence
 
-See [docs/web-vitals-reporting.md](docs/web-vitals-reporting.md#future-database-persistence) for Prisma schema and implementation guide.
+See [docs/web-vitals-reporting.md](docs/web-vitals-reporting.md#future-database-persistence) for
+Prisma schema and implementation guide.
 
 ## Testing
 
-The web app doesn't have Jest configured, so testing is done manually. See [apps/web/src/lib/telemetry/TESTING.md](apps/web/src/lib/telemetry/TESTING.md) for:
+The web app doesn't have Jest configured, so testing is done manually. See
+[apps/web/src/lib/telemetry/TESTING.md](apps/web/src/lib/telemetry/TESTING.md) for:
 
 ### Manual Test Scenarios
 
@@ -333,7 +341,8 @@ curl -X POST http://localhost:3000/api/telemetry/web-vitals \
 
 ## Documentation
 
-- **[docs/web-vitals-reporting.md](docs/web-vitals-reporting.md)** - Complete guide with troubleshooting, examples, and best practices
+- **[docs/web-vitals-reporting.md](docs/web-vitals-reporting.md)** - Complete guide with
+  troubleshooting, examples, and best practices
 - **[apps/web/src/lib/telemetry/README.md](apps/web/src/lib/telemetry/README.md)** - Module overview
 
 ## Next Steps
@@ -367,7 +376,8 @@ curl -X POST http://localhost:3000/api/telemetry/web-vitals \
 
 ## Uninstalling
 
-See [docs/web-vitals-reporting.md](docs/web-vitals-reporting.md#uninstalling) for complete removal instructions.
+See [docs/web-vitals-reporting.md](docs/web-vitals-reporting.md#uninstalling) for complete removal
+instructions.
 
 ---
 

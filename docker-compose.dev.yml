@@ -7,7 +7,7 @@ services:
     working_dir: /app
     command: pnpm dev
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - .:/app:cached
       - node_modules:/app/node_modules

@@ -2,21 +2,27 @@
 
 ## Overview
 
-Atlas enforces **pnpm** as the only supported package manager. This is a hard requirement—npm, yarn, and bun are not supported and will be rejected at install time and in CI.
+Atlas enforces **pnpm** as the only supported package manager. This is a hard requirement—npm, yarn,
+and bun are not supported and will be rejected at install time and in CI.
 
 ## Why pnpm Only?
 
 This policy exists to ensure:
 
-1. **Deterministic Builds**: A single package manager eliminates lockfile conflicts and ensures identical dependency resolution across all environments (local, CI, production).
+1. **Deterministic Builds**: A single package manager eliminates lockfile conflicts and ensures
+   identical dependency resolution across all environments (local, CI, production).
 
-2. **Efficient Disk Usage**: pnpm's content-addressable storage significantly reduces disk usage in monorepos, making local development faster and CI caching more effective.
+2. **Efficient Disk Usage**: pnpm's content-addressable storage significantly reduces disk usage in
+   monorepos, making local development faster and CI caching more effective.
 
-3. **Reproducibility**: Enforcing one tool prevents subtle bugs caused by different package managers resolving dependencies differently.
+3. **Reproducibility**: Enforcing one tool prevents subtle bugs caused by different package managers
+   resolving dependencies differently.
 
-4. **Team Consistency**: All engineers, contractors, and CI systems use the exact same toolchain, eliminating "works on my machine" issues related to package manager differences.
+4. **Team Consistency**: All engineers, contractors, and CI systems use the exact same toolchain,
+   eliminating "works on my machine" issues related to package manager differences.
 
-This is not about personal preference—it's about operational discipline for a long-lived, enterprise-grade platform.
+This is not about personal preference—it's about operational discipline for a long-lived,
+enterprise-grade platform.
 
 ## How to Bootstrap the Repository
 
@@ -38,7 +44,8 @@ This is not about personal preference—it's about operational discipline for a 
    pnpm install
    ```
 
-Corepack will automatically download and use the exact pnpm version specified in `package.json` (`packageManager` field). You don't need to install pnpm globally.
+Corepack will automatically download and use the exact pnpm version specified in `package.json`
+(`packageManager` field). You don't need to install pnpm globally.
 
 ### Daily Workflow
 
@@ -62,7 +69,8 @@ Atlas uses **defense in depth** to ensure compliance:
 
 ### 1. Local Guard (Fail Fast)
 
-A `preinstall` script ([scripts/ensure-pnpm.js](../scripts/ensure-pnpm.js)) runs before any package manager attempts to install dependencies:
+A `preinstall` script ([scripts/ensure-pnpm.js](../scripts/ensure-pnpm.js)) runs before any package
+manager attempts to install dependencies:
 
 - Detects which package manager was invoked via `npm_config_user_agent`
 - Exits with a clear error message if not pnpm
@@ -204,7 +212,8 @@ git push
 
 ### "Can I use npm/yarn for just one package?"
 
-**No.** This is a monorepo-wide policy. All packages must use pnpm. Mixing package managers creates lockfile conflicts and defeats the purpose of this policy.
+**No.** This is a monorepo-wide policy. All packages must use pnpm. Mixing package managers creates
+lockfile conflicts and defeats the purpose of this policy.
 
 ## What If I Really Need Another Package Manager?
 
@@ -216,7 +225,8 @@ If you believe you have a legitimate technical reason to deviate:
 2. Propose an alternative solution that maintains reproducibility
 3. Escalate to the platform engineering team
 
-In practice, pnpm supports all standard npm/yarn workflows. Most perceived limitations are unfamiliarity, not actual technical blockers.
+In practice, pnpm supports all standard npm/yarn workflows. Most perceived limitations are
+unfamiliarity, not actual technical blockers.
 
 ## References
 

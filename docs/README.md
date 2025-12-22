@@ -1,6 +1,7 @@
 # Atlas Documentation
 
-Welcome to the Atlas platform documentation. This directory contains platform principles and implementation guides.
+Welcome to the Atlas platform documentation. This directory contains platform principles and
+implementation guides.
 
 ## Table of Contents
 

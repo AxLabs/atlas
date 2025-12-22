@@ -67,7 +67,8 @@ initWebVitalsReporting({
 
 ## Documentation
 
-See [docs/web-vitals-reporting.md](../../../../docs/web-vitals-reporting.md) for complete documentation.
+See [docs/web-vitals-reporting.md](../../../../docs/web-vitals-reporting.md) for complete
+documentation.
 
 ## Tests
 

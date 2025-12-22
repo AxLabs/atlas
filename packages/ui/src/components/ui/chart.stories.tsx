@@ -1,12 +1,12 @@
 import { Bar, BarChart, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import {
+  type ChartConfig,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from "./chart";
 
 import type { Meta, StoryObj } from "@storybook/react";

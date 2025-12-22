@@ -1,6 +1,7 @@
 # Testing Web Vitals Telemetry
 
-Since the web app doesn't have Jest configured, the Web Vitals module is tested manually and through integration.
+Since the web app doesn't have Jest configured, the Web Vitals module is tested manually and through
+integration.
 
 ## Manual Testing
 

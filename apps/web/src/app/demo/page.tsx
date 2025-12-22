@@ -1,6 +1,31 @@
 "use client";
 
 import {
+  Archive,
+  ArrowLeft,
+  ArrowUp,
+  AtSign,
+  BadgeCheck,
+  CalendarPlus,
+  ChevronRight,
+  Clock,
+  Github,
+  Info,
+  ListFilter,
+  MailCheck,
+  Minus,
+  MoreHorizontal,
+  Paperclip,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -63,30 +88,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@atlas/ui";
-import {
-  Archive,
-  ArrowLeft,
-  ArrowUp,
-  AtSign,
-  BadgeCheck,
-  CalendarPlus,
-  ChevronRight,
-  Clock,
-  Github,
-  Info,
-  ListFilter,
-  MailCheck,
-  Minus,
-  MoreHorizontal,
-  Paperclip,
-  Plus,
-  Search,
-  Tag,
-  Trash2,
-  X,
-} from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
 
 // ============================================================================
 // Payment Method Form (Column 1)

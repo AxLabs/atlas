@@ -1,6 +1,7 @@
 # Performance Budgets Module
 
-An optional, opt-in performance monitoring system for the Atlas platform using Lighthouse CI and bundle analysis.
+An optional, opt-in performance monitoring system for the Atlas platform using Lighthouse CI and
+bundle analysis.
 
 ## Overview
 
@@ -9,7 +10,8 @@ This module provides automated performance tracking through:
 - **Lighthouse CI**: Performance budgets with assertions for Core Web Vitals
 - **Bundle Analysis**: Automated bundle size tracking and visualization
 
-By default, this module is **disabled**. You must explicitly enable it to activate performance checks in CI.
+By default, this module is **disabled**. You must explicitly enable it to activate performance
+checks in CI.
 
 ## Why Opt-in?
 
@@ -332,7 +334,9 @@ For long-term trend analysis, set up an LHCI server:
    ```
 3. Add `LHCI_TOKEN` to GitHub secrets
 
-See [LHCI documentation](https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/getting-started.md) for details.
+See
+[LHCI documentation](https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/getting-started.md)
+for details.
 
 ## Resources
 
@@ -350,4 +354,5 @@ If you encounter issues:
 3. Run locally first to isolate CI-specific problems
 4. Adjust budgets to match your project's maturity
 
-Remember: Performance budgets are a tool, not a goal. Use them to maintain standards, not to block progress unnecessarily.
+Remember: Performance budgets are a tool, not a goal. Use them to maintain standards, not to block
+progress unnecessarily.

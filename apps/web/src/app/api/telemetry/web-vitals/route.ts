@@ -9,7 +9,7 @@
 
 import { NextResponse } from "next/server";
 
-import { WebVitalsBatchSchema, type WebVitalsBatchDTO } from "@/lib/telemetry/validation";
+import { type WebVitalsBatchDTO, WebVitalsBatchSchema } from "@/lib/telemetry/validation";
 
 import type { NextRequest } from "next/server";
 

@@ -1,7 +1,8 @@
 import "@atlas/ui/globals.css";
 
-import { Toaster } from "@atlas/ui";
 import { Geist, Geist_Mono } from "next/font/google";
+
+import { Toaster } from "@atlas/ui";
 
 import { MainProvider } from "@/providers";
 
