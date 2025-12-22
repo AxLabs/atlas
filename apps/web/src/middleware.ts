@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { NextResponse } from "next/server";
 
 import type { NextRequest } from "next/server";
@@ -24,7 +22,7 @@ export function middleware(request: NextRequest) {
 
   // Get or generate request ID
   const existingRequestId = request.headers.get("x-request-id");
-  const requestId = existingRequestId ?? randomUUID();
+  const requestId = existingRequestId ?? crypto.randomUUID();
 
   // Create new headers with x-request-id
   const requestHeaders = new Headers(request.headers);
