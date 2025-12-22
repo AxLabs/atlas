@@ -29,6 +29,48 @@ export default [
     },
   },
   {
+    // Enforce "no fetch spaghetti" - all API calls go through central client
+    files: [
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/providers/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "src/lib/api/**",
+      "src/lib/http/**",
+      "src/app/api/**/route.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.name='fetch']",
+          message:
+            "Direct fetch() calls are not allowed. Use the central API client from @/lib/api instead. This ensures consistent error handling, correlation ID propagation, and retry logic.",
+        },
+      ],
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "fetch",
+          message:
+            "Direct fetch() calls are not allowed. Use the central API client from @/lib/api instead. This ensures consistent error handling, correlation ID propagation, and retry logic.",
+        },
+      ],
+    },
+  },
+  {
+    // Auto-generated OpenAPI schema files
+    files: ["src/lib/api/contracts/schema.ts"],
+    rules: {
+      // Generated code doesn't follow our naming conventions
+      "@typescript-eslint/naming-convention": "off",
+      // Generated code uses index signatures instead of Record
+      "@typescript-eslint/consistent-indexed-object-style": "off",
+    },
+  },
+  {
     files: ["src/lib/telemetry/**/*.ts", "src/lib/telemetry/**/*.tsx", "src/app/api/telemetry/**/*.ts"],
     ignores: ["**/__tests__/**"],
     rules: {

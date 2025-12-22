@@ -23,6 +23,7 @@
     "test:e2e": "turbo run test:e2e",
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky",
+    "api:gen": "pnpm --filter @atlas/web api:gen",
     "perf:lhci": "pnpm --filter @atlas/web perf:lhci",
     "perf:analyze": "pnpm --filter @atlas/web perf:analyze",
     "perf:enable": "node tools/perf/enable.js",
