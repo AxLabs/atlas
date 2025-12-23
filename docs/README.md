@@ -43,11 +43,19 @@ implementation guides.
   - Best practices and troubleshooting
 
 - **[SHADCN_SETUP.md](SHADCN_SETUP.md)** - shadcn/ui component library setup
+
   - Next.js 16 compatibility
   - 24 pre-installed components
   - Theming and customization
   - Usage examples and demo page
   - Adding new components
+
+- **[THEMING.md](THEMING.md)** - Theming system implementation
+  - CSS-first Tailwind v4 configuration
+  - Light/dark/system theme modes
+  - No-flash theme switching
+  - useTheme hook API
+  - Design token reference
 
 ## Quick Start
 
@@ -93,6 +101,7 @@ Practical how-to documentation:
 | Environment Variables | [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)               |
 | Error Monitoring      | [SENTRY.md](SENTRY.md)                                             |
 | UI Components         | [SHADCN_SETUP.md](SHADCN_SETUP.md)                                 |
+| Theming System        | [THEMING.md](THEMING.md)                                           |
 | Testing Strategy      | [platform-principles.md](platform-principles.md#-testing-strategy) |
 | Component Design      | [platform-principles.md](platform-principles.md#component-design)  |
 

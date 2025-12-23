@@ -1,10 +1,13 @@
 import Link from "next/link";
 
-import { Button } from "@atlas/ui";
+import { Button, ThemeToggle } from "@atlas/ui";
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
+      <div className="fixed top-4 right-4">
+        <ThemeToggle />
+      </div>
       <main className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
           Frontend <span className="text-primary">Platform</span>

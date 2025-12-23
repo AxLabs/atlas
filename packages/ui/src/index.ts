@@ -1,6 +1,10 @@
 // Utilities
 export { cn } from "./lib/utils";
 
+// Hooks
+export type { ResolvedTheme, ThemePreference } from "./hooks/use-theme";
+export { useTheme } from "./hooks/use-theme";
+
 // Components
 export {
   Accordion,
@@ -293,6 +297,7 @@ export {
 } from "./components/ui/table";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 export { Textarea } from "./components/ui/textarea";
+export { ThemeToggle } from "./components/ui/theme-toggle";
 export { Toggle, toggleVariants } from "./components/ui/toggle";
 export { ToggleGroup, ToggleGroupItem } from "./components/ui/toggle-group";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/tooltip";
