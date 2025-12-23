@@ -59,6 +59,13 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
+    SENTRY_RELEASE: process.env.SENTRY_RELEASE,
+    SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+    SENTRY_ORG: process.env.SENTRY_ORG,
+    SENTRY_PROJECT: process.env.SENTRY_PROJECT,
+    SENTRY_ENABLE_IN_DEV: process.env.SENTRY_ENABLE_IN_DEV,
   },
 
   /**

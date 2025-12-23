@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import type { NextRequest } from "next/server";
@@ -7,6 +8,7 @@ import type { NextRequest } from "next/server";
  * - Preserves incoming x-request-id if provided
  * - Generates a new UUID if not provided
  * - Adds x-request-id to response headers
+ * - Sets Sentry context with correlationId
  * - Excludes static assets
  */
 export function middleware(request: NextRequest) {
@@ -23,6 +25,11 @@ export function middleware(request: NextRequest) {
   // Get or generate request ID
   const existingRequestId = request.headers.get("x-request-id");
   const requestId = existingRequestId ?? crypto.randomUUID();
+
+  // Set Sentry context for this request
+  Sentry.setTag("correlationId", requestId);
+  Sentry.setTag("route", pathname);
+  Sentry.setTag("runtime", "edge");
 
   // Create new headers with x-request-id
   const requestHeaders = new Headers(request.headers);

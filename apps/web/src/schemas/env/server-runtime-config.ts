@@ -31,4 +31,62 @@ export const ServerEnvSchema = {
    * @example 'postgresql://user:password@localhost:5432/dbname'
    */
   DATABASE_URL: z.string().url(),
+
+  /**
+   * Sentry DSN for server-side error tracking.
+   * Optional - when not provided, Sentry is disabled gracefully.
+   *
+   * @security Server-only - do not expose to client
+   * @example 'https://abc123@o123.ingest.sentry.io/456'
+   */
+  SENTRY_DSN: z.string().url().optional(),
+
+  /**
+   * Sentry environment name.
+   * Falls back to NODE_ENV if not specified.
+   *
+   * @example 'production' | 'staging' | 'development'
+   */
+  SENTRY_ENVIRONMENT: z.string().optional(),
+
+  /**
+   * Sentry release identifier.
+   * Used to track which version of code produced an error.
+   *
+   * @example 'my-app@1.0.0' | 'abc123def456' (git SHA)
+   */
+  SENTRY_RELEASE: z.string().optional(),
+
+  /**
+   * Sentry auth token for uploading sourcemaps.
+   * Only needed for CI/CD builds that upload sourcemaps.
+   *
+   * @security Keep this secret secure - CI/CD only
+   */
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+
+  /**
+   * Sentry organization slug.
+   * Only needed for CI/CD builds that upload sourcemaps.
+   *
+   * @example 'my-company'
+   */
+  SENTRY_ORG: z.string().optional(),
+
+  /**
+   * Sentry project slug.
+   * Only needed for CI/CD builds that upload sourcemaps.
+   *
+   * @example 'my-project'
+   */
+  SENTRY_PROJECT: z.string().optional(),
+
+  /**
+   * Enable Sentry in development mode.
+   * By default, Sentry is disabled in development even if DSN is set.
+   *
+   * @default undefined (disabled)
+   * @example 'true'
+   */
+  SENTRY_ENABLE_IN_DEV: z.string().optional(),
 };

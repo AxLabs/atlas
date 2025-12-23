@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { Toaster } from "@atlas/ui";
 
+import { GlobalErrorHandler } from "@/components/SentryErrorBoundary";
 import { MainProvider } from "@/providers";
 
 import type { Metadata } from "next";
@@ -32,6 +33,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <MainProvider>
+          <GlobalErrorHandler />
           {children}
           <Toaster />
         </MainProvider>

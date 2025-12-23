@@ -73,4 +73,38 @@ export const ClientEnvSchema = {
     .enum(["true", "false"])
     .transform((val) => val === "true")
     .optional(),
+
+  /**
+   * Sentry DSN for client-side error tracking.
+   * Optional - when not provided, Sentry is disabled gracefully.
+   *
+   * @security Public - will be visible in browser bundles
+   * @example 'https://abc123@o123.ingest.sentry.io/456'
+   */
+  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+
+  /**
+   * Sentry environment name.
+   * Falls back to NODE_ENV if not specified.
+   *
+   * @example 'production' | 'staging' | 'development'
+   */
+  NEXT_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
+
+  /**
+   * Sentry release identifier.
+   * Used to track which version of code produced an error.
+   *
+   * @example 'my-app@1.0.0' | 'abc123def456' (git SHA)
+   */
+  NEXT_PUBLIC_SENTRY_RELEASE: z.string().optional(),
+
+  /**
+   * Enable Sentry in development mode.
+   * By default, Sentry is disabled in development even if DSN is set.
+   *
+   * @default undefined (disabled)
+   * @example 'true'
+   */
+  NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV: z.string().optional(),
 };

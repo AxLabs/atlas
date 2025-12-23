@@ -21,6 +21,7 @@
     "e2e/**/*.ts",
     "scripts/**/*.ts",
     "*.config.ts",
+    "instrumentation.ts",
     "playwright.config.ts"
   ],
   "exclude": ["node_modules"]

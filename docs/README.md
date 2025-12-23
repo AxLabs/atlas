@@ -33,6 +33,15 @@ implementation guides.
   - Security best practices
   - Troubleshooting
 
+- **[SENTRY.md](SENTRY.md)** - Error monitoring and performance tracing
+
+  - Quick start and configuration
+  - Client/server/edge error capture
+  - Performance monitoring conventions
+  - Correlation ID integration
+  - Sourcemap upload setup
+  - Best practices and troubleshooting
+
 - **[SHADCN_SETUP.md](SHADCN_SETUP.md)** - shadcn/ui component library setup
   - Next.js 16 compatibility
   - 24 pre-installed components
@@ -82,6 +91,7 @@ Practical how-to documentation:
 | Platform Philosophy   | [ATLAS_CONTEXT.md](ATLAS_CONTEXT.md)                               |
 | Coding Standards      | [platform-principles.md](platform-principles.md)                   |
 | Environment Variables | [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)               |
+| Error Monitoring      | [SENTRY.md](SENTRY.md)                                             |
 | UI Components         | [SHADCN_SETUP.md](SHADCN_SETUP.md)                                 |
 | Testing Strategy      | [platform-principles.md](platform-principles.md#-testing-strategy) |
 | Component Design      | [platform-principles.md](platform-principles.md#component-design)  |
