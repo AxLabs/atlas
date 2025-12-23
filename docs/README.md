@@ -50,6 +50,15 @@ implementation guides.
   - Usage examples and demo page
   - Adding new components
 
+- **[APP_STATES.md](APP_STATES.md)** - App States UI Kit (NEW)
+
+  - Loader patterns (Loader, InlineLoader, PageLoader)
+  - Skeleton components (Skeleton, SkeletonText, SkeletonList)
+  - EmptyState for "no data" scenarios
+  - ErrorFallback for error boundaries
+  - React Query and App Router integration
+  - Accessibility and theming
+
 - **[THEMING.md](THEMING.md)** - Theming system implementation
   - CSS-first Tailwind v4 configuration
   - Light/dark/system theme modes
@@ -101,6 +110,7 @@ Practical how-to documentation:
 | Environment Variables | [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)               |
 | Error Monitoring      | [SENTRY.md](SENTRY.md)                                             |
 | UI Components         | [SHADCN_SETUP.md](SHADCN_SETUP.md)                                 |
+| App States Kit        | [APP_STATES.md](APP_STATES.md)                                     |
 | Theming System        | [THEMING.md](THEMING.md)                                           |
 | Testing Strategy      | [platform-principles.md](platform-principles.md#-testing-strategy) |
 | Component Design      | [platform-principles.md](platform-principles.md#component-design)  |

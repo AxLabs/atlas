@@ -150,6 +150,10 @@ export {
   EmptyMedia,
   EmptyTitle,
 } from "./components/ui/empty";
+export type { EmptyStateProps } from "./components/ui/empty-state";
+export { EmptyState, emptyStateVariants } from "./components/ui/empty-state";
+export type { ErrorFallbackProps } from "./components/ui/error-fallback";
+export { ErrorFallback, errorFallbackVariants } from "./components/ui/error-fallback";
 export {
   Field,
   FieldContent,
@@ -202,6 +206,8 @@ export {
 } from "./components/ui/item";
 export { Kbd, KbdGroup } from "./components/ui/kbd";
 export { Label } from "./components/ui/label";
+export type { LoaderProps, PageLoaderProps } from "./components/ui/loader";
+export { InlineLoader, Loader, loaderVariants, PageLoader } from "./components/ui/loader";
 export {
   Menubar,
   MenubarCheckboxItem,
@@ -280,7 +286,8 @@ export {
   SheetTitle,
   SheetTrigger,
 } from "./components/ui/sheet";
-export { Skeleton } from "./components/ui/skeleton";
+export type { SkeletonListProps, SkeletonProps, SkeletonTextProps } from "./components/ui/skeleton";
+export { Skeleton, SkeletonList, SkeletonText, skeletonVariants } from "./components/ui/skeleton";
 export { Slider } from "./components/ui/slider";
 export { Toaster } from "./components/ui/sonner";
 export { Spinner } from "./components/ui/spinner";

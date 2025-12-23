@@ -194,6 +194,19 @@
   button:active {
     @apply opacity-60 md:opacity-100;
   }
+  
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="skeleton"],
+    [data-slot="skeleton-text"],
+    [data-slot="skeleton-list"] {
+      animation: none;
+    }
+    .animate-spin,
+    .animate-pulse {
+      animation: none;
+    }
+  }
 }
 
 /* Utility Classes */
