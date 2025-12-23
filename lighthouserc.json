@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "numberOfRuns": 3,
-      "startServerCommand": "cd apps/web && pnpm start",
+      "startServerCommand": "pnpm start",
       "startServerReadyPattern": "Ready in",
       "startServerReadyTimeout": 30000,
       "url": ["http://localhost:3000/", "http://localhost:3000/login"],
