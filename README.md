@@ -228,6 +228,8 @@ All commits must pass:
   testing strategies
 - **[Environment Variables](docs/ENVIRONMENT_VARIABLES.md)** - Complete guide to setup, validation,
   and security
+- **[Accessibility](docs/ACCESSIBILITY.md)** - Baseline accessibility standards, keyboard patterns,
+  and ESLint rules
 - **[Atlas Context](docs/ATLAS_CONTEXT.md)** - Platform philosophy and goals
 
 ## Contributing
