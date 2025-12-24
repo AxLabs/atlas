@@ -6,6 +6,8 @@
  * common settings used across all API calls.
  */
 
+import { clientEnv, serverEnv } from "@/env";
+
 /**
  * Get the API base URL from environment.
  * In development, defaults to localhost if not configured.
@@ -15,13 +17,11 @@ export function getApiBaseUrl(): string {
   // Check for public env var (available client-side)
   if (typeof window !== "undefined") {
     // Client-side: use NEXT_PUBLIC_ prefix
-    return process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001/api";
+    return clientEnv.NEXT_PUBLIC_API_URL;
   }
 
   // Server-side: can use either public or private env var
-  return (
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://localhost:3001/api"
-  );
+  return serverEnv.API_BASE_URL ?? clientEnv.NEXT_PUBLIC_API_URL;
 }
 
 /**

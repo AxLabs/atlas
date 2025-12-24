@@ -29,6 +29,32 @@ export default [
     },
   },
   {
+    // Ban direct process.env usage - use env module instead
+    // This prevents env var sprawl and ensures validation
+    files: [
+      "src/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "src/env.ts",
+      "src/env/**",
+      "src/schemas/env/**",
+      "src/test/**",
+      "**/__tests__/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message:
+            "Direct access to process.env is not allowed. Import environment variables from '@/env' instead. This ensures type safety and validation. For server-only vars use 'serverEnv', for client vars use 'clientEnv'.",
+        },
+      ],
+    },
+  },
+  {
     // Enforce "no fetch spaghetti" - all API calls go through central client
     files: [
       "src/app/**/*.{ts,tsx}",

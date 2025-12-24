@@ -10,10 +10,12 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { clientEnv } from "@/env";
+
 // Gracefully handle missing env vars
-const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
-const SENTRY_ENVIRONMENT = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV;
-const SENTRY_RELEASE = process.env.NEXT_PUBLIC_SENTRY_RELEASE;
+const SENTRY_DSN = clientEnv.NEXT_PUBLIC_SENTRY_DSN;
+const SENTRY_ENVIRONMENT = clientEnv.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV;
+const SENTRY_RELEASE = clientEnv.NEXT_PUBLIC_SENTRY_RELEASE;
 
 // Determine sample rates based on environment
 const getSampleRates = () => {
@@ -96,7 +98,7 @@ if (SENTRY_DSN) {
       };
 
       // Don't send events in development unless explicitly enabled
-      if (SENTRY_ENVIRONMENT === "development" && !process.env.NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV) {
+      if (SENTRY_ENVIRONMENT === "development" && !clientEnv.NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV) {
         return null;
       }
 

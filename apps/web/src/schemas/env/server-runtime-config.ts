@@ -24,13 +24,30 @@ export const ServerEnvSchema = {
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
   /**
+   * Logging level for server-side logs.
+   * Controls verbosity of pino logger output.
+   *
+   * @default 'info'
+   * @example 'debug' | 'info' | 'warn' | 'error'
+   */
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+
+  /**
+   * Server-side API base URL.
+   * Optional - used when server needs to make API calls to itself.
+   *
+   * @example 'http://localhost:3001/api' | 'https://api.example.com'
+   */
+  API_BASE_URL: z.string().url().optional(),
+
+  /**
    * Database connection URL.
    * Used to connect to your database (PostgreSQL, MySQL, etc.)
    *
    * @security Keep this secret secure - never expose to client
    * @example 'postgresql://user:password@localhost:5432/dbname'
    */
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().url().optional(),
 
   /**
    * Sentry DSN for server-side error tracking.

@@ -20,7 +20,7 @@ export const ClientEnvSchema = {
    *
    * @example 'https://api.example.com', 'http://localhost:3001/api'
    */
-  NEXT_PUBLIC_API_URL: z.string().url(),
+  NEXT_PUBLIC_API_URL: z.string().url().default("http://localhost:3001/api"),
 
   /**
    * Environment identifier for telemetry and feature flags.

@@ -12,13 +12,14 @@
 
 import { NextResponse } from "next/server";
 
+import { serverEnv } from "@/env";
 import { captureException } from "@/lib/telemetry/sentry.server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   // Only allow in non-production environments
-  if (process.env.NODE_ENV === "production" && process.env.SENTRY_ENVIRONMENT === "production") {
+  if (serverEnv.NODE_ENV === "production" && serverEnv.SENTRY_ENVIRONMENT === "production") {
     return NextResponse.json(
       {
         error: "Sentry test endpoints are disabled in production",

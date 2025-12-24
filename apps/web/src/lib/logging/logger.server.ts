@@ -2,6 +2,8 @@ import "server-only";
 
 import pino from "pino";
 
+import { serverEnv } from "@/env";
+
 import { getRequestContext } from "./request-context.server";
 
 /**
@@ -16,7 +18,7 @@ export interface BaseLogFields {
  * Create pino logger with redaction and production-safe defaults
  */
 const pinoLogger = pino({
-  level: process.env.LOG_LEVEL || "info",
+  level: serverEnv.LOG_LEVEL,
   // Structured JSON only - no pretty printing to avoid dependencies issues
   formatters: {
     level: (label) => {
@@ -57,7 +59,7 @@ const pinoLogger = pino({
         message: err.message,
       };
       // Only include stack traces in non-production
-      if (process.env.NODE_ENV !== "production") {
+      if (serverEnv.NODE_ENV !== "production") {
         serialized.stack = err.stack;
       }
       return serialized;
@@ -67,7 +69,7 @@ const pinoLogger = pino({
         name: err.name,
         message: err.message,
       };
-      if (process.env.NODE_ENV !== "production") {
+      if (serverEnv.NODE_ENV !== "production") {
         serialized.stack = err.stack;
       }
       return serialized;

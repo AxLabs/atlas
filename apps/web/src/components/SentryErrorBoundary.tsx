@@ -31,8 +31,13 @@ interface ErrorFallbackProps {
 
 /**
  * Default error fallback UI
+ *
+ * Note: This component cannot import serverEnv directly since it's a client component.
+ * However, NODE_ENV is safe to access directly as it's set at build time.
  */
 function DefaultErrorFallback({ error, resetError, showDetails = false }: ErrorFallbackProps) {
+  const isDevelopment = process.env.NODE_ENV === "development";
+
   return (
     <div className="flex min-h-100 flex-col items-center justify-center p-8">
       <div className="max-w-md space-y-4 text-center">
@@ -40,7 +45,7 @@ function DefaultErrorFallback({ error, resetError, showDetails = false }: ErrorF
         <p className="text-muted-foreground">
           We&apos;ve been notified and will look into this issue. Please try refreshing the page.
         </p>
-        {showDetails && process.env.NODE_ENV === "development" && (
+        {showDetails && isDevelopment && (
           <details className="bg-muted mt-4 rounded-md p-4 text-left text-sm">
             <summary className="cursor-pointer font-semibold">Error details</summary>
             <pre className="mt-2 overflow-auto text-xs">{error.message}</pre>

@@ -1,7 +1,7 @@
 # Environment Variables - Quick Reference
 
 > **For complete documentation, see
-> [ENVIRONMENT_VARIABLES.md](../../docs/ENVIRONMENT_VARIABLES.md)**
+> [ENVIRONMENT_VARIABLES.md](../../../docs/ENVIRONMENT_VARIABLES.md)**
 
 ## Quick Start
 
@@ -10,6 +10,29 @@
 cp .env.example .env.local
 # Fill in values, then validate:
 pnpm validate:env
+```
+
+## Architecture
+
+Atlas uses `@t3-oss/env-nextjs` to provide:
+
+- ✅ **Early validation** - Errors at build/start time, not runtime
+- ✅ **Type safety** - Full TypeScript support with autocomplete
+- ✅ **Clear separation** - Server-only vs. client-exposed variables
+- ✅ **Single source of truth** - Import from `@/env`, never `process.env`
+
+### Import Patterns
+
+```typescript
+// ✅ Recommended: Explicit imports
+import { serverEnv } from "@/env";
+import { clientEnv } from "@/env";
+
+// ⚠️ Avoid: Unified import (use only for isomorphic code)
+import { env } from "@/env";
+
+// ❌ Never do this (will trigger lint error)
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 ```
 
 ## Adding a New Variable
@@ -105,14 +128,53 @@ pnpm validate:env
 ## Usage
 
 ```typescript
-// Client component
-import { env } from "@/env/public-env";
-const apiUrl = env.NEXT_PUBLIC_API_URL;
+// ✅ Server component or API route
+import { serverEnv } from "@/env";
 
-// Server component / API route
-import { env } from "@/env/server-env";
-const dbUrl = env.DATABASE_URL;
+export async function GET() {
+  const dbUrl = serverEnv.DATABASE_URL;
+  const logLevel = serverEnv.LOG_LEVEL;
+  // ...
+}
+
+// ✅ Client component
+import { clientEnv } from "@/env";
+
+function MyComponent() {
+  const apiUrl = clientEnv.NEXT_PUBLIC_API_URL;
+  // ...
+}
+
+// ✅ Isomorphic code (works on both client and server)
+import { env } from "@/env";
+
+function getApiUrl() {
+  // Safe - NEXT_PUBLIC_ vars work everywhere
+  return env.NEXT_PUBLIC_API_URL;
+}
 ```
+
+## ESLint Protection
+
+Atlas enforces env module usage via ESLint. Direct `process.env` access in application code will
+fail lint:
+
+```typescript
+// ❌ This will fail lint
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+// Error: Direct access to process.env is not allowed
+
+// ✅ This is correct
+import { clientEnv } from "@/env";
+const apiUrl = clientEnv.NEXT_PUBLIC_API_URL;
+```
+
+**Exceptions:** Only these files can use `process.env` directly:
+
+- `src/env.ts` and `src/env/**` (env module itself)
+- `src/schemas/env/**` (validation schemas)
+- Test files (`**/__tests__/**`, `*.test.ts`, `*.spec.ts`)
+- Config files (`next.config.js`, `instrumentation.ts`, etc.)
 
 ## Common Validation Patterns
 
@@ -138,13 +200,31 @@ z.string().default("default_value");
 
 ## Troubleshooting
 
-| Issue             | Solution                        |
-| ----------------- | ------------------------------- |
-| Validation fails  | Check all required vars are set |
-| TypeScript errors | Restart TS Server (Cmd+Shift+P) |
-| Vars not updating | Restart dev server              |
+| Issue                             | Solution                                  |
+| --------------------------------- | ----------------------------------------- |
+| Validation fails                  | Check all required vars are set           |
+| TypeScript errors                 | Restart TS Server (Cmd+Shift+P)           |
+| Vars not updating                 | Restart dev server                        |
+| Lint error on `process.env`       | Import from `@/env` instead               |
+| "Cannot find module '@/env'"      | Check tsconfig.json paths configuration   |
+| Build fails with env errors       | Ensure all required vars are in .env file |
+| Optional integrations not working | Set vars or check graceful fallback logic |
+
+## Runtime vs. Build-time Variables
+
+- **Server vars** (`serverEnv.*`): Available at runtime on server
+- **Client vars** (`clientEnv.NEXT_PUBLIC_*`): Bundled at build time
+- **NODE_ENV**: Set by Next.js, safe to access directly in config files only
+
+## Security Best Practices
+
+1. **Never commit** `.env.local` or files with real secrets
+2. **Never expose** server-only vars to client components
+3. **Always use** `serverEnv` for sensitive data (API keys, DB URLs)
+4. **Validate** optional vars with graceful fallbacks
+5. **Document** all env vars in `.env.example`
 
 ---
 
-**Need more?** See [Complete Guide](../../docs/ENVIRONMENT_VARIABLES.md) for architecture, CI/CD,
+**Need more?** See [Complete Guide](../../../docs/ENVIRONMENT_VARIABLES.md) for architecture, CI/CD,
 security, and detailed troubleshooting.

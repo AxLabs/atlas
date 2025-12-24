@@ -5,6 +5,8 @@
  * This module provides type-safe configuration with environment-based defaults.
  */
 
+import { clientEnv } from "@/env";
+
 /**
  * Environment type for sampling and enablement logic
  */
@@ -54,18 +56,12 @@ function getDefaultSampleRate(env: Environment): number {
 function getCurrentEnvironment(): Environment {
   if (typeof window === "undefined") return "production";
 
-  const nodeEnv = process.env.NODE_ENV;
-  const publicEnv = process.env.NEXT_PUBLIC_APP_ENV;
+  const publicEnv = clientEnv.NEXT_PUBLIC_APP_ENV;
 
   // Check explicit environment variable first
   if (publicEnv === "staging") return "staging";
   if (publicEnv === "production") return "production";
   if (publicEnv === "development") return "development";
-  if (nodeEnv === "test") return "test";
-
-  // Fallback to NODE_ENV
-  if (nodeEnv === "production") return "production";
-  if (nodeEnv === "development") return "development";
 
   return "production"; // Safe default
 }
@@ -78,24 +74,22 @@ export function getWebVitalsConfig(): WebVitalsConfig {
   const defaultSampleRate = getDefaultSampleRate(environment);
 
   // Allow runtime override of enabled state
-  const enabledEnv = process.env.NEXT_PUBLIC_WEB_VITALS_ENABLED;
   const enabled =
-    enabledEnv !== undefined
-      ? enabledEnv === "true"
+    clientEnv.NEXT_PUBLIC_WEB_VITALS_ENABLED !== undefined
+      ? clientEnv.NEXT_PUBLIC_WEB_VITALS_ENABLED
       : environment !== "development" && environment !== "test";
 
   // Allow runtime override of sample rate
-  const sampleRateEnv = process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE;
-  const sampleRate = sampleRateEnv ? parseFloat(sampleRateEnv) : defaultSampleRate;
+  const sampleRate = clientEnv.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE ?? defaultSampleRate;
 
   // Allow runtime override of endpoint
-  const endpoint = process.env.NEXT_PUBLIC_WEB_VITALS_ENDPOINT || "/api/telemetry/web-vitals";
+  const endpoint = clientEnv.NEXT_PUBLIC_WEB_VITALS_ENDPOINT ?? "/api/telemetry/web-vitals";
 
   // Debug mode
-  const debug = process.env.NEXT_PUBLIC_WEB_VITALS_DEBUG === "true";
+  const debug = clientEnv.NEXT_PUBLIC_WEB_VITALS_DEBUG ?? false;
 
   // Build info (can be injected at build time)
-  const buildId = process.env.NEXT_PUBLIC_BUILD_ID || undefined;
+  const buildId = clientEnv.NEXT_PUBLIC_BUILD_ID;
 
   return {
     enabled,
