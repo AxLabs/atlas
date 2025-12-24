@@ -39,5 +39,11 @@ module.exports = {
     "!src/app/**/layout.tsx",
     "!src/app/**/page.tsx",
     "!src/test/**/*",
+    // Exclude env module wiring (thin wrappers around @t3-oss/env-nextjs)
+    "!src/env.ts",
+    "!src/env/public-env.ts",
+    "!src/env/server-env.ts",
+    // Exclude env schemas (pure Zod schemas, validated via integration tests)
+    "!src/schemas/env/**/*",
   ],
 };
