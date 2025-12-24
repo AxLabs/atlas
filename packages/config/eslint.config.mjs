@@ -97,10 +97,24 @@ export default [
       "react-hooks/exhaustive-deps": "warn",
       
       // ========================================
-      // Accessibility (jsx-a11y)
+      // Accessibility (jsx-a11y) - Atlas Baseline
       // ========================================
       
       ...jsxA11y.configs.recommended.rules,
+      
+      // Relax rules that conflict with Radix UI and modern component patterns
+      "jsx-a11y/no-autofocus": "warn", // Sometimes needed in modals/dialogs
+      "jsx-a11y/click-events-have-key-events": "error", // Enforce keyboard support
+      "jsx-a11y/no-static-element-interactions": "error", // Use proper semantic elements
+      
+      // Enforce critical accessibility patterns
+      "jsx-a11y/alt-text": "error", // Images must have alt text
+      "jsx-a11y/aria-props": "error", // Valid ARIA attributes only
+      "jsx-a11y/aria-proptypes": "error", // Valid ARIA values
+      "jsx-a11y/aria-unsupported-elements": "error", // No ARIA on unsupported elements
+      "jsx-a11y/role-has-required-aria-props": "error", // Complete ARIA roles
+      "jsx-a11y/role-supports-aria-props": "error", // Valid ARIA props for role
+      "jsx-a11y/label-has-associated-control": "error", // Forms must have labels
       
       // ========================================
       // Import Rules (Deterministic Sorting)
@@ -306,11 +320,12 @@ export default [
       "react-hooks/exhaustive-deps": "warn",
       
       // ========================================
-      // Accessibility (jsx-a11y)
+      // Accessibility (jsx-a11y) - Atlas Baseline
       // ========================================
       
       ...jsxA11y.configs.recommended.rules,
       
+      // Next.js Link component handling
       "jsx-a11y/anchor-is-valid": [
         "error",
         {
@@ -319,6 +334,20 @@ export default [
           aspects: ["invalidHref", "preferButton"],
         },
       ],
+      
+      // Relax rules that conflict with Radix UI and modern component patterns
+      "jsx-a11y/no-autofocus": "warn", // Sometimes needed in modals/dialogs
+      "jsx-a11y/click-events-have-key-events": "error", // Enforce keyboard support
+      "jsx-a11y/no-static-element-interactions": "error", // Use proper semantic elements
+      
+      // Enforce critical accessibility patterns
+      "jsx-a11y/alt-text": "error", // Images must have alt text
+      "jsx-a11y/aria-props": "error", // Valid ARIA attributes only
+      "jsx-a11y/aria-proptypes": "error", // Valid ARIA values
+      "jsx-a11y/aria-unsupported-elements": "error", // No ARIA on unsupported elements
+      "jsx-a11y/role-has-required-aria-props": "error", // Complete ARIA roles
+      "jsx-a11y/role-supports-aria-props": "error", // Valid ARIA props for role
+      "jsx-a11y/label-has-associated-control": "error", // Forms must have labels
       
       // ========================================
       // Import Rules (Deterministic Sorting)
