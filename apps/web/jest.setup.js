@@ -1,13 +1,18 @@
 // Add custom jest matchers from jest-dom
 require("@testing-library/jest-dom");
 
-// Mock Next.js environment variables
-process.env.NEXT_PUBLIC_APP_NAME = "atlas-web";
-process.env.NEXT_PUBLIC_APP_ENV = "test";
-process.env.NEXT_PUBLIC_BUILD_ID = "test-build";
-process.env.NEXT_PUBLIC_WEB_VITALS_ENABLED = "true";
-process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE = "1";
-process.env.NEXT_PUBLIC_WEB_VITALS_ENDPOINT = "/api/telemetry/web-vitals";
+// Import test setup utilities
+const { setupMSW } = require("./src/test/setup/msw");
+const { setupTestEnv } = require("./src/test/setup/env");
+const { resetRouterMocks } = require("./src/test/helpers/router");
+
+// Setup test environment variables
+setupTestEnv();
+
+// Setup MSW for API mocking
+// Note: MSW v1 has limitations in Node.js/jsdom environments
+// For most tests, prefer mocking fetch directly with jest.fn()
+setupMSW();
 
 // Mock sessionStorage
 const sessionStorageData = {};
@@ -64,6 +69,31 @@ jest.mock("next/headers", () => ({
     get: jest.fn(),
   })),
 }));
+
+// Mock Next.js navigation
+jest.mock("next/navigation", () => {
+  const {
+    mockUseRouter,
+    mockUsePathname,
+    mockUseSearchParams,
+    mockUseParams,
+    mockRedirect,
+    mockNotFound,
+  } = require("./src/test/helpers/router");
+  return {
+    useRouter: mockUseRouter,
+    usePathname: mockUsePathname,
+    useSearchParams: mockUseSearchParams,
+    useParams: mockUseParams,
+    redirect: mockRedirect,
+    notFound: mockNotFound,
+  };
+});
+
+// Reset router mocks before each test
+beforeEach(() => {
+  resetRouterMocks();
+});
 
 // Suppress console logs during tests for cleaner output
 // You can comment these out if you need to debug
