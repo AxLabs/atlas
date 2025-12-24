@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Form Validation Hook - useZodForm
  *
