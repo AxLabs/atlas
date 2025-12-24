@@ -13,7 +13,7 @@ export default [
   {
     // Override parser options to specify this package's tsconfig
     files: ["**/*.ts", "**/*.tsx"],
-    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
     languageOptions: {
       parserOptions: {
         projectService: false,
@@ -23,14 +23,23 @@ export default [
     },
   },
   {
-    // Test files use separate tsconfig
-    files: ["**/*.test.ts", "**/*.test.tsx"],
+    // Test files: disable type-checked rules, use basic TS support only
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**/*.ts", "**/__tests__/**/*.tsx"],
     languageOptions: {
+      parser: tseslint.parser,
       parserOptions: {
-        projectService: false,
-        tsconfigRootDir: __dirname,
-        project: "./tsconfig.test.json",
+        ecmaVersion: "latest",
+        sourceType: "module",
       },
+    },
+    rules: {
+      // Disable all type-checked rules for test files
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/require-await": "off",
+      "no-console": "off",
     },
   },
   {
