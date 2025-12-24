@@ -4,8 +4,18 @@ export { cn } from "./lib/utils";
 // Hooks
 export type { ResolvedTheme, ThemePreference } from "./hooks/use-theme";
 export { useTheme } from "./hooks/use-theme";
+export { useZodForm, type UseZodFormOptions } from "./hooks/use-zod-form";
+
+// Form Utilities
+export { getFieldErrorMessage } from "./lib/forms/errors";
+export {
+  applyServerFieldErrors,
+  getFormErrorMessage,
+  type ValidationErrorDetails,
+} from "./lib/forms/server-errors";
 
 // Components
+export { type FormFieldProps, FormField as FormFieldWrapper } from "./components/forms/FormField";
 export {
   Accordion,
   AccordionContent,
