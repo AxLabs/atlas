@@ -30,7 +30,7 @@ module.exports = {
       },
     ],
   },
-  transformIgnorePatterns: ["node_modules/(?!(web-vitals|@faker-js)/)"],
+  transformIgnorePatterns: ["node_modules/(?!(web-vitals|@faker-js|@t3-oss)/)"],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts",

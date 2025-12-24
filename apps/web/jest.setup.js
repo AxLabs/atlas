@@ -9,6 +9,12 @@ const { resetRouterMocks } = require("./src/test/helpers/router");
 // Setup test environment variables
 setupTestEnv();
 
+// Mock the env module to avoid ESM issues with @t3-oss/env-nextjs
+jest.mock("./src/env", () => {
+  const mockEnv = require("./src/env/__mocks__/index.ts");
+  return mockEnv;
+});
+
 // Setup MSW for API mocking
 // Note: MSW v1 has limitations in Node.js/jsdom environments
 // For most tests, prefer mocking fetch directly with jest.fn()
