@@ -24,8 +24,15 @@ module.exports = {
     "!src/**/*.d.ts",
     "!src/**/*.stories.tsx",
     "!src/**/index.ts",
+    // Exclude example files (documentation/reference code)
+    "!src/**/*.example.tsx",
+    "!src/**/*.example.ts",
     // Exclude Shadcn UI components (third-party, pre-tested)
     "!src/components/ui/**",
+    // Exclude form infrastructure (thin wrappers around react-hook-form + Zod)
+    "!src/components/forms/**",
+    "!src/hooks/use-zod-form.ts",
+    "!src/lib/forms/**",
   ],
   coverageThreshold: {
     global: {
