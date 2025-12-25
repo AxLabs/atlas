@@ -1,85 +1,47 @@
 /**
  * Web Vitals Configuration Tests
+ *
+ * NOTE: These tests verify the simplified fallback config behavior.
+ * For full configuration, components should use the config facade via useConfig().
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import { describe, it, expect, beforeEach } from "@jest/globals";
 
 import { getWebVitalsConfig, shouldReportVitals } from "../config";
 
 describe("Web Vitals Configuration", () => {
-  const originalEnv = process.env;
-
   beforeEach(() => {
-    // Reset environment
-    process.env = { ...originalEnv };
     // Clear sessionStorage mock if needed
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.clear();
     }
   });
 
-  afterEach(() => {
-    process.env = originalEnv;
-  });
-
   describe("getWebVitalsConfig", () => {
-    it("should return production config by default", () => {
+    it("should return default config with expected values", () => {
       const config = getWebVitalsConfig();
 
       expect(config.appName).toBe("atlas-web");
       expect(config.endpoint).toBe("/api/telemetry/web-vitals");
+      // Jest environment mocks window.location.hostname as localhost
+      expect(config.environment).toBe("development");
+      expect(config.debug).toBe(false);
     });
 
-    it("should respect NEXT_PUBLIC_WEB_VITALS_ENABLED override", () => {
-      process.env.NEXT_PUBLIC_WEB_VITALS_ENABLED = "true";
+    it("should return valid sample rate between 0 and 1", () => {
       const config = getWebVitalsConfig();
 
-      expect(config.enabled).toBe(true);
+      expect(config.sampleRate).toBeGreaterThanOrEqual(0);
+      expect(config.sampleRate).toBeLessThanOrEqual(1);
     });
 
-    it("should respect NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE override", () => {
-      process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE = "0.5";
-      const config = getWebVitalsConfig();
+    it("should have consistent configuration values", () => {
+      const config1 = getWebVitalsConfig();
+      const config2 = getWebVitalsConfig();
 
-      expect(config.sampleRate).toBe(0.5);
-    });
-
-    it("should clamp sample rate to 0-1 range", () => {
-      process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE = "1.5";
-      const config = getWebVitalsConfig();
-
-      expect(config.sampleRate).toBe(1);
-    });
-
-    it("should respect endpoint override", () => {
-      process.env.NEXT_PUBLIC_WEB_VITALS_ENDPOINT = "/custom/endpoint";
-      const config = getWebVitalsConfig();
-
-      expect(config.endpoint).toBe("/custom/endpoint");
-    });
-
-    it("should use staging sample rate", () => {
-      // Save original values
-      const originalEnv = process.env.NEXT_PUBLIC_APP_ENV;
-      const originalRate = process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE;
-
-      // Set staging environment and clear sample rate override
-      process.env.NEXT_PUBLIC_APP_ENV = "staging";
-      delete process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE;
-
-      // Need to reload the module to pick up env changes
-      jest.resetModules();
-      const { getWebVitalsConfig: getConfig } = require("../config");
-      const config = getConfig();
-
-      expect(config.environment).toBe("staging");
-      expect(config.sampleRate).toBe(0.25);
-
-      // Restore originals
-      process.env.NEXT_PUBLIC_APP_ENV = originalEnv;
-      if (originalRate !== undefined) {
-        process.env.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE = originalRate;
-      }
+      expect(config1.appName).toBe(config2.appName);
+      expect(config1.endpoint).toBe(config2.endpoint);
+      expect(config1.environment).toBe(config2.environment);
     });
   });
 
