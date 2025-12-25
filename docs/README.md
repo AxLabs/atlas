@@ -33,6 +33,15 @@ implementation guides.
   - Security best practices
   - Troubleshooting
 
+- **[CONFIG.md](CONFIG.md)** - Configuration conventions and patterns
+
+  - Config facade architecture
+  - Server vs client config
+  - Typed config contract
+  - ESLint enforcement
+  - Migration guide
+  - Common patterns
+
 - **[SENTRY.md](SENTRY.md)** - Error monitoring and performance tracing
 
   - Quick start and configuration
@@ -108,6 +117,7 @@ Practical how-to documentation:
 | Platform Philosophy   | [ATLAS_CONTEXT.md](ATLAS_CONTEXT.md)                               |
 | Coding Standards      | [platform-principles.md](platform-principles.md)                   |
 | Environment Variables | [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)               |
+| Config Conventions    | [CONFIG.md](CONFIG.md)                                             |
 | Error Monitoring      | [SENTRY.md](SENTRY.md)                                             |
 | UI Components         | [SHADCN_SETUP.md](SHADCN_SETUP.md)                                 |
 | App States Kit        | [APP_STATES.md](APP_STATES.md)                                     |

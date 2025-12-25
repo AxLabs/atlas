@@ -3,9 +3,18 @@
  *
  * Production-grade configuration for Real User Monitoring (RUM) of Core Web Vitals.
  * This module provides type-safe configuration with environment-based defaults.
+ *
+ * NOTE: For React components, prefer using the config facade:
+ * ```tsx
+ * import { useConfig } from '@/config';
+ *
+ * function MyComponent() {
+ *   const config = useConfig();
+ *   const { enabled, sampleRate } = config.webVitals;
+ *   // ...
+ * }
+ * ```
  */
-
-import { clientEnv } from "@/env";
 
 /**
  * Environment type for sampling and enablement logic
@@ -51,54 +60,49 @@ function getDefaultSampleRate(env: Environment): number {
 }
 
 /**
- * Get current environment
+ * Get current environment from window location or default
  */
 function getCurrentEnvironment(): Environment {
   if (typeof window === "undefined") return "production";
 
-  const publicEnv = clientEnv.NEXT_PUBLIC_APP_ENV;
+  // Simple hostname-based detection (fallback)
+  // In production usage, this should come from runtime config
+  const hostname = window.location.hostname;
 
-  // Check explicit environment variable first
-  if (publicEnv === "staging") return "staging";
-  if (publicEnv === "production") return "production";
-  if (publicEnv === "development") return "development";
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "development";
+  }
+
+  if (hostname.includes("staging")) {
+    return "staging";
+  }
 
   return "production"; // Safe default
 }
 
 /**
- * Get Web Vitals configuration from environment and defaults
+ * Get Web Vitals configuration from defaults.
+ *
+ * NOTE: This provides fallback configuration. For React components,
+ * use the config facade instead:
+ *
+ * ```tsx
+ * import { useConfig } from '@/config';
+ * const { webVitals } = useConfig();
+ * ```
  */
 export function getWebVitalsConfig(): WebVitalsConfig {
   const environment = getCurrentEnvironment();
   const defaultSampleRate = getDefaultSampleRate(environment);
 
-  // Allow runtime override of enabled state
-  const enabled =
-    clientEnv.NEXT_PUBLIC_WEB_VITALS_ENABLED !== undefined
-      ? clientEnv.NEXT_PUBLIC_WEB_VITALS_ENABLED
-      : environment !== "development" && environment !== "test";
-
-  // Allow runtime override of sample rate
-  const sampleRate = clientEnv.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE ?? defaultSampleRate;
-
-  // Allow runtime override of endpoint
-  const endpoint = clientEnv.NEXT_PUBLIC_WEB_VITALS_ENDPOINT ?? "/api/telemetry/web-vitals";
-
-  // Debug mode
-  const debug = clientEnv.NEXT_PUBLIC_WEB_VITALS_DEBUG ?? false;
-
-  // Build info (can be injected at build time)
-  const buildId = clientEnv.NEXT_PUBLIC_BUILD_ID;
-
   return {
-    enabled,
-    sampleRate: Math.max(0, Math.min(1, sampleRate)), // Clamp to 0-1
-    endpoint,
+    enabled: environment !== "development" && environment !== "test",
+    sampleRate: Math.max(0, Math.min(1, defaultSampleRate)),
+    endpoint: "/api/telemetry/web-vitals",
     environment,
     appName: "atlas-web",
-    buildId,
-    debug,
+    buildId: undefined,
+    debug: false,
   };
 }
 

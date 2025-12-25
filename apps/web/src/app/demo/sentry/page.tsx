@@ -9,18 +9,15 @@
 
 import { useState } from "react";
 
-import { clientEnv } from "@/env";
+import { useConfig } from "@/config";
 import { captureException, captureMessage } from "@/lib/telemetry/sentry.client";
 
 export default function SentryDemoPage() {
   const [status, setStatus] = useState<string>("");
+  const config = useConfig();
 
   // Only render in non-production
-  // Note: NODE_ENV is safe to access directly in client components as it's set at build time
-  if (
-    process.env.NODE_ENV === "production" &&
-    clientEnv.NEXT_PUBLIC_SENTRY_ENVIRONMENT === "production"
-  ) {
+  if (config.app.env === "production") {
     return (
       <div className="flex min-h-screen items-center justify-center p-8">
         <div className="border-destructive bg-destructive/10 max-w-md rounded-lg border p-6">
@@ -87,10 +84,10 @@ export default function SentryDemoPage() {
           <p className="text-muted-foreground mt-2">
             Test error capture and monitoring capabilities
           </p>
-          {!clientEnv.NEXT_PUBLIC_SENTRY_DSN && (
+          {!config.sentry.dsn && (
             <div className="mt-4 rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-950">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ NEXT_PUBLIC_SENTRY_DSN is not set. Errors will be logged but not sent to Sentry.
+                ⚠️ Sentry DSN is not configured. Errors will be logged but not sent to Sentry.
               </p>
             </div>
           )}

@@ -2,7 +2,7 @@ import "server-only";
 
 import pino from "pino";
 
-import { serverEnv } from "@/env";
+import { serverConfig } from "@/config";
 
 import { getRequestContext } from "./request-context.server";
 
@@ -18,7 +18,7 @@ export interface BaseLogFields {
  * Create pino logger with redaction and production-safe defaults
  */
 const pinoLogger = pino({
-  level: serverEnv.LOG_LEVEL,
+  level: serverConfig.logging.level,
   // Structured JSON only - no pretty printing to avoid dependencies issues
   formatters: {
     level: (label) => {
@@ -59,7 +59,7 @@ const pinoLogger = pino({
         message: err.message,
       };
       // Only include stack traces in non-production
-      if (serverEnv.NODE_ENV !== "production") {
+      if (serverConfig.app.env !== "production") {
         serialized.stack = err.stack;
       }
       return serialized;
@@ -69,7 +69,7 @@ const pinoLogger = pino({
         name: err.name,
         message: err.message,
       };
-      if (serverEnv.NODE_ENV !== "production") {
+      if (serverConfig.app.env !== "production") {
         serialized.stack = err.stack;
       }
       return serialized;

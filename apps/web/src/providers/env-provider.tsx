@@ -2,18 +2,27 @@
 
 import { createContext, useContext } from "react";
 
-import { env } from "@/env/public-env";
+import { useConfig } from "@/config";
 
+import type { ClientConfig } from "@/config";
 import type React from "react";
 
-type Env = typeof env;
+/**
+ * Legacy EnvProvider - wraps config facade for backwards compatibility.
+ *
+ * @deprecated Use useConfig() from '@/config' directly instead.
+ */
 
-const EnvContext = createContext<Env | undefined>(undefined);
+const EnvContext = createContext<ClientConfig | undefined>(undefined);
 
 export function EnvProvider({ children }: { children: React.ReactNode }) {
-  return <EnvContext.Provider value={env}>{children}</EnvContext.Provider>;
+  const config = useConfig();
+  return <EnvContext.Provider value={config}>{children}</EnvContext.Provider>;
 }
 
+/**
+ * @deprecated Use useConfig() from '@/config' instead.
+ */
 export function useEnv() {
   const context = useContext(EnvContext);
   if (context === undefined) {

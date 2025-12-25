@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 
-import { clientEnv } from "@/env";
+import { getServerConfig } from "@/config";
 import { runtimeConfigSchema } from "@/lib/runtime-config/schema";
 
 import type { RuntimeConfig } from "@/lib/runtime-config/schema";
@@ -48,31 +48,31 @@ const CACHE_CONTROL = "public, s-maxage=60, stale-while-revalidate=30";
  */
 export async function GET(): Promise<NextResponse<RuntimeConfig>> {
   try {
-    // Construct runtime config from server environment
+    // Get server config via the config facade
+    const config = getServerConfig();
+
+    // Construct runtime config from server config
     // Only include client-safe, runtime-varying values
-    const config: RuntimeConfig = {
-      apiBaseUrl: clientEnv.NEXT_PUBLIC_API_URL,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-      environment: clientEnv.NEXT_PUBLIC_APP_ENV ?? "development",
-      buildId: clientEnv.NEXT_PUBLIC_BUILD_ID,
-      sentryDsn: clientEnv.NEXT_PUBLIC_SENTRY_DSN,
-      sentryEnvironment: clientEnv.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
-      sentryRelease: clientEnv.NEXT_PUBLIC_SENTRY_RELEASE,
+    const runtimeConfig: RuntimeConfig = {
+      apiBaseUrl: config.api.baseUrl,
+      appUrl: config.app.url,
+      environment: config.app.env,
+      buildId: config.app.buildId,
+      sentryDsn: config.sentry.dsn,
+      sentryEnvironment: config.sentry.environment,
+      sentryRelease: config.sentry.release,
       webVitals: {
-        enabled: clientEnv.NEXT_PUBLIC_WEB_VITALS_ENABLED ?? false,
-        sampleRate: clientEnv.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE ?? 0.05,
-        endpoint: clientEnv.NEXT_PUBLIC_WEB_VITALS_ENDPOINT ?? "/api/telemetry/web-vitals",
-        debug: clientEnv.NEXT_PUBLIC_WEB_VITALS_DEBUG ?? false,
+        enabled: config.webVitals.enabled,
+        sampleRate: config.webVitals.sampleRate,
+        endpoint: config.webVitals.endpoint,
+        debug: config.webVitals.debug,
       },
-      featureFlags: {
-        // Add feature flags here as needed
-        // Example: newDashboard: process.env.FEATURE_NEW_DASHBOARD === 'true'
-      },
+      featureFlags: config.features,
     };
 
     // Validate config against schema
     // This ensures we never return invalid or unsafe data to the client
-    const validatedConfig = runtimeConfigSchema.parse(config);
+    const validatedConfig = runtimeConfigSchema.parse(runtimeConfig);
 
     return NextResponse.json(validatedConfig, {
       status: 200,

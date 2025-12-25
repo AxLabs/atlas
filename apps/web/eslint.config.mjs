@@ -23,6 +23,83 @@ export default [
     ignores: ["eslint.config.mjs"], // Don't lint the config file itself
   },
   {
+    // Ban direct process.env usage - use config facade instead
+    // This prevents config sprawl and ensures all config goes through typed facade
+    files: [
+      "src/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      // Allowed: env module and its schemas
+      "src/env.ts",
+      "src/env/**",
+      "src/schemas/env/**",
+      // Allowed: config module (converts env to config)
+      "src/config/**",
+      // Allowed: runtime-config endpoint (server-side config assembly)
+      "src/app/api/runtime-config/route.ts",
+      // Allowed: test setup
+      "src/test/**",
+      "**/__tests__/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message:
+            "Direct access to process.env is not allowed. Use the config facade instead:\n" +
+            "  - Server-side: import { getServerConfig } from '@/config'\n" +
+            "  - Client-side: import { useConfig } from '@/config'\n" +
+            "This ensures type safety, validation, and consistent config access patterns.",
+        },
+      ],
+    },
+  },
+  {
+    // Ban direct env module usage - use config facade instead
+    // Enforce config facade pattern throughout the app
+    files: [
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/providers/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+      "src/lib/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      // Config module itself needs to import env
+      "src/config/**",
+      // Runtime config needs env for legacy support
+      "src/lib/runtime-config/**",
+      // API routes can use env if needed (but prefer config)
+      "src/app/api/**/route.ts",
+      // Tests
+      "src/test/**",
+      "**/__tests__/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/env", "@/env/*"],
+              message:
+                "Direct env imports are discouraged. Use the config facade instead:\n" +
+                "  - Server-side: import { getServerConfig } from '@/config'\n" +
+                "  - Client-side: import { useConfig } from '@/config'\n" +
+                "This provides a stable, typed config interface and separates concerns.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Ban console.* usage - use structured logging instead
     rules: {
       "no-console": "error",

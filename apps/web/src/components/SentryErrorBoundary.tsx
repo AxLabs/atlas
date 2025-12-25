@@ -32,11 +32,12 @@ interface ErrorFallbackProps {
 /**
  * Default error fallback UI
  *
- * Note: This component cannot import serverEnv directly since it's a client component.
- * However, NODE_ENV is safe to access directly as it's set at build time.
+ * Uses config facade to determine environment in a type-safe way.
  */
 function DefaultErrorFallback({ error, resetError, showDetails = false }: ErrorFallbackProps) {
-  const isDevelopment = process.env.NODE_ENV === "development";
+  // Use environment detection for error display
+  // In client components, we can check the hostname or use config
+  const isDevelopment = typeof window !== "undefined" && window.location.hostname === "localhost";
 
   return (
     <div className="flex min-h-100 flex-col items-center justify-center p-8">

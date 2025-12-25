@@ -2,41 +2,42 @@
  * API Configuration
  *
  * Centralized configuration for API client behavior.
- * Resolves base URLs from environment variables and provides
- * common settings used across all API calls.
+ * Uses the config facade to access base URLs and common settings.
  */
 
-import { clientEnv, serverEnv } from "@/env";
+import { getServerConfig } from "@/config";
 
 /**
- * Get the API base URL from environment.
+ * Get the API base URL from configuration.
  *
- * IMPORTANT: This function uses build-time env vars and should ONLY be used:
- * 1. In server-side code (API routes, server components)
- * 2. In client code where runtime config is not available (legacy usage)
+ * This function provides server-side access to the API base URL.
+ * For client-side usage, use the useConfig() hook instead.
  *
- * For new client-side code, prefer using runtime config:
+ * @example Server-side usage
  * ```tsx
- * import { useRuntimeConfig } from '@/lib/runtime-config';
+ * import { getApiBaseUrl } from '@/lib/api/config';
  *
- * function MyComponent() {
- *   const { apiBaseUrl } = useRuntimeConfig();
- *   // Use apiBaseUrl...
+ * export async function GET() {
+ *   const baseUrl = getApiBaseUrl();
+ *   const response = await fetch(`${baseUrl}/users`);
+ *   // ...
  * }
  * ```
  *
- * @deprecated For client-side usage, use runtime config instead
+ * @example Client-side usage
+ * ```tsx
+ * import { useConfig } from '@/config';
+ *
+ * function MyComponent() {
+ *   const config = useConfig();
+ *   const baseUrl = config.api.baseUrl;
+ *   // Use baseUrl...
+ * }
+ * ```
  */
 export function getApiBaseUrl(): string {
-  // Check for public env var (available client-side)
-  if (typeof window !== "undefined") {
-    // Client-side: use NEXT_PUBLIC_ prefix (build-time value)
-    // This is a fallback for backwards compatibility
-    return clientEnv.NEXT_PUBLIC_API_URL;
-  }
-
-  // Server-side: can use either public or private env var
-  return serverEnv.API_BASE_URL ?? clientEnv.NEXT_PUBLIC_API_URL;
+  // Server-side only: uses config facade
+  return getServerConfig().api.baseUrl;
 }
 
 /**

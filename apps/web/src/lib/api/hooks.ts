@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useRuntimeConfig } from "@/lib/runtime-config";
+import { useConfig } from "@/config";
 
 import { apiRequest } from "./client";
 
@@ -32,8 +32,8 @@ import type { ApiRequestOptions } from "./client";
  * ```
  */
 export function useApiBaseUrl(): string {
-  const { apiBaseUrl } = useRuntimeConfig();
-  return apiBaseUrl;
+  const config = useConfig();
+  return config.api.baseUrl;
 }
 
 /**
@@ -59,7 +59,8 @@ export function useApiBaseUrl(): string {
  * ```
  */
 export function useApiClient() {
-  const { apiBaseUrl } = useRuntimeConfig();
+  const config = useConfig();
+  const apiBaseUrl = config.api.baseUrl;
 
   return {
     /**
