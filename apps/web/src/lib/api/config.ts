@@ -10,13 +10,28 @@ import { clientEnv, serverEnv } from "@/env";
 
 /**
  * Get the API base URL from environment.
- * In development, defaults to localhost if not configured.
- * In production, must be explicitly set.
+ *
+ * IMPORTANT: This function uses build-time env vars and should ONLY be used:
+ * 1. In server-side code (API routes, server components)
+ * 2. In client code where runtime config is not available (legacy usage)
+ *
+ * For new client-side code, prefer using runtime config:
+ * ```tsx
+ * import { useRuntimeConfig } from '@/lib/runtime-config';
+ *
+ * function MyComponent() {
+ *   const { apiBaseUrl } = useRuntimeConfig();
+ *   // Use apiBaseUrl...
+ * }
+ * ```
+ *
+ * @deprecated For client-side usage, use runtime config instead
  */
 export function getApiBaseUrl(): string {
   // Check for public env var (available client-side)
   if (typeof window !== "undefined") {
-    // Client-side: use NEXT_PUBLIC_ prefix
+    // Client-side: use NEXT_PUBLIC_ prefix (build-time value)
+    // This is a fallback for backwards compatibility
     return clientEnv.NEXT_PUBLIC_API_URL;
   }
 

@@ -38,6 +38,7 @@ export default [
       "src/env.ts",
       "src/env/**",
       "src/schemas/env/**",
+      "src/app/api/**/route.ts", // API routes may need direct env access for runtime config
       "src/test/**",
       "**/__tests__/**",
       "**/*.test.{ts,tsx}",
@@ -50,6 +51,42 @@ export default [
           selector: "MemberExpression[object.name='process'][property.name='env']",
           message:
             "Direct access to process.env is not allowed. Import environment variables from '@/env' instead. This ensures type safety and validation. For server-only vars use 'serverEnv', for client vars use 'clientEnv'.",
+        },
+      ],
+    },
+  },
+  {
+    // Ban build-time NEXT_PUBLIC env usage in client code
+    // Enforce runtime config pattern for client-side runtime-varying values
+    files: [
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/providers/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "src/env/**",
+      "src/schemas/env/**",
+      "src/providers/env-provider.tsx", // Legacy provider, OK to use clientEnv
+      "src/app/api/**/route.ts", // API routes are server-side
+      "src/test/**",
+      "**/__tests__/**",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[object.name='clientEnv'][property.name=/^NEXT_PUBLIC_/]",
+          message:
+            "Direct access to build-time NEXT_PUBLIC env vars in client code is discouraged. Use runtime config instead: import { useRuntimeConfig } from '@/lib/runtime-config'; This enables 'build once, deploy many' and avoids baking environment-specific values into the client bundle.",
+        },
+        {
+          selector: "MemberExpression[object.object.name='clientEnv'][object.property.name='NEXT_PUBLIC_API_URL']",
+          message:
+            "Use runtime config for API base URL in client code: const { apiBaseUrl } = useRuntimeConfig(); or use useApiClient() hook. This avoids build-time env inlining and enables true runtime env separation.",
         },
       ],
     },

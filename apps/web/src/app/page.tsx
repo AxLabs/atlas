@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { Button, ThemeToggle } from "@atlas/ui";
 
+import { RuntimeConfigDebug } from "@/components/RuntimeConfigDebug";
+
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
@@ -30,6 +32,7 @@ export default function HomePage() {
           </a>
         </div>
       </main>
+      <RuntimeConfigDebug />
     </div>
   );
 }

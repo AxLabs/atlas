@@ -8,6 +8,7 @@
  * - Correlation ID generation and propagation
  * - Request/response interceptors
  * - Automatic retry logic for transient failures
+ * - Runtime-aware hooks for client-side API calls
  */
 
 // Client
@@ -21,6 +22,9 @@ export {
   type ApiRequestOptions,
   setAuthTokenProvider,
 } from "./client";
+
+// Runtime-aware hooks for client components
+export { useApiBaseUrl, useApiClient } from "./hooks";
 
 // Configuration
 export { DEFAULT_TIMEOUT, getApiBaseUrl, RETRY_CONFIG } from "./config";

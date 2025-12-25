@@ -23,6 +23,14 @@ export const ClientEnvSchema = {
   NEXT_PUBLIC_API_URL: z.string().url().default("http://localhost:3001/api"),
 
   /**
+   * Application URL (where the frontend is hosted).
+   * Used for redirects, OAuth callbacks, and link generation.
+   *
+   * @example 'https://app.example.com', 'http://localhost:3000'
+   */
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+
+  /**
    * Environment identifier for telemetry and feature flags.
    *
    * @example 'development', 'staging', 'production'
