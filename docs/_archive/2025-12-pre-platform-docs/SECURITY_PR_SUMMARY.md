@@ -76,7 +76,7 @@ etc.)
 
 - **Sensitive keys** (case-insensitive): password, token, apiKey, secret, cookie, ssn, creditCard,
   etc.
-- **Pattern matching**: Bearer tokens, JWTs, API keys (sk*live*_, ghp\__, etc.)
+- **Pattern matching**: Bearer tokens, JWTs, API keys (sk*live*\_, ghp\_\_, etc.)
 - **Deep traversal**: Handles nested objects, arrays, circular references
 - **Safety limits**: Max depth (10), max object size (10k items)
 
