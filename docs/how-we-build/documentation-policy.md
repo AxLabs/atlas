@@ -68,6 +68,16 @@ AI-generated or experimental documentation:
 3. If accurate, promote to canonical docs
 4. If not, leave archived with a note
 
+### 7. No Infrastructure Without Features
+
+Do not add infrastructure services (Postgres, Redis, etc.) to the default Docker Compose unless:
+
+- A shipped feature or demo requires it
+- It's behind a profile (never starts by default)
+- It's documented in [local-dev-composition.md](local-dev-composition.md)
+
+Atlas is a pure frontend platform. Keep `pnpm dev` fast.
+
 ## Maintaining Documentation
 
 ### When Adding a Feature
