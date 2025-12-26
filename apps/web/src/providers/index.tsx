@@ -1,6 +1,7 @@
 "use client";
 
 import { WebVitalsReporter } from "@/components/WebVitalsReporter";
+import { FeatureFlagsProvider } from "@/lib/feature-flags";
 import { RuntimeConfigProvider } from "@/lib/runtime-config";
 
 import { EnvProvider } from "./env-provider";
@@ -13,16 +14,18 @@ import type React from "react";
 export function MainProvider({ children }: { children: React.ReactNode }) {
   return (
     <RuntimeConfigProvider>
-      <EnvProvider>
-        <ThemeProvider>
-          <ReactQueryProvider>
-            <ToasterProvider>
-              <WebVitalsReporter />
-              {children}
-            </ToasterProvider>
-          </ReactQueryProvider>
-        </ThemeProvider>
-      </EnvProvider>
+      <FeatureFlagsProvider>
+        <EnvProvider>
+          <ThemeProvider>
+            <ReactQueryProvider>
+              <ToasterProvider>
+                <WebVitalsReporter />
+                {children}
+              </ToasterProvider>
+            </ReactQueryProvider>
+          </ThemeProvider>
+        </EnvProvider>
+      </FeatureFlagsProvider>
     </RuntimeConfigProvider>
   );
 }

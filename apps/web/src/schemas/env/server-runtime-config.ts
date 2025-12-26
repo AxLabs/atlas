@@ -193,4 +193,54 @@ export const ServerEnvSchema = {
    * @example 'https://trusted-parent.com'
    */
   CSP_FRAME_ANCESTORS: z.string().optional(),
+
+  // ============================================================================
+  // Feature Flags
+  // ============================================================================
+
+  /**
+   * Enable new dashboard feature.
+   * @default 'false'
+   */
+  FEATURE_NEW_DASHBOARD: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
+
+  /**
+   * Enable beta features.
+   * @default 'false'
+   */
+  FEATURE_BETA_FEATURES: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
+
+  /**
+   * Enable risky upload flow feature.
+   * @default 'false'
+   */
+  FEATURE_RISKY_UPLOAD_FLOW: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
+
+  /**
+   * Enable enhanced analytics feature.
+   * @default 'false'
+   */
+  FEATURE_ENHANCED_ANALYTICS: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
+
+  /**
+   * Kill switch for risky upload flow.
+   * When true, risky upload flow is DISABLED regardless of other flags.
+   * @default 'false'
+   */
+  KILL_RISKY_UPLOAD_FLOW: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
 };

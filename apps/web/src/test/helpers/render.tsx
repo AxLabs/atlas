@@ -9,6 +9,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 
+import { createDefaultAdapter, FeatureFlagsProvider } from "@/lib/feature-flags";
+
 import { createTestQueryClient } from "./reactQuery";
 
 import type { QueryClient } from "@tanstack/react-query";
@@ -35,6 +37,12 @@ export interface RenderWithProvidersOptions extends Omit<RenderOptions, "wrapper
    * Initial search params (for router mocks).
    */
   searchParams?: Record<string, string>;
+
+  /**
+   * Feature flags to enable/disable in the test.
+   * Keys should match FeatureFlags values (e.g., 'new_dashboard').
+   */
+  featureFlags?: Record<string, boolean>;
 }
 
 /**
@@ -78,10 +86,22 @@ export function renderWithProviders(
   ui: React.ReactElement,
   options: RenderWithProvidersOptions = {}
 ): RenderWithProvidersResult {
-  const { queryClient: providedQueryClient, route, searchParams, ...renderOptions } = options;
+  const {
+    queryClient: providedQueryClient,
+    route,
+    searchParams,
+    featureFlags = {},
+    ...renderOptions
+  } = options;
 
   // Create or use provided QueryClient
   const queryClient = providedQueryClient || createTestQueryClient();
+
+  // Create feature flags adapter with test flags
+  const featureFlagsAdapter = createDefaultAdapter({
+    runtimeFlags: featureFlags,
+    isDevelopment: true,
+  });
 
   // Setup router mocks if route is provided
   if (route !== undefined) {
@@ -98,7 +118,11 @@ export function renderWithProviders(
 
   // Create wrapper with all providers
   function AllProviders({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <FeatureFlagsProvider adapter={featureFlagsAdapter}>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </FeatureFlagsProvider>
+    );
   }
 
   // Setup user event
