@@ -4,13 +4,48 @@ Enterprise-grade frontend platform built with Next.js, TypeScript, and Tailwind 
 
 ## What is Atlas?
 
-Atlas is a **soft monorepo** for building production-ready web applications. It provides:
+Atlas is a **frontend-first platform** for building production-ready web applications. It provides
+opinionated patterns for authentication, data fetching, validation, theming, accessibility, and
+observability—so teams can focus on shipping product.
 
-- **Next.js App Router** with TypeScript strict mode
-- **Tailwind CSS v4** with CSS-first theming
-- **React Query** for type-safe data fetching
-- **Shared UI library** with accessibility built in
-- **Enterprise tooling**: ESLint, Prettier, Jest, Playwright
+**Atlas is closed-source.** Public documentation describes platform behavior and patterns. Internal
+engineering documentation covers implementation details.
+
+---
+
+## Documentation
+
+| Audience                                            | Documentation                                                           |
+| --------------------------------------------------- | ----------------------------------------------------------------------- |
+| **External** (evaluation, onboarding, architecture) | **[Public Docs](docs/public/README.md)**                                |
+| **Internal** (development, contributing)            | [How We Build](docs/how-we-build/README.md), [ADRs](docs/adr/README.md) |
+
+### Public Documentation
+
+Start here for understanding what Atlas is and how it works:
+
+- [Overview](docs/public/README.md) — What Atlas is and who it's for
+- [Quickstart](docs/public/quickstart.md) — What to expect when running Atlas
+- [Architecture](docs/public/architecture.md) — System design and mental model
+- [Demo](docs/public/demo.md) — Proof of capabilities via working examples
+- [Capabilities](docs/public/capabilities.md) — What Atlas solves and why
+- [Decisions](docs/public/decisions.md) — Key engineering choices
+- [FAQ](docs/public/faq.md) — Common questions answered
+
+### Demo Application
+
+Atlas includes a demonstration application at `/demo` that proves platform patterns work correctly:
+
+| Route                 | What It Demonstrates                      |
+| --------------------- | ----------------------------------------- |
+| `/demo/auth`          | OAuth flow, session management            |
+| `/demo/data`          | API contracts, loading/error/empty states |
+| `/demo/form`          | Validation with client-server alignment   |
+| `/demo/flags`         | Feature toggles and kill switches         |
+| `/demo/observability` | Error tracking with correlation           |
+| `/demo/a11y-theme`    | Theming and accessibility patterns        |
+
+---
 
 ## Quick Start
 
@@ -39,13 +74,18 @@ atlas/
 ├── apps/web/           # Next.js application
 ├── packages/ui/        # Shared UI components
 ├── packages/config/    # Shared configuration
-├── docs/               # Platform documentation
-│   ├── how-we-build/   # Conventions and patterns
+├── docs/
+│   ├── public/         # External-facing documentation
+│   ├── how-we-build/   # Internal conventions and patterns
 │   └── adr/            # Architecture decisions
 └── tools/              # Build and dev tools
 ```
 
-## Documentation
+---
+
+## Internal Documentation
+
+For contributors and team members:
 
 | Document                                                      | What You'll Learn                     |
 | ------------------------------------------------------------- | ------------------------------------- |
@@ -57,6 +97,8 @@ atlas/
 | **[Accessibility](docs/how-we-build/accessibility.md)**       | a11y rules                            |
 | **[ADRs](docs/adr/README.md)**                                | Why we made specific choices          |
 | **[Demo](docs/how-we-build/demo.md)**                         | Atlas Showcase demo section           |
+
+---
 
 ## Common Tasks
 
@@ -83,6 +125,8 @@ pnpm test:e2e       # E2E tests
 pnpm storybook      # Component explorer
 ```
 
+---
+
 ## Commands
 
 ```bash
@@ -94,6 +138,8 @@ pnpm test           # Run tests
 pnpm storybook      # UI component explorer
 ```
 
+---
+
 ## Contributing
 
 1. Read [How We Build](docs/how-we-build/README.md)
@@ -101,12 +147,8 @@ pnpm storybook      # UI component explorer
 3. Ensure `pnpm lint && pnpm typecheck && pnpm test` pass
 4. Open a PR
 
+---
+
 ## License
 
 MIT
-
----
-
-**All platform conventions live in [docs/how-we-build/](docs/how-we-build/).**
-
-**All architectural decisions are documented in [docs/adr/](docs/adr/).**
