@@ -27,9 +27,13 @@
     "perf:lhci": "pnpm --filter @atlas/web perf:lhci",
     "perf:analyze": "pnpm --filter @atlas/web perf:analyze",
     "perf:enable": "node tools/perf/enable.js",
-    "perf:disable": "node tools/perf/disable.js"
+    "perf:disable": "node tools/perf/disable.js",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:status": "changeset status"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@eslint/js": "^9.39.2",
     "@turbo/gen": "2.3.3",
     "eslint-plugin-promise": "^7.2.1",
