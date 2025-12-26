@@ -65,6 +65,30 @@ export const breadcrumbTree: BreadcrumbNode[] = [
     resolver: staticResolver("Demo"),
     children: [
       {
+        segment: "auth",
+        resolver: staticResolver("Auth"),
+      },
+      {
+        segment: "data",
+        resolver: staticResolver("Data"),
+      },
+      {
+        segment: "form",
+        resolver: staticResolver("Form"),
+      },
+      {
+        segment: "flags",
+        resolver: staticResolver("Flags"),
+      },
+      {
+        segment: "observability",
+        resolver: staticResolver("Observability"),
+      },
+      {
+        segment: "a11y-theme",
+        resolver: staticResolver("A11y & Theme"),
+      },
+      {
         segment: "sentry",
         resolver: staticResolver("Sentry"),
       },
