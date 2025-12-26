@@ -127,6 +127,36 @@ const loggingConfigSchema = z.object({
 });
 
 /**
+ * Authentication/OAuth configuration.
+ */
+const authConfigSchema = z.object({
+  /**
+   * Google OAuth Client ID.
+   * Required for Google OAuth authentication.
+   */
+  googleClientId: z.string().optional(),
+
+  /**
+   * Google OAuth Client Secret.
+   * @security Server-only - never expose to client
+   */
+  googleClientSecret: z.string().optional(),
+
+  /**
+   * Session encryption secret.
+   * Must be at least 32 characters.
+   * @security Server-only - never expose
+   */
+  sessionSecret: z.string().optional(),
+
+  /**
+   * Session TTL in seconds.
+   * @default 604800 (7 days)
+   */
+  sessionTtlSeconds: z.number().positive(),
+});
+
+/**
  * Complete configuration schema for Atlas application.
  *
  * This is the single source of truth for what configuration looks like.
@@ -159,6 +189,11 @@ export const configSchema = z.object({
   logging: loggingConfigSchema,
 
   /**
+   * Authentication/OAuth configuration (server-side only).
+   */
+  auth: authConfigSchema,
+
+  /**
    * Feature flags for runtime behavior control.
    * Each key is a feature name, each value is a boolean toggle.
    *
@@ -175,10 +210,11 @@ export type Config = z.infer<typeof configSchema>;
 
 /**
  * Client-safe configuration schema.
- * Excludes server-only fields like logging config.
+ * Excludes server-only fields like logging config and auth secrets.
  */
 export const clientConfigSchema = configSchema.omit({
   logging: true,
+  auth: true,
 });
 
 /**

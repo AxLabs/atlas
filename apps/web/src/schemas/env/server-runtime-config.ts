@@ -243,4 +243,52 @@ export const ServerEnvSchema = {
     .string()
     .transform((val) => val === "true")
     .optional(),
+
+  // ============================================================================
+  // OAuth / Authentication
+  // ============================================================================
+
+  /**
+   * Google OAuth Client ID.
+   * Required for Google OAuth authentication.
+   * Optional in test environment.
+   *
+   * @see https://console.cloud.google.com/apis/credentials
+   * @example '123456789-abc123.apps.googleusercontent.com'
+   */
+  GOOGLE_CLIENT_ID: z.string().optional(),
+
+  /**
+   * Google OAuth Client Secret.
+   * Required for Google OAuth authentication.
+   * Optional in test environment.
+   *
+   * @security Keep this secret secure - never expose to client
+   * @see https://console.cloud.google.com/apis/credentials
+   */
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
+  /**
+   * Secret key used to encrypt/sign session cookies.
+   * Must be at least 32 characters for secure encryption.
+   * Optional in test environment.
+   *
+   * @security Keep this secret secure - never expose
+   * @example Generate with: openssl rand -base64 32
+   */
+  AUTH_SESSION_SECRET: z.string().optional(),
+
+  /**
+   * Session time-to-live in seconds.
+   * Default: 7 days (604800 seconds)
+   *
+   * @default 604800
+   * @example '86400' (1 day), '604800' (7 days)
+   */
+  AUTH_SESSION_TTL_SECONDS: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .pipe(z.number().positive())
+    .optional()
+    .default("604800"),
 };

@@ -12,6 +12,9 @@ export const clientEnv = {
   get NEXT_PUBLIC_API_URL() {
     return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
   },
+  get NEXT_PUBLIC_APP_URL() {
+    return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  },
   get NEXT_PUBLIC_APP_ENV() {
     return process.env.NEXT_PUBLIC_APP_ENV as "development" | "staging" | "production" | undefined;
   },
@@ -80,6 +83,21 @@ export const serverEnv = {
   },
   get SENTRY_ENABLE_IN_DEV() {
     return process.env.SENTRY_ENABLE_IN_DEV;
+  },
+  // OAuth / Authentication
+  get GOOGLE_CLIENT_ID() {
+    return process.env.GOOGLE_CLIENT_ID;
+  },
+  get GOOGLE_CLIENT_SECRET() {
+    return process.env.GOOGLE_CLIENT_SECRET;
+  },
+  get AUTH_SESSION_SECRET() {
+    return process.env.AUTH_SESSION_SECRET || "test-session-secret-32-chars-min";
+  },
+  get AUTH_SESSION_TTL_SECONDS() {
+    return process.env.AUTH_SESSION_TTL_SECONDS
+      ? parseInt(process.env.AUTH_SESSION_TTL_SECONDS, 10)
+      : 604800;
   },
 };
 

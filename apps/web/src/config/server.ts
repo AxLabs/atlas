@@ -81,6 +81,13 @@ export function getServerConfig(): Config {
       level: serverEnv.LOG_LEVEL ?? "info",
     },
 
+    auth: {
+      googleClientId: serverEnv.GOOGLE_CLIENT_ID,
+      googleClientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
+      sessionSecret: serverEnv.AUTH_SESSION_SECRET,
+      sessionTtlSeconds: serverEnv.AUTH_SESSION_TTL_SECONDS ?? 604800,
+    },
+
     features: {
       // Feature flags - set via environment variables
       // See docs/FEATURE_FLAGS.md for documentation

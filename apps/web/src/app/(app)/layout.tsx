@@ -19,20 +19,7 @@ import React from "react";
 
 import { AppShell } from "@/components/layout";
 
-/**
- * Example header component.
- * Replace with your actual header/topnav component.
- */
-function AppHeader() {
-  return (
-    <div className="flex h-14 items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-4">
-        <span className="text-lg font-semibold">Atlas</span>
-      </div>
-      <div className="flex items-center gap-4">{/* Add user menu, theme toggle, etc. */}</div>
-    </div>
-  );
-}
+import { AppHeader } from "./app-header";
 
 /**
  * Example sidebar component.
