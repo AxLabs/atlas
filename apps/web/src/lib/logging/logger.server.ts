@@ -2,7 +2,8 @@ import "server-only";
 
 import pino from "pino";
 
-import { serverConfig } from "@/config";
+import { serverConfig } from "@/config/server";
+import { redact } from "@/lib/security/redact";
 
 import { getRequestContext } from "./request-context.server";
 
@@ -78,22 +79,33 @@ const pinoLogger = pino({
 });
 
 /**
- * Merge request context into log fields
+ * Merge request context into log fields and apply PII redaction
  */
 function withContext(fields: BaseLogFields): BaseLogFields {
   const ctx = getRequestContext();
-  if (!ctx) {
-    return fields;
+
+  // First merge context
+  const fieldsWithContext = ctx
+    ? {
+        ...fields,
+        requestId: ctx.requestId,
+        ...(ctx.route && { route: ctx.route }),
+        ...(ctx.method && { method: ctx.method }),
+        ...(ctx.userId && { userId: ctx.userId }),
+        ...(ctx.tenantId && { tenantId: ctx.tenantId }),
+      }
+    : fields;
+
+  // Apply redaction to remove sensitive data
+  // Preserve known safe fields and redact the rest
+  const redacted = redact(fieldsWithContext) as BaseLogFields;
+
+  // Ensure event field is preserved (it's required)
+  if (!redacted.event && fieldsWithContext.event) {
+    redacted.event = fieldsWithContext.event;
   }
 
-  return {
-    ...fields,
-    requestId: ctx.requestId,
-    ...(ctx.route && { route: ctx.route }),
-    ...(ctx.method && { method: ctx.method }),
-    ...(ctx.userId && { userId: ctx.userId }),
-    ...(ctx.tenantId && { tenantId: ctx.tenantId }),
-  };
+  return redacted;
 }
 
 /**

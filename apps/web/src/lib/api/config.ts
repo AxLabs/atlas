@@ -2,16 +2,20 @@
  * API Configuration
  *
  * Centralized configuration for API client behavior.
- * Uses the config facade to access base URLs and common settings.
+ *
+ * NOTE: getApiBaseUrl() is for SERVER-SIDE ONLY.
+ * For client-side, use useApiClient() hook from './hooks'
  */
 
-import { getServerConfig } from "@/config";
+// Server-only import - do not use in client code
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const getServerConfig =
+  typeof window === "undefined" ? require("@/config/server").getServerConfig : null;
 
 /**
  * Get the API base URL from configuration.
  *
- * This function provides server-side access to the API base URL.
- * For client-side usage, use the useConfig() hook instead.
+ * SERVER-SIDE ONLY. For client-side usage, use the useApiClient() hook instead.
  *
  * @example Server-side usage
  * ```tsx
@@ -26,17 +30,18 @@ import { getServerConfig } from "@/config";
  *
  * @example Client-side usage
  * ```tsx
- * import { useConfig } from '@/config';
+ * import { useApiClient } from '@/lib/api/hooks';
  *
  * function MyComponent() {
- *   const config = useConfig();
- *   const baseUrl = config.api.baseUrl;
- *   // Use baseUrl...
+ *   const api = useApiClient();
+ *   // api.get(), api.post(), etc. use runtime config
  * }
  * ```
  */
 export function getApiBaseUrl(): string {
-  // Server-side only: uses config facade
+  if (typeof window !== "undefined") {
+    throw new Error("getApiBaseUrl() is server-only. Use useApiClient() hook on the client.");
+  }
   return getServerConfig().api.baseUrl;
 }
 

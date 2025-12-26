@@ -18,6 +18,54 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true,
   },
+  // Security headers baseline
+  async headers() {
+    // Determine if HSTS should be enabled (production only with HTTPS)
+    const enableHSTS = process.env.ENABLE_HSTS === "true" && process.env.NODE_ENV === "production";
+
+    const securityHeaders = [
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "DENY",
+      },
+      {
+        key: "Cross-Origin-Opener-Policy",
+        value: "same-origin",
+      },
+      {
+        key: "Cross-Origin-Resource-Policy",
+        value: "same-site",
+      },
+    ];
+
+    // Add HSTS if enabled
+    if (enableHSTS) {
+      securityHeaders.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=31536000; includeSubDomains; preload",
+      });
+    }
+
+    return [
+      {
+        // Apply to all routes
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
+  },
 };
 
 // Apply bundle analyzer first

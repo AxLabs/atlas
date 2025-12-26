@@ -10,7 +10,6 @@
  *
  * @module config/server
  */
-
 import { clientEnv, serverEnv } from "@/env";
 
 import { configSchema } from "./schema";

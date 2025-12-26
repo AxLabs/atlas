@@ -26,8 +26,10 @@ export {
 // Runtime-aware hooks for client components
 export { useApiBaseUrl, useApiClient } from "./hooks";
 
-// Configuration
-export { DEFAULT_TIMEOUT, getApiBaseUrl, RETRY_CONFIG } from "./config";
+// Configuration (client-safe constants only)
+export { DEFAULT_TIMEOUT, RETRY_CONFIG } from "./config";
+
+// Server-only: getApiBaseUrl - import from "@/lib/api/config" directly in server code
 
 // Errors
 export {

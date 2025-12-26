@@ -49,8 +49,12 @@
 // ============================================================================
 // Server Exports (use in server components, API routes, middleware)
 // ============================================================================
+//
+// NOTE: Import these directly from "@/config/server" in server code
+// to avoid bundling server-only code in client bundles
 
-export { getServerConfig, serverConfig } from "./server";
+// DO NOT RE-EXPORT SERVER CONFIG HERE - causes bundling issues
+// Use: import { getServerConfig } from "@/config/server"
 
 // ============================================================================
 // Client Exports (use in client components, hooks)

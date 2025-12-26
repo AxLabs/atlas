@@ -1,14 +1,21 @@
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
+import { buildCSP, getCSPHeaderName } from "@/lib/security/csp";
+
+import type { CSPMode } from "@/lib/security/csp";
 import type { NextRequest } from "next/server";
 
 /**
  * Middleware to ensure every request has a correlation ID (x-request-id)
+ * and applies Content Security Policy (CSP) headers.
+ *
  * - Preserves incoming x-request-id if provided
  * - Generates a new UUID if not provided
  * - Adds x-request-id to response headers
  * - Sets Sentry context with correlationId
+ * - Generates per-request nonce for CSP
+ * - Applies CSP header based on environment configuration
  * - Excludes static assets
  */
 export function middleware(request: NextRequest) {
@@ -26,14 +33,18 @@ export function middleware(request: NextRequest) {
   const existingRequestId = request.headers.get("x-request-id");
   const requestId = existingRequestId ?? crypto.randomUUID();
 
+  // Generate CSP nonce (per-request)
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+
   // Set Sentry context for this request
   Sentry.setTag("correlationId", requestId);
   Sentry.setTag("route", pathname);
   Sentry.setTag("runtime", "edge");
 
-  // Create new headers with x-request-id
+  // Create new headers with x-request-id and x-nonce
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-request-id", requestId);
+  requestHeaders.set("x-nonce", nonce); // Pass nonce to server components
 
   // Create response with modified headers
   const response = NextResponse.next({
@@ -45,7 +56,77 @@ export function middleware(request: NextRequest) {
   // Add x-request-id to response headers
   response.headers.set("x-request-id", requestId);
 
+  // Add CSP header based on configuration
+  const cspMode = getCspMode();
+  const cspHeaderName = getCSPHeaderName(cspMode);
+
+  if (cspHeaderName) {
+    const cspValue = buildCSP({
+      mode: cspMode,
+      nonce,
+      env: getAppEnv(),
+      allowlist: {
+        scriptSrc: parseCSPList(process.env.CSP_SCRIPT_SRC),
+        connectSrc: parseCSPList(process.env.CSP_CONNECT_SRC),
+        imgSrc: parseCSPList(process.env.CSP_IMG_SRC),
+        fontSrc: parseCSPList(process.env.CSP_FONT_SRC),
+        styleSrc: parseCSPList(process.env.CSP_STYLE_SRC),
+        frameSrc: parseCSPList(process.env.CSP_FRAME_SRC),
+        frameAncestors: parseCSPList(process.env.CSP_FRAME_ANCESTORS),
+      },
+      reportUri: process.env.CSP_REPORT_URI,
+    });
+
+    response.headers.set(cspHeaderName, cspValue);
+  }
+
   return response;
+}
+
+/**
+ * Get CSP mode from environment with smart defaults
+ * - off: CSP disabled
+ * - report-only: CSP violations reported but not blocked (dev/staging)
+ * - enforce: CSP violations blocked (production)
+ */
+function getCspMode(): CSPMode {
+  const mode = process.env.CSP_MODE as CSPMode | undefined;
+  if (mode === "off" || mode === "report-only" || mode === "enforce") {
+    return mode;
+  }
+
+  // Smart defaults based on environment
+  const env = getAppEnv();
+  if (env === "production") {
+    return "enforce";
+  }
+
+  // Dev/staging: use report-only to avoid breaking local DX
+  return "report-only";
+}
+
+/**
+ * Get app environment from NODE_ENV
+ */
+function getAppEnv(): "development" | "staging" | "production" {
+  const nodeEnv = process.env.NODE_ENV;
+
+  if (nodeEnv === "production") return "production";
+  if (nodeEnv === "test") return "development";
+
+  return "development";
+}
+
+/**
+ * Parse comma-separated CSP allowlist
+ */
+function parseCSPList(value: string | undefined): string[] | undefined {
+  if (!value) return undefined;
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 /**

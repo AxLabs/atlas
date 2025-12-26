@@ -10,7 +10,7 @@
  * - Retry logic for transient failures
  */
 
-import { getApiBaseUrl, RETRY_CONFIG } from "./config";
+import { RETRY_CONFIG } from "./config";
 import { CORRELATION_ID_HEADER, extractCorrelationId, generateCorrelationId } from "./correlation";
 import { ApiError, normalizeApiError } from "./errors";
 
@@ -113,8 +113,9 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
     ...fetchOptions
   } = options;
 
-  const baseUrl = getApiBaseUrl();
-  const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
+  // Endpoint should be a full URL when called from client code
+  // The hooks layer (useApiClient) builds the full URL from runtime config
+  const url = endpoint;
 
   // Build headers
   const headers = new Headers(fetchOptions.headers);

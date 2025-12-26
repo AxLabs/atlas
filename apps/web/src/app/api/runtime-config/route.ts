@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 
-import { getServerConfig } from "@/config";
+import { getServerConfig } from "@/config/server";
 import { runtimeConfigSchema } from "@/lib/runtime-config/schema";
 
 import type { RuntimeConfig } from "@/lib/runtime-config/schema";
