@@ -8,7 +8,7 @@
  */
 
 // Server-only import - do not use in client code
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const getServerConfig =
   typeof window === "undefined" ? require("@/config/server").getServerConfig : null;
 

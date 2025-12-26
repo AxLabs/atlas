@@ -255,7 +255,7 @@ export function redactString(str: string): string {
   let result = str;
 
   // Redact Authorization headers (everything after "Authorization:")
-  // eslint-disable-next-line security/detect-unsafe-regex -- Designed for log redaction, not user-facing
+
   result = result.replace(
     /Authorization:\s*[^\s,\n]+(\s+[^\s,\n]+)*/gi,
     "Authorization: [REDACTED]"

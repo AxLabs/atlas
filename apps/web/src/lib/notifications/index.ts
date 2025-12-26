@@ -29,5 +29,5 @@
  * ```
  */
 
-export { notify, notifyApiError } from "./notify";
 export type { NotifyOptions } from "./notify";
+export { notify, notifyApiError } from "./notify";

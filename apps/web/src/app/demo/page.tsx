@@ -89,6 +89,8 @@ import {
   TooltipTrigger,
 } from "@atlas/ui";
 
+import { AnalyticsDemo } from "@/components/AnalyticsDemo";
+
 // ============================================================================
 // Payment Method Form (Column 1)
 // ============================================================================
@@ -773,6 +775,7 @@ export default function DemoPage() {
             {/* Column 2: Various Components */}
             <div className="flex flex-col gap-6">
               <EmptyAvatarGroup />
+              <AnalyticsDemo />
               <SpinnerBadge />
               <PriceRangeSlider />
               <InputGroupDemo />

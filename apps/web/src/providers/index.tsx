@@ -4,6 +4,7 @@ import { WebVitalsReporter } from "@/components/WebVitalsReporter";
 import { FeatureFlagsProvider } from "@/lib/feature-flags";
 import { RuntimeConfigProvider } from "@/lib/runtime-config";
 
+import { AnalyticsProvider } from "./analytics-provider";
 import { EnvProvider } from "./env-provider";
 import { ReactQueryProvider } from "./react-query-provider";
 import { ThemeProvider } from "./theme-provider";
@@ -19,8 +20,10 @@ export function MainProvider({ children }: { children: React.ReactNode }) {
           <ThemeProvider>
             <ReactQueryProvider>
               <ToasterProvider>
-                <WebVitalsReporter />
-                {children}
+                <AnalyticsProvider>
+                  <WebVitalsReporter />
+                  {children}
+                </AnalyticsProvider>
               </ToasterProvider>
             </ReactQueryProvider>
           </ThemeProvider>

@@ -115,4 +115,45 @@ export const ClientEnvSchema = {
    * @example 'true'
    */
   NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV: z.string().optional(),
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Analytics Configuration
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * PostHog API key for analytics.
+   * When provided, PostHog analytics is enabled.
+   *
+   * @example 'phc_xxxxxxxxxxxxx'
+   * @see docs/analytics.md
+   */
+  NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+
+  /**
+   * PostHog API host URL.
+   * Defaults to PostHog cloud (https://us.i.posthog.com).
+   *
+   * @example 'https://us.i.posthog.com', 'https://eu.posthog.com'
+   */
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
+
+  /**
+   * Google Analytics 4 Measurement ID.
+   * When provided, GA4 analytics is enabled.
+   *
+   * @example 'G-XXXXXXXXXX'
+   * @see docs/analytics.md
+   */
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
+
+  /**
+   * Enable analytics debug mode.
+   * When enabled, analytics events are logged to console.
+   *
+   * @default false
+   */
+  NEXT_PUBLIC_ANALYTICS_DEBUG: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
 };

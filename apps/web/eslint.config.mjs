@@ -37,6 +37,9 @@ export default [
       "src/config/**",
       // Allowed: runtime-config endpoint (server-side config assembly)
       "src/app/api/runtime-config/route.ts",
+      // Allowed: analytics adapters and provider (check env vars at runtime)
+      "src/lib/analytics/adapters/**",
+      "src/providers/analytics-provider.tsx",
       // Allowed: test setup
       "src/test/**",
       "**/__tests__/**",
@@ -106,6 +109,39 @@ export default [
     },
   },
   {
+    // Ban direct analytics vendor SDK imports outside the analytics adapter layer
+    // Application code should use @/lib/analytics, never posthog-js or gtag directly
+    files: [
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "posthog-js",
+              message:
+                "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
+                "  import { analytics } from '@/lib/analytics';\n" +
+                "This ensures consistent event tracking and consent management.",
+            },
+            {
+              name: "posthog-js/react",
+              message:
+                "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
+                "  import { analytics } from '@/lib/analytics';\n" +
+                "This ensures consistent event tracking and consent management.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Ban direct process.env usage - use env module instead
     // This prevents env var sprawl and ensures validation
     files: [
@@ -116,6 +152,8 @@ export default [
       "src/env/**",
       "src/schemas/env/**",
       "src/app/api/**/route.ts", // API routes may need direct env access for runtime config
+      "src/lib/analytics/adapters/**", // Analytics adapters check for env vars at runtime
+      "src/providers/analytics-provider.tsx", // Analytics provider checks for env vars
       "src/test/**",
       "**/__tests__/**",
       "**/*.test.{ts,tsx}",
