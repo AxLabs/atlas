@@ -33,6 +33,8 @@ import {
 import { SignInButton, UserMenu } from "@/components/auth";
 import { useSession } from "@/lib/auth/useSession";
 
+import type { SessionResponse } from "@/lib/auth/types";
+
 function SessionStatusBadge({
   status,
 }: {
@@ -56,6 +58,67 @@ function SessionStatusBadge({
         </Badge>
       );
   }
+}
+
+/**
+ * Session content component to avoid nested ternaries
+ */
+function SessionContent({
+  status,
+  user,
+  provider,
+}: {
+  status: "loading" | "authenticated" | "unauthenticated";
+  user: SessionResponse["user"] | null;
+  provider: SessionResponse["provider"] | null;
+}) {
+  if (status === "loading") {
+    return (
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-16 w-16 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-48" />
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated" && user) {
+    return (
+      <div className="flex items-center gap-4">
+        <Avatar className="h-16 w-16">
+          <AvatarImage src={user.avatarUrl || undefined} alt={user.name || "User"} />
+          <AvatarFallback className="text-lg">
+            {user.name
+              ?.split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase() || "U"}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="text-lg font-medium">{user.name || "Unknown"}</p>
+          <p className="text-muted-foreground text-sm">{user.email}</p>
+          {provider && (
+            <p className="text-muted-foreground text-xs">
+              via <span className="capitalize">{provider}</span>
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-4 rounded-lg border border-dashed p-6">
+      <User className="text-muted-foreground h-12 w-12" />
+      <div>
+        <p className="font-medium">Not signed in</p>
+        <p className="text-muted-foreground text-sm">Sign in with Google to see session data</p>
+      </div>
+    </div>
+  );
 }
 
 export default function AuthDemoPage() {
@@ -83,53 +146,12 @@ export default function AuthDemoPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {status === "loading" ? (
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-16 w-16 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-48" />
-              </div>
-            </div>
-          ) : status === "authenticated" && user ? (
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={user.avatarUrl || undefined} alt={user.name || "User"} />
-                <AvatarFallback className="text-lg">
-                  {user.name
-                    ?.split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-lg font-medium">{user.name || "Unknown"}</p>
-                <p className="text-muted-foreground text-sm">{user.email}</p>
-                {provider && (
-                  <p className="text-muted-foreground text-xs">
-                    via <span className="capitalize">{provider}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4 rounded-lg border border-dashed p-6">
-              <User className="text-muted-foreground h-12 w-12" />
-              <div>
-                <p className="font-medium">Not signed in</p>
-                <p className="text-muted-foreground text-sm">
-                  Sign in with Google to see session data
-                </p>
-              </div>
-            </div>
-          )}
+          <SessionContent status={status} user={user} provider={provider} />
 
           {/* Actions */}
           <div className="flex items-center gap-3 border-t pt-4">
-            {status === "unauthenticated" ? (
-              <SignInButton returnTo="/demo/auth" />
-            ) : status === "authenticated" ? (
+            {status === "unauthenticated" && <SignInButton returnTo="/demo/auth" />}
+            {status === "authenticated" && (
               <>
                 <Button variant="outline" onClick={refresh}>
                   <RefreshCw className="mr-2 h-4 w-4" />
@@ -140,7 +162,7 @@ export default function AuthDemoPage() {
                   Sign Out
                 </Button>
               </>
-            ) : null}
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
+import { serverEnv } from "@/env";
 import { buildCSP, getCSPHeaderName } from "@/lib/security/csp";
 
 import type { CSPMode } from "@/lib/security/csp";
@@ -66,15 +67,15 @@ export function middleware(request: NextRequest) {
       nonce,
       env: getAppEnv(),
       allowlist: {
-        scriptSrc: parseCSPList(process.env.CSP_SCRIPT_SRC),
-        connectSrc: parseCSPList(process.env.CSP_CONNECT_SRC),
-        imgSrc: parseCSPList(process.env.CSP_IMG_SRC),
-        fontSrc: parseCSPList(process.env.CSP_FONT_SRC),
-        styleSrc: parseCSPList(process.env.CSP_STYLE_SRC),
-        frameSrc: parseCSPList(process.env.CSP_FRAME_SRC),
-        frameAncestors: parseCSPList(process.env.CSP_FRAME_ANCESTORS),
+        scriptSrc: parseCSPList(serverEnv.CSP_SCRIPT_SRC),
+        connectSrc: parseCSPList(serverEnv.CSP_CONNECT_SRC),
+        imgSrc: parseCSPList(serverEnv.CSP_IMG_SRC),
+        fontSrc: parseCSPList(serverEnv.CSP_FONT_SRC),
+        styleSrc: parseCSPList(serverEnv.CSP_STYLE_SRC),
+        frameSrc: parseCSPList(serverEnv.CSP_FRAME_SRC),
+        frameAncestors: parseCSPList(serverEnv.CSP_FRAME_ANCESTORS),
       },
-      reportUri: process.env.CSP_REPORT_URI,
+      reportUri: serverEnv.CSP_REPORT_URI,
     });
 
     response.headers.set(cspHeaderName, cspValue);
@@ -90,7 +91,7 @@ export function middleware(request: NextRequest) {
  * - enforce: CSP violations blocked (production)
  */
 function getCspMode(): CSPMode {
-  const mode = process.env.CSP_MODE as CSPMode | undefined;
+  const mode = serverEnv.CSP_MODE;
   if (mode === "off" || mode === "report-only" || mode === "enforce") {
     return mode;
   }
@@ -109,7 +110,7 @@ function getCspMode(): CSPMode {
  * Get app environment from NODE_ENV
  */
 function getAppEnv(): "development" | "staging" | "production" {
-  const nodeEnv = process.env.NODE_ENV;
+  const nodeEnv = serverEnv.NODE_ENV;
 
   if (nodeEnv === "production") return "production";
   if (nodeEnv === "test") return "development";

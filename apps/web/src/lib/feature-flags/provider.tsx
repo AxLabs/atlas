@@ -122,14 +122,9 @@ export function FeatureFlagsProvider({
   children,
   adapter: customAdapter,
 }: FeatureFlagsProviderProps) {
-  // Get runtime config - may be undefined in tests without RuntimeConfigProvider
-  let runtimeConfig: ReturnType<typeof useRuntimeConfig> | undefined;
-  try {
-    runtimeConfig = useRuntimeConfig();
-  } catch {
-    // RuntimeConfigProvider not available (e.g., in isolated tests)
-    runtimeConfig = undefined;
-  }
+  // Get runtime config - always call hook unconditionally (React rules of hooks)
+  // The hook itself handles the case when RuntimeConfigProvider is not available
+  const runtimeConfig = useRuntimeConfig();
 
   // Create adapter from runtime config if not provided
   const adapter = useMemo(

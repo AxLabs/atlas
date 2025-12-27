@@ -7,11 +7,6 @@
  * For client-side, use useApiClient() hook from './hooks'
  */
 
-// Server-only import - do not use in client code
-
-const getServerConfig =
-  typeof window === "undefined" ? require("@/config/server").getServerConfig : null;
-
 /**
  * Get the API base URL from configuration.
  *
@@ -38,10 +33,11 @@ const getServerConfig =
  * }
  * ```
  */
-export function getApiBaseUrl(): string {
+export async function getApiBaseUrl(): Promise<string> {
   if (typeof window !== "undefined") {
     throw new Error("getApiBaseUrl() is server-only. Use useApiClient() hook on the client.");
   }
+  const { getServerConfig } = await import("@/config/server");
   return getServerConfig().api.baseUrl;
 }
 

@@ -42,7 +42,8 @@ import {
 import { useDemoItems, useToggleDemoItemStatus } from "@/features/demo";
 import { ApiError } from "@/lib/api";
 
-import type { DemoMode } from "@/features/demo";
+import type { DemoItemsListResponse, DemoMode } from "@/features/demo";
+import type { UseMutationResult } from "@tanstack/react-query";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -50,6 +51,119 @@ function formatDate(iso: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/**
+ * Data content component to avoid nested ternaries
+ */
+function DataContent({
+  isLoading,
+  isError,
+  error,
+  data,
+  correlationId,
+  refetch,
+  toggleStatus,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  data: DemoItemsListResponse | undefined;
+  correlationId: string | undefined;
+  refetch: () => void;
+  toggleStatus: UseMutationResult<unknown, Error, string, unknown>;
+}) {
+  // Loading State
+  if (isLoading) {
+    return <SkeletonList count={4} className="space-y-3" />;
+  }
+
+  // Error State
+  if (isError) {
+    return (
+      <ErrorFallback
+        title="Failed to load items"
+        description={
+          error instanceof ApiError ? error.shape.userMessage : "An unexpected error occurred"
+        }
+        correlationId={correlationId}
+        onRetry={() => refetch()}
+      />
+    );
+  }
+
+  // Empty State
+  if (!data?.data.length) {
+    return (
+      <EmptyState
+        title="No items yet"
+        description="Get started by creating your first item."
+        actions={
+          <Button asChild>
+            <a href="/demo/form">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Item
+            </a>
+          </Button>
+        }
+      />
+    );
+  }
+
+  // Success State
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-12">Status</TableHead>
+          <TableHead>Title</TableHead>
+          <TableHead>Created</TableHead>
+          <TableHead className="w-24 text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.data.map((item) => (
+          <TableRow key={item.id}>
+            <TableCell>
+              {item.status === "closed" ? (
+                <CircleCheck className="h-5 w-5 text-green-500" />
+              ) : (
+                <Circle className="text-muted-foreground h-5 w-5" />
+              )}
+            </TableCell>
+            <TableCell>
+              <div>
+                <p
+                  className={
+                    item.status === "closed" ? "text-muted-foreground line-through" : "font-medium"
+                  }
+                >
+                  {item.title}
+                </p>
+                {item.description && (
+                  <p className="text-muted-foreground max-w-md truncate text-xs">
+                    {item.description}
+                  </p>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-muted-foreground">{formatDate(item.createdAt)}</TableCell>
+            <TableCell className="text-right">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleStatus.mutate(item.id)}
+                disabled={toggleStatus.isPending}
+              >
+                <ToggleLeft className="mr-1 h-4 w-4" />
+                Toggle
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }
 
 export default function DataDemoPage() {
@@ -121,91 +235,15 @@ export default function DataDemoPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Loading State */}
-          {isLoading ? (
-            <SkeletonList count={4} className="space-y-3" />
-          ) : /* Error State */
-          isError ? (
-            <ErrorFallback
-              title="Failed to load items"
-              description={
-                error instanceof ApiError ? error.shape.userMessage : "An unexpected error occurred"
-              }
-              correlationId={correlationId}
-              onRetry={() => refetch()}
-            />
-          ) : /* Empty State */
-          !data?.data.length ? (
-            <EmptyState
-              title="No items yet"
-              description="Get started by creating your first item."
-              actions={
-                <Button asChild>
-                  <a href="/demo/form">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Item
-                  </a>
-                </Button>
-              }
-            />
-          ) : (
-            /* Success State */
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Status</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-24 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.data.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      {item.status === "closed" ? (
-                        <CircleCheck className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <Circle className="text-muted-foreground h-5 w-5" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p
-                          className={
-                            item.status === "closed"
-                              ? "text-muted-foreground line-through"
-                              : "font-medium"
-                          }
-                        >
-                          {item.title}
-                        </p>
-                        {item.description && (
-                          <p className="text-muted-foreground max-w-md truncate text-xs">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(item.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleStatus.mutate(item.id)}
-                        disabled={toggleStatus.isPending}
-                      >
-                        <ToggleLeft className="mr-1 h-4 w-4" />
-                        Toggle
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataContent
+            isLoading={isLoading}
+            isError={isError}
+            error={error}
+            data={data}
+            correlationId={correlationId}
+            refetch={refetch}
+            toggleStatus={toggleStatus}
+          />
         </CardContent>
       </Card>
 

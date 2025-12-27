@@ -255,11 +255,8 @@ export function redactString(str: string): string {
   let result = str;
 
   // Redact Authorization headers (everything after "Authorization:")
-
-  result = result.replace(
-    /Authorization:\s*[^\s,\n]+(\s+[^\s,\n]+)*/gi,
-    "Authorization: [REDACTED]"
-  );
+  // Match Authorization: followed by non-whitespace token(s) on the same line
+  result = result.replace(/Authorization:\s*[^\n]+/gi, "Authorization: [REDACTED]");
 
   // Redact Bearer tokens (standalone, not part of Authorization header)
   result = result.replace(/\bBearer\s+[\w-]+\.[\w-]+\.[\w-]+/g, "Bearer [REDACTED]");
