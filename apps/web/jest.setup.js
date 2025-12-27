@@ -15,6 +15,39 @@ jest.mock("./src/env", () => {
   return mockEnv;
 });
 
+// Mock runtime-config to provide test defaults for useRuntimeConfig hook
+jest.mock("./src/lib/runtime-config", () => ({
+  ...jest.requireActual("./src/lib/runtime-config/schema"),
+  useRuntimeConfig: () => ({
+    apiBaseUrl: "http://localhost:3000/api",
+    appUrl: "http://localhost:3000",
+    environment: "development",
+    buildId: "test-build",
+    featureFlags: {},
+    webVitals: {
+      enabled: false,
+      sampleRate: 0,
+      endpoint: "/api/telemetry/web-vitals",
+      debug: false,
+    },
+  }),
+  RuntimeConfigProvider: ({ children }) => children,
+  loadRuntimeConfig: jest.fn().mockResolvedValue({
+    apiBaseUrl: "http://localhost:3000/api",
+    appUrl: "http://localhost:3000",
+    environment: "development",
+    buildId: "test-build",
+    featureFlags: {},
+    webVitals: {
+      enabled: false,
+      sampleRate: 0,
+      endpoint: "/api/telemetry/web-vitals",
+      debug: false,
+    },
+  }),
+  clearRuntimeConfigCache: jest.fn(),
+}));
+
 // Setup MSW for API mocking
 // Note: MSW v1 has limitations in Node.js/jsdom environments
 // For most tests, prefer mocking fetch directly with jest.fn()
