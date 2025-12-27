@@ -25,6 +25,7 @@ const preview: Preview = {
     }),
     (Story) => (
       <div
+        className="bg-background text-foreground"
         style={{
           minHeight: "400px",
           display: "flex",
