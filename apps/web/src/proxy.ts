@@ -8,7 +8,7 @@ import type { CSPMode } from "@/lib/security/csp";
 import type { NextRequest } from "next/server";
 
 /**
- * Middleware to ensure every request has a correlation ID (x-request-id)
+ * Proxy (formerly middleware) to ensure every request has a correlation ID (x-request-id)
  * and applies Content Security Policy (CSP) headers.
  *
  * - Preserves incoming x-request-id if provided
@@ -19,7 +19,7 @@ import type { NextRequest } from "next/server";
  * - Applies CSP header based on environment configuration
  * - Excludes static assets
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Skip static assets
   const pathname = request.nextUrl.pathname;
   if (
@@ -131,7 +131,7 @@ function parseCSPList(value: string | undefined): string[] | undefined {
 }
 
 /**
- * Configure which routes this middleware runs on
+ * Configure which routes this proxy runs on
  * We want it on all routes except static assets (handled above)
  */
 export const config = {

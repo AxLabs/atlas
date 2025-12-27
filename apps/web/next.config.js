@@ -14,10 +14,6 @@ const nextConfig = {
   serverExternalPackages: ["pino", "pino-pretty"],
   // Empty turbopack config to acknowledge Turbopack while using webpack plugins
   turbopack: {},
-  // Enable instrumentation for Sentry
-  experimental: {
-    instrumentationHook: true,
-  },
   // Security headers baseline
   async headers() {
     // Determine if HSTS should be enabled (production only with HTTPS)
