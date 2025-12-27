@@ -104,7 +104,7 @@ export default function DemoLandingPage() {
 
       {/* Important Notice */}
       <Card className="border-amber-500/50 bg-amber-500/5">
-        <CardContent className="flex items-start gap-3 pt-6">
+        <CardContent className="flex items-start gap-3 py-4">
           <AlertCircle className="h-5 w-5 shrink-0 text-amber-500" />
           <div className="space-y-1">
             <p className="font-medium">Demo Mode Active</p>
