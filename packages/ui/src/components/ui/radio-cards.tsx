@@ -28,7 +28,7 @@ function RadioCardsItem({
     <RadioGroupPrimitive.Item
       data-slot="radio-cards-item"
       className={cn(
-        "border-input bg-background hover:bg-accent/50 data-[state=checked]:border-ring data-[state=checked]:bg-primary/5 dark:data-[state=checked]:bg-primary/10 group relative flex cursor-pointer items-start gap-4 rounded-lg border p-4 shadow-xs transition-all outline-none",
+        "border-input bg-background hover:bg-accent/50 data-[state=checked]:border-ring data-[state=checked]:bg-accent group relative flex cursor-pointer rounded-lg border p-4 text-left shadow-xs transition-all outline-none",
         "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -36,13 +36,13 @@ function RadioCardsItem({
       )}
       {...props}
     >
-      <div className="flex flex-1 flex-col gap-1">{children}</div>
+      <div className="flex flex-1 flex-col gap-1 pr-6">{children}</div>
       <span
         data-slot="radio-cards-indicator"
-        className="border-input text-primary group-data-[state=checked]:border-primary dark:bg-input/30 flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border shadow-xs transition-[color,box-shadow]"
+        className="border-muted-foreground/40 group-data-[state=checked]:border-primary absolute top-4 right-4 flex aspect-square size-3.5 shrink-0 items-center justify-center rounded-full border transition-[color,box-shadow]"
       >
         <RadioGroupPrimitive.Indicator className="relative flex items-center justify-center">
-          <CircleIcon className="fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
+          <CircleIcon className="fill-primary stroke-primary size-2" />
         </RadioGroupPrimitive.Indicator>
       </span>
     </RadioGroupPrimitive.Item>
