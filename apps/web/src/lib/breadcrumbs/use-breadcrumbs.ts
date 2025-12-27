@@ -19,7 +19,7 @@ import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { breadcrumbTree, buildBreadcrumbs } from "@/lib/breadcrumbs";
-import { t as translate } from "@/lib/i18n";
+import { hasTranslation, t as translate, type TranslationKey } from "@/lib/i18n";
 
 import type { BreadcrumbItem, BreadcrumbNode } from "@/lib/breadcrumbs";
 
@@ -66,13 +66,11 @@ export interface UseBreadcrumbsResult {
  * Falls back to the fallback value for unknown keys.
  */
 function translateKey(key: string, fallback?: string): string {
-  // Try to translate, fall back to provided fallback or key
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return translate(key as any, fallback);
-  } catch {
-    return fallback ?? key;
+  // Check if the key exists in translations before calling t()
+  if (hasTranslation(key)) {
+    return translate(key as TranslationKey, fallback);
   }
+  return fallback ?? key;
 }
 
 /**

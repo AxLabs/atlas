@@ -24,16 +24,20 @@ export function getFieldErrorMessage(errors: FieldErrors, name: string): string 
   // Split nested path (e.g., "user.email" => ["user", "email"])
   const keys = name.split(".");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let current: any = errors;
+  let current: unknown = errors;
 
   for (const key of keys) {
     if (!current || typeof current !== "object") {
       return undefined;
     }
-    current = current[key];
+    current = (current as Record<string, unknown>)[key];
   }
 
-  // Return message if it exists
-  return current?.message as string | undefined;
+  // Return message if it exists and is a string
+  if (current && typeof current === "object" && "message" in current) {
+    const { message } = current as { message?: unknown };
+    return typeof message === "string" ? message : undefined;
+  }
+
+  return undefined;
 }

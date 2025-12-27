@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
@@ -19,6 +18,20 @@ export type ChartConfig = Record<
     | { color?: never; theme: Record<keyof typeof THEMES, string> }
   )
 >;
+
+/**
+ * Payload item from Recharts tooltip/legend.
+ */
+interface ChartPayloadItem {
+  value?: string | number;
+  name?: string;
+  dataKey?: string | number;
+  type?: string;
+  color?: string;
+  fill?: string;
+  payload?: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 interface ChartContextProps {
   config: ChartConfig;
@@ -114,11 +127,17 @@ function ChartTooltipContent({
   labelKey,
 }: React.ComponentProps<"div"> & {
   active?: boolean;
-  payload?: any[];
+  payload?: ChartPayloadItem[];
   label?: string;
-  labelFormatter?: (value: any, payload: any[]) => React.ReactNode;
+  labelFormatter?: (value: React.ReactNode, payload: ChartPayloadItem[]) => React.ReactNode;
   labelClassName?: string;
-  formatter?: (value: any, name: any, item: any, index: number, payload: any) => React.ReactNode;
+  formatter?: (
+    value: string | number | undefined,
+    name: string | undefined,
+    item: ChartPayloadItem,
+    index: number,
+    payload: Record<string, unknown>
+  ) => React.ReactNode;
   color?: string;
   hideLabel?: boolean;
   hideIndicator?: boolean;
@@ -168,11 +187,11 @@ function ChartTooltipContent({
       {!nestLabel ? tooltipLabel : null}
       <div className="grid gap-1.5">
         {payload
-          .filter((item: any) => item.type !== "none")
-          .map((item: any, index: number) => {
+          .filter((item) => item.type !== "none")
+          .map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+            const indicatorColor = color || (item.payload?.fill as string) || item.color;
 
             return (
               <div
@@ -183,7 +202,7 @@ function ChartTooltipContent({
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(item.value, item.name, item, index, item.payload ?? {})
                 ) : (
                   <>
                     {itemConfig?.icon ? (
@@ -247,7 +266,7 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentProps<"div"> & {
-  payload?: any[];
+  payload?: ChartPayloadItem[];
   verticalAlign?: "top" | "bottom";
   hideIcon?: boolean;
   nameKey?: string;
@@ -267,8 +286,8 @@ function ChartLegendContent({
       )}
     >
       {payload
-        .filter((item: any) => item.type !== "none")
-        .map((item: any) => {
+        .filter((item) => item.type !== "none")
+        .map((item) => {
           const key = `${nameKey || item.dataKey || "value"}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
