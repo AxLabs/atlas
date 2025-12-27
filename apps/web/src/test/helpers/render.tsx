@@ -12,6 +12,7 @@ import { userEvent } from "@testing-library/user-event";
 import { createDefaultAdapter, FeatureFlagsProvider } from "@/lib/feature-flags";
 
 import { createTestQueryClient } from "./reactQuery";
+import { setMockPathname, setMockSearchParams } from "./router";
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { RenderOptions, RenderResult } from "@testing-library/react";
@@ -105,14 +106,10 @@ export function renderWithProviders(
 
   // Setup router mocks if route is provided
   if (route !== undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { setMockPathname } = require("./router");
     setMockPathname(route);
   }
 
   if (searchParams !== undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { setMockSearchParams } = require("./router");
     setMockSearchParams(searchParams);
   }
 
