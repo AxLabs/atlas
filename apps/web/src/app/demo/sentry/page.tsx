@@ -10,11 +10,13 @@
 import { useState } from "react";
 
 import { useConfig } from "@/config";
+import { useApiClient } from "@/lib/api/hooks";
 import { captureException, captureMessage } from "@/lib/telemetry/sentry.client";
 
 export default function SentryDemoPage() {
   const [status, setStatus] = useState<string>("");
   const config = useConfig();
+  const api = useApiClient();
 
   // Only render in non-production
   if (config.app.env === "production") {
@@ -59,9 +61,7 @@ export default function SentryDemoPage() {
 
   const testServerError = async () => {
     try {
-      // eslint-disable-next-line no-restricted-globals, no-restricted-syntax
-      const response = await fetch("/api/sentry-test-server");
-      const data = await response.json();
+      const data = await api.get<{ message: string }>("/api/sentry-test-server");
       setStatus(`✅ ${data.message}`);
     } catch {
       setStatus("❌ Failed to trigger server test");

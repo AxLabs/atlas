@@ -3,6 +3,8 @@
  *
  * Provides a configured MSW server for intercepting HTTP requests during tests.
  * This allows testing components and hooks that make API calls without hitting real endpoints.
+ *
+ * NOTE: Currently uses MSW v1 API. Migration to v2 is tracked in follow-up backlog.
  */
 
 import { rest } from "msw";
