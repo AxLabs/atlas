@@ -16,7 +16,6 @@ import { createTestQueryClient } from "./reactQuery";
 import type { QueryClient } from "@tanstack/react-query";
 import type { RenderOptions, RenderResult } from "@testing-library/react";
 import type React from "react";
-import type React from "react";
 
 /**
  * Options for renderWithProviders.
