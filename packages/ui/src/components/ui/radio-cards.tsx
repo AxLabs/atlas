@@ -39,10 +39,10 @@ function RadioCardsItem({
       <div className="flex flex-1 flex-col gap-1 pr-6">{children}</div>
       <span
         data-slot="radio-cards-indicator"
-        className="border-input group-data-[state=checked]:border-primary absolute top-4 right-4 flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border transition-[color,box-shadow]"
+        className="border-input text-primary dark:bg-input/30 absolute top-4 right-4 flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border shadow-xs transition-[color,box-shadow]"
       >
         <RadioGroupPrimitive.Indicator className="relative flex items-center justify-center">
-          <CircleIcon className="fill-primary size-2.5" />
+          <CircleIcon className="fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
         </RadioGroupPrimitive.Indicator>
       </span>
     </RadioGroupPrimitive.Item>

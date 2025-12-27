@@ -85,10 +85,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="field-content"
-      className={cn(
-        "flex flex-1 flex-col space-y-1.5 group-data-[orientation=horizontal]/field:space-y-1",
-        className
-      )}
+      className={cn("group/field-content flex flex-1 flex-col gap-1.5 leading-snug", className)}
       {...props}
     />
   );
@@ -106,7 +103,9 @@ function FieldLabel({
     <Comp
       data-slot="field-label"
       className={cn(
-        "group-data-invalid/field:text-destructive [&:has([role=radio])]:border-input [&:has([role=radio]:checked)]:border-ring inline-block text-sm leading-none font-medium tracking-tight [&:has([role=radio])]:cursor-pointer [&:has([role=radio])]:rounded-md [&:has([role=radio])]:border [&:has([role=radio])]:p-4 [&:has([role=radio])]:shadow-sm [&:has([role=radio])]:shadow-black/5",
+        "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50",
+        "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border *:data-[slot=field]:p-4",
+        "has-data-[state=checked]:bg-primary/5 has-data-[state=checked]:border-primary dark:has-data-[state=checked]:bg-primary/10",
         className
       )}
       {...props}

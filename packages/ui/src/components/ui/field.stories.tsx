@@ -12,6 +12,7 @@ import {
   FieldTitle,
 } from "./field";
 import { Input } from "./input";
+import { RadioGroup, RadioGroupItem } from "./radio-group";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
@@ -138,6 +139,102 @@ export const WithCheckbox: Story = {
           You agree to our Terms of Service and Privacy Policy.
         </FieldDescription>
       </Field>
+    </div>
+  ),
+};
+
+/**
+ * Choice Card - This is how shadcn/ui creates card-style radio selection.
+ * Instead of a custom RadioCards component, they use FieldLabel wrapping
+ * a Field with RadioGroupItem and FieldContent.
+ */
+export const ChoiceCard: Story = {
+  render: () => (
+    <div style={{ width: "400px" }}>
+      <FieldGroup>
+        <FieldSet>
+          <FieldLabel htmlFor="compute-environment">Compute Environment</FieldLabel>
+          <FieldDescription>Select the compute environment for your cluster.</FieldDescription>
+          <RadioGroup defaultValue="kubernetes">
+            <FieldLabel htmlFor="kubernetes">
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>Kubernetes</FieldTitle>
+                  <FieldDescription>
+                    Run GPU workloads on a K8s configured cluster.
+                  </FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value="kubernetes" id="kubernetes" />
+              </Field>
+            </FieldLabel>
+            <FieldLabel htmlFor="vm">
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>Virtual Machine</FieldTitle>
+                  <FieldDescription>
+                    Access a VM configured cluster to run GPU workloads.
+                  </FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value="vm" id="vm" />
+              </Field>
+            </FieldLabel>
+          </RadioGroup>
+        </FieldSet>
+      </FieldGroup>
+    </div>
+  ),
+};
+
+/**
+ * Choice Card Grid - Multiple choice cards in a grid layout
+ */
+export const ChoiceCardGrid: Story = {
+  render: () => (
+    <div style={{ width: "500px" }}>
+      <FieldGroup>
+        <FieldSet>
+          <FieldLabel>Subscription Plan</FieldLabel>
+          <FieldDescription>Choose your subscription plan.</FieldDescription>
+          <RadioGroup defaultValue="plus" className="grid grid-cols-2 gap-2">
+            <FieldLabel htmlFor="plus">
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>Plus</FieldTitle>
+                  <FieldDescription className="text-xs">For individuals</FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value="plus" id="plus" />
+              </Field>
+            </FieldLabel>
+            <FieldLabel htmlFor="pro">
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>Pro</FieldTitle>
+                  <FieldDescription className="text-xs">For small teams</FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value="pro" id="pro" />
+              </Field>
+            </FieldLabel>
+            <FieldLabel htmlFor="enterprise">
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>Enterprise</FieldTitle>
+                  <FieldDescription className="text-xs">For large teams</FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value="enterprise" id="enterprise" />
+              </Field>
+            </FieldLabel>
+            <FieldLabel htmlFor="custom">
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>Custom</FieldTitle>
+                  <FieldDescription className="text-xs">Contact us</FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value="custom" id="custom" />
+              </Field>
+            </FieldLabel>
+          </RadioGroup>
+        </FieldSet>
+      </FieldGroup>
     </div>
   ),
 };
