@@ -95,19 +95,14 @@ export function buildCSP(config: CSPConfig): string {
     // NOTE: Avoid 'unsafe-inline' and 'unsafe-eval' - use nonce instead
     "script-src": ["'self'", `'nonce-${config.nonce}'`, ...(config.allowlist?.scriptSrc ?? [])],
 
-    // Styles: self + nonce + unsafe-inline + unsafe-hashes
-    // - 'unsafe-inline': Allows inline <style> blocks (ignored when nonce is present)
-    // - 'unsafe-hashes': Allows inline style attributes set by JS (e.g., element.style.xxx)
-    // - Nonce: For explicit <style nonce="..."> blocks
-    // Note: When nonce is present, 'unsafe-inline' is ignored for <style> tags but
-    // 'unsafe-hashes' is still needed for inline style attributes
-    "style-src": [
-      "'self'",
-      `'nonce-${config.nonce}'`,
-      "'unsafe-inline'",
-      "'unsafe-hashes'",
-      ...(config.allowlist?.styleSrc ?? []),
-    ],
+    // Styles: self + unsafe-inline (no nonce)
+    // We don't use nonces for styles because:
+    // 1. Modern UI libraries (Radix, Headless UI, etc.) dynamically set inline styles
+    // 2. 'unsafe-inline' is needed for these dynamic styles to work
+    // 3. CSS injection is less dangerous than script injection
+    // 4. We still restrict to 'self' for external stylesheets
+    // This is a pragmatic security/functionality tradeoff commonly used in production apps
+    "style-src": ["'self'", "'unsafe-inline'", ...(config.allowlist?.styleSrc ?? [])],
 
     // Images: self + data URIs + HTTPS (for external images/CDNs)
     "img-src": ["'self'", "data:", "https:", ...(config.allowlist?.imgSrc ?? [])],
