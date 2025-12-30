@@ -95,12 +95,17 @@ export function buildCSP(config: CSPConfig): string {
     // NOTE: Avoid 'unsafe-inline' and 'unsafe-eval' - use nonce instead
     "script-src": ["'self'", `'nonce-${config.nonce}'`, ...(config.allowlist?.scriptSrc ?? [])],
 
-    // Styles: self + nonce + unsafe-inline for Tailwind/shadcn
-    // TODO: Consider moving to nonce-only if possible
+    // Styles: self + nonce + unsafe-inline + unsafe-hashes
+    // - 'unsafe-inline': Allows inline <style> blocks (ignored when nonce is present)
+    // - 'unsafe-hashes': Allows inline style attributes set by JS (e.g., element.style.xxx)
+    // - Nonce: For explicit <style nonce="..."> blocks
+    // Note: When nonce is present, 'unsafe-inline' is ignored for <style> tags but
+    // 'unsafe-hashes' is still needed for inline style attributes
     "style-src": [
       "'self'",
       `'nonce-${config.nonce}'`,
       "'unsafe-inline'",
+      "'unsafe-hashes'",
       ...(config.allowlist?.styleSrc ?? []),
     ],
 
