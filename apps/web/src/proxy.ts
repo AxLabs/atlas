@@ -62,13 +62,19 @@ export function proxy(request: NextRequest) {
   const cspHeaderName = getCSPHeaderName(cspMode);
 
   if (cspHeaderName) {
+    // Build CSP allowlists from environment
+    const connectSrc = parseCSPList(serverEnv.CSP_CONNECT_SRC) ?? [];
+
+    // Note: Sentry is routed through /monitoring tunnel (see next.config.js)
+    // so we don't need to add *.ingest.sentry.io to CSP
+
     const cspValue = buildCSP({
       mode: cspMode,
       nonce,
       env: getAppEnv(),
       allowlist: {
         scriptSrc: parseCSPList(serverEnv.CSP_SCRIPT_SRC),
-        connectSrc: parseCSPList(serverEnv.CSP_CONNECT_SRC),
+        connectSrc: connectSrc.length > 0 ? connectSrc : undefined,
         imgSrc: parseCSPList(serverEnv.CSP_IMG_SRC),
         fontSrc: parseCSPList(serverEnv.CSP_FONT_SRC),
         styleSrc: parseCSPList(serverEnv.CSP_STYLE_SRC),

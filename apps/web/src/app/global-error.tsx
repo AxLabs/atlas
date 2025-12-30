@@ -16,7 +16,9 @@
  * since those may have failed to render.
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { AlertTriangleIcon, RefreshCwIcon } from "lucide-react";
+import { useEffect } from "react";
 
 export default function GlobalError({
   error,
@@ -25,6 +27,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // Report error to Sentry
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
   return (
     <html lang="en">
       <body>

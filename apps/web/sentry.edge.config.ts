@@ -43,6 +43,9 @@ if (SENTRY_DSN) {
     environment: SENTRY_ENVIRONMENT,
     release: SENTRY_RELEASE,
 
+    // Enable logs to be sent to Sentry
+    enableLogs: true,
+
     // Performance Monitoring
     tracesSampleRate: sampleRates.tracesSampleRate,
 

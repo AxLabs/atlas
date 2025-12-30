@@ -50,6 +50,12 @@ if (SENTRY_DSN) {
     environment: SENTRY_ENVIRONMENT,
     release: SENTRY_RELEASE,
 
+    // Add request headers and IP for better error context
+    sendDefaultPii: true,
+
+    // Enable logs to be sent to Sentry
+    enableLogs: true,
+
     // Performance Monitoring
     tracesSampleRate: sampleRates.tracesSampleRate,
 
