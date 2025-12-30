@@ -12,7 +12,12 @@ import { ToasterProvider } from "./toaster-provider";
 
 import type React from "react";
 
-export function MainProvider({ children }: { children: React.ReactNode }) {
+interface MainProviderProps {
+  children: React.ReactNode;
+  nonce?: string;
+}
+
+export function MainProvider({ children, nonce }: MainProviderProps) {
   return (
     <RuntimeConfigProvider>
       <FeatureFlagsProvider>
@@ -20,7 +25,7 @@ export function MainProvider({ children }: { children: React.ReactNode }) {
           <ThemeProvider>
             <ReactQueryProvider>
               <ToasterProvider>
-                <AnalyticsProvider>
+                <AnalyticsProvider nonce={nonce}>
                   <WebVitalsReporter />
                   {children}
                 </AnalyticsProvider>

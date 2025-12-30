@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@atlas/ui";
 
 import { GlobalErrorHandler } from "@/components/SentryErrorBoundary";
+import { getNonce } from "@/lib/security/nonce";
 import { MainProvider } from "@/providers";
 
 import type { Metadata } from "next";
@@ -24,15 +25,18 @@ export const metadata: Metadata = {
   description: "Enterprise frontend platform built with Next.js",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = await getNonce();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -60,7 +64,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        <MainProvider>
+        <MainProvider nonce={nonce}>
           <GlobalErrorHandler />
           {children}
           <Toaster />

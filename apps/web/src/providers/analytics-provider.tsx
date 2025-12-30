@@ -87,6 +87,11 @@ interface AnalyticsProviderProps {
    * @default false
    */
   consentGranted?: boolean;
+  /**
+   * CSP nonce for inline scripts.
+   * Passed from server component to ensure CSP compliance.
+   */
+  nonce?: string;
 }
 
 /**
@@ -108,7 +113,11 @@ interface AnalyticsProviderProps {
  * }
  * ```
  */
-export function AnalyticsProvider({ children, consentGranted = false }: AnalyticsProviderProps) {
+export function AnalyticsProvider({
+  children,
+  consentGranted = false,
+  nonce,
+}: AnalyticsProviderProps) {
   const initialized = useRef(false);
   const config = getAnalyticsConfig();
 
@@ -166,7 +175,9 @@ export function AnalyticsProvider({ children, consentGranted = false }: Analytic
   return (
     <>
       {/* Inject GA script if configured */}
-      {config.ga && <GAScript measurementId={config.ga.measurementId} debug={config.debug} />}
+      {config.ga && (
+        <GAScript measurementId={config.ga.measurementId} debug={config.debug} nonce={nonce} />
+      )}
       {children}
     </>
   );
