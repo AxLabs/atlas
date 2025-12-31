@@ -114,7 +114,10 @@ export const ClientEnvSchema = {
    * @default undefined (disabled)
    * @example 'true'
    */
-  NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV: z.string().optional(),
+  NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Analytics Configuration

@@ -14,13 +14,6 @@ const nextConfig = {
   serverExternalPackages: ["pino", "pino-pretty"],
   // Empty turbopack config to acknowledge Turbopack while using webpack plugins
   turbopack: {},
-  // Experimental features
-  experimental: {
-    // Enable CSP nonces for Next.js inline scripts
-    // This makes Next.js read the nonce from headers.get('x-nonce')
-    // and apply it to all its inline scripts (__NEXT_DATA__, etc.)
-    cspNonces: ["x-nonce"],
-  },
   // Security headers baseline
   async headers() {
     // Determine if HSTS should be enabled (production only with HTTPS)
