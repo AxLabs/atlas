@@ -87,13 +87,22 @@ export interface CSPConfig {
  * ```
  */
 export function buildCSP(config: CSPConfig): string {
+  // Build script-src with development-specific allowances
+  const scriptSrc = ["'self'", `'nonce-${config.nonce}'`, ...(config.allowlist?.scriptSrc ?? [])];
+
+  // In development, Next.js Fast Refresh requires unsafe-eval
+  // This is safe in dev because it's only for HMR/developer tools
+  if (config.env === "development") {
+    scriptSrc.push("'unsafe-eval'");
+  }
+
   const directives: Record<string, string[]> = {
     // Default: only load from same origin
     "default-src": ["'self'"],
 
     // Scripts: self + nonce-based inline scripts
-    // NOTE: Avoid 'unsafe-inline' and 'unsafe-eval' - use nonce instead
-    "script-src": ["'self'", `'nonce-${config.nonce}'`, ...(config.allowlist?.scriptSrc ?? [])],
+    // NOTE: Avoid 'unsafe-inline' and 'unsafe-eval' in production - use nonce instead
+    "script-src": scriptSrc,
 
     // Styles: self + unsafe-inline (no nonce)
     // We don't use nonces for styles because:
