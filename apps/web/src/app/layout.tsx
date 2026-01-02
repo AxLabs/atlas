@@ -13,11 +13,15 @@ import type { Metadata } from "next";
 const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {

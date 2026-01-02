@@ -14,6 +14,15 @@ const nextConfig = {
   serverExternalPackages: ["pino", "pino-pretty"],
   // Empty turbopack config to acknowledge Turbopack while using webpack plugins
   turbopack: {},
+  // Performance optimizations
+  experimental: {
+    optimizeCss: true, // Enable CSS optimization
+    optimizePackageImports: ["@atlas/ui", "lucide-react"],
+  },
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+  },
   // Security headers baseline
   async headers() {
     // Determine if HSTS should be enabled (production only with HTTPS)
