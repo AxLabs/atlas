@@ -115,7 +115,7 @@ export function DemoShell({ children }: DemoShellProps) {
             </nav>
             <div className="border-t p-4">
               <div className="rounded-md bg-amber-500/10 p-3">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-xs font-medium">Demo Mode</span>
                 </div>
