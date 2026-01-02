@@ -106,24 +106,27 @@ export function AppBreadcrumbs({ className, showHomeIcon = true, maxItems }: App
   return (
     <Breadcrumb className={className}>
       <BreadcrumbList>
-        {renderItems.map((item, index) => (
-          <React.Fragment key={item.href || item.label || index}>
-            <BreadcrumbItem>
-              {item.current || !item.href ? (
-                <BreadcrumbPage>
-                  {"icon" in item && item.icon ? item.icon : item.label}
-                </BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link href={item.href}>
-                    {"icon" in item && item.icon ? item.icon : item.label}
-                  </Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-            {index < renderItems.length - 1 && <BreadcrumbSeparator />}
-          </React.Fragment>
-        ))}
+        {renderItems.map((item, index) => {
+          const hasIcon = "icon" in item && item.icon;
+          const isHomeIcon = index === 0 && showHomeIcon && item.href === "/";
+
+          return (
+            <React.Fragment key={item.href || item.label || index}>
+              <BreadcrumbItem>
+                {item.current || !item.href ? (
+                  <BreadcrumbPage>{hasIcon ? item.icon : item.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={item.href} aria-label={isHomeIcon ? "Home" : undefined}>
+                      {hasIcon ? item.icon : item.label}
+                    </Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {index < renderItems.length - 1 && <BreadcrumbSeparator />}
+            </React.Fragment>
+          );
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   );
