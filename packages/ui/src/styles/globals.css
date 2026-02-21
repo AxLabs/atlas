@@ -60,6 +60,18 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  /* Semantic Status */
+  --color-destructive-text: var(--destructive-text);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-text: var(--success-text);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-text: var(--warning-text);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-text: var(--info-text);
+
   /* Sidebar */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -73,6 +85,8 @@
   /* Surface (for code blocks, etc.) */
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-2: var(--surface-2);
 
   /* Selection */
   --color-selection: var(--selection);
@@ -81,6 +95,7 @@
 
 :root {
   /* Base: Neutral */
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -109,6 +124,20 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  /* Semantic Status */
+  --destructive-text: oklch(0.45 0.22 27);
+  --success: oklch(0.56 0.155 145);
+  --success-foreground: oklch(1 0 0);
+  --success-text: oklch(0.4 0.16 145);
+  --warning: oklch(0.75 0.183 55);
+  --warning-foreground: oklch(0.145 0 0);
+  --warning-text: oklch(0.5 0.18 55);
+  --info: oklch(0.6 0.15 260);
+  --info-foreground: oklch(1 0 0);
+  --info-text: oklch(0.45 0.16 260);
+  /* Surface ladder */
+  --surface-subtle: oklch(0.985 0 0);
+  --surface-2: oklch(0.965 0 0);
   /* Sidebar */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -127,6 +156,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   /* Base: Neutral - Dark mode */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -155,6 +185,20 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+  /* Semantic Status (dark) */
+  --destructive-text: oklch(0.75 0.16 27);
+  --success: oklch(0.62 0.15 145);
+  --success-foreground: oklch(0 0 0);
+  --success-text: oklch(0.72 0.14 145);
+  --warning: oklch(0.8 0.16 55);
+  --warning-foreground: oklch(0 0 0);
+  --warning-text: oklch(0.82 0.14 55);
+  --info: oklch(0.65 0.13 260);
+  --info-foreground: oklch(0 0 0);
+  --info-text: oklch(0.75 0.12 260);
+  /* Surface ladder (dark) */
+  --surface-subtle: oklch(0.17 0 0);
+  --surface-2: oklch(0.22 0 0);
   /* Sidebar (dark) */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);

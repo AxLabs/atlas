@@ -22,7 +22,13 @@ export {
   AccordionItem,
   AccordionTrigger,
 } from "./components/ui/accordion";
-export { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
+export {
+  Alert,
+  AlertActions,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+} from "./components/ui/alert";
 export {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +64,7 @@ export {
 export { Calendar } from "./components/ui/calendar";
 export {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
