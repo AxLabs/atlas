@@ -83,14 +83,14 @@ export default function ObservabilityDemoPage() {
             demo: "true",
             page: "observability",
             "api.code": error.shape.code,
-            "api.status": String(error.status),
+            "api.status": String(error.status ?? 0),
           },
           extra: {
             correlationId: error.shape.correlationId,
             userMessage: error.shape.userMessage,
             details: error.shape.details,
           },
-          level: error.status >= 500 ? "error" : "warning",
+          level: (error.status ?? 0) >= 500 ? "error" : "warning",
         });
       }
     }
