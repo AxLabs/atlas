@@ -1,9 +1,8 @@
 /**
  * Client Configuration Module
  *
- * Provides client-safe configuration by converting runtime config into
- * the canonical config shape. This module runs in the browser and uses
- * the runtime config pattern to enable "build once, deploy many".
+ * Provides client-safe configuration by building it directly from
+ * validated environment variables (via @t3-oss/env-nextjs).
  *
  * This module must NOT import server-only modules or use serverEnv.
  *
@@ -12,66 +11,78 @@
 
 "use client";
 
-import { useRuntimeConfig } from "@/lib/runtime-config";
+import { clientEnv } from "@/env";
 
 import { clientConfigSchema } from "./schema";
 
 import type { ClientConfig } from "./schema";
-import type { RuntimeConfig } from "@/lib/runtime-config";
 
 /**
- * Convert runtime config to canonical config shape.
+ * Cached client config — built once from env vars (inlined at build time).
+ */
+let _cached: ClientConfig | null = null;
+
+/**
+ * Build client config from validated env vars.
  *
- * This adapter function transforms the runtime config loaded from
- * /api/runtime-config into the standard Config interface used throughout
- * the application.
+ * Values come from @t3-oss/env-nextjs `clientEnv` which reads
+ * NEXT_PUBLIC_* vars inlined by Next.js at build time.
  *
- * @param runtimeConfig - Runtime config from API endpoint
  * @returns Client-safe config object
- *
  * @internal
  */
-export function createClientConfig(runtimeConfig: RuntimeConfig): ClientConfig {
-  const config: ClientConfig = {
+function buildClientConfig(): ClientConfig {
+  if (_cached) return _cached;
+
+  _cached = clientConfigSchema.parse({
     app: {
-      url: runtimeConfig.appUrl,
-      env: runtimeConfig.environment,
-      buildId: runtimeConfig.buildId,
+      url: clientEnv.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+      env: clientEnv.NEXT_PUBLIC_APP_ENV ?? "development",
+      buildId: clientEnv.NEXT_PUBLIC_BUILD_ID,
     },
 
     api: {
-      baseUrl: runtimeConfig.apiBaseUrl,
+      baseUrl: clientEnv.NEXT_PUBLIC_API_URL,
     },
 
     sentry: {
-      enabled: Boolean(runtimeConfig.sentryDsn),
-      dsn: runtimeConfig.sentryDsn,
-      environment: runtimeConfig.sentryEnvironment,
-      release: runtimeConfig.sentryRelease,
+      enabled: Boolean(clientEnv.NEXT_PUBLIC_SENTRY_DSN),
+      dsn: clientEnv.NEXT_PUBLIC_SENTRY_DSN,
+      environment: clientEnv.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
+      release: clientEnv.NEXT_PUBLIC_SENTRY_RELEASE,
     },
 
     webVitals: {
-      enabled: runtimeConfig.webVitals?.enabled ?? false,
-      sampleRate: runtimeConfig.webVitals?.sampleRate ?? 0.05,
-      endpoint: runtimeConfig.webVitals?.endpoint ?? "/api/telemetry/web-vitals",
-      debug: runtimeConfig.webVitals?.debug ?? false,
+      enabled: clientEnv.NEXT_PUBLIC_WEB_VITALS_ENABLED ?? false,
+      sampleRate: clientEnv.NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE ?? 0.05,
+      endpoint: clientEnv.NEXT_PUBLIC_WEB_VITALS_ENDPOINT ?? "/api/telemetry/web-vitals",
+      debug: clientEnv.NEXT_PUBLIC_WEB_VITALS_DEBUG ?? false,
     },
 
-    features: runtimeConfig.featureFlags ?? {},
-  };
+    features: {},
+  });
 
-  // Validate against client config schema
-  return clientConfigSchema.parse(config);
+  return _cached;
+}
+
+/**
+ * Get client config (non-hook version).
+ *
+ * Can be used outside React components.
+ *
+ * @returns Client-safe configuration object
+ */
+export function getClientConfig(): ClientConfig {
+  return buildClientConfig();
 }
 
 /**
  * Hook to access client-side configuration.
  *
- * Must be used within a RuntimeConfigProvider (mounted in app root).
- * Returns the canonical config shape derived from runtime config.
+ * Returns the canonical config shape built from validated env vars.
+ * No provider needed — values are inlined at build time.
  *
  * @returns Client-safe configuration object
- * @throws Error if used outside RuntimeConfigProvider
  *
  * @example
  * ```tsx
@@ -79,47 +90,19 @@ export function createClientConfig(runtimeConfig: RuntimeConfig): ClientConfig {
  *
  * function ApiClient() {
  *   const config = useConfig();
- *
- *   async function fetchData() {
- *     const response = await fetch(`${config.api.baseUrl}/data`);
- *     // ...
- *   }
- *
- *   return <button onClick={fetchData}>Load</button>;
- * }
- * ```
- *
- * @example Accessing nested config
- * ```tsx
- * import { useConfig } from '@/config';
- *
- * function EnvironmentBadge() {
- *   const config = useConfig();
- *
- *   return (
- *     <div className="badge">
- *       Environment: {config.app.env}
- *     </div>
- *   );
- * }
- * ```
- *
- * @example Feature flags
- * ```tsx
- * import { useConfig } from '@/config';
- *
- * function FeatureGate() {
- *   const config = useConfig();
- *
- *   if (!config.features.newDashboard) {
- *     return <LegacyDashboard />;
- *   }
- *
- *   return <NewDashboard />;
+ *   const response = await fetch(`${config.api.baseUrl}/data`);
  * }
  * ```
  */
 export function useConfig(): ClientConfig {
-  const runtimeConfig = useRuntimeConfig();
-  return createClientConfig(runtimeConfig);
+  return buildClientConfig();
+}
+
+/**
+ * Reset the cached client config.
+ * Only needed in test environments where env vars change between tests.
+ * @internal
+ */
+export function _resetClientConfigCache(): void {
+  _cached = null;
 }

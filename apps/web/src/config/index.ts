@@ -60,7 +60,7 @@
 // Client Exports (use in client components, hooks)
 // ============================================================================
 
-export { createClientConfig, useConfig } from "./client";
+export { getClientConfig, useConfig } from "./client";
 
 // ============================================================================
 // Type Exports (use for type annotations)

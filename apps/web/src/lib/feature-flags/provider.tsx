@@ -2,17 +2,14 @@
  * Feature Flags Provider and Hooks
  *
  * Provides feature flag access throughout the React component tree.
- * Must be mounted AFTER RuntimeConfigProvider so flags can be read.
  *
  * ## Usage
  *
  * ```tsx
  * // In providers/index.tsx (already wired)
- * <RuntimeConfigProvider>
- *   <FeatureFlagsProvider>
- *     {children}
- *   </FeatureFlagsProvider>
- * </RuntimeConfigProvider>
+ * <FeatureFlagsProvider>
+ *   {children}
+ * </FeatureFlagsProvider>
  *
  * // In any component
  * import { useFlag, FeatureFlags } from '@/lib/feature-flags';
@@ -30,7 +27,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { useRuntimeConfig } from "@/lib/runtime-config";
+import { useConfig } from "@/config";
 
 import { createAdapterFromRuntimeConfig } from "./defaultAdapter";
 import { resolveFlag } from "./types";
@@ -106,30 +103,25 @@ export interface FeatureFlagsProviderProps {
  * Feature Flags Provider.
  *
  * Provides feature flag access to all child components via React Context.
- * Must be mounted within RuntimeConfigProvider.
- *
  * @example
  * ```tsx
  * // Typically wired in providers/index.tsx
- * <RuntimeConfigProvider>
- *   <FeatureFlagsProvider>
- *     <App />
- *   </FeatureFlagsProvider>
- * </RuntimeConfigProvider>
+ * <FeatureFlagsProvider>
+ *   <App />
+ * </FeatureFlagsProvider>
  * ```
  */
 export function FeatureFlagsProvider({
   children,
   adapter: customAdapter,
 }: FeatureFlagsProviderProps) {
-  // Get runtime config - always call hook unconditionally (React rules of hooks)
-  // The hook itself handles the case when RuntimeConfigProvider is not available
-  const runtimeConfig = useRuntimeConfig();
+  // Get feature flags from client config (built from env vars)
+  const config = useConfig();
 
-  // Create adapter from runtime config if not provided
+  // Create adapter from config flags if not provided
   const adapter = useMemo(
-    () => customAdapter ?? createAdapterFromRuntimeConfig(runtimeConfig?.featureFlags ?? {}),
-    [customAdapter, runtimeConfig?.featureFlags]
+    () => customAdapter ?? createAdapterFromRuntimeConfig(config.features ?? {}),
+    [customAdapter, config.features]
   );
 
   // Store current snapshot in state
@@ -201,7 +193,7 @@ export function useFlags(): FeatureFlagsContextValue {
   if (context === undefined) {
     throw new Error(
       "useFlags must be used within a FeatureFlagsProvider. " +
-        "Make sure FeatureFlagsProvider is mounted in your component tree after RuntimeConfigProvider."
+        "Make sure FeatureFlagsProvider is mounted in your component tree."
     );
   }
 

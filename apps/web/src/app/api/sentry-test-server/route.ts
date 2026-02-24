@@ -1,57 +1,56 @@
 /**
- * Sentry Test Route - Server-Side Error
+ * Sentry Test Route — Server-Side Error
  *
- * This route handler is used to test Sentry server-side error capture.
- * It should only be enabled in development/staging environments.
+ * Captures a test error directly via the Sentry SDK and flushes the
+ * transport so we get a definitive yes/no on whether events reach Sentry.
  *
- * To test:
- * 1. Ensure SENTRY_DSN is set
- * 2. Visit /api/sentry-test-server
- * 3. Check Sentry dashboard for the error
+ * GET /api/sentry-test-server
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
-
-import { serverEnv } from "@/env";
-import { captureException } from "@/lib/telemetry/sentry.server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  // Only allow in non-production environments
-  if (serverEnv.NODE_ENV === "production" && serverEnv.SENTRY_ENVIRONMENT === "production") {
+  // Block in production
+  if (process.env.NODE_ENV === "production" && process.env.SENTRY_ENVIRONMENT === "production") {
+    return NextResponse.json({ error: "Disabled in production" }, { status: 403 });
+  }
+
+  const dsn = process.env.SENTRY_DSN;
+  const client = Sentry.getClient();
+
+  if (!dsn || !client) {
     return NextResponse.json(
       {
-        error: "Sentry test endpoints are disabled in production",
+        success: false,
+        reason: !dsn ? "SENTRY_DSN not set" : "Sentry client not initialised",
+        dsn: dsn ? "set" : "missing",
+        clientInitialised: !!client,
       },
-      { status: 403 }
+      { status: 500 }
     );
   }
 
-  try {
-    // Intentionally throw an error for testing
-    throw new Error("Sentry server-side test error - this is intentional");
-  } catch (error) {
-    // Capture the error
-    if (error instanceof Error) {
-      captureException(error, {
-        tags: {
-          testType: "server",
-          route: "/api/sentry-test-server",
-        },
-        extra: {
-          message: "This is a test error to verify Sentry integration",
-        },
-      });
+  // Capture a known error
+  const eventId = Sentry.captureException(
+    new Error("Sentry server-side test error — this is intentional"),
+    {
+      tags: { testType: "server", route: "/api/sentry-test-server" },
+      extra: { timestamp: new Date().toISOString() },
     }
+  );
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Test error captured and sent to Sentry",
-        note: "Check your Sentry dashboard to verify the error was received",
-      },
-      { status: 200 }
-    );
-  }
+  // Flush the transport — returns true if all events were sent
+  const flushed = await Sentry.flush(5000);
+
+  return NextResponse.json({
+    success: true,
+    eventId,
+    flushed,
+    message: flushed
+      ? "Event sent to Sentry successfully — check your dashboard"
+      : "Flush timed out — event may not have been delivered",
+  });
 }

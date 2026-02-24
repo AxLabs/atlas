@@ -16,11 +16,11 @@ import { z } from "zod";
 export const ClientEnvSchema = {
   /**
    * Base API URL for client-side requests.
-   * Used by fetch calls and HTTP clients in the browser.
+   * Can be a full URL (for external APIs) or a path (for same-origin routes).
    *
-   * @example 'https://api.example.com', 'http://localhost:3001/api'
+   * @example 'https://api.example.com', '/api'
    */
-  NEXT_PUBLIC_API_URL: z.string().url().default("http://localhost:3001/api"),
+  NEXT_PUBLIC_API_URL: z.string().min(1).default("/api"),
 
   /**
    * Application URL (where the frontend is hosted).

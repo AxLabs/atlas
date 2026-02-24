@@ -218,6 +218,7 @@ export default [
       "src/lib/api/**",
       "src/lib/http/**",
       "src/app/api/**/route.ts",
+      "src/app/monitoring/route.ts",
     ],
     rules: {
       "no-restricted-syntax": [

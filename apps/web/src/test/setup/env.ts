@@ -11,7 +11,7 @@
 export const testEnv = {
   // App configuration
   NEXT_PUBLIC_APP_NAME: "atlas-web",
-  NEXT_PUBLIC_APP_ENV: "test",
+  NEXT_PUBLIC_APP_ENV: "development",
   NEXT_PUBLIC_BUILD_ID: "test-build",
 
   // API configuration

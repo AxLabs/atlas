@@ -76,42 +76,40 @@ const nextConfig = {
 // Apply bundle analyzer first
 let config = withBundleAnalyzer(nextConfig);
 
-// Only apply Sentry build plugin if auth token is present
-// This ensures builds don't fail when Sentry env vars are missing
-const shouldEnableSentryPlugin =
+// Determine if sourcemap upload is enabled (requires auth token + org + project)
+const enableSourcemapUpload =
   process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT;
 
-if (shouldEnableSentryPlugin) {
-  config = withSentryConfig(config, {
-    // For all available options, see:
-    // https://github.com/getsentry/sentry-webpack-plugin#options
+// Always apply withSentryConfig so the SDK is properly initialized on the client.
+// Sourcemap upload is conditionally enabled based on env vars.
+config = withSentryConfig(config, {
+  org: process.env.SENTRY_ORG || "",
+  project: process.env.SENTRY_PROJECT || "",
 
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
 
-    // Only print logs for uploading source maps in CI
-    silent: !process.env.CI,
+  authToken: enableSourcemapUpload ? process.env.SENTRY_AUTH_TOKEN : undefined,
+  sourcemaps: {
+    disable: !enableSourcemapUpload,
+  },
 
-    // Upload sourcemaps during production builds
-    widenClientFileUpload: true,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
 
-    // Automatically annotate React components to show their full name in breadcrumbs and session replay
-    reactComponentAnnotation: {
-      enabled: true,
-    },
+  // Route browser requests through /monitoring to avoid ad-blockers and CORS.
+  // The SDK injects _sentryRewritesTunnelPath into instrumentation-client.ts
+  // so that all envelope POSTs go to this same-origin rewrite path.
+  tunnelRoute: "/monitoring",
 
-    // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers
-    // This can increase your server load as well as your hosting bill.
-    // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-    // side errors will fail.
-    tunnelRoute: "/monitoring",
+  // Tree-shake Sentry debug logging from production bundles
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+  },
 
-    // Hides source maps from generated client bundles
-    hideSourceMaps: true,
-
-    // Automatically tree-shake Sentry logger statements to reduce bundle size
-    disableLogger: true,
-  });
-}
+  // Annotate React component names in breadcrumbs and session replay
+  webpack: {
+    reactComponentAnnotation: { enabled: true },
+  },
+});
 
 module.exports = config;

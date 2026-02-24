@@ -72,10 +72,26 @@ export default function ObservabilityDemoPage() {
   const handleTriggerApiError = async () => {
     setApiError(null);
     try {
-      await api.get("/api/demo/items?mode=error");
+      await api.get("/demo/items?mode=error");
     } catch (error) {
       if (error instanceof ApiError) {
         setApiError(error);
+
+        // Capture to Sentry with correlation context
+        captureException(error, {
+          tags: {
+            demo: "true",
+            page: "observability",
+            "api.code": error.shape.code,
+            "api.status": String(error.status),
+          },
+          extra: {
+            correlationId: error.shape.correlationId,
+            userMessage: error.shape.userMessage,
+            details: error.shape.details,
+          },
+          level: error.status >= 500 ? "error" : "warning",
+        });
       }
     }
   };

@@ -42,10 +42,11 @@ const appConfigSchema = z.object({
 const apiConfigSchema = z.object({
   /**
    * Base API URL for client-side and server-side requests.
+   * Can be a full URL (for external APIs) or a path (for same-origin).
    *
-   * @example 'https://api.example.com', 'http://localhost:3001/api'
+   * @example 'https://api.example.com', '/api'
    */
-  baseUrl: z.string().url(),
+  baseUrl: z.string().min(1),
 });
 
 /**

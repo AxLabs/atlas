@@ -22,6 +22,7 @@
     "scripts/**/*.ts",
     "*.config.ts",
     "instrumentation.ts",
+    "instrumentation-client.ts",
     "playwright.config.ts"
   ],
   "exclude": ["node_modules"]

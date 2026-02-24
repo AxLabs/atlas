@@ -10,7 +10,7 @@
 // Mock clientEnv with reactive getters
 export const clientEnv = {
   get NEXT_PUBLIC_API_URL() {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+    return process.env.NEXT_PUBLIC_API_URL || "/api";
   },
   get NEXT_PUBLIC_APP_URL() {
     return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

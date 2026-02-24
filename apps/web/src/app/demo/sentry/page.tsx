@@ -1,157 +1,150 @@
 /**
  * Sentry Demo Page
  *
- * This page provides UI controls to test both client-side and server-side
- * Sentry error capture. Only accessible in non-production environments.
+ * Tests both client-side and server-side Sentry error capture.
+ * Shows diagnostic info to help debug integration issues.
  */
 
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState } from "react";
 
-import { useConfig } from "@/config";
-import { useApiClient } from "@/lib/api/hooks";
-import { captureException, captureMessage } from "@/lib/telemetry/sentry.client";
-
 export default function SentryDemoPage() {
-  const [status, setStatus] = useState<string>("");
-  const config = useConfig();
-  const api = useApiClient();
+  const [results, setResults] = useState<string[]>([]);
 
-  // Only render in non-production
-  if (config.app.env === "production") {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-8">
-        <div className="border-destructive bg-destructive/10 max-w-md rounded-lg border p-6">
-          <h1 className="text-destructive text-xl font-semibold">Access Denied</h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            Sentry demo endpoints are disabled in production.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const log = (msg: string) =>
+    setResults((prev) => [...prev, `[${new Date().toISOString()}] ${msg}`]);
 
-  const testClientError = () => {
-    try {
-      throw new Error("Sentry client-side test error - this is intentional");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureException(error, {
-          tags: {
-            testType: "client",
-          },
-          extra: {
-            message: "This is a test error to verify Sentry integration",
-          },
-        });
-        setStatus("✅ Client error captured and sent to Sentry");
-      }
+  const testClientDirect = () => {
+    const client = Sentry.getClient();
+    if (!client) {
+      log("❌ Sentry client NOT initialised — Sentry.getClient() returned undefined");
+      return;
     }
+
+    const options = client.getOptions();
+    log(`ℹ️ DSN: ${options.dsn ? "set" : "MISSING"}`);
+    log(
+      `ℹ️ Tunnel: ${(options as Record<string, unknown>).tunnel ?? "not set (SDK handles via tunnelRoute)"}`
+    );
+    log(`ℹ️ Environment: ${options.environment}`);
+    log(`ℹ️ Debug: ${options.debug}`);
+
+    const eventId = Sentry.captureException(new Error("Client test error — this is intentional"), {
+      tags: { testType: "client-direct", page: "sentry-demo" },
+    });
+    log(`✅ captureException returned eventId: ${eventId}`);
+    log("→ Check your Sentry dashboard and browser console (debug mode) for confirmation");
   };
 
   const testClientMessage = () => {
-    captureMessage("Sentry client-side test message", "info", {
-      tags: {
-        testType: "client-message",
-      },
+    const eventId = Sentry.captureMessage("Client test message — this is intentional", {
+      level: "info",
+      tags: { testType: "client-message", page: "sentry-demo" },
     });
-    setStatus("✅ Client message sent to Sentry");
+    log(`✅ captureMessage returned eventId: ${eventId}`);
   };
 
-  const testServerError = async () => {
+  const testServerDirect = async () => {
+    log("→ Calling /api/sentry-test-server…");
     try {
-      const data = await api.get<{ message: string }>("/api/sentry-test-server");
-      setStatus(`✅ ${data.message}`);
-    } catch {
-      setStatus("❌ Failed to trigger server test");
+      const res = await fetch("/api/sentry-test-server");
+      const data = await res.json();
+      log(`Server response (${res.status}): ${JSON.stringify(data)}`);
+    } catch (err) {
+      log(`❌ Fetch failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
-  const testUnhandledError = () => {
-    // This will trigger the global error handler
-    setTimeout(() => {
-      throw new Error("Unhandled error test - this is intentional");
-    }, 100);
-    setStatus("✅ Unhandled error triggered (check console and Sentry)");
+  const testTunnelDirect = async () => {
+    log("→ Sending test envelope directly to /monitoring tunnel…");
+    try {
+      // Construct a minimal Sentry envelope to test the tunnel rewrite
+      const dsn = Sentry.getClient()?.getOptions()?.dsn;
+      if (!dsn) {
+        log("❌ No DSN available");
+        return;
+      }
+
+      const res = await fetch("/monitoring?o=4510607618605056&p=4510607623848016&r=de", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        body: `{"dsn":"${dsn}","sent_at":"${new Date().toISOString()}"}\n{"type":"event"}\n{"event_id":"${crypto.randomUUID().replace(/-/g, "")}","timestamp":${Date.now() / 1000},"platform":"javascript","exception":{"values":[{"type":"Error","value":"Tunnel direct test"}]}}\n`,
+      });
+      log(`Tunnel response: ${res.status} ${res.statusText}`);
+      const text = await res.text();
+      if (text) log(`Tunnel body: ${text}`);
+    } catch (err) {
+      log(`❌ Tunnel fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   return (
     <div className="bg-background min-h-screen p-8">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Sentry Integration Demo</h1>
-          <p className="text-muted-foreground mt-2">
-            Test error capture and monitoring capabilities
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Sentry Integration Test</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Use these buttons to test each layer of the Sentry pipeline. Check your{" "}
+            <strong>browser console</strong> for Sentry debug output.
           </p>
-          {!config.sentry.dsn && (
-            <div className="mt-4 rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-950">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Sentry DSN is not configured. Errors will be logged but not sent to Sentry.
-              </p>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Client-Side</h2>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={testClientDirect}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm"
+            >
+              captureException (direct)
+            </button>
+            <button
+              onClick={testClientMessage}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-md px-4 py-2 text-sm"
+            >
+              captureMessage
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Server-Side</h2>
+          <button
+            onClick={testServerDirect}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm"
+          >
+            Server captureException + flush
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Tunnel</h2>
+          <button
+            onClick={testTunnelDirect}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm"
+          >
+            POST raw envelope to /monitoring
+          </button>
+        </div>
+
+        {results.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Results</h2>
+              <button
+                onClick={() => setResults([])}
+                className="text-muted-foreground text-xs hover:underline"
+              >
+                Clear
+              </button>
             </div>
-          )}
-        </div>
-
-        <div className="bg-card space-y-4 rounded-lg border p-6">
-          <h2 className="text-xl font-semibold">Client-Side Tests</h2>
-
-          <button
-            onClick={testClientError}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-md px-4 py-2"
-          >
-            Test Client Error Capture
-          </button>
-
-          <button
-            onClick={testClientMessage}
-            className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full rounded-md px-4 py-2"
-          >
-            Test Client Message
-          </button>
-
-          <button
-            onClick={testUnhandledError}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full rounded-md px-4 py-2"
-          >
-            Test Unhandled Error
-          </button>
-        </div>
-
-        <div className="bg-card mt-6 space-y-4 rounded-lg border p-6">
-          <h2 className="text-xl font-semibold">Server-Side Tests</h2>
-
-          <button
-            onClick={testServerError}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-md px-4 py-2"
-          >
-            Test Server Error Capture
-          </button>
-        </div>
-
-        {status && (
-          <div className="bg-muted mt-6 rounded-lg border p-4">
-            <p className="text-sm font-medium">{status}</p>
-            <p className="text-muted-foreground mt-2 text-xs">
-              Check your Sentry dashboard to verify the event was received with proper tags and
-              context.
-            </p>
+            <pre className="bg-muted max-h-96 overflow-auto rounded-lg p-4 font-mono text-xs">
+              {results.join("\n")}
+            </pre>
           </div>
         )}
-
-        <div className="bg-muted mt-8 rounded-lg border p-6">
-          <h3 className="font-semibold">Expected Behavior:</h3>
-          <ul className="text-muted-foreground mt-2 list-inside list-disc space-y-1 text-sm">
-            <li>Each test should send an event to Sentry</li>
-            <li>Events should include runtime tags (client/server)</li>
-            <li>Events should include correlationId from request context</li>
-            <li>Check Sentry dashboard for proper error grouping</li>
-            <li>
-              In development, events are blocked unless SENTRY_ENABLE_IN_DEV or
-              NEXT_PUBLIC_SENTRY_ENABLE_IN_DEV is set
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
   );

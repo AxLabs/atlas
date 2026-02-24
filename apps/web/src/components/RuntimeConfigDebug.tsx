@@ -1,7 +1,7 @@
 /**
- * Runtime Config Debug Component
+ * Config Debug Component
  *
- * Displays runtime configuration values for debugging.
+ * Displays configuration values for debugging.
  * Only shown in development mode.
  *
  * @internal Development only
@@ -9,32 +9,32 @@
 
 "use client";
 
-import { useRuntimeConfig } from "@/lib/runtime-config";
+import { useConfig } from "@/config";
 
 export function RuntimeConfigDebug() {
-  const config = useRuntimeConfig();
+  const config = useConfig();
 
   // Only show in development
-  if (config.environment === "production") {
+  if (config.app.env === "production") {
     return null;
   }
 
   return (
     <div className="border-border bg-card fixed right-4 bottom-4 max-w-md rounded-lg border p-4 text-xs shadow-lg">
-      <div className="text-card-foreground mb-2 font-semibold">Runtime Config (Dev Only)</div>
+      <div className="text-card-foreground mb-2 font-semibold">Config (Dev Only)</div>
       <div className="text-muted-foreground space-y-1 font-mono">
         <div>
-          <span className="text-foreground">Environment:</span> {config.environment}
+          <span className="text-foreground">Environment:</span> {config.app.env}
         </div>
         <div className="break-all">
-          <span className="text-foreground">API URL:</span> {config.apiBaseUrl}
+          <span className="text-foreground">API URL:</span> {config.api.baseUrl}
         </div>
         <div className="break-all">
-          <span className="text-foreground">App URL:</span> {config.appUrl}
+          <span className="text-foreground">App URL:</span> {config.app.url}
         </div>
-        {config.buildId && (
+        {config.app.buildId && (
           <div>
-            <span className="text-foreground">Build:</span> {config.buildId}
+            <span className="text-foreground">Build:</span> {config.app.buildId}
           </div>
         )}
         {config.webVitals && (
