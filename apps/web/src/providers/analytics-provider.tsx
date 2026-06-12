@@ -13,7 +13,6 @@ import { useEffect, useRef } from "react";
 
 import { initAnalytics } from "@/lib/analytics";
 import { createGAAdapter, GAScript } from "@/lib/analytics/adapters/ga";
-import { createPostHogAdapter } from "@/lib/analytics/adapters/posthog";
 
 import type { Analytics, CommonEventProps } from "@/lib/analytics";
 
@@ -126,50 +125,65 @@ export function AnalyticsProvider({
     if (initialized.current) return;
     initialized.current = true;
 
-    const adapters: Analytics[] = [];
+    let cancelled = false;
 
-    // Initialize PostHog adapter if configured
-    if (config.posthog) {
-      const posthogAdapter = createPostHogAdapter({
-        apiKey: config.posthog.apiKey,
-        host: config.posthog.host,
+    async function initializeAnalytics() {
+      const adapters: Analytics[] = [];
+
+      // PostHog is lazy-loaded so posthog-js stays out of the main bundle when unconfigured
+      if (config.posthog) {
+        const { createPostHogAdapter } = await import("@/lib/analytics/adapters/posthog");
+        if (cancelled) return;
+
+        adapters.push(
+          createPostHogAdapter({
+            apiKey: config.posthog.apiKey,
+            host: config.posthog.host,
+            debug: config.debug,
+            consentGranted,
+          })
+        );
+
+        if (config.debug) {
+          // eslint-disable-next-line no-console
+          console.debug("[analytics] PostHog adapter configured");
+        }
+      }
+
+      if (config.ga) {
+        adapters.push(
+          createGAAdapter({
+            measurementId: config.ga.measurementId,
+            debug: config.debug,
+            consentGranted,
+          })
+        );
+
+        if (config.debug) {
+          // eslint-disable-next-line no-console
+          console.debug("[analytics] GA adapter configured");
+        }
+      }
+
+      if (cancelled) return;
+
+      initAnalytics(adapters, {
         debug: config.debug,
+        environment: config.environment,
         consentGranted,
       });
-      adapters.push(posthogAdapter);
 
       if (config.debug) {
         // eslint-disable-next-line no-console
-        console.debug("[analytics] PostHog adapter configured");
+        console.debug("[analytics] Initialized with", adapters.length, "adapter(s)");
       }
     }
 
-    // Initialize GA adapter if configured
-    if (config.ga) {
-      const gaAdapter = createGAAdapter({
-        measurementId: config.ga.measurementId,
-        debug: config.debug,
-        consentGranted,
-      });
-      adapters.push(gaAdapter);
+    void initializeAnalytics();
 
-      if (config.debug) {
-        // eslint-disable-next-line no-console
-        console.debug("[analytics] GA adapter configured");
-      }
-    }
-
-    // Initialize the analytics system
-    initAnalytics(adapters, {
-      debug: config.debug,
-      environment: config.environment,
-      consentGranted,
-    });
-
-    if (config.debug) {
-      // eslint-disable-next-line no-console
-      console.debug("[analytics] Initialized with", adapters.length, "adapter(s)");
-    }
+    return () => {
+      cancelled = true;
+    };
   }, [config.debug, config.posthog, config.ga, config.environment, consentGranted]);
 
   return (

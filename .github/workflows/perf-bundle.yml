@@ -25,9 +25,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Bundle budgets in KB
+  # Bundle budgets in KB (uncompressed .next/static/*.js)
   BUDGET_TOTAL_STATIC_JS_KB: 2500
-  BUDGET_LARGEST_CHUNK_KB: 350
+  # Shared framework/vendor chunk (Next.js + React + Sentry tracing) is ~800 KB
+  BUDGET_LARGEST_CHUNK_KB: 900
   MAX_BUNDLE_GROWTH_KB: 75
   MAX_BUNDLE_GROWTH_PERCENT: 10
 

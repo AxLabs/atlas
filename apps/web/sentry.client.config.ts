@@ -44,10 +44,7 @@ if (SENTRY_DSN) {
     replaysSessionSampleRate: IS_PRODUCTION ? 0.01 : IS_STAGING ? 0.05 : 0,
     replaysOnErrorSampleRate: IS_PRODUCTION ? 0.5 : IS_STAGING ? 1.0 : 0,
 
-    integrations: [
-      Sentry.browserTracingIntegration({ enableInp: true }),
-      Sentry.replayIntegration({ maskAllText: false, blockAllMedia: true }),
-    ],
+    integrations: [Sentry.browserTracingIntegration({ enableInp: true })],
 
     // --- Noise Reduction ---
     ignoreErrors: [
@@ -81,5 +78,12 @@ if (SENTRY_DSN) {
 
     // Debug logging in dev with Sentry enabled — check browser console for output
     debug: IS_DEV && ENABLED_IN_DEV,
+  });
+
+  // Lazy-load replay to keep session replay out of the initial shared chunk
+  void import("@sentry/nextjs").then((lazySentry) => {
+    Sentry.addIntegration(
+      lazySentry.replayIntegration({ maskAllText: false, blockAllMedia: true })
+    );
   });
 }
