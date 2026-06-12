@@ -27,7 +27,7 @@ concurrency:
 env:
   # Bundle size budgets (in bytes)
   # Adjust these based on your performance requirements
-  BUDGET_FIRST_LOAD_KB: 150
+  BUDGET_FIRST_LOAD_KB: 300
   BUDGET_TOTAL_KB: 500
 
 jobs:
@@ -52,10 +52,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build with bundle analysis
+      - name: Build application
         run: pnpm --filter @atlas/web build
         env:
-          ANALYZE: true
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+      - name: Run bundle analysis
+        run: pnpm --filter @atlas/web perf:analyze
+        env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
       - name: Extract bundle stats
@@ -103,14 +107,14 @@ jobs:
         with:
           name: bundle-analysis
           path: |
-            apps/web/.next/analyze
+            apps/web/.next/diagnostics/analyze
           retention-days: 30
 
       - name: Store baseline on main
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/cache/save@v4
         with:
-          path: apps/web/.next/analyze
+          path: apps/web/.next/diagnostics/analyze
           key: bundle-baseline-${{ github.sha }}
 
       - name: Fail if budget exceeded

@@ -1,8 +1,4 @@
 const { withSentryConfig } = require("@sentry/nextjs");
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
-  enabled: process.env.ANALYZE === "true",
-  openAnalyzer: false,
-});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -12,7 +8,6 @@ const nextConfig = {
   output: "standalone",
   // Externalize pino to avoid bundling test dependencies
   serverExternalPackages: ["pino", "pino-pretty"],
-  // Empty turbopack config to acknowledge Turbopack while using webpack plugins
   turbopack: {},
   // Performance optimizations
   experimental: {
@@ -73,16 +68,13 @@ const nextConfig = {
   },
 };
 
-// Apply bundle analyzer first
-let config = withBundleAnalyzer(nextConfig);
-
 // Determine if sourcemap upload is enabled (requires auth token + org + project)
 const enableSourcemapUpload =
   process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT;
 
 // Always apply withSentryConfig so the SDK is properly initialized on the client.
 // Sourcemap upload is conditionally enabled based on env vars.
-config = withSentryConfig(config, {
+module.exports = withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG || "",
   project: process.env.SENTRY_PROJECT || "",
 
@@ -101,15 +93,8 @@ config = withSentryConfig(config, {
   // so that all envelope POSTs go to this same-origin rewrite path.
   tunnelRoute: "/monitoring",
 
-  // Tree-shake Sentry debug logging from production bundles
-  bundleSizeOptimizations: {
-    excludeDebugStatements: true,
-  },
-
-  // Annotate React component names in breadcrumbs and session replay
-  webpack: {
-    reactComponentAnnotation: { enabled: true },
+  // Annotate React component names in breadcrumbs and session replay (Turbopack)
+  _experimental: {
+    turbopackReactComponentAnnotation: { enabled: true },
   },
 });
-
-module.exports = config;
