@@ -1,4 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
+import { resetThemeStoreForTests } from "../../theme/theme-store";
 import {
   useTheme,
   getThemePreference,
@@ -62,6 +63,19 @@ describe("getThemePreference", () => {
 describe("setThemePreference", () => {
   beforeEach(() => {
     localStorage.clear();
+    resetThemeStoreForTests();
+
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: jest.fn().mockImplementation((query) => ({
+        matches: query === "(prefers-color-scheme: dark)",
+        media: query,
+        onchange: null,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
   });
 
   it("does nothing in SSR environment", () => {
@@ -200,6 +214,7 @@ describe("useTheme", () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = "";
+    resetThemeStoreForTests();
     mediaQueryListeners = [];
 
     mockMatchMedia = jest.fn().mockImplementation((query) => ({
@@ -358,33 +373,122 @@ describe("useTheme", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 
-  it("subscribes to system changes when switching to system mode", () => {
+  it("responds to system changes after switching to system mode", () => {
+    mockMatchMedia.mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: jest.fn((event, handler) => {
+        if (event === "change") {
+          mediaQueryListeners.push(handler);
+        }
+      }),
+      removeEventListener: jest.fn((event, handler) => {
+        if (event === "change") {
+          const index = mediaQueryListeners.indexOf(handler);
+          if (index > -1) {
+            mediaQueryListeners.splice(index, 1);
+          }
+        }
+      }),
+      dispatchEvent: jest.fn(),
+    }));
+
     localStorage.setItem("theme-preference", "dark");
     const { result } = renderHook(() => useTheme());
 
-    expect(mediaQueryListeners.length).toBe(0);
+    expect(result.current.preference).toBe("dark");
 
     act(() => {
       result.current.setSystem();
     });
 
-    expect(mediaQueryListeners.length).toBeGreaterThan(0);
+    expect(result.current.preference).toBe("system");
+    expect(result.current.resolvedTheme).toBe("light");
+
+    act(() => {
+      mediaQueryListeners.forEach((listener) => {
+        listener({ matches: true, media: "(prefers-color-scheme: dark)" } as MediaQueryListEvent);
+      });
+    });
+
+    expect(result.current.resolvedTheme).toBe("dark");
   });
 
-  it("cleans up event listeners on unmount", () => {
+  it("keeps global listeners active after a hook unmounts", () => {
     const { unmount } = renderHook(() => useTheme());
 
     expect(mediaQueryListeners.length).toBeGreaterThan(0);
 
     unmount();
 
-    expect(mediaQueryListeners.length).toBe(0);
+    expect(mediaQueryListeners.length).toBeGreaterThan(0);
   });
 
-  it("does not subscribe to system changes for non-system preferences", () => {
-    localStorage.setItem("theme-preference", "dark");
-    renderHook(() => useTheme());
+  it("syncs preference across multiple hook instances", () => {
+    const { result: first } = renderHook(() => useTheme());
+    const { result: second } = renderHook(() => useTheme());
 
-    expect(mediaQueryListeners.length).toBe(0);
+    expect(first.current.preference).toBe("system");
+    expect(second.current.preference).toBe("system");
+
+    act(() => {
+      first.current.setPreference("dark");
+    });
+
+    expect(first.current.preference).toBe("dark");
+    expect(second.current.preference).toBe("dark");
+    expect(first.current.resolvedTheme).toBe("dark");
+    expect(second.current.resolvedTheme).toBe("dark");
+
+    act(() => {
+      second.current.setPreference("light");
+    });
+
+    expect(first.current.preference).toBe("light");
+    expect(second.current.preference).toBe("light");
+    expect(first.current.resolvedTheme).toBe("light");
+    expect(second.current.resolvedTheme).toBe("light");
+  });
+
+  it("syncs when preference changes via setThemePreference", () => {
+    const { result } = renderHook(() => useTheme());
+
+    act(() => {
+      setThemePreference("dark");
+    });
+
+    expect(result.current.preference).toBe("dark");
+    expect(result.current.resolvedTheme).toBe("dark");
+  });
+
+  it("ignores system theme changes when preference is not system", () => {
+    mockMatchMedia.mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: jest.fn((event, handler) => {
+        if (event === "change") {
+          mediaQueryListeners.push(handler);
+        }
+      }),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+
+    localStorage.setItem("theme-preference", "dark");
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.preference).toBe("dark");
+    expect(result.current.resolvedTheme).toBe("dark");
+
+    act(() => {
+      mediaQueryListeners.forEach((listener) => {
+        listener({ matches: true, media: "(prefers-color-scheme: dark)" } as MediaQueryListEvent);
+      });
+    });
+
+    expect(result.current.preference).toBe("dark");
+    expect(result.current.resolvedTheme).toBe("dark");
   });
 });

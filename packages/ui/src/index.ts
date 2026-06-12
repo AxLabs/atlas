@@ -6,10 +6,12 @@ export type { ResolvedTheme, ThemePreference } from "./hooks/use-theme";
 export {
   applyResolvedTheme,
   getThemePreference,
+  initThemeStore,
   resolveTheme,
   setThemePreference,
   useTheme,
 } from "./hooks/use-theme";
+export { ThemeProvider } from "./providers/theme-provider";
 export { useZodForm, type UseZodFormOptions } from "./hooks/use-zod-form";
 
 // Form Utilities
