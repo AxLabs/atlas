@@ -11,6 +11,7 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle,
+  Cookie,
   Database,
   FileText,
   Flag,
@@ -83,6 +84,13 @@ const demoPages = [
     icon: Palette,
     description: "Theme toggle and keyboard navigation patterns",
     features: ["Light/dark/system themes", "Focus visible", "Keyboard navigation", "ARIA patterns"],
+  },
+  {
+    href: "/demo/consent",
+    title: "Consent",
+    icon: Cookie,
+    description: "Cookie consent banner and analytics gating",
+    features: ["CookieConsent v3", "Analytics opt-in", "useConsent hook", "Preferences modal"],
   },
 ];
 

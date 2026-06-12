@@ -3,7 +3,7 @@
 import { WebVitalsReporter } from "@/components/WebVitalsReporter";
 import { FeatureFlagsProvider } from "@/lib/feature-flags";
 
-import { AnalyticsProvider } from "./analytics-provider";
+import { ConsentBridge } from "./consent-bridge";
 import { ThemeProvider } from "./theme-provider";
 import { ToasterProvider } from "./toaster-provider";
 
@@ -19,10 +19,10 @@ export function MainProvider({ children, nonce }: MainProviderProps) {
     <FeatureFlagsProvider>
       <ThemeProvider>
         <ToasterProvider>
-          <AnalyticsProvider nonce={nonce}>
+          <ConsentBridge nonce={nonce}>
             <WebVitalsReporter />
             {children}
-          </AnalyticsProvider>
+          </ConsentBridge>
         </ToasterProvider>
       </ThemeProvider>
     </FeatureFlagsProvider>

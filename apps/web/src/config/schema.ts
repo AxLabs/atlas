@@ -116,6 +116,28 @@ const webVitalsConfigSchema = z.object({
 });
 
 /**
+ * Cookie consent configuration (client-safe).
+ */
+const consentConfigSchema = z.object({
+  enabled: z.boolean(),
+  mode: z.enum(["opt-in", "opt-out"]),
+  revision: z.number().int().positive(),
+  privacyPolicyUrl: z.string().min(1),
+  cookiePolicyUrl: z.string().min(1),
+  contactUrl: z.string().min(1),
+});
+
+/**
+ * Analytics configuration (client-safe).
+ */
+const analyticsConfigSchema = z.object({
+  posthogKey: z.string().optional(),
+  posthogHost: z.string().url().optional(),
+  gaMeasurementId: z.string().optional(),
+  debug: z.boolean(),
+});
+
+/**
  * Logging configuration.
  */
 const loggingConfigSchema = z.object({
@@ -201,6 +223,16 @@ export const configSchema = z.object({
    * @example { newDashboard: true, betaFeatures: false }
    */
   features: z.record(z.string(), z.boolean()).default({}),
+
+  /**
+   * Optional cookie consent layer configuration.
+   */
+  consent: consentConfigSchema,
+
+  /**
+   * Analytics adapter configuration.
+   */
+  analytics: analyticsConfigSchema,
 });
 
 /**

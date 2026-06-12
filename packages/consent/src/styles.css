@@ -1,0 +1,92 @@
+@import "vanilla-cookieconsent/dist/cookieconsent.css";
+
+/**
+ * Atlas-themed CookieConsent overrides.
+ * Uses design tokens from @atlas/ui/globals.css — import that in the app layout.
+ */
+:root {
+  --cc-bg: var(--card, #ffffff);
+  --cc-primary-color: var(--card-foreground, #0a0a0a);
+  --cc-secondary-color: var(--muted-foreground, #737373);
+  --cc-btn-primary-bg: var(--primary, #171717);
+  --cc-btn-primary-color: var(--primary-foreground, #fafafa);
+  --cc-btn-primary-border-color: var(--primary, #171717);
+  --cc-btn-primary-hover-bg: color-mix(in oklch, var(--primary, #171717) 90%, black);
+  --cc-btn-primary-hover-color: var(--primary-foreground, #fafafa);
+  --cc-btn-primary-hover-border-color: color-mix(in oklch, var(--primary, #171717) 90%, black);
+  --cc-btn-secondary-bg: var(--background, #ffffff);
+  --cc-btn-secondary-color: var(--foreground, #0a0a0a);
+  --cc-btn-secondary-border-color: var(--border, #e5e5e5);
+  --cc-btn-secondary-hover-bg: var(--muted, #f5f5f5);
+  --cc-btn-secondary-hover-color: var(--foreground, #0a0a0a);
+  --cc-btn-secondary-hover-border-color: var(--border, #e5e5e5);
+  --cc-separator-border-color: var(--border, #e5e5e5);
+  --cc-toggle-on-bg: var(--primary, #171717);
+  --cc-toggle-off-bg: var(--muted, #f5f5f5);
+  --cc-toggle-on-knob-bg: var(--primary-foreground, #fafafa);
+  --cc-toggle-off-knob-bg: var(--muted-foreground, #737373);
+  --cc-toggle-enabled-icon-color: var(--primary-foreground, #fafafa);
+  --cc-toggle-disabled-icon-color: var(--muted-foreground, #737373);
+  --cc-cookie-category-block-bg: var(--background, #ffffff);
+  --cc-cookie-category-block-border: var(--border, #e5e5e5);
+  --cc-cookie-table-border: var(--border, #e5e5e5);
+  --cc-overlay-bg: color-mix(in oklch, var(--background, #000000) 40%, transparent);
+  --cc-webkit-scrollbar-bg: var(--muted, #f5f5f5);
+  --cc-webkit-scrollbar-hover-bg: var(--border, #e5e5e5);
+  --cc-section-border: var(--border, #e5e5e5);
+  --cc-section-category-border: var(--border, #e5e5e5);
+  --cc-link-color: var(--primary, #171717);
+  --cc-modal-border-radius: var(--radius, 0.5rem);
+  --cc-btn-border-radius: calc(var(--radius, 0.5rem) - 2px);
+}
+
+.dark {
+  --cc-bg: var(--card, #0a0a0a);
+  --cc-primary-color: var(--card-foreground, #fafafa);
+  --cc-secondary-color: var(--muted-foreground, #a3a3a3);
+  --cc-btn-primary-bg: var(--primary, #fafafa);
+  --cc-btn-primary-color: var(--primary-foreground, #171717);
+  --cc-btn-primary-border-color: var(--primary, #fafafa);
+  --cc-btn-primary-hover-bg: color-mix(in oklch, var(--primary, #fafafa) 90%, white);
+  --cc-btn-primary-hover-color: var(--primary-foreground, #171717);
+  --cc-btn-primary-hover-border-color: color-mix(in oklch, var(--primary, #fafafa) 90%, white);
+  --cc-btn-secondary-bg: var(--background, #0a0a0a);
+  --cc-btn-secondary-color: var(--foreground, #fafafa);
+  --cc-btn-secondary-border-color: var(--border, #262626);
+  --cc-btn-secondary-hover-bg: var(--muted, #262626);
+  --cc-btn-secondary-hover-color: var(--foreground, #fafafa);
+  --cc-btn-secondary-hover-border-color: var(--border, #262626);
+  --cc-separator-border-color: var(--border, #262626);
+  --cc-toggle-on-bg: var(--primary, #fafafa);
+  --cc-toggle-off-bg: var(--muted, #262626);
+  --cc-toggle-on-knob-bg: var(--primary-foreground, #171717);
+  --cc-toggle-off-knob-bg: var(--muted-foreground, #a3a3a3);
+  --cc-cookie-category-block-bg: var(--background, #0a0a0a);
+  --cc-cookie-category-block-border: var(--border, #262626);
+  --cc-cookie-table-border: var(--border, #262626);
+  --cc-overlay-bg: color-mix(in oklch, var(--background, #000000) 60%, transparent);
+  --cc-webkit-scrollbar-bg: var(--muted, #262626);
+  --cc-webkit-scrollbar-hover-bg: var(--border, #404040);
+  --cc-section-border: var(--border, #262626);
+  --cc-section-category-border: var(--border, #262626);
+  --cc-link-color: var(--primary, #fafafa);
+}
+
+#cc-main .cm,
+#cc-main .pm {
+  border: 1px solid var(--border, #e5e5e5);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.08),
+    0 2px 4px -2px rgb(0 0 0 / 0.06);
+  font-family: inherit;
+}
+
+#cc-main .cm__title,
+#cc-main .pm__title {
+  font-weight: 600;
+}
+
+#cc-main .cm__desc,
+#cc-main .pm__section-desc {
+  line-height: 1.5;
+}

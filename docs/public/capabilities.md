@@ -108,6 +108,36 @@ entire categories of vulnerabilities by making them architecturally impossible.
 
 ---
 
+## Consent Management (Optional)
+
+### The Problem
+
+Apps that use analytics or marketing cookies need a way to collect user consent before setting
+non-essential cookies. Building a banner from scratch duplicates effort, risks accessibility gaps,
+and often drifts from analytics and CSP configuration.
+
+### Atlas Approach
+
+Atlas provides an optional `@atlas/consent` package:
+
+- **Opt-in by default** — Analytics stays denied until the user accepts
+- **Atlas-themed UI** — CookieConsent v3 styled with design tokens
+- **Analytics integration** — Consent changes flow to `analytics.setConsent()`
+- **App-level config** — Each app chooses vendors, URLs, and whether to enable consent
+- **Disabled by default** — No banner unless explicitly enabled via env
+
+This is a technical consent layer, not legal compliance or a certified CMP.
+
+### Why This Matters
+
+Consent UX should not block shipping analytics safely. Atlas wires consent to the same analytics
+adapters teams already use, without mandating a CMP for every app.
+
+See [how-we-build/consent.md](../how-we-build/consent.md) and
+[ADR-0006](../adr/0006-consent-management.md).
+
+---
+
 ## Scalability Readiness
 
 ### The Problem

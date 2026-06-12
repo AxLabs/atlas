@@ -159,4 +159,48 @@ export const ClientEnvSchema = {
     .enum(["true", "false"])
     .transform((val) => val === "true")
     .optional(),
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Consent Management
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Enable the cookie consent banner and consent gating.
+   *
+   * @default false (consent layer disabled)
+   */
+  NEXT_PUBLIC_CONSENT_ENABLED: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
+
+  /**
+   * Consent mode when the consent layer is enabled.
+   *
+   * @default opt-in
+   */
+  NEXT_PUBLIC_CONSENT_MODE: z.enum(["opt-in", "opt-out"]).optional(),
+
+  /**
+   * Consent configuration revision. Increment to re-prompt users.
+   *
+   * @default 1
+   */
+  NEXT_PUBLIC_CONSENT_REVISION: z.string().regex(/^\d+$/).transform(Number).optional(),
+
+  /**
+   * Privacy policy URL shown in the consent modal.
+   * Relative paths (e.g. /privacy) and absolute URLs are supported.
+   */
+  NEXT_PUBLIC_PRIVACY_POLICY_URL: z.string().min(1).optional(),
+
+  /**
+   * Cookie policy URL shown in the consent modal.
+   */
+  NEXT_PUBLIC_COOKIE_POLICY_URL: z.string().min(1).optional(),
+
+  /**
+   * Contact URL shown in the consent modal.
+   */
+  NEXT_PUBLIC_CONTACT_URL: z.string().min(1).optional(),
 };

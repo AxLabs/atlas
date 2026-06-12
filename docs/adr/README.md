@@ -33,6 +33,7 @@ Write an ADR when you:
 | [0003](0003-data-fetching-react-query.md)     | Data Fetching with React Query + OpenAPI | Accepted |
 | [0004](0004-oauth-google-pkce.md)             | OAuth with Google PKCE                   | Accepted |
 | [0005](0005-observability-sentry.md)          | Observability with Sentry                | Accepted |
+| [0006](0006-consent-management.md)            | Optional Consent Management              | Accepted |
 
 ## Status Lifecycle
 

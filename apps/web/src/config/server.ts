@@ -88,6 +88,22 @@ export function getServerConfig(): Config {
       sessionTtlSeconds: serverEnv.AUTH_SESSION_TTL_SECONDS ?? 604800,
     },
 
+    consent: {
+      enabled: clientEnv.NEXT_PUBLIC_CONSENT_ENABLED ?? false,
+      mode: clientEnv.NEXT_PUBLIC_CONSENT_MODE ?? "opt-in",
+      revision: clientEnv.NEXT_PUBLIC_CONSENT_REVISION ?? 1,
+      privacyPolicyUrl: clientEnv.NEXT_PUBLIC_PRIVACY_POLICY_URL ?? "/privacy",
+      cookiePolicyUrl: clientEnv.NEXT_PUBLIC_COOKIE_POLICY_URL ?? "/cookies",
+      contactUrl: clientEnv.NEXT_PUBLIC_CONTACT_URL ?? "/contact",
+    },
+
+    analytics: {
+      posthogKey: clientEnv.NEXT_PUBLIC_POSTHOG_KEY,
+      posthogHost: clientEnv.NEXT_PUBLIC_POSTHOG_HOST,
+      gaMeasurementId: clientEnv.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+      debug: clientEnv.NEXT_PUBLIC_ANALYTICS_DEBUG ?? false,
+    },
+
     features: {
       // Feature flags - set via environment variables
       // See docs/FEATURE_FLAGS.md for documentation

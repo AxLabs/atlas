@@ -24,6 +24,7 @@
     "perf:analyze": "next experimental-analyze --output"
   },
   "dependencies": {
+    "@atlas/consent": "workspace:*",
     "@atlas/ui": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",

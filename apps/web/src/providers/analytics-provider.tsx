@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { initAnalytics } from "@/lib/analytics";
+import { analytics, initAnalytics } from "@/lib/analytics";
 
 import type { Analytics, CommonEventProps } from "@/lib/analytics";
 import type React from "react";
@@ -84,6 +84,7 @@ export function AnalyticsProvider({
     initialized.current = true;
 
     let cancelled = false;
+    const initialConsentGranted = consentGranted;
 
     async function initializeAnalytics() {
       const adapters: Analytics[] = [];
@@ -97,7 +98,7 @@ export function AnalyticsProvider({
             apiKey: config.posthog.apiKey,
             host: config.posthog.host,
             debug: config.debug,
-            consentGranted,
+            consentGranted: initialConsentGranted,
           })
         );
 
@@ -115,7 +116,7 @@ export function AnalyticsProvider({
           createGAAdapter({
             measurementId: config.ga.measurementId,
             debug: config.debug,
-            consentGranted,
+            consentGranted: initialConsentGranted,
           })
         );
 
@@ -134,7 +135,7 @@ export function AnalyticsProvider({
       initAnalytics(adapters, {
         debug: config.debug,
         environment: config.environment,
-        consentGranted,
+        consentGranted: initialConsentGranted,
       });
 
       if (config.debug) {
@@ -148,7 +149,13 @@ export function AnalyticsProvider({
     return () => {
       cancelled = true;
     };
-  }, [config.debug, config.posthog, config.ga, config.environment, consentGranted, nonce]);
+    // consentGranted is intentionally excluded — init runs once; updates use analytics.setConsent
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see separate consentGranted effect below
+  }, [config.debug, config.posthog, config.ga, config.environment, nonce]);
+
+  useEffect(() => {
+    analytics.setConsent(consentGranted);
+  }, [consentGranted]);
 
   return (
     <>

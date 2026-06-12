@@ -9,7 +9,17 @@
  * @module app/demo/components/DemoShell
  */
 
-import { AlertCircle, Database, FileText, Flag, Home, Lock, Palette, Radio } from "lucide-react";
+import {
+  AlertCircle,
+  Cookie,
+  Database,
+  FileText,
+  Flag,
+  Home,
+  Lock,
+  Palette,
+  Radio,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -59,6 +69,12 @@ const demoRoutes = [
     label: "A11y & Theme",
     icon: Palette,
     description: "Accessibility + theming",
+  },
+  {
+    href: "/demo/consent",
+    label: "Consent",
+    icon: Cookie,
+    description: "Cookie consent + analytics gating",
   },
 ];
 
