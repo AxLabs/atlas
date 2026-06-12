@@ -6,8 +6,7 @@
  * 1. **Kill switches** - If enabled, feature is DISABLED (highest precedence)
  * 2. **Local overrides** - localStorage key 'ff-overrides' (dev only)
  * 3. **Query params** - URL params like ?ff_new_dashboard=1 (dev only)
- * 4. **Runtime config** - Flags from useRuntimeConfig().featureFlags
- * 5. **Defaults** - All false
+ * 4. **Defaults** - All false
  *
  * ## Local Overrides (Development Only)
  *
@@ -219,8 +218,7 @@ function extractKillSwitches(
  *
  * @example
  * ```tsx
- * const runtimeFlags = useRuntimeConfig().featureFlags;
- * const adapter = createDefaultAdapter({ runtimeFlags });
+ * const adapter = createDefaultAdapter();
  *
  * const snapshot = adapter.getSnapshot();
  * const isNewDashboardEnabled = resolveFlag(snapshot, 'new_dashboard');

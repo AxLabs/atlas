@@ -308,12 +308,9 @@ export function createPostHogAdapter(
  * 3. [ ] Create a PostHog provider wrapper in providers/:
  *    ```tsx
  *    export function FeatureFlagsWithPostHog({ children }) {
- *      const runtimeConfig = useRuntimeConfig();
  *      const adapter = useMemo(
- *        () => createPostHogAdapter(posthog, {
- *          runtimeFlags: runtimeConfig.featureFlags,
- *        }),
- *        [runtimeConfig.featureFlags]
+ *        () => createPostHogAdapter(posthog),
+ *        []
  *      );
  *
  *      return (

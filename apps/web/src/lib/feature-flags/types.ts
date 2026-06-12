@@ -9,8 +9,7 @@
  * 1. **Kill switches OFF** - If a kill switch is enabled, the feature is DISABLED
  * 2. **Local overrides** - Developer overrides via localStorage (dev only)
  * 3. **Query params** - URL overrides via ?ff_flag=1 (dev only)
- * 4. **Runtime config** - Flags from /api/runtime-config
- * 5. **Defaults** - Hardcoded defaults (all false)
+ * 4. **Defaults** - Hardcoded defaults (all false)
  *
  * @module feature-flags/types
  */
@@ -64,9 +63,9 @@ export interface FeatureFlagSnapshot {
  * Feature flag adapter interface.
  *
  * Adapters are responsible for fetching and subscribing to flag values
- * from various sources (runtime config, PostHog, LaunchDarkly, etc.).
+ * from various sources (server env vars, PostHog, LaunchDarkly, etc.).
  *
- * The default adapter reads from runtime-config and localStorage.
+ * The default adapter reads from server env vars and localStorage.
  * Future adapters can integrate with feature flag services.
  */
 export interface FeatureFlagAdapter {

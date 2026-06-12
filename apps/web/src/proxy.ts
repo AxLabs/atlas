@@ -91,10 +91,13 @@ export function proxy(request: NextRequest) {
 }
 
 /**
- * Get CSP mode from environment with smart defaults
- * - off: CSP disabled
- * - report-only: CSP violations reported but not blocked (dev/staging)
- * - enforce: CSP violations blocked (production)
+ * Get CSP mode from environment.
+ * - off: CSP disabled (default — opt in by setting CSP_MODE explicitly)
+ * - report-only: CSP violations reported but not blocked (good for staging/audit)
+ * - enforce: CSP violations blocked (production hardening)
+ *
+ * To enable CSP, set CSP_MODE=report-only or CSP_MODE=enforce in your environment.
+ * See .env.example for the full list of CSP_* allowlist variables.
  */
 function getCspMode(): CSPMode {
   const mode = serverEnv.CSP_MODE;
@@ -102,14 +105,8 @@ function getCspMode(): CSPMode {
     return mode;
   }
 
-  // Smart defaults based on environment
-  const env = getAppEnv();
-  if (env === "production") {
-    return "enforce";
-  }
-
-  // Dev/staging: use report-only to avoid breaking local DX
-  return "report-only";
+  // Default to off — CSP must be explicitly opted into
+  return "off";
 }
 
 /**

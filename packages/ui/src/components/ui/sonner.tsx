@@ -1,15 +1,16 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+import { useTheme } from "../../hooks/use-theme";
+
 function Toaster({ ...props }: ToasterProps) {
-  const { theme = "system" } = useTheme();
+  const { preference = "system" } = useTheme();
 
   return (
     <Sonner
       data-slot="sonner-toaster"
-      theme={theme as ToasterProps["theme"]}
+      theme={preference as ToasterProps["theme"]}
       className="toaster group"
       style={
         {
