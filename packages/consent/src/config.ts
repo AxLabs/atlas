@@ -1,5 +1,6 @@
 import { CONSENT_CATEGORIES, CONSENT_SERVICES } from "./types";
 
+import type { AtlasCookieConsentConfig } from "./cookieconsent-types";
 import type { AtlasConsentConfig } from "./types";
 
 /**

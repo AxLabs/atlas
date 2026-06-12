@@ -1,5 +1,6 @@
 import { CONSENT_CATEGORIES, CONSENT_SERVICES } from "./types";
 
+import type { AtlasCookieConsentModule } from "./cookieconsent-types";
 import type { ConsentCategory, ConsentService } from "./types";
 
 let cookieConsentModule: AtlasCookieConsentModule | null = null;
