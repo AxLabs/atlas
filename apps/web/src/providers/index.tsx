@@ -4,7 +4,6 @@ import { WebVitalsReporter } from "@/components/WebVitalsReporter";
 import { FeatureFlagsProvider } from "@/lib/feature-flags";
 
 import { AnalyticsProvider } from "./analytics-provider";
-import { ReactQueryProvider } from "./react-query-provider";
 import { ThemeProvider } from "./theme-provider";
 import { ToasterProvider } from "./toaster-provider";
 
@@ -19,14 +18,12 @@ export function MainProvider({ children, nonce }: MainProviderProps) {
   return (
     <FeatureFlagsProvider>
       <ThemeProvider>
-        <ReactQueryProvider>
-          <ToasterProvider>
-            <AnalyticsProvider nonce={nonce}>
-              <WebVitalsReporter />
-              {children}
-            </AnalyticsProvider>
-          </ToasterProvider>
-        </ReactQueryProvider>
+        <ToasterProvider>
+          <AnalyticsProvider nonce={nonce}>
+            <WebVitalsReporter />
+            {children}
+          </AnalyticsProvider>
+        </ToasterProvider>
       </ThemeProvider>
     </FeatureFlagsProvider>
   );

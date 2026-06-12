@@ -2,8 +2,6 @@ import "@atlas/ui/globals.css";
 
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { Toaster } from "@atlas/ui";
-
 import { GlobalErrorHandler } from "@/components/SentryErrorBoundary";
 import { getNonce } from "@/lib/security/nonce";
 import { MainProvider } from "@/providers";
@@ -72,7 +70,6 @@ export default async function RootLayout({
         <MainProvider nonce={nonce}>
           <GlobalErrorHandler />
           {children}
-          <Toaster />
         </MainProvider>
       </body>
     </html>

@@ -4,12 +4,12 @@
  * Web Vitals Reporter Component
  *
  * Client component that initializes Web Vitals reporting.
- * Should be mounted once in the app (e.g., in root layout or providers).
+ * Dynamically loads web-vitals only when reporting is enabled.
  */
 
 import { useEffect } from "react";
 
-import { initWebVitalsReporting } from "@/lib/telemetry";
+const WEB_VITALS_ENABLED = process.env.NEXT_PUBLIC_WEB_VITALS_ENABLED === "true";
 
 /**
  * WebVitalsReporter component
@@ -19,10 +19,12 @@ import { initWebVitalsReporting } from "@/lib/telemetry";
  */
 export function WebVitalsReporter() {
   useEffect(() => {
-    // Initialize Web Vitals reporting
-    initWebVitalsReporting();
-  }, []); // Empty deps - run once on mount
+    if (!WEB_VITALS_ENABLED) return;
 
-  // This component renders nothing
+    void import("@/lib/telemetry/webVitals").then(({ initWebVitalsReporting }) => {
+      initWebVitalsReporting();
+    });
+  }, []);
+
   return null;
 }

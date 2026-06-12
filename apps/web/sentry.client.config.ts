@@ -44,7 +44,7 @@ if (SENTRY_DSN) {
     replaysSessionSampleRate: IS_PRODUCTION ? 0.01 : IS_STAGING ? 0.05 : 0,
     replaysOnErrorSampleRate: IS_PRODUCTION ? 0.5 : IS_STAGING ? 1.0 : 0,
 
-    integrations: [Sentry.browserTracingIntegration({ enableInp: true })],
+    integrations: [],
 
     // --- Noise Reduction ---
     ignoreErrors: [
@@ -80,8 +80,9 @@ if (SENTRY_DSN) {
     debug: IS_DEV && ENABLED_IN_DEV,
   });
 
-  // Lazy-load replay to keep session replay out of the initial shared chunk
+  // Lazy-load tracing + replay to keep them out of the initial shared chunk
   void import("@sentry/nextjs").then((lazySentry) => {
+    Sentry.addIntegration(lazySentry.browserTracingIntegration({ enableInp: true }));
     Sentry.addIntegration(
       lazySentry.replayIntegration({ maskAllText: false, blockAllMedia: true })
     );

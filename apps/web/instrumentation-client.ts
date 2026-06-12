@@ -2,14 +2,21 @@
  * Next.js Client Instrumentation
  *
  * This file is automatically loaded by Next.js in the browser before any other client code.
- * It's the proper place to initialize client-side instrumentation like Sentry.
+ * Sentry is only loaded when NEXT_PUBLIC_SENTRY_DSN is configured at build time.
  *
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 
-import "./sentry.client.config";
+import { onRouterTransitionStart as noopHandler } from "./sentry-instrumentation.noop";
 
-import * as Sentry from "@sentry/nextjs";
+function getRouterTransitionHandler(): typeof noopHandler {
+  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    // Build-time branch: enabled module is tree-shaken when DSN is unset
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require("./sentry-instrumentation.enabled")
+      .onRouterTransitionStart as typeof noopHandler;
+  }
+  return noopHandler;
+}
 
-// Required by @sentry/nextjs to capture client-side route transitions
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+export const onRouterTransitionStart = getRouterTransitionHandler();

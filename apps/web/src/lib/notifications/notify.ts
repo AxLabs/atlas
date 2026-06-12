@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { ApiError, getUserFacingMessage } from "@/lib/api";
 import { t } from "@/lib/i18n";
+import { ensureToasterMounted } from "@/lib/notifications/toaster-host";
 
 /**
  * Notification options.
@@ -66,6 +67,7 @@ export interface NotifyOptions {
  * ```
  */
 function success(message: string, options?: NotifyOptions): void {
+  ensureToasterMounted();
   toast.success(message, {
     description: options?.description,
     duration: options?.duration ?? 4000,
@@ -93,6 +95,7 @@ function success(message: string, options?: NotifyOptions): void {
  * ```
  */
 function error(message: string, options?: NotifyOptions): void {
+  ensureToasterMounted();
   toast.error(message, {
     description: options?.description,
     duration: options?.duration ?? 6000,
@@ -119,6 +122,7 @@ function error(message: string, options?: NotifyOptions): void {
  * ```
  */
 function info(message: string, options?: NotifyOptions): void {
+  ensureToasterMounted();
   toast.info(message, {
     description: options?.description,
     duration: options?.duration ?? 4000,
@@ -145,6 +149,7 @@ function info(message: string, options?: NotifyOptions): void {
  * ```
  */
 function warning(message: string, options?: NotifyOptions): void {
+  ensureToasterMounted();
   toast.warning(message, {
     description: options?.description,
     duration: options?.duration ?? 5000,
@@ -174,6 +179,7 @@ function warning(message: string, options?: NotifyOptions): void {
  * ```
  */
 function loading(message: string): string | number {
+  ensureToasterMounted();
   return toast.loading(message);
 }
 
@@ -213,6 +219,7 @@ function promise<T>(
     error: string | ((error: unknown) => string);
   }
 ): Promise<T> {
+  ensureToasterMounted();
   toast.promise(promise, messages);
   return promise;
 }

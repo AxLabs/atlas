@@ -18,6 +18,7 @@
 import React from "react";
 
 import { AppShell } from "@/components/layout";
+import { DataProviderLayout } from "@/providers/data-provider-layout";
 
 import { AppHeader } from "./app-header";
 
@@ -46,8 +47,10 @@ function AppSidebar() {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell header={<AppHeader />} sidebar={<AppSidebar />} showBreadcrumbs={true}>
-      {children}
-    </AppShell>
+    <DataProviderLayout>
+      <AppShell header={<AppHeader />} sidebar={<AppSidebar />} showBreadcrumbs={true}>
+        {children}
+      </AppShell>
+    </DataProviderLayout>
   );
 }

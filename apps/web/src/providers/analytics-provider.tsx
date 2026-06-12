@@ -9,17 +9,15 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { initAnalytics } from "@/lib/analytics";
-import { createGAAdapter, GAScript } from "@/lib/analytics/adapters/ga";
 
 import type { Analytics, CommonEventProps } from "@/lib/analytics";
+import type React from "react";
 
 /**
  * Analytics configuration from environment.
- *
- * These values are read at runtime from NEXT_PUBLIC_* env vars.
  */
 interface AnalyticsConfig {
   posthog?: {
@@ -33,16 +31,9 @@ interface AnalyticsConfig {
   environment: CommonEventProps["env"];
 }
 
-/**
- * Get analytics configuration from environment.
- *
- * Safely reads env vars at runtime (client-side only).
- */
 function getAnalyticsConfig(): AnalyticsConfig {
-  // Default to development
   let environment: CommonEventProps["env"] = "development";
 
-  // Try to detect environment
   const appEnv = process.env.NEXT_PUBLIC_APP_ENV;
   if (appEnv === "production" || appEnv === "staging" || appEnv === "development") {
     environment = appEnv;
@@ -55,7 +46,6 @@ function getAnalyticsConfig(): AnalyticsConfig {
     environment,
   };
 
-  // PostHog configuration
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (posthogKey) {
     config.posthog = {
@@ -64,7 +54,6 @@ function getAnalyticsConfig(): AnalyticsConfig {
     };
   }
 
-  // GA configuration
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   if (gaMeasurementId) {
     config.ga = {
@@ -75,43 +64,12 @@ function getAnalyticsConfig(): AnalyticsConfig {
   return config;
 }
 
-/**
- * Props for the AnalyticsProvider component.
- */
 interface AnalyticsProviderProps {
   children: React.ReactNode;
-  /**
-   * Initial consent state.
-   * Set to true if user has already granted consent (e.g., from cookie).
-   * @default false
-   */
   consentGranted?: boolean;
-  /**
-   * CSP nonce for inline scripts.
-   * Passed from server component to ensure CSP compliance.
-   */
   nonce?: string;
 }
 
-/**
- * Analytics Provider Component.
- *
- * Initializes analytics adapters based on environment configuration.
- * Should be placed high in the component tree (e.g., in MainProvider).
- *
- * @example
- * ```tsx
- * import { AnalyticsProvider } from "@/providers/analytics-provider";
- *
- * export function MainProvider({ children }) {
- *   return (
- *     <AnalyticsProvider>
- *       {children}
- *     </AnalyticsProvider>
- *   );
- * }
- * ```
- */
 export function AnalyticsProvider({
   children,
   consentGranted = false,
@@ -119,9 +77,9 @@ export function AnalyticsProvider({
 }: AnalyticsProviderProps) {
   const initialized = useRef(false);
   const config = getAnalyticsConfig();
+  const [gaScript, setGaScript] = useState<React.ReactNode>(null);
 
   useEffect(() => {
-    // Ensure we only initialize once
     if (initialized.current) return;
     initialized.current = true;
 
@@ -130,7 +88,6 @@ export function AnalyticsProvider({
     async function initializeAnalytics() {
       const adapters: Analytics[] = [];
 
-      // PostHog is lazy-loaded so posthog-js stays out of the main bundle when unconfigured
       if (config.posthog) {
         const { createPostHogAdapter } = await import("@/lib/analytics/adapters/posthog");
         if (cancelled) return;
@@ -151,12 +108,19 @@ export function AnalyticsProvider({
       }
 
       if (config.ga) {
+        const { createGAAdapter, GAScript } = await import("@/lib/analytics/adapters/ga");
+        if (cancelled) return;
+
         adapters.push(
           createGAAdapter({
             measurementId: config.ga.measurementId,
             debug: config.debug,
             consentGranted,
           })
+        );
+
+        setGaScript(
+          <GAScript measurementId={config.ga.measurementId} debug={config.debug} nonce={nonce} />
         );
 
         if (config.debug) {
@@ -184,14 +148,11 @@ export function AnalyticsProvider({
     return () => {
       cancelled = true;
     };
-  }, [config.debug, config.posthog, config.ga, config.environment, consentGranted]);
+  }, [config.debug, config.posthog, config.ga, config.environment, consentGranted, nonce]);
 
   return (
     <>
-      {/* Inject GA script if configured */}
-      {config.ga && (
-        <GAScript measurementId={config.ga.measurementId} debug={config.debug} nonce={nonce} />
-      )}
+      {gaScript}
       {children}
     </>
   );

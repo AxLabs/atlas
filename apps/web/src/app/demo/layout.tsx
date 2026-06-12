@@ -2,16 +2,25 @@
  * Demo Section Layout
  *
  * Provides a consistent layout for all demo pages with sidebar navigation.
- * Demonstrates Atlas app shell patterns with nested routing.
+ * DemoShell and React Query are loaded only for demo routes.
  *
  * @module app/demo/layout
  */
 
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
 import { SkeletonList } from "@atlas/ui";
 
-import { DemoShell } from "./components/DemoShell";
+import { DataProviderLayout } from "@/providers/data-provider-layout";
+
+const DemoShell = dynamic(() => import("./components/DemoShell").then((mod) => mod.DemoShell), {
+  loading: () => (
+    <div className="container mx-auto p-8">
+      <SkeletonList count={3} />
+    </div>
+  ),
+});
 
 export const metadata = {
   title: "Atlas Showcase | Demo",
@@ -20,8 +29,10 @@ export const metadata = {
 
 export default function DemoLayout({ children }: { children: React.ReactNode }) {
   return (
-    <DemoShell>
-      <Suspense fallback={<SkeletonList count={3} />}>{children}</Suspense>
-    </DemoShell>
+    <DataProviderLayout>
+      <DemoShell>
+        <Suspense fallback={<SkeletonList count={3} />}>{children}</Suspense>
+      </DemoShell>
+    </DataProviderLayout>
   );
 }

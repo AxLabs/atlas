@@ -14,8 +14,11 @@
 
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+import type React from "react";
+
+const SENTRY_ENABLED = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -31,12 +34,8 @@ interface ErrorFallbackProps {
 
 /**
  * Default error fallback UI
- *
- * Uses config facade to determine environment in a type-safe way.
  */
 function DefaultErrorFallback({ error, resetError, showDetails = false }: ErrorFallbackProps) {
-  // Use environment detection for error display
-  // In client components, we can check the hostname or use config
   const isDevelopment = typeof window !== "undefined" && window.location.hostname === "localhost";
 
   return (
@@ -64,17 +63,34 @@ function DefaultErrorFallback({ error, resetError, showDetails = false }: ErrorF
 }
 
 /**
- * Error boundary that integrates with Sentry
+ * Error boundary that integrates with Sentry (lazy-loaded when DSN is configured).
  */
 export function SentryErrorBoundary({
   children,
   fallback,
   showDetails = false,
 }: ErrorBoundaryProps) {
+  const [ErrorBoundary, setErrorBoundary] = useState<React.ComponentType<
+    Record<string, unknown>
+  > | null>(null);
+
+  useEffect(() => {
+    if (!SENTRY_ENABLED) return;
+
+    void import("@sentry/nextjs").then((Sentry) => {
+      setErrorBoundary(() => Sentry.ErrorBoundary as React.ComponentType<Record<string, unknown>>);
+    });
+  }, []);
+
+  if (!SENTRY_ENABLED || !ErrorBoundary) {
+    return <>{children}</>;
+  }
+
+  const Boundary = ErrorBoundary;
+
   return (
-    <Sentry.ErrorBoundary
-      fallback={({ error, resetError }) => {
-        // Use custom fallback if provided, otherwise use default
+    <Boundary
+      fallback={({ error, resetError }: { error: unknown; resetError: () => void }) => {
         if (fallback) {
           return <>{fallback}</>;
         }
@@ -86,26 +102,34 @@ export function SentryErrorBoundary({
           />
         );
       }}
-      beforeCapture={(scope, _error, componentStack) => {
-        // Add additional context
+      beforeCapture={(
+        scope: {
+          setTag: (key: string, value: string) => void;
+          setContext: (key: string, value: unknown) => void;
+        },
+        _error: unknown,
+        componentStack: string
+      ) => {
         scope.setTag("errorBoundary", "react");
-        scope.setContext("componentStack", {
-          componentStack,
-        });
+        scope.setContext("componentStack", { componentStack });
       }}
     >
       {children}
-    </Sentry.ErrorBoundary>
+    </Boundary>
   );
 }
 
 /**
- * Hook to manually report errors to Sentry with additional context
+ * Hook to manually report errors to Sentry with additional context.
  */
 export function useSentryError() {
   const captureError = (error: Error, context?: Record<string, unknown>) => {
-    Sentry.captureException(error, {
-      contexts: context ? { custom: context } : undefined,
+    if (!SENTRY_ENABLED) return;
+
+    void import("@sentry/nextjs").then((Sentry) => {
+      Sentry.captureException(error, {
+        contexts: context ? { custom: context } : undefined,
+      });
     });
   };
 
@@ -113,24 +137,27 @@ export function useSentryError() {
 }
 
 /**
- * Global error handler for unhandled promise rejections
- * This should be mounted in the root layout
+ * Global error handler for unhandled promise rejections.
+ * This should be mounted in the root layout when Sentry is enabled.
  */
 export function GlobalErrorHandler() {
   useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      Sentry.captureException(event.reason, {
-        tags: {
-          errorType: "unhandledRejection",
-        },
-      });
-    };
+    if (!SENTRY_ENABLED) return;
 
-    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    let cleanup: (() => void) | undefined;
 
-    return () => {
-      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
-    };
+    void import("@sentry/nextjs").then((Sentry) => {
+      const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+        Sentry.captureException(event.reason, {
+          tags: { errorType: "unhandledRejection" },
+        });
+      };
+
+      window.addEventListener("unhandledrejection", handleUnhandledRejection);
+      cleanup = () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    });
+
+    return () => cleanup?.();
   }, []);
 
   return null;
