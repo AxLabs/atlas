@@ -11,8 +11,8 @@ export {
   setThemePreference,
   useTheme,
 } from "./hooks/use-theme";
-export { ThemeProvider } from "./providers/theme-provider";
 export { useZodForm, type UseZodFormOptions } from "./hooks/use-zod-form";
+export { ThemeProvider } from "./providers/theme-provider";
 
 // Form Utilities
 export { getFieldErrorMessage } from "./lib/forms/errors";

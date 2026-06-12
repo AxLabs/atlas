@@ -3,10 +3,10 @@ export type ResolvedTheme = "light" | "dark";
 
 export const STORAGE_KEY = "theme-preference";
 
-export type ThemeState = {
+export interface ThemeState {
   preference: ThemePreference;
   resolvedTheme: ResolvedTheme;
-};
+}
 
 const SERVER_SNAPSHOT: ThemeState = {
   preference: "system",

@@ -23,6 +23,8 @@
     "*.config.ts",
     "instrumentation.ts",
     "instrumentation-client.ts",
+    "sentry-instrumentation.enabled.ts",
+    "sentry-instrumentation.noop.ts",
     "playwright.config.ts"
   ],
   "exclude": ["node_modules"]

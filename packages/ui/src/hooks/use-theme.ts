@@ -8,11 +8,11 @@ import {
   getThemeServerSnapshot,
   getThemeSnapshot,
   readThemePreference,
+  type ResolvedTheme,
   resolveThemeValue,
   subscribeToTheme,
-  updateThemePreference,
-  type ResolvedTheme,
   type ThemePreference,
+  updateThemePreference,
 } from "../theme/theme-store";
 
 export type { ResolvedTheme, ThemePreference } from "../theme/theme-store";

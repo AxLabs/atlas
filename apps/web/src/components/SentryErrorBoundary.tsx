@@ -20,6 +20,39 @@ import type React from "react";
 
 const SENTRY_ENABLED = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
+async function loadSentryModule() {
+  return import("@sentry/nextjs");
+}
+
+type SentryModule = Awaited<ReturnType<typeof loadSentryModule>>;
+let sentryModule: SentryModule | null = null;
+const pendingExceptions: { error: Error; context?: Record<string, unknown> }[] = [];
+
+if (SENTRY_ENABLED) {
+  void loadSentryModule().then((Sentry) => {
+    sentryModule = Sentry;
+    for (const { error, context } of pendingExceptions) {
+      Sentry.captureException(error, {
+        contexts: context ? { custom: context } : undefined,
+      });
+    }
+    pendingExceptions.length = 0;
+  });
+}
+
+function reportSentryException(error: Error, context?: Record<string, unknown>): void {
+  if (!SENTRY_ENABLED) return;
+
+  if (sentryModule) {
+    sentryModule.captureException(error, {
+      contexts: context ? { custom: context } : undefined,
+    });
+    return;
+  }
+
+  pendingExceptions.push({ error, context });
+}
+
 interface ErrorBoundaryProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
@@ -125,12 +158,7 @@ export function SentryErrorBoundary({
 export function useSentryError() {
   const captureError = (error: Error, context?: Record<string, unknown>) => {
     if (!SENTRY_ENABLED) return;
-
-    void import("@sentry/nextjs").then((Sentry) => {
-      Sentry.captureException(error, {
-        contexts: context ? { custom: context } : undefined,
-      });
-    });
+    reportSentryException(error, context);
   };
 
   return { captureError };

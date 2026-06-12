@@ -1,7 +1,8 @@
 "use client";
 
-import { Toaster } from "@atlas/ui";
 import { useEffect, useState } from "react";
+
+import { Toaster } from "@atlas/ui";
 
 import { registerToasterMount } from "@/lib/notifications/toaster-host";
 
