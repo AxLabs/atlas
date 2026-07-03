@@ -20,7 +20,7 @@
 import { z } from "zod";
 
 import { ClientEnvSchema } from "../src/schemas/env/public-runtime-config";
-import { ServerEnvSchema } from "../src/schemas/env/server-runtime-config";
+import { getServerEnvSchema } from "../src/schemas/env/validate-server-env";
 
 // Color codes for terminal output
 const colors = {
@@ -49,7 +49,7 @@ function formatZodError(error: z.ZodError, prefix = ""): string {
 /**
  * Validate server-side environment variables
  */
-function validateServerEnv(): { success: boolean; errors: string[] } {
+function validateServerEnv(nodeEnv: string): { success: boolean; errors: string[] } {
   const errors: string[] = [];
 
   console.log(
@@ -57,7 +57,7 @@ function validateServerEnv(): { success: boolean; errors: string[] } {
   );
 
   try {
-    const serverSchema = z.object(ServerEnvSchema);
+    const serverSchema = getServerEnvSchema(nodeEnv);
     const envVars = {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL,
@@ -120,14 +120,20 @@ function validateClientEnv(): { success: boolean; errors: string[] } {
 /**
  * Display helpful information about missing environment variables
  */
-function displayHelp() {
+function displayHelp(nodeEnv: string) {
   console.log(
     `\n${colors.bold}${colors.yellow}Missing or invalid environment variables detected.${colors.reset}`
   );
   console.log(`\n${colors.cyan}To fix this:${colors.reset}`);
-  console.log(`  1. Create a .env file in apps/web/ (copy from .env.example)`);
-  console.log(`  2. Set all required environment variables`);
+  console.log(`  1. Create a .env.local file in apps/web/ (copy from .env.example)`);
+  console.log(`  2. Set required environment variables for your workflow`);
   console.log(`  3. Run this validation script again\n`);
+
+  if (nodeEnv !== "production") {
+    console.log(`${colors.cyan}Frontend demo minimum:${colors.reset}`);
+    console.log(`  - NEXT_PUBLIC_API_URL (defaults to /api in schema)`);
+    console.log(`  - DATABASE_URL is optional for /demo and mocked API routes\n`);
+  }
 
   if (process.env.CI) {
     console.log(`${colors.cyan}For CI/CD:${colors.reset}`);
@@ -160,7 +166,7 @@ async function main() {
   }
 
   // Run validations
-  const serverResult = validateServerEnv();
+  const serverResult = validateServerEnv(nodeEnv);
   const clientResult = validateClientEnv();
 
   // Display results
@@ -174,7 +180,7 @@ async function main() {
     );
     process.exit(0);
   } else {
-    displayHelp();
+    displayHelp(nodeEnv);
     console.log(`${colors.red}${colors.bold}✖ Environment validation failed${colors.reset}\n`);
     process.exit(1);
   }

@@ -148,7 +148,7 @@ console.log(redactString(msg));
 
 ## Configuration
 
-See [.env.example](../../.env.example) and [docs/SECURITY.md](../../../docs/SECURITY.md) for:
+See [.env.example](../../.env.example) and [src/lib/security/README.md](../security/README.md) for:
 
 - CSP mode configuration
 - HSTS enablement
@@ -162,7 +162,6 @@ pnpm test --testPathPattern=redact.test.ts
 
 ## References
 
-- [SECURITY.md](../../../docs/SECURITY.md) - Complete security documentation
-- [SECRETS_ROTATION.md](../../../docs/SECRETS_ROTATION.md) - Secrets rotation procedures
+- [src/lib/security/README.md](../security/README.md) - Security headers and CSP configuration
 - [OWASP Secure Headers](https://owasp.org/www-project-secure-headers/)
 - [MDN CSP Guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)

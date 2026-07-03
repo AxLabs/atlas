@@ -30,7 +30,7 @@
  * ```
  *
  * @see {@link file://./env/README.md} for detailed usage patterns
- * @see {@link file://../../docs/ENVIRONMENT_VARIABLES.md} for complete documentation
+ * @see {@link file://../../docs/how-we-build/env.md} for complete documentation
  */
 
 import { env as clientEnvModule } from "./env/public-env";

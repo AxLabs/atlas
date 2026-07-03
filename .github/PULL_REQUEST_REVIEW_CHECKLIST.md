@@ -211,8 +211,8 @@ After approval:
 ## Additional Resources
 
 - [Project Documentation](/docs)
-- [Environment Variables Guide](/docs/ENVIRONMENT_VARIABLES.md)
-- [Platform Principles](/docs/platform-principles.md)
+- [Environment Variables Guide](/docs/how-we-build/env.md)
+- [How We Build](/docs/how-we-build/README.md)
 
 ---
 

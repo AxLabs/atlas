@@ -12,6 +12,18 @@
 | **Server vars never exposed to client** | TypeScript + bundle separation    |
 | **Document every variable**             | In `.env.example` with comments   |
 
+## Setup Profiles
+
+| Profile             | Required variables                                                        | Use case                              |
+| ------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
+| **Frontend demo**   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                              | `/demo` routes with mocked APIs       |
+| **OAuth**           | Above + `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SESSION_SECRET` | `/demo/auth`                          |
+| **Database-backed** | Above + `DATABASE_URL`                                                    | Features that connect to PostgreSQL   |
+| **Production**      | All production secrets including `DATABASE_URL`                           | CI (`NODE_ENV=production`) and deploy |
+
+`DATABASE_URL` is optional in the Zod schema for local development. The `validate:env` script
+requires it only when `NODE_ENV=production`.
+
 ## Architecture
 
 ```
@@ -71,7 +83,7 @@ export const ClientEnvSchema = {
 ```typescript
 export const ServerEnvSchema = {
   // Existing...
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().url().optional(),
 
   // Add yours
   STRIPE_SECRET_KEY: z.string().min(32),
@@ -120,7 +132,7 @@ STRIPE_SECRET_KEY=sk_test_...
 ### Step 5: Validate
 
 ```bash
-pnpm --filter @atlas/web validate:env
+pnpm validate:env
 ```
 
 ## Common Patterns
@@ -191,11 +203,11 @@ Environment validation runs automatically in CI:
 ```yaml
 # .github/workflows/ci.yml
 - name: Validate environment
-  run: pnpm --filter @atlas/web validate:env
+  run: pnpm validate:env
   env:
     NODE_ENV: production
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
-    NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+    DATABASE_URL: postgresql://user:password@localhost:5432/atlas_ci
+    NEXT_PUBLIC_API_URL: https://api.example.com
 ```
 
 **GitHub Configuration:**

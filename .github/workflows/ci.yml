@@ -124,7 +124,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate environment variables
-        run: pnpm --filter @atlas/web validate:env
+        run: pnpm validate:env
         env:
           NODE_ENV: production
           DATABASE_URL: postgresql://user:password@localhost:5432/atlas_ci

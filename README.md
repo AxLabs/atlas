@@ -56,10 +56,9 @@ corepack enable
 # Install dependencies
 pnpm install
 
-# Setup environment
+# Setup environment (frontend demo — no database required)
 cp apps/web/.env.example apps/web/.env.local
-# Fill in values, then:
-pnpm --filter @atlas/web validate:env
+pnpm validate:env
 
 # Start dev server
 pnpm dev

@@ -1,11 +1,7 @@
 import path from "path";
-import { fileURLToPath } from "url";
 
 import type { StorybookConfig } from "@storybook/react-vite";
 import tailwindcss from "@tailwindcss/vite";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
@@ -29,7 +25,7 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
-          "@": path.resolve(__dirname, "../src"),
+          "@": path.join(process.cwd(), "src"),
         },
       },
     };

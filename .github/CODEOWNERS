@@ -32,7 +32,7 @@
 /apps/web/src/env/ @thedanielmark
 /apps/web/src/schemas/env/ @thedanielmark
 /apps/web/scripts/validate-env.ts @thedanielmark
-/docs/ENVIRONMENT_VARIABLES.md @thedanielmark
+/docs/how-we-build/env.md @thedanielmark
 
 # Web App - Tests
 /apps/web/e2e/ @thedanielmark

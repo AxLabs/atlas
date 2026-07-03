@@ -47,9 +47,12 @@ These rules apply to all code in Atlas:
 ```bash
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
-# Fill in values
+pnpm validate:env
 pnpm dev
 ```
+
+The frontend demo at `/demo` works without `DATABASE_URL`. Add OAuth variables to exercise
+`/demo/auth`.
 
 ### Add a new env var
 
@@ -57,7 +60,7 @@ pnpm dev
 2. Add binding to `src/env/[public|server]-env.ts`
 3. Add to `scripts/validate-env.ts`
 4. Document in `.env.example`
-5. Test: `pnpm --filter @atlas/web validate:env`
+5. Test: `pnpm validate:env`
 
 ### Add a new API endpoint consumer
 

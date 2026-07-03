@@ -1,7 +1,6 @@
 # Environment Variables - Quick Reference
 
-> **For complete documentation, see
-> [ENVIRONMENT_VARIABLES.md](../../../docs/ENVIRONMENT_VARIABLES.md)**
+> **For complete documentation, see [Environment Variables](../../../docs/how-we-build/env.md)**
 
 ## Quick Start
 
@@ -86,7 +85,7 @@ pnpm validate:env
 
 ```typescript
 export const ServerEnvSchema = {
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().url().optional(),
   YOUR_SECRET: z.string().min(1), // ← Add this
 };
 ```
@@ -226,5 +225,5 @@ z.string().default("default_value");
 
 ---
 
-**Need more?** See [Complete Guide](../../../docs/ENVIRONMENT_VARIABLES.md) for architecture, CI/CD,
+**Need more?** See [Complete Guide](../../../docs/how-we-build/env.md) for architecture, CI/CD,
 security, and detailed troubleshooting.

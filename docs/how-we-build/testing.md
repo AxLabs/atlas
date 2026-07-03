@@ -79,15 +79,15 @@ import { fixtures } from "@/test";
 
 // Success response
 server.use(
-  http.get("*/users/:id", () => {
-    return HttpResponse.json(fixtures.api.userDetailSuccess());
+  rest.get("*/users/:id", (_req, res, ctx) => {
+    return res(ctx.json(fixtures.api.userDetailSuccess()));
   })
 );
 
 // Error response
 server.use(
-  http.get("*/users/:id", () => {
-    return HttpResponse.json(fixtures.errors.error404, { status: 404 });
+  rest.get("*/users/:id", (_req, res, ctx) => {
+    return res(ctx.status(404), ctx.json(fixtures.errors.error404));
   })
 );
 ```
@@ -114,16 +114,18 @@ const project = projectFactory.build({ ownerId: user.id });
 
 ## MSW (Mock Service Worker)
 
-Default handlers are already set up. Override per-test when needed:
+Atlas uses **MSW v1** (`rest` API). Default handlers are already set up in `src/test/setup/msw.ts`.
+Override per-test when needed. MSW v2 migration is tracked in
+[follow-up backlog](../audit/follow-up-backlog.md).
 
 ```typescript
 import { server } from '@/test';
-import { http, HttpResponse } from 'msw';
+import { rest } from 'msw';
 
 test('handles loading error', async () => {
   server.use(
-    http.get('*/users', () => {
-      return HttpResponse.json({ error: 'Failed' }, { status: 500 });
+    rest.get('*/users', (_req, res, ctx) => {
+      return res(ctx.status(500), ctx.json({ error: 'Failed' }));
     })
   );
 
@@ -150,9 +152,9 @@ Use these queries in order (most to least preferred):
 ```typescript
 test('shows loading spinner', async () => {
   server.use(
-    http.get('*/users', async () => {
+    rest.get('*/users', async (_req, res, ctx) => {
       await new Promise(r => setTimeout(r, 100));
-      return HttpResponse.json([]);
+      return res(ctx.json([]));
     })
   );
 
@@ -182,10 +184,10 @@ test('submits form', async () => {
 ```typescript
 test('displays validation error', async () => {
   server.use(
-    http.post('*/users', () => {
-      return HttpResponse.json(
-        { code: 'VALIDATION_ERROR', message: 'Invalid email' },
-        { status: 400 }
+    rest.post('*/users', (_req, res, ctx) => {
+      return res(
+        ctx.status(400),
+        ctx.json({ code: 'VALIDATION_ERROR', message: 'Invalid email' })
       );
     })
   );
@@ -227,7 +229,7 @@ screen.getByTestId("submit-button");
 jest.mock("@tanstack/react-query");
 
 // ❌ Inline mock data
-server.use(http.get("*", () => HttpResponse.json({ id: 1, name: "Test" })));
+server.use(rest.get("*", (_req, res, ctx) => res(ctx.json({ id: 1, name: "Test" }))));
 
 // ❌ Use getBy for async content
 screen.getByText("Loading..."); // Use findBy instead
@@ -241,7 +243,7 @@ user.click(button); // Missing await
 screen.getByRole("button", { name: /submit/i });
 
 // ✅ Mock the API layer
-server.use(http.get("*/users", () => HttpResponse.json(fixtures.users)));
+server.use(rest.get("*/users", (_req, res, ctx) => res(ctx.json(fixtures.users))));
 
 // ✅ Use findBy for async
 await screen.findByText("Welcome");

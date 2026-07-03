@@ -251,7 +251,7 @@ pnpm storybook
 - [Storybook Documentation](https://storybook.js.org/docs/react/get-started/introduction)
 - [Component Story Format](https://storybook.js.org/docs/react/api/csf)
 - [Storybook Addons](https://storybook.js.org/addons)
-- [Atlas Platform Principles](../../docs/platform-principles.md)
+- [Atlas How We Build](../../docs/how-we-build/README.md)
 
 ---
 
