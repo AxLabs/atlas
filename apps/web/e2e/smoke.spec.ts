@@ -17,8 +17,8 @@ test.describe("Smoke Tests", () => {
     await page.goto("/examples");
 
     await expect(page.getByRole("heading", { name: /Reference examples/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Data fetching/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Forms & validation/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Data states" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Forms" })).toBeVisible();
   });
 
   test("data example renders", async ({ page }) => {

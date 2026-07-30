@@ -1,7 +1,15 @@
-import { ArrowRight, Database, FileText } from "lucide-react";
+import { Database, FileText } from "lucide-react";
 import Link from "next/link";
 
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@atlas/ui";
+import {
+  buttonVariants,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  cn,
+} from "@atlas/ui";
 
 const examples = [
   {
@@ -42,12 +50,12 @@ export default function ExamplesPage() {
                 <CardDescription>{example.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" size="sm">
-                  <Link href={example.href}>
-                    View example
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                <Link
+                  href={example.href}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  View example
+                </Link>
               </CardContent>
             </Card>
           );
