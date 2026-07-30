@@ -30,6 +30,8 @@
     "perf:analyze": "pnpm --filter @atlas/web perf:analyze",
     "perf:enable": "node tools/perf/enable.js",
     "perf:disable": "node tools/perf/disable.js",
+    "ci:self-hosted:enable": "node tools/ci-self-hosted/enable.js",
+    "ci:self-hosted:disable": "node tools/ci-self-hosted/disable.js",
     "compose:check": "docker compose config --quiet && echo '✓ Compose configuration is valid'",
     "compose:sanity": "docker compose --profile sanity up -d && docker compose --profile sanity logs sanity && docker compose --profile sanity down",
     "infra:help": "echo 'Atlas is a pure frontend platform—no infrastructure required.\\n\\nFor consumer apps needing DB/cache:\\n  1. See: examples/compose/infra.yml\\n  2. Docs: docs/how-we-build/local-dev-composition.md\\n  3. Run:  docker compose -f docker-compose.yml -f examples/compose/infra.yml --profile infra up -d'",

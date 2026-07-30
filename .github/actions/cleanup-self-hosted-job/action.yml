@@ -1,0 +1,15 @@
+name: Cleanup self-hosted job
+description: Remove per-job temp HOME dirs on self-hosted runners
+runs:
+  using: composite
+  steps:
+    - name: Cleanup job artifacts
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+
+        if [[ -n "${RUNNER_TEMP:-}" && -d "${RUNNER_TEMP}" ]]; then
+          rm -rf "${RUNNER_TEMP}"/home-* "${RUNNER_TEMP}"/setup-pnpm 2>/dev/null || \
+            sudo rm -rf "${RUNNER_TEMP}"/home-* "${RUNNER_TEMP}"/setup-pnpm 2>/dev/null || true
+        fi
