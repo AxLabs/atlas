@@ -26,16 +26,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build application
-        run: pnpm --filter @atlas/web build
+        run: pnpm --filter @atlas/web... build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:3000/api
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
       - name: Run Lighthouse CI
         run: pnpm perf:lhci

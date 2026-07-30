@@ -2,8 +2,7 @@
 /**
  * Performance Budgets Module - Disable Script
  *
- * This script disables the performance budgets module by removing
- * workflow files from .github/workflows/
+ * Removes workflow files from .github/workflows/.
  */
 
 const fs = require("fs");
@@ -17,17 +16,17 @@ function removeWorkflow(filename) {
   const filepath = path.join(WORKFLOWS_DIR, filename);
 
   if (!fs.existsSync(filepath)) {
-    console.log(`⚠ Workflow not found: ${filename} (already disabled)`);
+    console.log(`Workflow not found: ${filename} (already disabled)`);
     return true;
   }
 
   fs.unlinkSync(filepath);
-  console.log(`✓ Disabled workflow: ${filename}`);
+  console.log(`Disabled workflow: ${filename}`);
   return true;
 }
 
 function main() {
-  console.log("🔧 Disabling Performance Budgets Module\n");
+  console.log("Disabling performance budgets module\n");
 
   let success = true;
   for (const workflow of WORKFLOWS) {
@@ -37,11 +36,11 @@ function main() {
   }
 
   if (success) {
-    console.log("\n✅ Performance budgets module disabled successfully!\n");
-    console.log("Note: Configuration files and dependencies remain in place.");
+    console.log("\nPerformance budgets module disabled.\n");
+    console.log("Configuration files and dependencies remain in place.");
     console.log("To re-enable, run: pnpm perf:enable");
   } else {
-    console.error("\n❌ Failed to disable performance budgets module");
+    console.error("\nFailed to disable performance budgets module");
     process.exit(1);
   }
 }
