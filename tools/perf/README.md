@@ -24,4 +24,6 @@ pnpm perf:disable
 
 ## Documentation
 
-See [docs/performance-budgets.md](../../docs/performance-budgets.md) for complete documentation.
+See
+[docs/\_archive/2025-12-pre-platform-docs/performance-budgets.md](../../docs/_archive/2025-12-pre-platform-docs/performance-budgets.md)
+for documentation.

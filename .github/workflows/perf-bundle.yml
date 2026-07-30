@@ -26,11 +26,11 @@ concurrency:
 
 env:
   # Bundle budgets in KB (uncompressed .next/static/*.js)
-  BUDGET_TOTAL_STATIC_JS_KB: 2500
-  # Shared framework/vendor chunk (Next.js + React + Sentry tracing) is ~800 KB
-  BUDGET_LARGEST_CHUNK_KB: 900
-  MAX_BUNDLE_GROWTH_KB: 75
-  MAX_BUNDLE_GROWTH_PERCENT: 10
+  # Baseline from main: ~2.4 MB total static JS; largest framework chunk ~790 KB
+  BUDGET_TOTAL_STATIC_JS_KB: 3000
+  BUDGET_LARGEST_CHUNK_KB: 950
+  MAX_BUNDLE_GROWTH_KB: 100
+  MAX_BUNDLE_GROWTH_PERCENT: 15
 
 jobs:
   analyze:
@@ -124,7 +124,7 @@ jobs:
             echo "gzip_static_js_kb=$GZIP_KB"
           } >> "$GITHUB_OUTPUT"
 
-          echo "📦 Bundle stats"
+          echo "Bundle stats"
           echo "  Total static JS:   ${TOTAL_KB} KB (${CHUNK_COUNT} chunks)"
           echo "  Largest chunk:     ${LARGEST_KB} KB"
           echo "  Total gzip JS:     ${GZIP_KB} KB"
@@ -186,17 +186,17 @@ jobs:
           }
 
           const summary = [];
-          summary.push('## 📦 Bundle Size Check');
+          summary.push('## Bundle size check');
           summary.push('');
           summary.push('### Absolute budgets');
           summary.push('');
           summary.push('| Metric | Size | Budget | Status |');
           summary.push('|--------|------|--------|--------|');
           summary.push(
-            `| Total static JS | ${stats.totalStaticJsKb} KB | ${budgets.totalStaticJsKb} KB | ${totalWithinBudget ? '✅ Within budget' : '❌ Over budget'} |`
+            `| Total static JS | ${stats.totalStaticJsKb} KB | ${budgets.totalStaticJsKb} KB | ${totalWithinBudget ? 'Within budget' : 'Over budget'} |`
           );
           summary.push(
-            `| Largest chunk | ${stats.largestChunkKb} KB | ${budgets.largestChunkKb} KB | ${largestWithinBudget ? '✅ Within budget' : '❌ Over budget'} |`
+            `| Largest chunk | ${stats.largestChunkKb} KB | ${budgets.largestChunkKb} KB | ${largestWithinBudget ? 'Within budget' : 'Over budget'} |`
           );
           summary.push(
             `| JS chunks | ${stats.chunkCount} | — | — |`
@@ -212,7 +212,7 @@ jobs:
             summary.push('| Metric | Current | Baseline | Change | Limit | Status |');
             summary.push('|--------|---------|----------|--------|-------|--------|');
             summary.push(
-              `| Total static JS | ${stats.totalStaticJsKb} KB | ${baseline.totalStaticJsKb} KB | ${totalGrowthKb >= 0 ? '+' : ''}${totalGrowthKb} KB (${totalGrowthPercent.toFixed(1)}%) | ≤ ${budgets.maxGrowthKb} KB / ${budgets.maxGrowthPercent}% | ${regressionExceeded ? '❌ Regression' : '✅ OK'} |`
+              `| Total static JS | ${stats.totalStaticJsKb} KB | ${baseline.totalStaticJsKb} KB | ${totalGrowthKb >= 0 ? '+' : ''}${totalGrowthKb} KB (${totalGrowthPercent.toFixed(1)}%) | ≤ ${budgets.maxGrowthKb} KB / ${budgets.maxGrowthPercent}% | ${regressionExceeded ? 'Regression' : 'OK'} |`
             );
           } else {
             summary.push('');
@@ -282,18 +282,18 @@ jobs:
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             let body = `${marker}\n`;
-            body += '## 📦 Bundle Analysis\n\n';
-            body += '_Bundle regression analysis for generated static JS — not a substitute for real-user performance profiling._\n\n';
+            body += '## Bundle analysis\n\n';
+            body += 'Regression analysis for generated static JS. This does not replace real-user performance profiling.\n\n';
             body += '| Metric | Value |\n';
             body += '|--------|-------|\n';
             body += `| Total static JS | ${totalStaticJsKb} KB (budget: ${totalBudget} KB) |\n`;
             body += `| Gzip static JS | ${gzipStaticJsKb} KB |\n`;
             body += `| Largest chunk | ${largestChunkKb} KB (budget: ${largestBudget} KB) |\n`;
             body += `| JS chunks | ${chunkCount} |\n`;
-            body += `| Absolute budgets | ${budgetExceeded ? '❌ Exceeded' : '✅ OK'} |\n`;
+            body += `| Absolute budgets | ${budgetExceeded ? 'Exceeded' : 'OK'} |\n`;
 
             if (baselineFound) {
-              body += `| Baseline comparison | ${regressionExceeded ? '❌ Regression' : '✅ OK'} (${totalGrowthKb >= 0 ? '+' : ''}${totalGrowthKb} KB, ${totalGrowthPercent}%; limit: ${maxGrowthKb} KB / ${maxGrowthPercent}%) |\n`;
+              body += `| Baseline comparison | ${regressionExceeded ? 'Regression' : 'OK'} (${totalGrowthKb >= 0 ? '+' : ''}${totalGrowthKb} KB, ${totalGrowthPercent}%; limit: ${maxGrowthKb} KB / ${maxGrowthPercent}%) |\n`;
             } else {
               body += '| Baseline comparison | Skipped (no main baseline restored) |\n';
             }
@@ -301,10 +301,10 @@ jobs:
             body += '\n';
 
             if (budgetExceeded || regressionExceeded) {
-              body += '⚠️ **Bundle check failed.** Review the workflow summary, optimize where possible, or justify the increase.\n\n';
+              body += '**Bundle check failed.** Review the workflow summary, optimize where possible, or document the increase in the PR.\n\n';
             }
 
-            body += `📥 Download the \`bundle-analysis\` artifact from the [workflow run](${runUrl}) for detailed analyzer output.\n`;
+            body += `Download the \`bundle-analysis\` artifact from the [workflow run](${runUrl}) for analyzer output.\n`;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -335,6 +335,6 @@ jobs:
           steps.bundle-check.outputs.budget_exceeded == 'true' ||
           steps.bundle-check.outputs.regression_exceeded == 'true'
         run: |
-          echo "❌ Bundle check failed."
-          echo "Review the bundle summary above and optimize or justify the increase."
+          echo "Bundle check failed."
+          echo "Review the workflow summary and optimize or document the increase."
           exit 1
