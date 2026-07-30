@@ -16,8 +16,8 @@
 
 | Profile             | Required variables                                                        | Use case                              |
 | ------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
-| **Frontend demo**   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                              | `/demo` routes with mocked APIs       |
-| **OAuth**           | Above + `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SESSION_SECRET` | `/demo/auth`                          |
+| **Local template**  | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                              | `/examples` routes with mocked APIs   |
+| **OAuth**           | Above + `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SESSION_SECRET` | Auth API routes when wired in product |
 | **Database-backed** | Above + `DATABASE_URL`                                                    | Features that connect to PostgreSQL   |
 | **Production**      | All production secrets including `DATABASE_URL`                           | CI (`NODE_ENV=production`) and deploy |
 

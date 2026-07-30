@@ -105,16 +105,8 @@ export function getServerConfig(): Config {
     },
 
     features: {
-      // Feature flags - set via environment variables
-      // See docs/FEATURE_FLAGS.md for documentation
-      new_dashboard: serverEnv.FEATURE_NEW_DASHBOARD ?? false,
-      beta_features: serverEnv.FEATURE_BETA_FEATURES ?? false,
-      risky_upload_flow: serverEnv.FEATURE_RISKY_UPLOAD_FLOW ?? false,
-      enhanced_analytics: serverEnv.FEATURE_ENHANCED_ANALYTICS ?? false,
-
-      // Kill switches - when true, the corresponding feature is DISABLED
-      // Kill switches take highest precedence
-      kill_risky_upload_flow: serverEnv.KILL_RISKY_UPLOAD_FLOW ?? false,
+      example_feature: serverEnv.FEATURE_EXAMPLE_FEATURE ?? false,
+      kill_example_feature: serverEnv.KILL_EXAMPLE_FEATURE ?? false,
     },
   };
 

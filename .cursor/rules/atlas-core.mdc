@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Atlas core constraints
 
-Read [AGENTS.md](../../AGENTS.md) before architectural changes. Inspect the closest demo page (`apps/web/src/app/demo/`) or existing feature (`apps/web/src/features/`) before writing code.
+Read [AGENTS.md](../../AGENTS.md) before architectural changes. Inspect the closest example page (`apps/web/src/app/examples/`) or existing feature (`apps/web/src/features/`) before writing code.
 
 - **Ownership** — Product code stays in `apps/web`. Reusable visual primitives go in `@atlas/ui`. Do not promote code to shared packages speculatively.
 - **API** — Use `@/lib/api` / `@/lib/api/contracts` and React Query hooks in feature modules. No raw `fetch()` in pages, components, features, or providers.

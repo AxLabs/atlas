@@ -41,7 +41,7 @@ export interface RenderWithProvidersOptions extends Omit<RenderOptions, "wrapper
 
   /**
    * Feature flags to enable/disable in the test.
-   * Keys should match FeatureFlags values (e.g., 'new_dashboard').
+   * Keys should match FeatureFlags values (e.g., 'example_feature').
    */
   featureFlags?: Record<string, boolean>;
 }

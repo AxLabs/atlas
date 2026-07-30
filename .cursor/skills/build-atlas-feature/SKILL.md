@@ -13,7 +13,7 @@ description:
 1. Read [AGENTS.md](../../../AGENTS.md).
 2. Read relevant docs in `docs/how-we-build/` (especially `folder-structure.md`, `api.md`,
    `testing.md`, `accessibility.md`).
-3. Inspect the closest demo page under `apps/web/src/app/demo/` and matching feature under
+3. Inspect the closest example page under `apps/web/src/app/examples/` and matching feature under
    `apps/web/src/features/`.
 4. Identify reusable `@atlas/ui` components, query/mutation patterns, and form helpers already in
    use.

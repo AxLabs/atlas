@@ -58,7 +58,7 @@ const { user, queryClient } = renderWithProviders(<MyComponent />, {
   searchParams: { tab: "settings" },
 
   // Optional: feature flags
-  featureFlags: { new_dashboard: true },
+  featureFlags: { example_feature: true },
 });
 
 // user — for simulating interactions

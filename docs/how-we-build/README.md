@@ -52,8 +52,8 @@ pnpm validate:env
 pnpm dev
 ```
 
-The frontend demo at `/demo` works without `DATABASE_URL`. Add OAuth variables to exercise
-`/demo/auth`.
+The reference examples at `/examples` work without `DATABASE_URL`. Add OAuth variables when you wire
+up authentication in your product.
 
 ### Add a new env var
 

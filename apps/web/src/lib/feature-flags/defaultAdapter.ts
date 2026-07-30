@@ -5,19 +5,19 @@
  *
  * 1. **Kill switches** - If enabled, feature is DISABLED (highest precedence)
  * 2. **Local overrides** - localStorage key 'ff-overrides' (dev only)
- * 3. **Query params** - URL params like ?ff_new_dashboard=1 (dev only)
+ * 3. **Query params** - URL params like ?ff_example_feature=1 (dev only)
  * 4. **Defaults** - All false
  *
  * ## Local Overrides (Development Only)
  *
  * Store JSON in localStorage at key 'ff-overrides':
  * ```json
- * { "flags": { "new_dashboard": true, "beta_features": false } }
+ * { "flags": { "example_feature": true } }
  * ```
  *
  * ## Query Param Overrides (Development Only)
  *
- * Add to URL: ?ff_new_dashboard=1&ff_beta_features=0
+ * Add to URL: ?ff_example_feature=1
  * - ff_<flag_name>=1 → enabled
  * - ff_<flag_name>=0 → disabled
  *
@@ -221,7 +221,7 @@ function extractKillSwitches(
  * const adapter = createDefaultAdapter();
  *
  * const snapshot = adapter.getSnapshot();
- * const isNewDashboardEnabled = resolveFlag(snapshot, 'new_dashboard');
+ * const isExampleEnabled = resolveFlag(snapshot, 'example_feature');
  * ```
  */
 export function createDefaultAdapter(options: FeatureFlagAdapterOptions = {}): FeatureFlagAdapter {

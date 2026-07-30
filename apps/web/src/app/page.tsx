@@ -2,8 +2,6 @@ import Link from "next/link";
 
 import { Button, ThemeToggle } from "@atlas/ui";
 
-import { RuntimeConfigDebug } from "@/components/RuntimeConfigDebug";
-
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
@@ -14,12 +12,13 @@ export default function HomePage() {
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
           Frontend <span className="text-primary">Platform</span>
         </h1>
-        <p className="text-muted-foreground text-center text-xl">
-          Enterprise-grade monorepo with Next.js, TypeScript, and Tailwind CSS
+        <p className="text-muted-foreground max-w-2xl text-center text-xl">
+          Enterprise-grade monorepo with Next.js, TypeScript, and Tailwind CSS. Fork this repo and
+          replace the examples with your product.
         </p>
         <div className="flex gap-4">
-          <Link href="/demo">
-            <Button size="lg">View Demo</Button>
+          <Link href="/examples">
+            <Button size="lg">View examples</Button>
           </Link>
           <a
             href="https://github.com/thedanielmark/atlas"
@@ -32,7 +31,6 @@ export default function HomePage() {
           </a>
         </div>
       </main>
-      <RuntimeConfigDebug />
     </div>
   );
 }

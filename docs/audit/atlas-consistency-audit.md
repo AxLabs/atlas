@@ -88,13 +88,10 @@ Engineers should use these imports for platform systems:
 
 ## 3. Fixes Applied in This PR
 
-### 3.1 Sentry Demo Page: Use API Client Instead of Raw Fetch
+### 3.1 Sentry example (removed)
 
-**File:** [apps/web/src/app/demo/sentry/page.tsx](../../apps/web/src/app/demo/sentry/page.tsx)
-
-**Issue:** Direct `fetch()` call with ESLint disable comment bypasses the central API client.
-
-**Fix:** Use `useApiClient()` hook for consistent error handling and correlation ID propagation.
+The former `/demo/sentry` page was removed with the demo surface. Use Sentry configuration in
+`lib/telemetry/` and error boundaries in production apps.
 
 ### 3.2 MSW Setup: Add Note About v1 API
 
