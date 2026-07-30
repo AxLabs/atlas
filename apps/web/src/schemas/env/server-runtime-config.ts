@@ -199,47 +199,19 @@ export const ServerEnvSchema = {
   // ============================================================================
 
   /**
-   * Enable new dashboard feature.
+   * Example feature flag for reference implementations.
    * @default 'false'
    */
-  FEATURE_NEW_DASHBOARD: z
+  FEATURE_EXAMPLE_FEATURE: z
     .string()
     .transform((val) => val === "true")
     .optional(),
 
   /**
-   * Enable beta features.
+   * Kill switch for the example feature.
    * @default 'false'
    */
-  FEATURE_BETA_FEATURES: z
-    .string()
-    .transform((val) => val === "true")
-    .optional(),
-
-  /**
-   * Enable risky upload flow feature.
-   * @default 'false'
-   */
-  FEATURE_RISKY_UPLOAD_FLOW: z
-    .string()
-    .transform((val) => val === "true")
-    .optional(),
-
-  /**
-   * Enable enhanced analytics feature.
-   * @default 'false'
-   */
-  FEATURE_ENHANCED_ANALYTICS: z
-    .string()
-    .transform((val) => val === "true")
-    .optional(),
-
-  /**
-   * Kill switch for risky upload flow.
-   * When true, risky upload flow is DISABLED regardless of other flags.
-   * @default 'false'
-   */
-  KILL_RISKY_UPLOAD_FLOW: z
+  KILL_EXAMPLE_FEATURE: z
     .string()
     .transform((val) => val === "true")
     .optional(),

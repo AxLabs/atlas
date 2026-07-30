@@ -47,14 +47,15 @@ Next.js App Router pages and API routes.
 
 ```
 app/
-├── (app)/              # Route group for authenticated pages
+├── examples/           # Reference patterns (delete when building product)
 │   ├── layout.tsx
-│   └── dashboard/
-│       └── page.tsx
+│   ├── page.tsx
+│   ├── data/page.tsx
+│   └── form/page.tsx
 ├── api/                # API route handlers
 │   ├── auth/
+│   ├── examples/       # Mock APIs for reference pages
 │   └── health/
-├── login/
 ├── layout.tsx          # Root layout
 ├── page.tsx            # Home page
 └── global-error.tsx    # Error boundary
@@ -73,13 +74,15 @@ Feature modules contain domain-specific code.
 
 ```
 features/
-└── users/
-    ├── components/     # Feature-specific UI
-    ├── hooks/          # Feature-specific hooks
-    ├── queries.ts      # React Query query hooks
-    ├── mutations.ts    # React Query mutation hooks
-    ├── keys.ts         # Query key factory
-    └── index.ts        # Public exports
+├── examples/           # Reference hooks for mock app routes
+│   ├── hooks.ts
+│   ├── types.ts
+│   └── index.ts
+└── users/              # OpenAPI client reference hooks
+    ├── queries.ts
+    ├── mutations.ts
+    ├── keys.ts
+    └── index.ts
 ```
 
 **Rules:**

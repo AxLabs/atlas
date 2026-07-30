@@ -315,7 +315,9 @@ export default function FeatureFlagsDevPanel() {
             <li>Local overrides persist in localStorage and survive page reloads</li>
             <li>
               Use URL params for temporary overrides:{" "}
-              <code className="rounded bg-blue-100 px-1 dark:bg-blue-800">?ff_new_dashboard=1</code>
+              <code className="rounded bg-blue-100 px-1 dark:bg-blue-800">
+                ?ff_example_feature=1
+              </code>
             </li>
             <li>
               Kill switches (prefixed with <code>kill_</code>) have highest precedence

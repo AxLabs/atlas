@@ -254,4 +254,4 @@ battle-tested.
 
 - [Decisions](decisions.md) — Detailed rationale for major choices
 - [Architecture](architecture.md) — System design overview
-- [Demo](demo.md) — See capabilities in action
+- [Examples](examples.md) — See reference patterns in the template

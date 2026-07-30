@@ -369,4 +369,4 @@ design, so teams don't pay it repeatedly in feature development.
 
 - [Capabilities](capabilities.md) — What Atlas solves and why it matters
 - [Decisions](decisions.md) — Key architectural choices explained
-- [Demo](demo.md) — See these patterns in action
+- [Examples](examples.md) — See these patterns in the template

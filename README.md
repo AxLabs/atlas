@@ -4,12 +4,12 @@ Enterprise-grade frontend platform built with Next.js, TypeScript, and Tailwind 
 
 ## What is Atlas?
 
-Atlas is a **frontend-first platform** for building production-ready web applications. It provides
-opinionated patterns for authentication, data fetching, validation, theming, accessibility, and
-observability—so teams can focus on shipping product.
+Atlas is a **frontend-first platform template** for building production-ready web applications. It
+provides opinionated patterns for authentication, data fetching, validation, theming, accessibility,
+and observability—so teams can focus on shipping product.
 
-**Atlas is closed-source.** Public documentation describes platform behavior and patterns. Internal
-engineering documentation covers implementation details.
+Fork this repo, delete the `/examples` route group, and build your app on the platform primitives in
+`lib/`, `providers/`, and `packages/ui`.
 
 ---
 
@@ -22,28 +22,24 @@ engineering documentation covers implementation details.
 
 ### Public Documentation
 
-Start here for understanding what Atlas is and how it works:
-
 - [Overview](docs/public/README.md) — What Atlas is and who it's for
 - [Quickstart](docs/public/quickstart.md) — What to expect when running Atlas
 - [Architecture](docs/public/architecture.md) — System design and mental model
-- [Demo](docs/public/demo.md) — Proof of capabilities via working examples
+- [Examples](docs/public/examples.md) — Minimal reference patterns in the template
 - [Capabilities](docs/public/capabilities.md) — What Atlas solves and why
 - [Decisions](docs/public/decisions.md) — Key engineering choices
 - [FAQ](docs/public/faq.md) — Common questions answered
 
-### Demo Application
+### Reference examples (in-repo)
 
-Atlas includes a demonstration application at `/demo` that proves platform patterns work correctly:
+| Route            | What it demonstrates                            |
+| ---------------- | ----------------------------------------------- |
+| `/examples`      | Overview of included reference patterns         |
+| `/examples/data` | React Query, loading/empty/error/success states |
+| `/examples/form` | Zod validation and server field error mapping   |
 
-| Route                 | What It Demonstrates                      |
-| --------------------- | ----------------------------------------- |
-| `/demo/auth`          | OAuth flow, session management            |
-| `/demo/data`          | API contracts, loading/error/empty states |
-| `/demo/form`          | Validation with client-server alignment   |
-| `/demo/flags`         | Feature toggles and kill switches         |
-| `/demo/observability` | Error tracking with correlation           |
-| `/demo/a11y-theme`    | Theming and accessibility patterns        |
+Delete these when you start building your product. The full Atlas showcase lives in a separate
+repository.
 
 ---
 
@@ -56,7 +52,7 @@ corepack enable
 # Install dependencies
 pnpm install
 
-# Setup environment (frontend demo — no database required)
+# Setup environment
 cp apps/web/.env.example apps/web/.env.local
 pnpm validate:env
 
@@ -84,8 +80,6 @@ atlas/
 
 ## Internal Documentation
 
-For contributors and team members:
-
 | Document                                                      | What You'll Learn                     |
 | ------------------------------------------------------------- | ------------------------------------- |
 | **[How We Build](docs/how-we-build/README.md)**               | Platform conventions, rules, patterns |
@@ -94,8 +88,8 @@ For contributors and team members:
 | **[API & Data Fetching](docs/how-we-build/api.md)**           | React Query, API client               |
 | **[Testing](docs/how-we-build/testing.md)**                   | Test setup and patterns               |
 | **[Accessibility](docs/how-we-build/accessibility.md)**       | a11y rules                            |
+| **[Examples](docs/how-we-build/examples.md)**                 | Reference pages in the template       |
 | **[ADRs](docs/adr/README.md)**                                | Why we made specific choices          |
-| **[Demo](docs/how-we-build/demo.md)**                         | Atlas Showcase demo section           |
 
 ---
 

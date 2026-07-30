@@ -47,7 +47,8 @@ existing Atlas components and patterns over new abstractions.
    - `index.ts` — public exports only
 3. **No cross-feature imports** — extract shared logic to `lib/` if needed.
 
-Reference implementations: `apps/web/src/features/users/`, `apps/web/src/features/demo/`.
+Reference implementations: `apps/web/src/features/users/` (OpenAPI client),
+`apps/web/src/features/examples/` (app-route mocks).
 
 ## API and server-state architecture
 
@@ -75,7 +76,7 @@ Reference implementations: `apps/web/src/features/users/`, `apps/web/src/feature
 - **Submission** — Disable submit while `mutation.isPending`; show success via `notify` and/or
   navigation.
 
-See `apps/web/src/app/demo/form/page.tsx`.
+See `apps/web/src/app/examples/form/page.tsx`.
 
 ## UI-state handling
 
@@ -84,7 +85,7 @@ See `apps/web/src/app/demo/form/page.tsx`.
   `ErrorFallback`, `Loader`.
 - **Local UI state** — `useState` / `useReducer` for ephemeral UI (modals, tabs).
 - **URL-driven state** — `useSearchParams` + `useRouter` when state should be bookmarkable (see
-  `/demo/data?mode=`).
+  `/examples/data?mode=`).
 - **Auth** — `useSession` from `@/lib/auth` on the client; `readSession` from `@/lib/auth/session`
   on the server.
 - **Config** — `useConfig()` (client) or `getServerConfig()` (server) from `@/config`; do not read
@@ -127,18 +128,18 @@ pnpm format:write                           # fix formatting
 
 ## Documentation and examples
 
-| Topic                  | Location                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| Platform conventions   | [docs/how-we-build/README.md](docs/how-we-build/README.md)                     |
-| Folder structure       | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md) |
-| API & React Query      | [docs/how-we-build/api.md](docs/how-we-build/api.md)                           |
-| Environment variables  | [docs/how-we-build/env.md](docs/how-we-build/env.md)                           |
-| Testing                | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                   |
-| Continuous Integration | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                             |
-| Accessibility          | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)       |
-| Demo patterns          | [docs/how-we-build/demo.md](docs/how-we-build/demo.md)                         |
-| Architecture decisions | [docs/adr/README.md](docs/adr/README.md)                                       |
-| Canonical imports      | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md) |
-| Data demo (states)     | `apps/web/src/app/demo/data/page.tsx`                                          |
-| Form demo              | `apps/web/src/app/demo/form/page.tsx`                                          |
-| Users feature          | `apps/web/src/features/users/`                                                 |
+| Topic                   | Location                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                     |
+| Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md) |
+| API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                           |
+| Environment variables   | [docs/how-we-build/env.md](docs/how-we-build/env.md)                           |
+| Testing                 | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                   |
+| Continuous Integration  | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                             |
+| Accessibility           | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)       |
+| Example patterns        | [docs/how-we-build/examples.md](docs/how-we-build/examples.md)                 |
+| Architecture decisions  | [docs/adr/README.md](docs/adr/README.md)                                       |
+| Canonical imports       | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md) |
+| Data states example     | `apps/web/src/app/examples/data/page.tsx`                                      |
+| Form example            | `apps/web/src/app/examples/form/page.tsx`                                      |
+| Users feature (OpenAPI) | `apps/web/src/features/users/`                                                 |

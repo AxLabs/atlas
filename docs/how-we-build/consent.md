@@ -87,10 +87,10 @@ Consent does **not** relax CSP. If you enable external analytics:
 The existing nonce pattern for inline scripts must remain intact. Do not add `unsafe-inline` for
 scripts.
 
-## Demo
+## Testing locally
 
-Visit `/demo/consent` with `NEXT_PUBLIC_CONSENT_ENABLED=true` to inspect state and test the
-preferences modal.
+Use `/__flags` in development or wire consent in your own routes when
+`NEXT_PUBLIC_CONSENT_ENABLED=true` to test the preferences modal.
 
 ## Legal disclaimer
 

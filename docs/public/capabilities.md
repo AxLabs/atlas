@@ -352,4 +352,4 @@ decisions, not bolt-on additions.
 
 - [Architecture](architecture.md) — The system design that enables these capabilities
 - [Decisions](decisions.md) — Why we made specific technical choices
-- [Demo](demo.md) — See these capabilities in action
+- [Examples](examples.md) — See these capabilities in the template

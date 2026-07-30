@@ -132,7 +132,7 @@ function displayHelp(nodeEnv: string) {
   if (nodeEnv !== "production") {
     console.log(`${colors.cyan}Frontend demo minimum:${colors.reset}`);
     console.log(`  - NEXT_PUBLIC_API_URL (defaults to /api in schema)`);
-    console.log(`  - DATABASE_URL is optional for /demo and mocked API routes\n`);
+    console.log(`  - DATABASE_URL is optional for /examples and mocked API routes\n`);
   }
 
   if (process.env.CI) {
