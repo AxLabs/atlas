@@ -130,29 +130,6 @@ jobs:
           fi
           echo "✅ Lockfile is up-to-date"
 
-      - name: Check for package.json changes without lockfile update
-        if: >-
-          (needs.changes.outputs.app == 'true' || github.event_name == 'push') && github.event_name
-          == 'pull_request'
-        run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-
-          PACKAGE_JSON_CHANGED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E 'package\.json$' || true)
-          LOCKFILE_CHANGED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep 'pnpm-lock.yaml' || true)
-
-          if [ -n "$PACKAGE_JSON_CHANGED" ] && [ -z "$LOCKFILE_CHANGED" ]; then
-            echo "❌ Error: package.json was modified but pnpm-lock.yaml was not updated"
-            echo "Changed package.json files:"
-            echo "$PACKAGE_JSON_CHANGED"
-            exit 1
-          fi
-
-          if [ -n "$PACKAGE_JSON_CHANGED" ]; then
-            echo "✅ Both package.json and lockfile were updated"
-          else
-            echo "✅ No package.json changes detected"
-          fi
-
       - name: Validate environment variables
         if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm validate:env
@@ -222,7 +199,7 @@ jobs:
           CI: true
 
       - name: Upload coverage
-        if: always() && (needs.changes.outputs.app == 'true' || github.event_name == 'push')
+        if: success() && (needs.changes.outputs.app == 'true' || github.event_name == 'push')
         uses: codecov/codecov-action@v4
         with:
           files: ./packages/ui/coverage/coverage-final.json
