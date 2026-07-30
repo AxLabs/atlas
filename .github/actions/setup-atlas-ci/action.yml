@@ -1,0 +1,53 @@
+name: Setup Atlas CI
+description: Node 22, pnpm, and caches for GitHub-hosted or self-hosted runners
+inputs:
+  runner-profile:
+    description: github-hosted (default) or self-hosted (persistent /var/cache/ci stores)
+    required: false
+    default: github-hosted
+  cache-dependency-path:
+    description: Lockfile path for setup-node pnpm cache (github-hosted only)
+    required: false
+    default: pnpm-lock.yaml
+runs:
+  using: composite
+  steps:
+    - name: Configure writable HOME (self-hosted)
+      if: inputs.runner-profile == 'self-hosted'
+      shell: bash
+      run: |
+        home="${RUNNER_TEMP}/home-${{ github.job }}-${{ github.run_attempt }}"
+        mkdir -p "$home"
+        echo "HOME=${home}" >> "$GITHUB_ENV"
+        rm -rf "${RUNNER_TEMP}/setup-pnpm" 2>/dev/null || \
+          sudo rm -rf "${RUNNER_TEMP}/setup-pnpm" 2>/dev/null || true
+
+    - name: Configure persistent caches (self-hosted)
+      if: inputs.runner-profile == 'self-hosted'
+      shell: bash
+      run: |
+        cache_root="${CI_CACHE_ROOT:-/var/cache/ci}"
+        repo_slug="${GITHUB_REPOSITORY//\//-}"
+        pnpm_store="${cache_root}/pnpm-store/${repo_slug}"
+        turbo_cache="${cache_root}/turbo/${repo_slug}"
+        mkdir -p "$pnpm_store" "$turbo_cache" 2>/dev/null || \
+          sudo mkdir -p "$pnpm_store" "$turbo_cache"
+        sudo chown -R "$(id -u):$(id -g)" "$pnpm_store" "$turbo_cache" 2>/dev/null || true
+        echo "PNPM_STORE_DIR=${pnpm_store}" >> "$GITHUB_ENV"
+        echo "TURBO_CACHE_DIR=${turbo_cache}" >> "$GITHUB_ENV"
+
+    - uses: pnpm/action-setup@v4
+
+    - name: Setup Node.js (GitHub-hosted)
+      if: inputs.runner-profile != 'self-hosted'
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+    - name: Setup Node.js (self-hosted)
+      if: inputs.runner-profile == 'self-hosted'
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22

@@ -134,6 +134,7 @@ pnpm format:write                           # fix formatting
 | API & React Query      | [docs/how-we-build/api.md](docs/how-we-build/api.md)                           |
 | Environment variables  | [docs/how-we-build/env.md](docs/how-we-build/env.md)                           |
 | Testing                | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                   |
+| Continuous Integration | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                             |
 | Accessibility          | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)       |
 | Demo patterns          | [docs/how-we-build/demo.md](docs/how-we-build/demo.md)                         |
 | Architecture decisions | [docs/adr/README.md](docs/adr/README.md)                                       |

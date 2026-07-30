@@ -198,17 +198,19 @@ const dbUrl = serverEnv.DATABASE_URL;
 
 ## CI/CD Integration
 
-Environment validation runs automatically in CI:
+Environment validation runs automatically in CI when application code changes:
 
 ```yaml
-# .github/workflows/ci.yml
-- name: Validate environment
+# .github/workflows/ci.yml (Quality job)
+- name: Validate environment variables
   run: pnpm validate:env
   env:
     NODE_ENV: production
     DATABASE_URL: postgresql://user:password@localhost:5432/atlas_ci
     NEXT_PUBLIC_API_URL: https://api.example.com
 ```
+
+See [Continuous Integration](ci.md) for the full pipeline layout and testing instructions.
 
 **GitHub Configuration:**
 
