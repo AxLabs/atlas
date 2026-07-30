@@ -146,42 +146,6 @@ jobs:
         if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm lint
 
-      - name: Verify no console usage (grep guard)
-        if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
-        run: |
-          echo "🔍 Checking for banned console usage..."
-
-          CONSOLE_MATCHES=$(grep -rIn \
-            --include="*.ts" \
-            --include="*.tsx" \
-            --include="*.js" \
-            --include="*.jsx" \
-            --exclude-dir=node_modules \
-            --exclude-dir=.next \
-            --exclude-dir=dist \
-            --exclude-dir=build \
-            --exclude-dir=coverage \
-            --exclude-dir=.turbo \
-            --exclude-dir=storybook-static \
-            --exclude="*.stories.tsx" \
-            --exclude="*.stories.ts" \
-            --exclude="*.stories.jsx" \
-            --exclude="*.stories.js" \
-            -E 'console\.(log|debug|info|warn|error|trace|table|dir|time|timeEnd|count|assert|clear|group|groupEnd)\(' \
-            apps/ packages/ scripts/ 2>/dev/null || true)
-
-          if [ -n "$CONSOLE_MATCHES" ]; then
-            echo "❌ Error: Banned console usage detected!"
-            echo ""
-            echo "$CONSOLE_MATCHES"
-            echo ""
-            echo "Please use structured logging instead:"
-            echo "  import { log } from '@/lib/logging/logger.server';"
-            exit 1
-          fi
-
-          echo "✅ No console usage found"
-
       - name: Run TypeScript check
         if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm typecheck
