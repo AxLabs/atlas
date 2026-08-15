@@ -1,19 +1,9 @@
-name: Setup Atlas CI
-description: Node 22, pnpm, and caches for GitHub-hosted or self-hosted runners
-inputs:
-  runner-profile:
-    description: github-hosted (default) or self-hosted (persistent /var/cache/ci stores)
-    required: false
-    default: github-hosted
-  cache-dependency-path:
-    description: Lockfile path for setup-node pnpm cache (github-hosted only)
-    required: false
-    default: pnpm-lock.yaml
+name: Setup CI Node environment
+description: Writable HOME, persistent pnpm store, Turbo cache, Node 22, and pnpm
 runs:
   using: composite
   steps:
-    - name: Configure writable HOME (self-hosted)
-      if: inputs.runner-profile == 'self-hosted'
+    - name: Configure writable HOME
       shell: bash
       run: |
         home="${RUNNER_TEMP}/home-${{ github.job }}-${{ github.run_attempt }}"
@@ -22,8 +12,7 @@ runs:
         rm -rf "${RUNNER_TEMP}/setup-pnpm" 2>/dev/null || \
           sudo rm -rf "${RUNNER_TEMP}/setup-pnpm" 2>/dev/null || true
 
-    - name: Configure persistent caches (self-hosted)
-      if: inputs.runner-profile == 'self-hosted'
+    - name: Configure persistent caches
       shell: bash
       run: |
         cache_root="${CI_CACHE_ROOT:-/var/cache/ci}"
@@ -53,22 +42,13 @@ runs:
       with:
         package_json_file: ${{ env.PNPM_PACKAGE_JSON }}
 
-    - name: Setup Node.js (GitHub-hosted)
-      if: inputs.runner-profile != 'self-hosted'
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: pnpm
-        cache-dependency-path: ${{ inputs.cache-dependency-path }}
-
-    - name: Setup Node.js (self-hosted)
-      if: inputs.runner-profile == 'self-hosted'
-      uses: actions/setup-node@v4
+    # Self-hosted runners use the persistent PNPM_STORE_DIR above. Omit setup-node
+    # cache so post steps do not try to save GitHub Actions pnpm cache paths.
+    - uses: actions/setup-node@v4
       with:
         node-version: 22
 
-    - name: Configure pnpm persistent store (self-hosted)
-      if: inputs.runner-profile == 'self-hosted'
+    - name: Configure pnpm persistent store
       shell: bash
       run: |
         pnpm config set --global storeDir "$PNPM_STORE_DIR"

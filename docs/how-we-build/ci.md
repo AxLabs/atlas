@@ -48,6 +48,7 @@ pnpm lint && pnpm typecheck && pnpm test
 | Action                    | Purpose                                                                    |
 | ------------------------- | -------------------------------------------------------------------------- |
 | `setup-atlas-ci`          | Node 22 + pnpm; GitHub Actions pnpm cache or self-hosted persistent stores |
+| `setup-ci-node`           | Self-hosted Node/pnpm setup for isolated per-job checkouts                 |
 | `cleanup-self-hosted-job` | Clears per-job temp HOME on self-hosted runners                            |
 
 ## GitHub-hosted (default)
@@ -80,10 +81,16 @@ sudo chown -R <runner-user>:<runner-user> /var/cache/ci
 
 Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium
 system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot elevate for
-`playwright install --with-deps`). Ensure Docker is installed and the runner user can run
-containers.
+`playwright install --with-deps`). The container runs as the host runner user
+(`--user "$(id -u):$(id -g)"`) so Playwright and Next.js artifacts written through the bind-mounted
+workspace are not owned by root. pnpm is invoked via `corepack pnpm` from the repository root so
+Corepack honors the repo's `packageManager` field without `corepack enable`. Playwright's dev server
+command uses `corepack pnpm dev` so the webServer subprocess can resolve pnpm inside the container.
+Ensure Docker is installed and the runner user can run containers.
 
-Jobs then use `runs-on: [self-hosted, ci]` and persistent stores:
+Jobs then use `runs-on: [self-hosted, ci]`, isolated per-run checkout subdirectories under
+`${{ github.workspace }}` (so a poisoned default workdir does not block `actions/checkout`), and
+persistent stores:
 
 | Variable          | Default path                            |
 | ----------------- | --------------------------------------- |
@@ -100,7 +107,6 @@ These are **consumer-app** concerns, not reference-platform defaults:
 
 - Pre-seeded Postgres images or `pg_dump` artifacts
 - Content-audit or DB-backed link checks
-- Isolated per-run checkout directories (only needed on long-lived self-hosted workdirs)
 
 Add those in your product repo when you have a real database and content pipeline. Aviatopia's
 `infra/docker/scripts/` is a reference implementation.
