@@ -80,8 +80,12 @@ sudo chown -R <runner-user>:<runner-user> /var/cache/ci
 
 Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium
 system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot elevate for
-`playwright install --with-deps`). Ensure Docker is installed and the runner user can run
-containers.
+`playwright install --with-deps`). The container runs as the host runner user
+(`--user "$(id -u):$(id -g)"`) so Playwright and Next.js artifacts written through the bind-mounted
+workspace are not owned by root. pnpm is invoked via `corepack pnpm` from the repository root so
+Corepack honors the repo's `packageManager` field without `corepack enable`. Playwright's dev server
+command uses `corepack pnpm dev` so the webServer subprocess can resolve pnpm inside the container.
+Ensure Docker is installed and the runner user can run containers.
 
 Jobs then use `runs-on: [self-hosted, ci]` and persistent stores:
 

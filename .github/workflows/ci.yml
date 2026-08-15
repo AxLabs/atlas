@@ -216,6 +216,7 @@ jobs:
           if [ "${ATLAS_CI_RUNNER_PROFILE}" = "self-hosted" ]; then
             pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
             docker run --rm \
+              --user "$(id -u):$(id -g)" \
               --ipc=host \
               --network host \
               -v "${{ github.workspace }}:${{ github.workspace }}" \
@@ -225,7 +226,7 @@ jobs:
               -e NEXT_PUBLIC_API_URL=http://localhost:3001/api \
               -e SKIP_ENV_VALIDATION=false \
               "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-              bash -lc 'corepack enable && pnpm --filter @atlas/web test:e2e'
+              bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e'
           else
             pnpm --filter @atlas/web test:e2e
           fi
