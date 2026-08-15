@@ -76,12 +76,12 @@ Register runners with the `ci` label. Bootstrap each host:
 ```bash
 sudo mkdir -p /var/cache/ci
 sudo chown -R <runner-user>:<runner-user> /var/cache/ci
-# One-time: Playwright OS libraries for Chromium (CI installs browsers only; no sudo in jobs)
-sudo pnpm --filter @atlas/web exec playwright install-deps chromium
 ```
 
-The last command must be run from a checkout of this repo on the runner host (or equivalent
-`playwright install-deps chromium` for the pinned `@playwright/test` version).
+Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium
+system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot elevate for
+`playwright install --with-deps`). Ensure Docker is installed and the runner user can run
+containers.
 
 Jobs then use `runs-on: [self-hosted, ci]` and persistent stores:
 
