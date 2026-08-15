@@ -38,6 +38,18 @@ runs:
 
     - uses: pnpm/action-setup@v4
 
+    - name: Configure pnpm store (self-hosted)
+      if: inputs.runner-profile == 'self-hosted'
+      shell: bash
+      run: |
+        pnpm config set --global storeDir "$PNPM_STORE_DIR"
+        actual_store="$(pnpm config get storeDir)"
+        echo "pnpm storeDir: ${actual_store}"
+        if [[ "${actual_store}" != "${PNPM_STORE_DIR}" ]]; then
+          echo "Expected pnpm store ${PNPM_STORE_DIR}, got ${actual_store}" >&2
+          exit 1
+        fi
+
     - name: Setup Node.js (GitHub-hosted)
       if: inputs.runner-profile != 'self-hosted'
       uses: actions/setup-node@v4
