@@ -20,13 +20,54 @@ jobs:
     runs-on:
       ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && fromJSON('["self-hosted", "ci"]') ||
       'ubuntu-latest' }}
+    env:
+      CI_CHECKOUT_DIR: ci-ws-changes-r${{ github.run_id }}
+      CI_CHECKOUT_LINK: ci-link-changes
+    defaults:
+      run:
+        working-directory:
+          ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && env.CI_CHECKOUT_DIR ||
+          github.workspace }}
     outputs:
       app: ${{ steps.detect.outputs.app }}
     steps:
-      - name: Checkout repository
+      - name: Repair default workspace permissions
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          ws="${{ github.workspace }}"
+          if [ -d "$ws" ] && find "$ws" -user root -print -quit 2>/dev/null | grep -q .; then
+            echo "Repairing root-owned files in ${ws}"
+            sudo chown -R "$(id -u):$(id -g)" "$ws" 2>/dev/null || sudo rm -rf "$ws" 2>/dev/null || \
+              echo "Warning: could not repair ${ws}; continuing with isolated checkout subdirectory."
+          fi
+
+      - name: Checkout repository (GitHub-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Checkout repository (self-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Link checkout for composite actions
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          target="${{ env.CI_CHECKOUT_LINK }}"
+          if [[ -e "${target}" && ! -L "${target}" ]]; then
+            echo "Removing stale non-symlink checkout dir: ${target}"
+            rm -rf "${target}" 2>/dev/null || sudo rm -rf "${target}"
+          fi
+          ln -sfn "${{ env.CI_CHECKOUT_DIR }}" "${target}"
 
       - name: Detect application changes
         id: detect
@@ -47,7 +88,7 @@ jobs:
 
       - name: Cleanup job artifacts
         if: always() && vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
-        uses: ./.github/actions/cleanup-self-hosted-job
+        uses: ./ci-link-changes/.github/actions/cleanup-self-hosted-job
 
   gitleaks:
     name: Secrets Scan
@@ -70,11 +111,52 @@ jobs:
     runs-on:
       ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && fromJSON('["self-hosted", "ci"]') ||
       'ubuntu-latest' }}
+    env:
+      CI_CHECKOUT_DIR: ci-ws-quality-r${{ github.run_id }}
+      CI_CHECKOUT_LINK: ci-link-quality
+    defaults:
+      run:
+        working-directory:
+          ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && env.CI_CHECKOUT_DIR ||
+          github.workspace }}
     steps:
-      - name: Checkout repository
+      - name: Repair default workspace permissions
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          ws="${{ github.workspace }}"
+          if [ -d "$ws" ] && find "$ws" -user root -print -quit 2>/dev/null | grep -q .; then
+            echo "Repairing root-owned files in ${ws}"
+            sudo chown -R "$(id -u):$(id -g)" "$ws" 2>/dev/null || sudo rm -rf "$ws" 2>/dev/null || \
+              echo "Warning: could not repair ${ws}; continuing with isolated checkout subdirectory."
+          fi
+
+      - name: Checkout repository (GitHub-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Checkout repository (self-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Link checkout for composite actions
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          target="${{ env.CI_CHECKOUT_LINK }}"
+          if [[ -e "${target}" && ! -L "${target}" ]]; then
+            echo "Removing stale non-symlink checkout dir: ${target}"
+            rm -rf "${target}" 2>/dev/null || sudo rm -rf "${target}"
+          fi
+          ln -sfn "${{ env.CI_CHECKOUT_DIR }}" "${target}"
 
       - name: Check for forbidden lockfiles
         run: |
@@ -110,11 +192,19 @@ jobs:
           fi
           echo "✅ Lockfile exists"
 
-      - name: Setup Atlas CI
-        if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
+      - name: Setup Atlas CI (GitHub-hosted)
+        if:
+          (needs.changes.outputs.app == 'true' || github.event_name == 'push') &&
+          vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
         uses: ./.github/actions/setup-atlas-ci
         with:
-          runner-profile: ${{ env.ATLAS_CI_RUNNER_PROFILE }}
+          runner-profile: github-hosted
+
+      - name: Setup CI Node (self-hosted)
+        if:
+          (needs.changes.outputs.app == 'true' || github.event_name == 'push') &&
+          vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        uses: ./ci-link-quality/.github/actions/setup-ci-node
 
       - name: Install dependencies
         if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
@@ -175,7 +265,7 @@ jobs:
 
       - name: Cleanup job artifacts
         if: always() && vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
-        uses: ./.github/actions/cleanup-self-hosted-job
+        uses: ./ci-link-quality/.github/actions/cleanup-self-hosted-job
 
   build-and-e2e:
     name: Build and E2E
@@ -184,14 +274,59 @@ jobs:
     runs-on:
       ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && fromJSON('["self-hosted", "ci"]') ||
       'ubuntu-latest' }}
+    env:
+      CI_CHECKOUT_DIR: ci-ws-build-and-e2e-r${{ github.run_id }}
+      CI_CHECKOUT_LINK: ci-link-build-and-e2e
+    defaults:
+      run:
+        working-directory:
+          ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && env.CI_CHECKOUT_DIR ||
+          github.workspace }}
     steps:
-      - name: Checkout repository
+      - name: Repair default workspace permissions
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          ws="${{ github.workspace }}"
+          if [ -d "$ws" ] && find "$ws" -user root -print -quit 2>/dev/null | grep -q .; then
+            echo "Repairing root-owned files in ${ws}"
+            sudo chown -R "$(id -u):$(id -g)" "$ws" 2>/dev/null || sudo rm -rf "$ws" 2>/dev/null || \
+              echo "Warning: could not repair ${ws}; continuing with isolated checkout subdirectory."
+          fi
+
+      - name: Checkout repository (GitHub-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
         uses: actions/checkout@v4
 
-      - name: Setup Atlas CI
+      - name: Checkout repository (self-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        uses: actions/checkout@v4
+        with:
+          path: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Link checkout for composite actions
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          target="${{ env.CI_CHECKOUT_LINK }}"
+          if [[ -e "${target}" && ! -L "${target}" ]]; then
+            echo "Removing stale non-symlink checkout dir: ${target}"
+            rm -rf "${target}" 2>/dev/null || sudo rm -rf "${target}"
+          fi
+          ln -sfn "${{ env.CI_CHECKOUT_DIR }}" "${target}"
+
+      - name: Setup Atlas CI (GitHub-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
         uses: ./.github/actions/setup-atlas-ci
         with:
-          runner-profile: ${{ env.ATLAS_CI_RUNNER_PROFILE }}
+          runner-profile: github-hosted
+
+      - name: Setup CI Node (self-hosted)
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        uses: ./ci-link-build-and-e2e/.github/actions/setup-ci-node
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -215,16 +350,19 @@ jobs:
         run: |
           if [ "${ATLAS_CI_RUNNER_PROFILE}" = "self-hosted" ]; then
             pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
+            checkout_dir="${GITHUB_WORKSPACE}/${CI_CHECKOUT_DIR}"
             docker run --rm \
               --user "$(id -u):$(id -g)" \
               --ipc=host \
               --network host \
-              -v "${{ github.workspace }}:${{ github.workspace }}" \
-              -w "${{ github.workspace }}" \
+              -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+              -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
+              -w "${checkout_dir}" \
               -e CI=true \
               -e HOME=/tmp/pw-home \
               -e NEXT_PUBLIC_API_URL=http://localhost:3001/api \
               -e SKIP_ENV_VALIDATION=false \
+              -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
               "mcr.microsoft.com/playwright:v${pw_version}-noble" \
               bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e'
           else
@@ -236,9 +374,12 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: apps/web/playwright-report/
+          path:
+            ${{ env.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
+            format('{0}/apps/web/playwright-report/', env.CI_CHECKOUT_DIR) ||
+            'apps/web/playwright-report/' }}
           retention-days: 30
 
       - name: Cleanup job artifacts
         if: always() && vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
-        uses: ./.github/actions/cleanup-self-hosted-job
+        uses: ./ci-link-build-and-e2e/.github/actions/cleanup-self-hosted-job
