@@ -204,7 +204,14 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
       - name: Install Playwright browsers
-        run: pnpm --filter @atlas/web exec playwright install --with-deps chromium
+        run: |
+          if [ "${ATLAS_CI_RUNNER_PROFILE}" = "self-hosted" ]; then
+            # Self-hosted runners lack passwordless sudo for apt; provision system deps on the
+            # host once with `playwright install-deps chromium` (see docs/how-we-build/ci.md).
+            pnpm --filter @atlas/web exec playwright install chromium
+          else
+            pnpm --filter @atlas/web exec playwright install --with-deps chromium
+          fi
 
       - name: Run E2E tests
         run: pnpm --filter @atlas/web test:e2e
