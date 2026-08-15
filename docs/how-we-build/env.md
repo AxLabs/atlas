@@ -201,7 +201,7 @@ const dbUrl = serverEnv.DATABASE_URL;
 Environment validation runs automatically in CI when application code changes:
 
 ```yaml
-# .github/workflows/ci.yml (Quality job)
+# .github/workflows/ci.yml (CI job)
 - name: Validate environment variables
   run: pnpm validate:env
   env:
