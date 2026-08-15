@@ -7,18 +7,14 @@ runners by default**. Teams with a self-hosted fleet can opt in without replacin
 
 ```text
 pull_request / push to main
-  ├── Detect Changes     (path filter; no install)
-  ├── Secrets Scan       (Gitleaks; parallel)
-  ├── Quality            (one pnpm install when app code changed)
-  └── Build and E2E      (one pnpm install; parallel with Quality)
+  ├── CI                 (path filter → one install → quality → build → E2E)
+  └── Secrets Scan       (Gitleaks on ubuntu-latest; parallel)
 ```
 
-| Job                | When it runs                                                        | What it does                                                    |
-| ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **Detect Changes** | Always                                                              | Sets `app=true` when PR touches app/packages/tooling paths      |
-| **Secrets Scan**   | Always                                                              | Gitleaks Docker scan                                            |
-| **Quality**        | Always (shell checks); full suite when `app=true` or push to `main` | Lockfile policy, `validate:env`, format, lint, typecheck, tests |
-| **Build and E2E**  | `app=true` or push to `main`                                        | Production build + Playwright                                   |
+| Job              | When it runs                                                        | What it does                                                                                  |
+| ---------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **CI**           | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, build, E2E |
+| **Secrets Scan** | Always                                                              | Gitleaks Docker scan on `ubuntu-latest`                                                       |
 
 **Docs-only PRs** skip install, lint, typecheck, tests, build, and E2E after the lightweight policy
 checks.
@@ -88,9 +84,9 @@ Corepack honors the repo's `packageManager` field without `corepack enable`. Pla
 command uses `corepack pnpm dev` so the webServer subprocess can resolve pnpm inside the container.
 Ensure Docker is installed and the runner user can run containers.
 
-Jobs then use `runs-on: [self-hosted, ci]`, isolated per-run checkout subdirectories under
-`${{ github.workspace }}` (so a poisoned default workdir does not block `actions/checkout`), and
-persistent stores:
+The **CI** job uses `runs-on: [self-hosted, ci]`, a single isolated per-run checkout subdirectory
+under `${{ github.workspace }}` (so a poisoned default workdir does not block `actions/checkout`),
+and persistent stores:
 
 | Variable          | Default path                            |
 | ----------------- | --------------------------------------- |
@@ -137,7 +133,7 @@ git checkout -b test/ci-docs-only
 echo "note" >> docs/how-we-build/ci.md
 git add docs/how-we-build/ci.md && git commit -m "docs: ci note"
 git push -u origin test/ci-docs-only
-# Open PR → Quality runs policy checks only; Build and E2E skipped
+# Open PR → CI runs policy checks only; install, build, and E2E skipped
 ```
 
 ```bash
@@ -150,10 +146,9 @@ git checkout -b test/ci-app-change
 
 Push a branch and open a PR against `main`. In the Actions tab confirm:
 
-- Four jobs (or three if docs-only: no Build and E2E)
-- **Quality** and **Build and E2E** run in parallel after **Detect Changes**
-- **Secrets Scan** runs in parallel
-- Wall time is lower than the old seven-job pipeline (check run history)
+- Two jobs: **CI** and **Secrets Scan**
+- **CI** runs change detection first, then skips heavy steps on docs-only PRs
+- Self-hosted runs consume one `[self-hosted, ci]` runner slot per workflow (not three)
 
 ### 4. Self-hosted profile (if applicable)
 
@@ -164,8 +159,14 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 ## Branch protection
 
-If branch protection referenced the old **Gitleaks Secrets Scan** workflow, update required checks
-to **CI / Secrets Scan** (job inside the `CI` workflow).
+Required status checks for `main`:
+
+- **CI / CI** — consolidated application pipeline
+- **CI / Secrets Scan** — Gitleaks scan
+
+If branch protection still references retired job names (**Detect Changes**, **Quality**, **Build
+and E2E**), update them to **CI / CI**. Legacy names from the old **Gitleaks Secrets Scan**
+standalone workflow should point to **CI / Secrets Scan**.
 
 ## Related
 
