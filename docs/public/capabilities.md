@@ -222,9 +222,11 @@ Atlas builds accessibility into the platform:
 - **Keyboard navigation** — All interactive elements are keyboard-accessible
 - **Focus management** — Focus rings are visible, modals trap focus
 - **ARIA patterns** — Components implement proper roles and labels
-- **Linting** — Accessibility violations cause build errors
+- **Linting** — `eslint-plugin-jsx-a11y` rules error in ESLint; Storybook a11y addon supports manual
+  review
 
-Accessibility isn't a feature; it's a baseline.
+Accessibility is a baseline orientation—not formal WCAG certification or dedicated CI enforcement
+yet (see [#16](https://github.com/blitzcraftlabs/atlas/issues/16)).
 
 ### Why This Matters
 

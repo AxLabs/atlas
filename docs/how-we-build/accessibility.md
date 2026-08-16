@@ -4,13 +4,14 @@
 
 ## The Rules
 
-| Rule                           | Enforcement                              |
-| ------------------------------ | ---------------------------------------- |
-| **Use semantic HTML**          | `<button>`, `<a>`, not clickable `<div>` |
-| **All images need alt**        | ESLint jsx-a11y/alt-text                 |
-| **All inputs need labels**     | Visible label or aria-label              |
-| **Focus must be visible**      | `focus-visible:ring-*` utilities         |
-| **Never `outline-none` alone** | Must pair with visible focus style       |
+| Rule                           | Enforcement                                       |
+| ------------------------------ | ------------------------------------------------- |
+| **Use semantic HTML**          | `<button>`, `<a>`, not clickable `<div>`          |
+| **All images need alt**        | ESLint jsx-a11y/alt-text                          |
+| **All inputs need labels**     | Visible label or aria-label                       |
+| **Focus must be visible**      | `focus-visible:ring-*` utilities                  |
+| **jsx-a11y baseline**          | ESLint errors for listed rules (not full WCAG CI) |
+| **Never `outline-none` alone** | Must pair with visible focus style                |
 
 ## ESLint Baseline
 

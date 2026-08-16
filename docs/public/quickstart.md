@@ -17,8 +17,11 @@ Atlas is a complete frontend platform template. When you run it, you get:
 
 ## Prerequisites
 
+- **Repository access** (selected clients, collaborators, or evaluators)
 - **Node.js 22+**
 - **pnpm 10+**
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for access and setup expectations.
 
 ---
 

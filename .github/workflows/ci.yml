@@ -119,18 +119,17 @@ jobs:
           echo "✅ Lockfile exists"
 
       - name: Setup Atlas CI (GitHub-hosted)
-        if:
-          (steps.detect.outputs.app == 'true' || github.event_name == 'push') &&
-          vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
+        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
         uses: ./.github/actions/setup-atlas-ci
         with:
           runner-profile: github-hosted
 
       - name: Setup CI Node (self-hosted)
-        if:
-          (steps.detect.outputs.app == 'true' || github.event_name == 'push') &&
-          vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
         uses: ./ci-link-ci/.github/actions/setup-ci-node
+
+      - name: Check documentation links
+        run: node scripts/check-doc-links.mjs
 
       - name: Install dependencies
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
@@ -172,7 +171,7 @@ jobs:
         env:
           CI: true
 
-      - name: Check UI coverage thresholds
+      - name: Run @atlas/ui Jest coverage thresholds
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm --filter @atlas/ui test:coverage
         env:
