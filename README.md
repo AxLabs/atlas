@@ -38,8 +38,9 @@ Fork this repo, delete the `/examples` route group, and build your app on the pl
 | `/examples/data` | React Query, loading/empty/error/success states |
 | `/examples/form` | Zod validation and server field error mapping   |
 
-Delete these when you start building your product. The full Atlas showcase lives in a separate
-repository.
+Delete these when you start building your product. The full Atlas showcase lives at
+[shipwithatlas.com](https://shipwithatlas.com)
+([blitzcraftlabs/atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
 
 ---
 
