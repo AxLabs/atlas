@@ -9,7 +9,9 @@
     ".": "./src/index.ts",
     "./globals.css": "./src/styles/globals.css",
     "./postcss.config": "./postcss.config.mjs",
-    "./styles": "./src/styles/globals.css"
+    "./styles": "./src/styles/globals.css",
+    "./theme": "./src/lib/theme.ts",
+    "./theme-boot": "./src/lib/theme-boot-script.ts"
   },
   "scripts": {
     "lint": "eslint .",

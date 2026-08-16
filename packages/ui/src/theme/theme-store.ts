@@ -1,7 +1,21 @@
-export type ThemePreference = "light" | "dark" | "system";
-export type ResolvedTheme = "light" | "dark";
+import {
+  DARK_THEME_CLASS,
+  DEFAULT_RESOLVED_THEME,
+  DEFAULT_THEME_PREFERENCE,
+  type ResolvedTheme,
+  THEME_STORAGE_KEY,
+  type ThemePreference,
+} from "../lib/theme";
 
-export const STORAGE_KEY = "theme-preference";
+export type { ResolvedTheme, ThemePreference } from "../lib/theme";
+export {
+  DARK_THEME_CLASS,
+  DEFAULT_RESOLVED_THEME,
+  DEFAULT_THEME_PREFERENCE,
+  THEME_STORAGE_KEY,
+} from "../lib/theme";
+
+export const STORAGE_KEY = THEME_STORAGE_KEY;
 
 export interface ThemeState {
   preference: ThemePreference;
@@ -9,8 +23,8 @@ export interface ThemeState {
 }
 
 const SERVER_SNAPSHOT: ThemeState = {
-  preference: "system",
-  resolvedTheme: "light",
+  preference: DEFAULT_THEME_PREFERENCE,
+  resolvedTheme: DEFAULT_RESOLVED_THEME,
 };
 
 let state: ThemeState = { ...SERVER_SNAPSHOT };
@@ -87,7 +101,7 @@ function syncFromStorage(): void {
 
 export function readThemePreference(): ThemePreference {
   if (typeof window === "undefined") {
-    return "system";
+    return DEFAULT_THEME_PREFERENCE;
   }
 
   try {
@@ -99,7 +113,7 @@ export function readThemePreference(): ThemePreference {
     // localStorage might be unavailable
   }
 
-  return "system";
+  return DEFAULT_THEME_PREFERENCE;
 }
 
 export function writeThemePreference(preference: ThemePreference): void {
@@ -120,7 +134,7 @@ export function resolveThemeValue(preference: ThemePreference): ResolvedTheme {
   }
 
   if (typeof window === "undefined") {
-    return "light";
+    return DEFAULT_RESOLVED_THEME;
   }
 
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -134,9 +148,9 @@ export function applyResolvedThemeValue(theme: ResolvedTheme): void {
   const root = document.documentElement;
 
   if (theme === "dark") {
-    root.classList.add("dark");
+    root.classList.add(DARK_THEME_CLASS);
   } else {
-    root.classList.remove("dark");
+    root.classList.remove(DARK_THEME_CLASS);
   }
 }
 
