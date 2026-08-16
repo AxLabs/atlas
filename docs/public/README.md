@@ -38,6 +38,8 @@ your product on the platform primitives in `lib/`, `providers/`, and `packages/u
 ## Reference examples
 
 The template includes `/examples` — thin pages for data states and forms. Delete them when you start
-building. A full interactive showcase is maintained in a separate repository.
+building. The full interactive showcase is maintained at
+[shipwithatlas.com](https://shipwithatlas.com)
+([atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
 
 See [Examples](examples.md).

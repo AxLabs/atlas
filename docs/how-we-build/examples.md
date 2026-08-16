@@ -10,7 +10,8 @@ The `/examples` route group ships with the platform template. It is intentionall
 - **Forms** — Zod validation, `useZodForm`, and server field error mapping
 
 Delete `app/examples/`, `features/examples/`, and `app/api/examples/` when you start building your
-product. The live Atlas showcase site (separate repo) carries the full demo surface.
+product. The live Atlas showcase at [shipwithatlas.com](https://shipwithatlas.com) carries the full
+demo surface.
 
 ## Routes
 
