@@ -2,6 +2,8 @@ import "@atlas/ui/globals.css";
 
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { getThemeBootScriptContent } from "@atlas/ui/theme-boot";
+
 import { GlobalErrorHandler } from "@/components/SentryErrorBoundary";
 import { getNonce } from "@/lib/security/nonce";
 import { MainProvider } from "@/providers";
@@ -41,28 +43,7 @@ export default async function RootLayout({
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const key = "theme-preference";
-                  const stored = localStorage.getItem(key);
-                  const preference = (stored === "light" || stored === "dark" || stored === "system") ? stored : "system";
-                  
-                  let theme = preference;
-                  if (preference === "system") {
-                    theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-                  }
-                  
-                  if (theme === "dark") {
-                    document.documentElement.classList.add("dark");
-                  } else {
-                    document.documentElement.classList.remove("dark");
-                  }
-                } catch (e) {
-                  // localStorage might be unavailable
-                }
-              })();
-            `,
+            __html: getThemeBootScriptContent(),
           }}
         />
       </head>

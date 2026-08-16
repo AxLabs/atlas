@@ -24,7 +24,7 @@ const badgeVariants = cva(
       },
       size: {
         default: "px-2 py-0.5 text-xs gap-1 [&>svg]:size-3",
-        xs: "px-1.5 py-0 text-[10px] gap-0.5 [&>svg]:size-2.5",
+        xs: "h-4 px-1.5 py-0 text-[10px] gap-0.5 [&>svg]:size-2.5",
         sm: "px-1.5 py-0.5 text-xs gap-1 [&>svg]:size-3",
         lg: "px-3 py-1 text-sm gap-1.5 [&>svg]:size-4",
       },
@@ -48,7 +48,7 @@ function Badge({
   return (
     <Comp
       data-slot="badge"
-      className={cn(badgeVariants({ variant, size }), className)}
+      className={cn(badgeVariants({ variant, size }), "leading-none", className)}
       {...props}
     />
   );

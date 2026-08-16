@@ -1,8 +1,17 @@
 // Utilities
 export { cn } from "./lib/utils";
 
+// Theme (server-safe constants for layouts and inline boot scripts)
+export type { ResolvedTheme, ThemePreference } from "./lib/theme";
+export {
+  DARK_THEME_CLASS,
+  DEFAULT_RESOLVED_THEME,
+  DEFAULT_THEME_PREFERENCE,
+  THEME_STORAGE_KEY,
+} from "./lib/theme";
+export { getThemeBootScriptContent } from "./lib/theme-boot-script";
+
 // Hooks
-export type { ResolvedTheme, ThemePreference } from "./hooks/use-theme";
 export {
   applyResolvedTheme,
   getThemePreference,
