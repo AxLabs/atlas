@@ -20,6 +20,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && node --test scripts/__tests__/*.test.mjs",
     "test:scripts": "node --test scripts/__tests__/*.test.mjs",
+    "docs:check": "node scripts/check-doc-links.mjs",
+    "docs:check:external": "node scripts/check-doc-links.mjs --external",
     "test:watch": "turbo run test:watch",
     "test:e2e": "turbo run test:e2e",
     "clean": "turbo run clean && rm -rf node_modules",

@@ -31,7 +31,7 @@ jobs:
       - name: Run pnpm audit
         run: pnpm audit --audit-level moderate --json || true | jq .
 
-      - name: Check for known vulnerabilities
+      - name: Report pnpm audit summary (non-blocking)
         run: |
           # Show summary of audit results
           echo "Security audit completed"

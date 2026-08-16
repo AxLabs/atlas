@@ -1,7 +1,12 @@
-# Atlas Documentation
+# Archived Atlas Documentation
 
-Welcome to the Atlas platform documentation. This directory contains platform principles and
-implementation guides.
+> **⚠️ ARCHIVED — HISTORICAL ONLY**  
+> This content is **not** canonical implementation guidance.  
+> Use [AGENTS.md](../../AGENTS.md), [docs/public/](../public/README.md),
+> [docs/how-we-build/](../how-we-build/README.md), and [docs/adr/](../adr/README.md) for current
+> behavior.
+
+Welcome to the pre-platform documentation archive.
 
 ## Table of Contents
 

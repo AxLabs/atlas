@@ -1,9 +1,9 @@
 # Atlas — Agent Guide
 
-Atlas is an enterprise-grade frontend platform monorepo (Next.js App Router, TypeScript, Tailwind
-CSS, pnpm workspaces). It provides opinionated patterns for authentication, data fetching,
-validation, theming, accessibility, and observability so product teams ship features without
-reinventing infrastructure.
+Atlas is a forkable frontend platform template monorepo (Next.js App Router, TypeScript, Tailwind
+CSS, pnpm workspaces) for selected clients and authorized evaluators. It provides opinionated
+patterns for authentication, data fetching, validation, theming, accessibility, and observability so
+product teams ship features without reinventing infrastructure.
 
 ## Repository map
 
@@ -96,7 +96,8 @@ See `apps/web/src/app/examples/form/page.tsx`.
 Before claiming completion, run the checks relevant to your change:
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test    # minimum bar (matches CONTRIBUTING)
+pnpm lint && pnpm typecheck && pnpm test    # minimum bar (matches CONTRIBUTING.md)
+pnpm docs:check                             # when changing documentation links
 pnpm build                                  # when build-affecting
 pnpm --filter @atlas/web test:e2e           # for user-facing flows
 ```
@@ -140,6 +141,8 @@ pnpm format:write                           # fix formatting
 | Example patterns        | [docs/how-we-build/examples.md](docs/how-we-build/examples.md)                 |
 | Architecture decisions  | [docs/adr/README.md](docs/adr/README.md)                                       |
 | Canonical imports       | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md) |
+| Claims register         | [docs/audit/claims-register.md](docs/audit/claims-register.md)                 |
+| Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)                                             |
 | Data states example     | `apps/web/src/app/examples/data/page.tsx`                                      |
 | Form example            | `apps/web/src/app/examples/form/page.tsx`                                      |
 | Users feature (OpenAPI) | `apps/web/src/features/users/`                                                 |

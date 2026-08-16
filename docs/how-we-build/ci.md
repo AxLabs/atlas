@@ -27,6 +27,7 @@ Run the same checks before opening a PR:
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm docs:check
 pnpm validate:env
 pnpm format && pnpm lint && pnpm typecheck && pnpm test
 pnpm build
@@ -109,12 +110,14 @@ Add those in your product repo when you have a real database and content pipelin
 
 ## Optional workflows
 
-| Workflow              | Purpose               | Enable                   |
-| --------------------- | --------------------- | ------------------------ |
-| `security-audit.yml`  | Weekly `pnpm audit`   | On by default (schedule) |
-| `perf-lighthouse.yml` | Lighthouse CI budgets | `pnpm perf:enable`       |
-| `perf-bundle.yml`     | Bundle size analysis  | `pnpm perf:enable`       |
-| `release.yml`         | Changesets versioning | On by default on `main`  |
+| Workflow              | Purpose                                                                                            | Enable                   |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------ |
+| `security-audit.yml`  | Weekly `pnpm audit` (informational until [#14](https://github.com/blitzcraftlabs/atlas/issues/14)) | On by default (schedule) |
+| `perf-lighthouse.yml` | Lighthouse CI budgets                                                                              | `pnpm perf:enable`       |
+| `perf-bundle.yml`     | Bundle size analysis                                                                               | `pnpm perf:enable`       |
+| `release.yml`         | Changesets versioning                                                                              | On by default on `main`  |
+
+Performance budget details live in `tools/perf/README.md` when workflows are enabled.
 
 ## Testing CI changes
 
@@ -172,4 +175,5 @@ standalone workflow should point to **CI / Secrets Scan**.
 
 - [Environment validation in CI](env.md#cicd-integration)
 - [Testing](testing.md)
-- [Performance budgets (opt-in)](../_archive/2025-12-pre-platform-docs/performance-budgets.md)
+- [Documentation link checking](documentation-policy.md#link-checking)
+- [Performance tooling](../../tools/perf/README.md)

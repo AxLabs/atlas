@@ -40,6 +40,7 @@ These rules apply to all code in Atlas:
 | [Accessibility](accessibility.md)                 | a11y rules and patterns            |
 | [Local Dev Composition](local-dev-composition.md) | Docker Compose patterns (opt-in)   |
 | [Documentation Policy](documentation-policy.md)   | How we maintain docs               |
+| [Claims register](../audit/claims-register.md)    | Material claims and evidence       |
 
 ## Quick Reference
 
@@ -80,7 +81,9 @@ up authentication in your product.
 ## Related Resources
 
 - **Architecture Decisions**: [../adr/](../adr/) — Why we made specific choices
-- **Archived Docs**: [../\_archive/](../_archive/) — Historical documentation
+- **Claims register**: [../audit/claims-register.md](../audit/claims-register.md) — Evidence-backed
+  claims
+- **Archived Docs**: [../\_archive/](../_archive/) — Historical only (non-canonical)
 
 ## If You Only Read One Thing
 

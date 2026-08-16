@@ -1,16 +1,22 @@
 # Atlas
 
-> Enterprise-grade frontend platform for building production-ready web applications.
+> Enterprise-grade frontend platform for building production-ready web applications—with qualified,
+> evidence-backed claims documented in the [claims register](../audit/claims-register.md).
 
 ---
 
 ## What is Atlas?
 
-Atlas is a **frontend-first platform template** that provides everything you need to ship production
-applications without reinventing infrastructure.
+Atlas is a **forkable frontend platform template** for selected clients and authorized evaluators.
+Repository access is provided under engagement or evaluation terms; it is not anonymously
+downloadable or publicly inspectable.
 
-Fork the repository, explore the minimal `/examples` reference pages, then delete them and build
-your product on the platform primitives in `lib/`, `providers/`, and `packages/ui`.
+The platform provides opinionated patterns so teams can ship production applications without
+reinventing infrastructure for authentication, data fetching, validation, theming, accessibility,
+and observability.
+
+Authorized recipients explore the minimal `/examples` reference pages, then delete them and build on
+the platform primitives in `lib/`, `providers/`, and `packages/ui`.
 
 ---
 
@@ -18,7 +24,9 @@ your product on the platform primitives in `lib/`, `providers/`, and `packages/u
 
 - **Product teams** who want to ship features, not build infrastructure
 - **Frontend engineers** who value type safety and consistent patterns
-- **Teams** starting a new Next.js app with opinionated patterns baked in
+- **Organizations** adopting Atlas through a client engagement or technical evaluation
+
+Atlas is **not** a general public open-source starter for arbitrary visitors without access.
 
 ---
 
@@ -38,8 +46,21 @@ your product on the platform primitives in `lib/`, `providers/`, and `packages/u
 ## Reference examples
 
 The template includes `/examples` — thin pages for data states and forms. Delete them when you start
-building. The full interactive showcase is maintained at
-[shipwithatlas.com](https://shipwithatlas.com)
+building. The interactive showcase is maintained at [shipwithatlas.com](https://shipwithatlas.com)
 ([atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
 
 See [Examples](examples.md).
+
+---
+
+## Production history (summary)
+
+Atlas has been exercised through real products. Use these categories exactly:
+
+| Category                  | Products                                                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Built from Atlas**      | Aviatopia; BlitzCraft Studio (Publishing Platform); Ax402 Clients; thedanielmark-site; xgas-station-app; bridge-indexer-frontend |
+| **Migrated toward Atlas** | gitmyabi-app; cha-ching-app                                                                                                      |
+
+Per-product metrics, chronology, and endorsements are not fully published in this repository. See
+the [claims register](../audit/claims-register.md) for qualified terminology and evidence limits.

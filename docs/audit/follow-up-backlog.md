@@ -17,7 +17,7 @@ include in the initial PR.
 
 - MSW installed at v1.3.3
 - Uses `rest` API in `src/test/setup/msw.ts`
-- Docs at `docs/how-we-build/testing.md` show v2 API (`http`, `HttpResponse`)
+- `docs/how-we-build/testing.md` documents the v1 API (aligned as of 2026-08-16)
 
 **Actions:**
 
@@ -52,18 +52,18 @@ include in the initial PR.
 
 ### 3. Stale Docs Cleanup
 
-**Type:** Documentation **Effort:** 1 hour **Risk:** None
+**Type:** Documentation **Effort:** 1 hour **Risk:** None **Status:** Partially addressed in
+[#13](https://github.com/blitzcraftlabs/atlas/issues/13)
 
 **Current State:**
 
-- `docs/_archive/` contains pre-platform docs
-- May confuse new engineers
+- `docs/_archive/` contains pre-platform docs with archive warnings
+- Canonical docs must not link to archive (enforced by `pnpm docs:check`)
 
-**Actions:**
+**Remaining Actions:**
 
-1. Review archived content for any still-relevant information
-2. Migrate useful content to current docs
-3. Add clear "ARCHIVED" notices or consider removal
+1. Periodically review archived content for sensitive or misleading excerpts
+2. Keep claims register aligned with public docs
 
 ---
 
