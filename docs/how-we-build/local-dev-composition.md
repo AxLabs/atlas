@@ -129,6 +129,8 @@ REDIS_URL=redis://:redis_dev_password@localhost:6379
 
 - **Never commit real credentials** to version control
 - Use dev-only passwords in local compose files
+- Bind infrastructure ports to `127.0.0.1` in local compose examples so services are not exposed on
+  every network interface
 - Production credentials should come from secrets management (Vault, AWS Secrets Manager, etc.)
 - The example uses obvious dev passwords (`atlas_dev_password`) intentionally
 
