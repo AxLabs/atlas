@@ -16,8 +16,9 @@ pull_request / push to main
 | **CI**           | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, build, E2E |
 | **Secrets Scan** | Always                                                              | Gitleaks Docker scan on `ubuntu-latest`                                                       |
 
-**Docs-only PRs** skip install, lint, typecheck, tests, build, and E2E after the lightweight policy
-checks.
+**Docs-only PRs** still run Node setup and `pnpm docs:check` (via
+`node scripts/check-doc-links.mjs`). They skip install, lint, typecheck, tests, build, and E2E after
+the lightweight policy checks.
 
 **Push to `main`** always runs the full suite.
 
