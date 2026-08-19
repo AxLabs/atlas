@@ -111,12 +111,12 @@ Add those in your product repo when you have a real database and content pipelin
 
 ## Optional workflows
 
-| Workflow              | Purpose                                                                                            | Enable                   |
-| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------ |
-| `security-audit.yml`  | Weekly `pnpm audit` (informational until [#14](https://github.com/blitzcraftlabs/atlas/issues/14)) | On by default (schedule) |
-| `perf-lighthouse.yml` | Lighthouse CI budgets                                                                              | `pnpm perf:enable`       |
-| `perf-bundle.yml`     | Bundle size analysis                                                                               | `pnpm perf:enable`       |
-| `release.yml`         | Changesets versioning                                                                              | On by default on `main`  |
+| Workflow              | Purpose                                                                                            | Enable                                   |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `security-audit.yml`  | Weekly `pnpm audit` (informational until [#14](https://github.com/blitzcraftlabs/atlas/issues/14)) | On by default (schedule)                 |
+| `perf-lighthouse.yml` | Lighthouse CI budgets                                                                              | `pnpm perf:enable`                       |
+| `perf-bundle.yml`     | Bundle size analysis                                                                               | `pnpm perf:enable`                       |
+| `release.yml`         | Atlas Version PR only (no GitHub Release before #24)                                               | On `main`; `workflow_dispatch` rehearsal |
 
 Performance budget details live in `tools/perf/README.md` when workflows are enabled.
 
@@ -165,6 +165,7 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 Required status checks for `main`:
 
+- **CI / Governance** — licensing, versioning, and release policy validation
 - **CI / CI** — consolidated application pipeline
 - **CI / Secrets Scan** — Gitleaks scan
 

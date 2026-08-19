@@ -16,18 +16,20 @@ contributors if the access model changes.
   describe behavior without granting source access.
 
 Licensing and permanent public-access policy are tracked in
-[#19](https://github.com/blitzcraftlabs/atlas/issues/19). Do not describe Atlas as MIT-licensed or
-publicly forkable unless that issue resolves otherwise.
+[Releases and Governance](docs/how-we-build/releases-and-governance.md) and issue
+[#24](https://github.com/blitzcraftlabs/atlas/issues/24) (public cutover). Atlas is **licensed under
+Apache-2.0**; the repository may remain private until #24 completes.
 
 Canonical engineering guidance:
 
-| Document                                                       | Use for                                           |
-| -------------------------------------------------------------- | ------------------------------------------------- |
-| [AGENTS.md](AGENTS.md)                                         | Coding agents and day-to-day implementation rules |
-| [docs/how-we-build/](docs/how-we-build/README.md)              | Platform conventions                              |
-| [docs/public/](docs/public/README.md)                          | External-facing capability descriptions           |
-| [docs/adr/](docs/adr/README.md)                                | Significant technical decisions                   |
-| [docs/audit/claims-register.md](docs/audit/claims-register.md) | Material claims and evidence                      |
+| Document                                                              | Use for                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------- |
+| [AGENTS.md](AGENTS.md)                                                | Coding agents and day-to-day implementation rules |
+| [docs/how-we-build/](docs/how-we-build/README.md)                     | Platform conventions                              |
+| [docs/public/](docs/public/README.md)                                 | External-facing capability descriptions           |
+| [docs/adr/](docs/adr/README.md)                                       | Significant technical decisions                   |
+| [docs/audit/claims-register.md](docs/audit/claims-register.md)        | Material claims and evidence                      |
+| [Releases & Governance](docs/how-we-build/releases-and-governance.md) | Versioning, licensing, releases, support          |
 
 **Do not** treat `docs/_archive/` as current implementation guidance (see
 `docs/_archive/README.md`).
@@ -96,6 +98,7 @@ Also run when your change touches the affected areas:
 | Change type                    | Additional commands                     |
 | ------------------------------ | --------------------------------------- |
 | Documentation / Markdown links | `pnpm docs:check`                       |
+| Release governance             | `pnpm governance:check`                 |
 | Formatting                     | `pnpm format` or `pnpm format:write`    |
 | Build-affecting code           | `pnpm build`                            |
 | User-facing flows              | `pnpm --filter @atlas/web test:e2e`     |
@@ -115,18 +118,27 @@ locally: `pnpm docs:check --external`.
 
 ## Changesets and release impact
 
-Atlas uses [Changesets](https://github.com/changesets/changesets) for versioned packages when
-publishing is enabled.
+Atlas versions the **repository/platform snapshot** as one pre-1.0 line. Changesets collect release
+metadata and open **Version PRs** — they do **not** publish npm packages or create GitHub Releases
+until [#24](https://github.com/blitzcraftlabs/atlas/issues/24).
 
-- Add a changeset when your change should appear in generated changelogs or version bumps.
-- Workspace packages are currently `private`; still add changesets for consumer-facing package API
-  changes that downstream forks track.
-- Release governance and licensing coherence:
-  [#19](https://github.com/blitzcraftlabs/atlas/issues/19).
+Canonical policy: [Releases and Governance](docs/how-we-build/releases-and-governance.md).
+
+- Add a changeset when your change should appear in the Atlas changelog or receive a version bump.
+- Workspace packages are `private`; they share the Atlas version and are not independent npm
+  products.
+- **Pre-1.0 bump convention:**
+  - **patch** — bug fixes and small non-breaking work (`0.1.0 → 0.1.1`)
+  - **minor** — features and **breaking changes** (`0.1.0 → 0.2.0`)
+  - do **not** use **major** in changesets unless maintainers are deliberately releasing `1.0.0`
+- Breaking changes require migration notes in the changeset body and changelog; add
+  `docs/migrations/` guides when steps are non-trivial.
 
 ```bash
 pnpm changeset
 pnpm changeset:status
+pnpm governance:check   # when touching release/licensing files
+pnpm release:rehearse     # optional; isolated version transformation dry-run
 ```
 
 ## Security reporting

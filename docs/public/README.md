@@ -32,14 +32,15 @@ Atlas is **not** a general public open-source starter for arbitrary visitors wit
 
 ## Documentation
 
-| Document                        | What You'll Learn                     |
-| ------------------------------- | ------------------------------------- |
-| [Quickstart](quickstart.md)     | What to expect when running Atlas     |
-| [Architecture](architecture.md) | System design and mental model        |
-| [Examples](examples.md)         | Reference patterns in the template    |
-| [Capabilities](capabilities.md) | What Atlas solves and why it matters  |
-| [Decisions](decisions.md)       | Key engineering choices and tradeoffs |
-| [FAQ](faq.md)                   | Common questions answered             |
+| Document                                                            | What You'll Learn                          |
+| ------------------------------------------------------------------- | ------------------------------------------ |
+| [Quickstart](quickstart.md)                                         | What to expect when running Atlas          |
+| [Architecture](architecture.md)                                     | System design and mental model             |
+| [Examples](examples.md)                                             | Reference patterns in the template         |
+| [Capabilities](capabilities.md)                                     | What Atlas solves and why it matters       |
+| [Decisions](decisions.md)                                           | Key engineering choices and tradeoffs      |
+| [FAQ](faq.md)                                                       | Common questions answered                  |
+| [Releases & Governance](../how-we-build/releases-and-governance.md) | Versioning, licensing, support (canonical) |
 
 ---
 

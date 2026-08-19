@@ -86,18 +86,19 @@ atlas/
 
 ## Internal Documentation
 
-| Document                                                      | What You'll Learn                     |
-| ------------------------------------------------------------- | ------------------------------------- |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)**                        | Access model, PRs, validation         |
-| **[How We Build](docs/how-we-build/README.md)**               | Platform conventions, rules, patterns |
-| **[Folder Structure](docs/how-we-build/folder-structure.md)** | Where code lives                      |
-| **[Environment Variables](docs/how-we-build/env.md)**         | Adding and using env vars             |
-| **[API & Data Fetching](docs/how-we-build/api.md)**           | React Query, API client               |
-| **[Testing](docs/how-we-build/testing.md)**                   | Test setup and patterns               |
-| **[Accessibility](docs/how-we-build/accessibility.md)**       | a11y rules                            |
-| **[Examples](docs/how-we-build/examples.md)**                 | Reference pages in the template       |
-| **[Claims register](docs/audit/claims-register.md)**          | Material claims and evidence          |
-| **[ADRs](docs/adr/README.md)**                                | Why we made specific choices          |
+| Document                                                                  | What You'll Learn                     |
+| ------------------------------------------------------------------------- | ------------------------------------- |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)**                                    | Access model, PRs, validation         |
+| **[How We Build](docs/how-we-build/README.md)**                           | Platform conventions, rules, patterns |
+| **[Folder Structure](docs/how-we-build/folder-structure.md)**             | Where code lives                      |
+| **[Environment Variables](docs/how-we-build/env.md)**                     | Adding and using env vars             |
+| **[API & Data Fetching](docs/how-we-build/api.md)**                       | React Query, API client               |
+| **[Testing](docs/how-we-build/testing.md)**                               | Test setup and patterns               |
+| **[Accessibility](docs/how-we-build/accessibility.md)**                   | a11y rules                            |
+| **[Examples](docs/how-we-build/examples.md)**                             | Reference pages in the template       |
+| **[Claims register](docs/audit/claims-register.md)**                      | Material claims and evidence          |
+| **[Releases & Governance](docs/how-we-build/releases-and-governance.md)** | Versioning, licensing, releases       |
+| **[ADRs](docs/adr/README.md)**                                            | Why we made specific choices          |
 
 ---
 
@@ -137,6 +138,7 @@ pnpm lint           # Run ESLint
 pnpm typecheck      # TypeScript check
 pnpm test           # Run tests
 pnpm docs:check     # Validate internal documentation links
+pnpm governance:check  # Release/licensing policy invariants
 pnpm storybook      # UI component explorer
 ```
 
@@ -151,6 +153,9 @@ expectations.
 
 ## License and access
 
-Repository access and usage terms are provided to selected clients and collaborators. A permanent
-public license has not been established in this repository. See GitHub issue
-[#19](https://github.com/blitzcraftlabs/atlas/issues/19) for licensing and release governance work.
+Atlas is **licensed under Apache License 2.0** ([`LICENSE`](LICENSE)). Public repository
+availability and the first canonical GitHub Release are part of issue
+[#24](https://github.com/blitzcraftlabs/atlas/issues/24). Repository access today remains
+engagement-based for clients and collaborators.
+
+Release governance: [Releases and Governance](docs/how-we-build/releases-and-governance.md).

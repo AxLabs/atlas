@@ -30,17 +30,18 @@ These rules apply to all code in Atlas:
 
 ## Documentation Index
 
-| Document                                          | What It Covers                     |
-| ------------------------------------------------- | ---------------------------------- |
-| [Folder Structure](folder-structure.md)           | Where code lives and why           |
-| [Environment Variables](env.md)                   | How to add and use env vars        |
-| [API & Data Fetching](api.md)                     | React Query, API client, contracts |
-| [Testing](testing.md)                             | Test setup, patterns, utilities    |
-| [Continuous Integration](ci.md)                   | CI layout, self-hosted overlay     |
-| [Accessibility](accessibility.md)                 | a11y rules and patterns            |
-| [Local Dev Composition](local-dev-composition.md) | Docker Compose patterns (opt-in)   |
-| [Documentation Policy](documentation-policy.md)   | How we maintain docs               |
-| [Claims register](../audit/claims-register.md)    | Material claims and evidence       |
+| Document                                            | What It Covers                           |
+| --------------------------------------------------- | ---------------------------------------- |
+| [Folder Structure](folder-structure.md)             | Where code lives and why                 |
+| [Environment Variables](env.md)                     | How to add and use env vars              |
+| [API & Data Fetching](api.md)                       | React Query, API client, contracts       |
+| [Testing](testing.md)                               | Test setup, patterns, utilities          |
+| [Continuous Integration](ci.md)                     | CI layout, self-hosted overlay           |
+| [Accessibility](accessibility.md)                   | a11y rules and patterns                  |
+| [Local Dev Composition](local-dev-composition.md)   | Docker Compose patterns (opt-in)         |
+| [Documentation Policy](documentation-policy.md)     | How we maintain docs                     |
+| [Releases & Governance](releases-and-governance.md) | Licensing, versioning, releases, support |
+| [Claims register](../audit/claims-register.md)      | Material claims and evidence             |
 
 ## Quick Reference
 

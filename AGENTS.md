@@ -98,6 +98,7 @@ Before claiming completion, run the checks relevant to your change:
 ```bash
 pnpm lint && pnpm typecheck && pnpm test    # minimum bar (matches CONTRIBUTING.md)
 pnpm docs:check                             # when changing documentation links
+pnpm governance:check                       # when changing release/licensing policy
 pnpm build                                  # when build-affecting
 pnpm --filter @atlas/web test:e2e           # for user-facing flows
 ```
@@ -129,20 +130,21 @@ pnpm format:write                           # fix formatting
 
 ## Documentation and examples
 
-| Topic                   | Location                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                     |
-| Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md) |
-| API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                           |
-| Environment variables   | [docs/how-we-build/env.md](docs/how-we-build/env.md)                           |
-| Testing                 | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                   |
-| Continuous Integration  | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                             |
-| Accessibility           | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)       |
-| Example patterns        | [docs/how-we-build/examples.md](docs/how-we-build/examples.md)                 |
-| Architecture decisions  | [docs/adr/README.md](docs/adr/README.md)                                       |
-| Canonical imports       | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md) |
-| Claims register         | [docs/audit/claims-register.md](docs/audit/claims-register.md)                 |
-| Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)                                             |
-| Data states example     | `apps/web/src/app/examples/data/page.tsx`                                      |
-| Form example            | `apps/web/src/app/examples/form/page.tsx`                                      |
-| Users feature (OpenAPI) | `apps/web/src/features/users/`                                                 |
+| Topic                   | Location                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                                   |
+| Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md)               |
+| API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                                         |
+| Environment variables   | [docs/how-we-build/env.md](docs/how-we-build/env.md)                                         |
+| Testing                 | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                                 |
+| Continuous Integration  | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                                           |
+| Releases & governance   | [docs/how-we-build/releases-and-governance.md](docs/how-we-build/releases-and-governance.md) |
+| Accessibility           | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)                     |
+| Example patterns        | [docs/how-we-build/examples.md](docs/how-we-build/examples.md)                               |
+| Architecture decisions  | [docs/adr/README.md](docs/adr/README.md)                                                     |
+| Canonical imports       | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md)               |
+| Claims register         | [docs/audit/claims-register.md](docs/audit/claims-register.md)                               |
+| Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                           |
+| Data states example     | `apps/web/src/app/examples/data/page.tsx`                                                    |
+| Form example            | `apps/web/src/app/examples/form/page.tsx`                                                    |
+| Users feature (OpenAPI) | `apps/web/src/features/users/`                                                               |

@@ -15,6 +15,21 @@ env:
   ATLAS_CI_RUNNER_PROFILE: ${{ vars.ATLAS_CI_RUNNER_PROFILE || 'github-hosted' }}
 
 jobs:
+  governance:
+    name: Governance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate licensing, versioning, and release governance
+        run: node scripts/validate-governance.mjs
+
   ci:
     name: CI
     runs-on:

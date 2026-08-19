@@ -2,6 +2,7 @@
   "name": "@atlas/monorepo",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Enterprise frontend platform monorepo",
   "engines": {
     "node": ">=22.0.0",
@@ -39,8 +40,11 @@
     "compose:sanity": "docker compose --profile sanity up -d && docker compose --profile sanity logs sanity && docker compose --profile sanity down",
     "infra:help": "echo 'Atlas is a pure frontend platform—no infrastructure required.\\n\\nFor consumer apps needing DB/cache:\\n  1. See: examples/compose/infra.yml\\n  2. Docs: docs/how-we-build/local-dev-composition.md\\n  3. Run:  docker compose -f docker-compose.yml -f examples/compose/infra.yml --profile infra up -d'",
     "changeset": "changeset",
-    "changeset:version": "changeset version",
-    "changeset:status": "changeset status"
+    "changeset:version": "changeset version && node scripts/consolidate-atlas-release.mjs",
+    "changeset:status": "changeset status",
+    "governance:check": "node scripts/validate-governance.mjs",
+    "docs:validate": "pnpm docs:check && pnpm governance:check",
+    "release:rehearse": "node scripts/release-rehearse.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",

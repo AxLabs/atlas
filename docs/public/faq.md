@@ -8,11 +8,12 @@
 
 ### Is Atlas open source?
 
-**No.** Atlas is a private platform template. Selected clients, invited collaborators, and
-authorized evaluators may receive repository access under engagement or evaluation terms.
+Atlas is **licensed under Apache License 2.0** and is **preparing for public open-source
+distribution** ([#24](https://github.com/blitzcraftlabs/atlas/issues/24)). The repository may still
+be **private**; access today is engagement-based for clients and evaluators.
 
-This public documentation describes platform behavior for onboarding, evaluation, and architectural
-reference. It does not grant source access to arbitrary visitors.
+See [Releases and Governance](../how-we-build/releases-and-governance.md) for licensing scope,
+versioning, and support expectations.
 
 ### Is Atlas a framework or a platform?
 
@@ -214,17 +215,15 @@ the same, developers think about product problems instead of infrastructure choi
 
 Flexibility has a cost. Consistency has a value. Atlas optimizes for consistency.
 
-### Why isn't Atlas publicly open source?
+### Why isn't Atlas publicly available yet?
 
-Public open source comes with obligations that conflict with the current delivery model:
+Atlas has adopted **Apache-2.0** licensing in the repository, but **public repository availability**
+and the first canonical GitHub Release are tracked in
+[#24](https://github.com/blitzcraftlabs/atlas/issues/24). Until cutover, access remains
+engagement-based for selected clients and evaluators.
 
-- Backward compatibility expectations for anonymous consumers
-- Community management overhead
-- Generalization beyond client needs
-
-Atlas is built for selected clients and evaluators. Access and usage terms are provided through
-engagement. Permanent licensing policy is tracked in
-[#19](https://github.com/blitzcraftlabs/atlas/issues/19).
+Public distribution adds obligations—backward compatibility expectations, community processes, and
+broader support surface—that #24 will address deliberately rather than prematurely.
 
 ### Why document a private platform publicly?
 
