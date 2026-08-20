@@ -15,6 +15,7 @@ storybook-static
 playwright-report
 test-results
 .contentlayer
+apps/web/src/lib/api/contracts/schema.ts
 
 # Environment
 .env
