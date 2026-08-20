@@ -73,7 +73,7 @@ function writeRunValidationTsconfig(
 ): string {
   const tsconfigPath = path.join(webRoot, `.gen-validation-${runId}.json`);
   const include = [
-    "next-env.d.ts",
+    "generated-validation-env.d.ts",
     ...includeRelativePaths.map((relativePath) =>
       path.posix.join(relativePath.replace(/\\/g, "/"), "**/*")
     ),
@@ -87,6 +87,7 @@ function writeRunValidationTsconfig(
         include,
         compilerOptions: {
           noEmit: true,
+          types: ["node", "jest", "@testing-library/jest-dom"],
         },
       },
       null,
