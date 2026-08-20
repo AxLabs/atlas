@@ -3,6 +3,17 @@ import tseslint from "typescript-eslint";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 
+import {
+  API_ROUTE_IMPORT_RESTRICTIONS,
+  CONFIG_IMPORT_RESTRICTIONS,
+  FETCH_MESSAGE,
+  LIB_PROVIDER_IMPORT_RESTRICTIONS,
+  PROCESS_ENV_MESSAGE,
+  PROCESS_ENV_SELECTOR,
+  PRODUCT_FEATURE_IMPORT_RESTRICTIONS,
+  STANDARD_APP_IMPORT_RESTRICTIONS,
+} from "./architecture-policy.mjs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -13,88 +24,6 @@ const TEST_FILE_IGNORES = [
   "**/*.test.{ts,tsx}",
   "**/*.spec.{ts,tsx}",
 ];
-
-const PROCESS_ENV_MESSAGE =
-  "Direct access to process.env is not allowed. Use the config facade instead:\n" +
-  "  - Server-side: import { getServerConfig } from '@/config'\n" +
-  "  - Client-side: import { useConfig } from '@/config'\n" +
-  "This ensures type safety, validation, and consistent config access patterns.";
-
-const PROCESS_ENV_SELECTOR =
-  "MemberExpression[object.name='process'][property.name='env']";
-
-const FETCH_MESSAGE =
-  "Direct fetch() calls are not allowed. Use the central API client from @/lib/api instead. " +
-  "This ensures consistent error handling, correlation ID propagation, and retry logic.";
-
-const POSTHOG_IMPORT_PATHS = [
-  {
-    name: "posthog-js",
-    message:
-      "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
-      "  import { analytics } from '@/lib/analytics';\n" +
-      "This ensures consistent event tracking and consent management.",
-  },
-  {
-    name: "posthog-js/react",
-    message:
-      "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
-      "  import { analytics } from '@/lib/analytics';\n" +
-      "This ensures consistent event tracking and consent management.",
-  },
-];
-
-const ENV_IMPORT_PATTERNS = [
-  {
-    group: ["@/env", "@/env/*"],
-    message:
-      "Direct env imports are discouraged. Use the config facade instead:\n" +
-      "  - Server-side: import { getServerConfig } from '@/config'\n" +
-      "  - Client-side: import { useConfig } from '@/config'\n" +
-      "This provides a stable, typed config interface and separates concerns.",
-  },
-];
-
-const UI_INTERNAL_ALIAS_PATTERNS = [
-  {
-    group: ["@/lib/utils", "@/lib/utils/*", "@/hooks/use-zod-form", "@/hooks/use-theme"],
-    message:
-      "Do not import @atlas/ui internals via app aliases. Use the public API:\n" +
-      "  import { cn, useZodForm, useTheme } from '@atlas/ui';",
-  },
-];
-
-const PACKAGE_SOURCE_PATTERNS = [
-  {
-    group: ["**/packages/ui/**", "**/packages/consent/**", "../../packages/**"],
-    message:
-      "Do not import workspace package source directly. Use public package exports:\n" +
-      "  import { Button } from '@atlas/ui';\n" +
-      "  import '@atlas/ui/globals.css';",
-  },
-];
-
-/** Standard app import policy: env facade, analytics adapters, UI public API, package source. */
-const STANDARD_APP_IMPORT_RESTRICTIONS = {
-  paths: POSTHOG_IMPORT_PATHS,
-  patterns: [...ENV_IMPORT_PATTERNS, ...UI_INTERNAL_ALIAS_PATTERNS, ...PACKAGE_SOURCE_PATTERNS],
-};
-
-/** API route import policy: same boundaries except direct @/env imports (route handlers may read env). */
-const API_ROUTE_IMPORT_RESTRICTIONS = {
-  paths: POSTHOG_IMPORT_PATHS,
-  patterns: [...UI_INTERNAL_ALIAS_PATTERNS, ...PACKAGE_SOURCE_PATTERNS],
-};
-
-/** lib/providers import policy: no analytics vendor ban (adapters live in lib). */
-const LIB_PROVIDER_IMPORT_RESTRICTIONS = {
-  patterns: [...ENV_IMPORT_PATTERNS, ...UI_INTERNAL_ALIAS_PATTERNS, ...PACKAGE_SOURCE_PATTERNS],
-};
-
-/** Config/env implementation: package boundaries without @/env self-import ban. */
-const CONFIG_IMPORT_RESTRICTIONS = {
-  patterns: [...UI_INTERNAL_ALIAS_PATTERNS, ...PACKAGE_SOURCE_PATTERNS],
-};
 
 /**
  * File policy classes — each group is mutually exclusive and carries the complete
@@ -128,6 +57,14 @@ const STANDARD_APP_IMPORT_FILES = [
 const STANDARD_APP_IMPORT_IGNORES = [
   "src/config/**",
   "src/app/api/**/route.ts",
+  ...TEST_FILE_IGNORES,
+];
+
+const PRODUCT_FEATURE_IMPORT_FILES = ["src/features/**/*.{ts,tsx}"];
+
+const PRODUCT_FEATURE_IMPORT_IGNORES = [
+  "src/features/reference/**",
+  "src/features/examples/**",
   ...TEST_FILE_IGNORES,
 ];
 
@@ -198,6 +135,7 @@ export default [
       "eslint.boundaries.test.mjs",
       "generated-validation-env.d.ts",
       "src/components/eslint-boundaries/**",
+      "src/features/eslint-boundaries/**",
       "src/lib/eslint-boundaries/**",
       "src/app/api/eslint-boundaries/**",
       "src/app/monitoring/eslint-boundaries/**",
@@ -211,6 +149,14 @@ export default [
     ignores: STANDARD_APP_IMPORT_IGNORES,
     rules: {
       "no-restricted-imports": ["error", STANDARD_APP_IMPORT_RESTRICTIONS],
+    },
+  },
+  {
+    // Product feature ownership import policy
+    files: PRODUCT_FEATURE_IMPORT_FILES,
+    ignores: PRODUCT_FEATURE_IMPORT_IGNORES,
+    rules: {
+      "no-restricted-imports": ["error", PRODUCT_FEATURE_IMPORT_RESTRICTIONS],
     },
   },
   {
