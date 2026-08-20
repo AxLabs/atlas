@@ -16,30 +16,30 @@ import { getRepoRoot } from "./run-cli";
 export interface GeneratedSourceValidationFixture {
   root: string;
   stagingRoot: string;
+  tsconfigPath: string;
   cleanup: () => void;
 }
 
 const STAGING_ROOT = path.join("apps/web/src", "__gen_validate__");
 
-function ensureCommittedValidationTsconfig(repoRoot: string): string {
-  const tsconfigPath = path.join(repoRoot, "apps/web/tsconfig.generated-validation.json");
-  if (!existsSync(tsconfigPath)) {
-    writeFileSync(
-      tsconfigPath,
-      `${JSON.stringify(
-        {
-          extends: "./tsconfig.json",
-          include: ["src/__gen_validate__/**/*.ts", "src/__gen_validate__/**/*.tsx"],
-          compilerOptions: {
-            noEmit: true,
-          },
+function writeRunValidationTsconfig(stagingRoot: string): string {
+  const tsconfigPath = path.join(stagingRoot, "tsconfig.json");
+
+  writeFileSync(
+    tsconfigPath,
+    `${JSON.stringify(
+      {
+        extends: "../../../tsconfig.generated-validation.json",
+        include: ["../../../generated-validation-env.d.ts", "./**/*.ts", "./**/*.tsx"],
+        compilerOptions: {
+          noEmit: true,
         },
-        null,
-        2
-      )}\n`,
-      "utf8"
-    );
-  }
+      },
+      null,
+      2
+    )}\n`,
+    "utf8"
+  );
 
   return tsconfigPath;
 }
@@ -49,10 +49,12 @@ export function createGeneratedSourceValidationFixture(): GeneratedSourceValidat
   const fixture = createGeneratorAtlasFixture({ withContract: true, withReferencePaths: true });
   mkdirSync(path.join(repoRoot, STAGING_ROOT), { recursive: true });
   const stagingRoot = mkdtempSync(path.join(repoRoot, STAGING_ROOT, "run-"));
+  const tsconfigPath = writeRunValidationTsconfig(stagingRoot);
 
   return {
     root: fixture.root,
     stagingRoot,
+    tsconfigPath,
     cleanup: () => {
       fixture.cleanup();
       if (existsSync(stagingRoot)) {
@@ -93,23 +95,19 @@ export function validateGeneratedWebSource(
 ): GeneratedSourceValidationResult {
   const repoRoot = getRepoRoot();
   const webRoot = path.join(repoRoot, "apps/web");
-  ensureCommittedValidationTsconfig(repoRoot);
+
+  const typecheck = spawnSync("pnpm", ["exec", "tsc", "--noEmit", "-p", fixture.tsconfigPath], {
+    cwd: webRoot,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      NO_COLOR: "1",
+      FORCE_COLOR: "0",
+    },
+  });
+
   const absolutePaths = stagingRelativePaths.map((relativePath) =>
     path.join(fixture.stagingRoot, relativePath)
-  );
-
-  const typecheck = spawnSync(
-    "pnpm",
-    ["exec", "tsc", "--noEmit", "-p", "tsconfig.generated-validation.json"],
-    {
-      cwd: webRoot,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        NO_COLOR: "1",
-        FORCE_COLOR: "0",
-      },
-    }
   );
 
   const eslintConfigPath = path.join(webRoot, "eslint.config.mjs");

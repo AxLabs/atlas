@@ -1,7 +1,12 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["next-env.d.ts", "src/__gen_validate__/**/*.ts", "src/__gen_validate__/**/*.tsx"],
+  "include": [
+    "generated-validation-env.d.ts",
+    "src/__gen_validate__/**/*.ts",
+    "src/__gen_validate__/**/*.tsx"
+  ],
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node", "jest", "@testing-library/jest-dom"]
   }
 }
