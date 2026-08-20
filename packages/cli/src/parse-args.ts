@@ -6,6 +6,7 @@ export interface ParsedCli {
   debug: boolean;
   dryRun: boolean;
   env: "skip" | "copy";
+  generateArgs: string[];
   help: boolean;
   json: boolean;
   reference: "keep" | "remove";
@@ -44,11 +45,12 @@ function parseEnv(value: string): "skip" | "copy" {
   );
 }
 
-export function parseCliArgs(argv: string[]): ParsedCli {
+function parseGlobalArgs(argv: string[]): ParsedCli {
   const parsed: ParsedCli = {
     debug: false,
     dryRun: false,
     env: "skip",
+    generateArgs: [],
     help: false,
     json: false,
     reference: "keep",
@@ -100,6 +102,20 @@ export function parseCliArgs(argv: string[]): ParsedCli {
         break;
     }
   }
+
+  return parsed;
+}
+
+export function parseCliArgs(argv: string[]): ParsedCli {
+  const generateIndex = argv.indexOf("generate");
+  if (generateIndex !== -1) {
+    const parsed = parseGlobalArgs(argv.slice(0, generateIndex));
+    parsed.command = "generate";
+    parsed.generateArgs = argv.slice(generateIndex + 1);
+    return parsed;
+  }
+
+  const parsed = parseGlobalArgs(argv);
 
   if (parsed.positionals.length > 0) {
     parsed.command = parsed.positionals[0];

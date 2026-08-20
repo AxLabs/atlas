@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { parseGenerateArgs, runGenerateCommand, writeGenerateHelp } from "./commands/generate";
 import { formatInitResult, runInit } from "./commands/init";
 import { CliError, CliErrorCode, isCliError } from "./errors/cli-error";
 import { cliErrorFromUnknown } from "./errors/from-contract";
@@ -36,6 +37,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
     commandForError = parsed.command ?? "atlas";
 
     if (parsed.help) {
+      if (parsed.command === "generate") {
+        writeGenerateHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
       writeHelp(writer, parsed.json);
       return ExitCode.SUCCESS;
     }
@@ -53,6 +59,8 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
     switch (parsed.command) {
       case "init":
         return runInitCommand(parsed, writer);
+      case "generate":
+        return runGenerateCliCommand(parsed, writer);
       default:
         throw new CliError(
           CliErrorCode.USAGE_ERROR,
@@ -60,6 +68,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         );
     }
   } catch (error) {
+    if (error instanceof CliError && error.message === "generate-help") {
+      writeGenerateHelp(writer, argvIncludesFlag(argv, "--json"));
+      return ExitCode.SUCCESS;
+    }
+
     const cliError = cliErrorFromUnknown(
       error,
       argvIncludesFlag(argv, "--debug") || argvIncludesFlag(argv, "-d")
@@ -82,6 +95,26 @@ function runInitCommand(parsed: ParsedCli, writer: ReturnType<typeof createOutpu
   );
 
   return ExitCode.SUCCESS;
+}
+
+function runGenerateCliCommand(
+  parsed: ParsedCli,
+  writer: ReturnType<typeof createOutputWriter>
+): number {
+  if (parsed.generateArgs.length === 0) {
+    writeGenerateHelp(writer, parsed.json);
+    return ExitCode.SUCCESS;
+  }
+
+  const generateParsed = parseGenerateArgs(parsed.generateArgs);
+  generateParsed.cwd = generateParsed.cwd ?? parsed.cwd;
+  generateParsed.dryRun = generateParsed.dryRun || parsed.dryRun;
+  generateParsed.json = generateParsed.json || parsed.json;
+
+  return runGenerateCommand({
+    parsed: generateParsed,
+    writer,
+  });
 }
 
 if (require.main === module) {
