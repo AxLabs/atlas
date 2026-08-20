@@ -74,24 +74,25 @@ Feature modules contain domain-specific code.
 
 ```
 features/
-├── examples/           # Reference hooks for mock app routes
-│   ├── hooks.ts
-│   ├── types.ts
-│   └── index.ts
-└── users/              # OpenAPI client reference hooks
-    ├── queries.ts
-    ├── mutations.ts
-    ├── keys.ts
-    └── index.ts
+├── examples/           # Reference hooks for mock app routes (delete with /examples)
+├── reference/          # Reference-only patterns (safe to delete)
+│   └── users/          # OpenAPI client reference hooks (no UI)
+│       ├── keys.ts
+│       ├── queries.ts
+│       ├── mutations.ts
+│       └── index.ts
 ```
 
 **Rules:**
 
-- ✅ Each feature is self-contained
+- ✅ Each product feature is self-contained under `features/<name>/`
+- ✅ Reference modules live under `features/reference/` — not imported by product features
 - ✅ Export only public API from `index.ts`
 - ✅ Keep query/mutation logic in feature, not in components
 - ❌ Features should not import from other features directly
 - ❌ Don't put shared utilities here — use `lib/`
+
+See [architecture ownership](architecture-ownership.md) for the full classification.
 
 ### `apps/web/src/lib/`
 
@@ -132,12 +133,9 @@ App-level shared components (not in the UI package).
 
 ```
 components/
-├── layout/             # Layout components
-│   ├── header.tsx
-│   └── sidebar.tsx
-├── auth/               # Auth-specific components
-│   ├── sign-in-button.tsx
-│   └── user-menu.tsx
+├── navigation/         # App-level navigation (AppBreadcrumbs)
+├── reference/          # Reference UI patterns (not mounted in app)
+│   └── auth/           # Google OAuth UI components
 └── ...
 ```
 
@@ -145,7 +143,9 @@ components/
 
 - ✅ Components that are specific to the web app
 - ✅ Components that compose UI package primitives
+- ✅ `reference/` — pattern demonstrations; safe to delete or replace
 - ❌ Generic/reusable components go in `packages/ui`
+- ❌ Do not treat reference components as platform primitives
 
 ### `packages/ui/`
 
@@ -208,9 +208,8 @@ test/
 
 ```typescript
 // In apps/web
-import { Button } from "@atlas/ui"; // UI package
-import { env } from "@/env"; // Env vars
-import { useUserList } from "@/features/users"; // Feature
+import { Button } from "@atlas/ui"; // UI package (public API only)
+import { useUserList } from "@/features/reference/users"; // Reference OpenAPI hooks
 import { apiGet } from "@/lib/api"; // Infrastructure
 import { renderWithProviders } from "@/test"; // Test utilities
 ```
@@ -222,9 +221,12 @@ Configured in `tsconfig.json`:
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@atlas/ui": ["../../packages/ui/src"],
-      "@atlas/config/*": ["../../packages/config/*"]
+      "@/lib/*": ["./src/lib/*", "../../packages/ui/src/lib/*"]
     }
   }
 }
 ```
+
+The `@/lib/*` secondary fallback is a **TypeScript resolution shim** for `@atlas/ui` source — not an
+app import path. ESLint bans app code from importing `@/lib/utils` etc.; use `@atlas/ui` instead.
+See [architecture ownership](architecture-ownership.md#import-boundaries).

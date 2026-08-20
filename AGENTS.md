@@ -12,6 +12,8 @@ atlas/
 ├── apps/web/              # Next.js application (@atlas/web)
 │   ├── src/app/           # Routes and layouts (thin — no business logic)
 │   ├── src/features/      # Domain modules (queries, mutations, feature UI)
+│   │   ├── reference/     # Reference-only hook patterns (safe to delete)
+│   │   └── examples/      # Reference hooks for /examples routes
 │   ├── src/components/    # App-level shared components
 │   ├── src/lib/           # Infrastructure (api, auth, react-query, telemetry)
 │   ├── src/providers/     # React context providers
@@ -25,14 +27,15 @@ atlas/
 
 ## Ownership boundaries
 
-| Location                   | Owns                                                           | Does not own                              |
-| -------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
-| `apps/web/src/app/`        | Routes, layouts, page composition                              | Business logic, reusable components       |
-| `apps/web/src/features/`   | Domain logic, feature hooks, feature UI                        | Generic primitives, cross-feature imports |
-| `apps/web/src/components/` | App-specific compositions                                      | Generic design-system components          |
-| `packages/ui/`             | Reusable visual primitives, form helpers, app-state components | Product/domain logic, API calls           |
-| `packages/config/`         | Tooling configuration                                          | Application or product code               |
-| `apps/web/src/lib/`        | Shared infrastructure                                          | UI components, domain logic               |
+| Location                           | Owns                                                           | Does not own                              |
+| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| `apps/web/src/app/`                | Routes, layouts, page composition                              | Business logic, reusable components       |
+| `apps/web/src/features/`           | Domain logic, feature hooks, feature UI                        | Generic primitives, cross-feature imports |
+| `apps/web/src/features/reference/` | Reference hook patterns (no product UI)                        | Product features importing reference code |
+| `apps/web/src/components/`         | App-specific compositions                                      | Generic design-system components          |
+| `packages/ui/`                     | Reusable visual primitives, form helpers, app-state components | Product/domain logic, API calls           |
+| `packages/config/`                 | Tooling configuration                                          | Application or product code               |
+| `apps/web/src/lib/`                | Shared infrastructure                                          | UI components, domain logic               |
 
 Do not move code into a shared package unless it is genuinely reusable across applications. Prefer
 existing Atlas components and patterns over new abstractions.
@@ -47,8 +50,9 @@ existing Atlas components and patterns over new abstractions.
    - `index.ts` — public exports only
 3. **No cross-feature imports** — extract shared logic to `lib/` if needed.
 
-Reference implementations: `apps/web/src/features/users/` (OpenAPI client),
-`apps/web/src/features/examples/` (app-route mocks).
+Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI client hooks),
+`apps/web/src/features/examples/` (app-route mocks). See
+[architecture ownership](docs/how-we-build/architecture-ownership.md).
 
 ## API and server-state architecture
 
@@ -132,6 +136,7 @@ pnpm format:write                           # fix formatting
 
 | Topic                   | Location                                                                                     |
 | ----------------------- | -------------------------------------------------------------------------------------------- |
+| Architecture ownership  | [docs/how-we-build/architecture-ownership.md](docs/how-we-build/architecture-ownership.md)   |
 | Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                                   |
 | Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md)               |
 | API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                                         |
@@ -147,4 +152,4 @@ pnpm format:write                           # fix formatting
 | Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                           |
 | Data states example     | `apps/web/src/app/examples/data/page.tsx`                                                    |
 | Form example            | `apps/web/src/app/examples/form/page.tsx`                                                    |
-| Users feature (OpenAPI) | `apps/web/src/features/users/`                                                               |
+| OpenAPI reference hooks | `apps/web/src/features/reference/users/`                                                     |

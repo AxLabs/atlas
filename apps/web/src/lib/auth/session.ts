@@ -19,9 +19,7 @@ import { cookies } from "next/headers";
 
 import { getServerConfig } from "@/config/server";
 
-import { refreshAccessToken as refreshGoogleToken } from "./providers/google";
-
-import type { OAuthTempState, SessionData, SessionResponse } from "./types";
+import type { OAuthTempState, SessionData } from "./types";
 
 /**
  * Cookie names used by the auth system.
@@ -272,105 +270,6 @@ export async function destroySessionCookie(): Promise<void> {
 export function needsRefresh(session: SessionData): boolean {
   const now = Math.floor(Date.now() / 1000);
   return session.accessTokenExpiresAt - now < REFRESH_WINDOW_SECONDS;
-}
-
-/**
- * Refresh the access token and update the session.
- *
- * Uses the refresh token to obtain a new access token.
- * Updates the session cookie with new token data.
- *
- * @param session - Current session data (must have refreshToken)
- * @returns Updated session data
- * @throws Error if refresh fails or no refresh token available
- */
-export async function refreshSession(session: SessionData): Promise<SessionData> {
-  if (!session.refreshToken) {
-    throw new Error("No refresh token available");
-  }
-
-  // Currently only Google is supported
-  if (session.user.provider !== "google") {
-    throw new Error(`Refresh not implemented for provider: ${session.user.provider}`);
-  }
-
-  const config = getServerConfig();
-
-  // Validate OAuth is configured
-  if (!config.auth.googleClientId || !config.auth.googleClientSecret) {
-    throw new Error("Google OAuth is not configured");
-  }
-
-  const tokens = await refreshGoogleToken(
-    session.refreshToken,
-    config.auth.googleClientId,
-    config.auth.googleClientSecret
-  );
-
-  const updatedSession: SessionData = {
-    ...session,
-    accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken || session.refreshToken,
-    accessTokenExpiresAt: tokens.expiresAt,
-  };
-
-  await createSessionCookie(updatedSession);
-
-  return updatedSession;
-}
-
-/**
- * Read session with automatic refresh if needed.
- *
- * Combines readSession + needsRefresh + refreshSession into one call.
- * Ideal for API routes and server components that need up-to-date tokens.
- *
- * @returns Session data (possibly refreshed) or null
- */
-export async function readSessionWithRefresh(): Promise<SessionData | null> {
-  const session = await readSession();
-
-  if (!session) {
-    return null;
-  }
-
-  // Refresh if token is expiring soon
-  if (needsRefresh(session) && session.refreshToken) {
-    try {
-      return await refreshSession(session);
-    } catch {
-      // Refresh failed - session may still be valid for a bit
-      // Let caller decide based on remaining time
-      return session;
-    }
-  }
-
-  return session;
-}
-
-/**
- * Get session response for /api/auth/me endpoint.
- *
- * Returns only safe user information - no tokens.
- *
- * @returns Session response for client
- */
-export async function getSessionResponse(): Promise<SessionResponse> {
-  const session = await readSessionWithRefresh();
-
-  if (!session) {
-    return { authenticated: false };
-  }
-
-  return {
-    authenticated: true,
-    user: {
-      email: session.user.email,
-      name: session.user.name,
-      avatarUrl: session.user.avatarUrl,
-    },
-    provider: session.user.provider,
-  };
 }
 
 // ============================================================================

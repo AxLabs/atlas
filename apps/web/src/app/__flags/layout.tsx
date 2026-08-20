@@ -7,6 +7,8 @@
 
 import { notFound } from "next/navigation";
 
+import { getServerConfig } from "@/config/server";
+
 import type { Metadata } from "next";
 import type React from "react";
 
@@ -23,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 export default function FeatureFlagsLayout({ children }: { children: React.ReactNode }) {
   // Block access in production
-  if (process.env.NODE_ENV !== "development") {
+  if (getServerConfig().app.env !== "development") {
     notFound();
   }
 

@@ -9,10 +9,10 @@
 
 import { NextResponse } from "next/server";
 
-import { getSessionResponse } from "@/lib/auth/session";
+import { getGoogleSessionResponse } from "@/lib/auth/providers/google/session-refresh";
 
 export async function GET() {
-  const session = await getSessionResponse();
+  const session = await getGoogleSessionResponse();
 
   return NextResponse.json(session);
 }

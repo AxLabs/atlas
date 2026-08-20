@@ -42,15 +42,16 @@ We use **Sentry** for error tracking and performance monitoring across all runti
    - `sentry.server.config.ts` — Server components, API routes
    - `sentry.edge.config.ts` — Middleware
 
-2. **Telemetry helpers** (`lib/telemetry/sentry.*.ts`):
+2. **Sentry integration at Next.js boundary**:
 
-```typescript
-// Client
-import { captureException } from "@/lib/telemetry/sentry.client";
+   - `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` — SDK
+     initialization
+   - `instrumentation.ts` — runtime loading
+   - `GlobalErrorHandler` — unhandled promise rejections in root layout
+   - `global-error.tsx` — catastrophic error UI
 
-// Server
-import { captureException, captureApiError } from "@/lib/telemetry/sentry.server";
-```
+   Import `@sentry/nextjs` directly in route handlers and error boundaries. Do not add wrapper
+   layers in `lib/telemetry/` — web vitals live there; Sentry does not.
 
 3. **Sampling strategy**:
 

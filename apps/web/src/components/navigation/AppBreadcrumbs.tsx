@@ -28,8 +28,6 @@ import {
 
 import { useBreadcrumbs } from "@/lib/breadcrumbs/use-breadcrumbs";
 
-import type { BreadcrumbItem as BreadcrumbItemType } from "@/lib/breadcrumbs";
-
 export interface AppBreadcrumbsProps {
   /**
    * Additional CSS classes.
@@ -47,30 +45,6 @@ export interface AppBreadcrumbsProps {
    * Set to 0 or undefined to disable truncation.
    */
   maxItems?: number;
-}
-
-/**
- * Render breadcrumb items (for use with custom rendering).
- */
-export function BreadcrumbItems({ items }: { items: BreadcrumbItemType[] }) {
-  return (
-    <>
-      {items.map((item, index) => (
-        <React.Fragment key={item.href || item.label}>
-          <BreadcrumbItem>
-            {item.current || !item.href ? (
-              <BreadcrumbPage>{item.label}</BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink asChild>
-                <Link href={item.href}>{item.label}</Link>
-              </BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
-          {index < items.length - 1 && <BreadcrumbSeparator />}
-        </React.Fragment>
-      ))}
-    </>
-  );
 }
 
 /**

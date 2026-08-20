@@ -10,7 +10,7 @@
  * - Type-safe wrappers around React Query hooks
  */
 
-export { createQueryKeys, type QueryKey, systemKeys, userKeys } from "./keys";
+export { createQueryKeys, type QueryKey, systemKeys } from "./keys";
 export {
   createMutation,
   createQuery,

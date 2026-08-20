@@ -14,9 +14,9 @@ description:
 2. Read relevant docs in `docs/how-we-build/` (especially `folder-structure.md`, `api.md`,
    `testing.md`, `accessibility.md`).
 3. Inspect the closest example page under `apps/web/src/app/examples/` and matching feature under
-   `apps/web/src/features/`.
-4. Identify reusable `@atlas/ui` components, query/mutation patterns, and form helpers already in
-   use.
+   `apps/web/src/features/examples/` or reference module under `apps/web/src/features/reference/`.
+4. Read [architecture ownership](../../docs/how-we-build/architecture-ownership.md) to confirm
+   whether you are building product code or touching reference/platform surfaces.
 
 ## 2. Plan
 

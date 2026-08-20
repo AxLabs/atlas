@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit",
     "validate:env": "tsx scripts/validate-env.ts",
     "api:gen": "openapi-typescript ../../openapi/openapi.json -o src/lib/api/contracts/schema.ts --empty-objects-unknown",
-    "test": "jest",
+    "test": "jest && node --test eslint.boundaries.test.mjs",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",

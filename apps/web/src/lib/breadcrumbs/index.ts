@@ -36,7 +36,7 @@ export type {
 export { buildBreadcrumbs, i18nResolver, paramResolver, staticResolver } from "./builder";
 
 // Default tree
-export { breadcrumbTree, getBreadcrumbTree } from "./tree";
+export { breadcrumbTree } from "./tree";
 
 // React hook
 export type { UseBreadcrumbsOptions, UseBreadcrumbsResult } from "./use-breadcrumbs";
