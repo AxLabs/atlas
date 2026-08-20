@@ -33,6 +33,7 @@ These rules apply to all code in Atlas:
 | Document                                            | What It Covers                                 |
 | --------------------------------------------------- | ---------------------------------------------- |
 | [Architecture ownership](architecture-ownership.md) | Platform vs reference vs consumer vs generated |
+| [Atlas project contract](atlas-contract.md)         | Machine-readable architecture for tooling      |
 | [Folder Structure](folder-structure.md)             | Where code lives and why                       |
 | [Environment Variables](env.md)                     | How to add and use env vars                    |
 | [API & Data Fetching](api.md)                       | React Query, API client, contracts             |

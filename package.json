@@ -28,6 +28,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky",
     "api:gen": "pnpm --filter @atlas/web api:gen",
+    "atlas:resolve-contract": "pnpm --filter @atlas/project resolve",
     "validate:env": "pnpm --filter @atlas/web validate:env",
     "storybook": "pnpm --filter @atlas/ui storybook",
     "perf:lhci": "pnpm --filter @atlas/web perf:lhci",
