@@ -1,0 +1,159 @@
+# Atlas Doctor
+
+> **Atlas-specific architecture and configuration drift diagnostics.**
+
+`atlas doctor` answers whether a checkout is still structurally a healthy Atlas project and, when it
+is not, reports deterministic drift with remediation guidance.
+
+Doctor is **not** a replacement for lint, typecheck, tests, build, or security tooling.
+
+See also: [Atlas CLI](cli.md), [Atlas project contract](atlas-contract.md),
+[Architecture ownership](architecture-ownership.md).
+
+---
+
+## Responsibility boundary
+
+| Tool             | Owns                                                             |
+| ---------------- | ---------------------------------------------------------------- |
+| `atlas doctor`   | Atlas contract validity, workspace structure, architecture drift |
+| `pnpm lint`      | Source-level ESLint policy, including architecture enforcement   |
+| `pnpm typecheck` | TypeScript correctness                                           |
+| `pnpm test`      | Runtime behavior and regressions                                 |
+| `pnpm build`     | Framework/bundling correctness                                   |
+| Security tooling | Vulnerabilities, secrets, and security policy                    |
+
+Doctor delegates architecture-boundary enforcement to the same ESLint policy used by `@atlas/web`
+and translates tagged findings into stable Atlas diagnostics.
+
+---
+
+## Usage
+
+```bash
+pnpm --filter @atlas/cli build
+pnpm atlas doctor
+pnpm atlas doctor --json
+pnpm atlas doctor --cwd apps/web
+```
+
+---
+
+## Report schema (v0.1)
+
+Machine output uses the shared CLI JSON envelope:
+
+```json
+{
+  "ok": true,
+  "command": "doctor",
+  "result": {
+    "schemaVersion": 1,
+    "status": "healthy",
+    "atlasVersion": "0.1.0",
+    "projectRoot": ".",
+    "summary": {
+      "passed": 6,
+      "warnings": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "checks": [],
+    "diagnostics": []
+  }
+}
+```
+
+Top-level report status:
+
+| Status    | Meaning                       |
+| --------- | ----------------------------- |
+| `healthy` | No error diagnostics          |
+| `warning` | Warning diagnostics only      |
+| `failed`  | One or more error diagnostics |
+
+Check status vocabulary: `pass`, `warn`, `fail`, `skip`.
+
+Diagnostic severity vocabulary: `warning`, `error`.
+
+Paths are repository-relative POSIX paths. Reports are deterministic: no timestamps, absolute
+machine paths, or random values.
+
+---
+
+## Exit policy
+
+| Exit code | Meaning                                                    |
+| --------- | ---------------------------------------------------------- |
+| `0`       | Healthy, or warnings only                                  |
+| `8`       | Doctor completed and found architectural error diagnostics |
+
+Usage errors, project discovery failures, and unexpected internal failures continue to use the
+existing CLI exit-code contract (`2`, `3`, `1`, etc.).
+
+Warnings do **not** fail CI in v0.1.
+
+---
+
+## Initial check registry
+
+| Check ID                  | Owns / delegates                       | Possible diagnostics            | Failure policy |
+| ------------------------- | -------------------------------------- | ------------------------------- | -------------- |
+| `project-contract`        | `@atlas/project`                       | `ATLAS_CONTRACT_*`              | error          |
+| `workspace-structure`     | Doctor + manifests                     | `ATLAS_WORKSPACE_*`             | error          |
+| `architecture-boundaries` | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`              | error          |
+| `dependency-declarations` | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`   | error          |
+| `generated-openapi`       | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_STALE` | error / skip   |
+| `atlas-version`           | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`        | warning        |
+
+---
+
+## Diagnostic codes
+
+| Code                                       | Severity | Suggested remediation                                            |
+| ------------------------------------------ | -------- | ---------------------------------------------------------------- |
+| `ATLAS_CONTRACT_MISSING`                   | error    | Create `atlas.config.json` or run `atlas init`                   |
+| `ATLAS_CONTRACT_INVALID`                   | error    | Fix contract validation/structure via `@atlas/project`           |
+| `ATLAS_CONTRACT_UNSUPPORTED`               | error    | Use a supported contract `schemaVersion`                         |
+| `ATLAS_BOUNDARY_PRIVATE_IMPORT`            | error    | Import from public package entry points such as `@atlas/ui`      |
+| `ATLAS_BOUNDARY_DIRECT_ENV`                | error    | Use `getServerConfig()` / `useConfig()`                          |
+| `ATLAS_BOUNDARY_RAW_NETWORK`               | error    | Use `@/lib/api` instead of raw `fetch()`                         |
+| `ATLAS_BOUNDARY_REFERENCE_IMPORT`          | error    | Do not import reference/example modules from product features    |
+| `ATLAS_BOUNDARY_CROSS_FEATURE_IMPORT`      | error    | Extract shared logic to `src/lib/`                               |
+| `ATLAS_BOUNDARY_ANALYTICS_VENDOR`          | error    | Use `@/lib/analytics` adapter                                    |
+| `ATLAS_DEPENDENCY_UNDECLARED`              | error    | Declare imported packages in the owning workspace `package.json` |
+| `ATLAS_GENERATED_OPENAPI_STALE`            | error    | Run `pnpm --filter @atlas/web api:gen`                           |
+| `ATLAS_VERSION_MISMATCH`                   | warning  | Align CLI/checkout Atlas snapshot versions                       |
+| `ATLAS_WORKSPACE_PACKAGE_MANIFEST_MISSING` | error    | Add missing workspace `package.json`                             |
+| `ATLAS_WORKSPACE_NOT_INCLUDED`             | error    | Include configured roots in `pnpm-workspace.yaml`                |
+
+Only implemented codes are emitted.
+
+---
+
+## Deferred scope
+
+| Issue | Deferred to                                  | Doctor behavior                                                                                                                                |
+| ----- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| #26   | Dependency normalization / version alignment | Doctor only checks high-confidence undeclared imports in the application workspace; test files and broader package cleanup remain out of scope |
+| #43   | Migrations                                   | Doctor may emit version drift warnings but does not mutate metadata or run migrations                                                          |
+
+---
+
+## CI usage
+
+```bash
+pnpm --filter @atlas/cli build
+pnpm atlas doctor --json
+```
+
+Error diagnostics fail the step. Warnings remain non-fatal in v0.1.
+
+---
+
+## Related docs
+
+- [Atlas CLI](cli.md)
+- [Atlas project contract](atlas-contract.md)
+- [Architecture ownership](architecture-ownership.md)
+- [API & data fetching](api.md)

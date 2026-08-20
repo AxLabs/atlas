@@ -64,6 +64,10 @@ Derive commands from root `package.json` and `apps/web/package.json`. Run the su
 your change:
 
 ```bash
+# Atlas architecture drift (after contract/routing/feature-structure changes)
+pnpm --filter @atlas/cli build
+pnpm atlas doctor
+
 # Formatting & lint
 pnpm format              # or pnpm format:write to fix
 pnpm lint
