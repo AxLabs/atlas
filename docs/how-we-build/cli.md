@@ -17,7 +17,7 @@ See also: [Atlas project contract](atlas-contract.md),
 | Atlas project contract  | Load `atlas.config.json` through `@atlas/project`                      |
 | Platform version        | `atlas --version` reports the installed `@atlas/cli` platform snapshot |
 | Project bootstrap       | `atlas init` initializes Atlas metadata in a compatible checkout       |
-| Future generators (#37) | Scaffold Atlas features using contract paths                           |
+| Atlas generators        | `atlas generate feature …`, `atlas generate page …`                    |
 | Future Doctor (#38)     | Report architecture conformance using resolved contract                |
 | Future migrations (#43) | Upgrade contract schema versions                                       |
 
@@ -52,6 +52,8 @@ pnpm --filter @atlas/cli build
 pnpm atlas --help
 pnpm atlas --version
 pnpm atlas init --dry-run
+pnpm atlas generate feature users --dry-run
+pnpm atlas generate page settings/profile --json
 ```
 
 The root `pnpm atlas` script runs the linked workspace binary via `pnpm exec atlas`.
@@ -71,14 +73,14 @@ publishable artifact bundled with or alongside the public Atlas snapshot. Until 
 
 ## Global options
 
-| Option            | Description                                              |
-| ----------------- | -------------------------------------------------------- |
-| `--help`, `-h`    | Show help                                                |
-| `--version`, `-v` | Show installed Atlas CLI/platform snapshot version       |
-| `--json`          | Emit machine-readable JSON on stdout                     |
-| `--cwd <path>`    | Resolve the Atlas repository from a starting directory   |
-| `--debug`         | Include stack traces for unexpected internal errors      |
-| `--dry-run`       | Preview bootstrap actions without writing files (`init`) |
+| Option            | Description                                            |
+| ----------------- | ------------------------------------------------------ |
+| `--help`, `-h`    | Show help                                              |
+| `--version`, `-v` | Show installed Atlas CLI/platform snapshot version     |
+| `--json`          | Emit machine-readable JSON on stdout                   |
+| `--cwd <path>`    | Resolve the Atlas repository from a starting directory |
+| `--debug`         | Include stack traces for unexpected internal errors    |
+| `--dry-run`       | Preview planned actions without writing files          |
 
 ---
 
@@ -116,6 +118,83 @@ Reference removal requires an explicit flag; the default retains reference conte
 There is **no** `create-atlas` command in v0.1 — new-project bootstrap from a public snapshot
 remains coordinated with #24.
 
+### `atlas generate feature <name>`
+
+Generate the minimum Atlas **product feature** structure under `project.features.product` from the
+resolved contract. The generator loads architecture through `@atlas/project` — it does not hard-code
+`apps/web/src/features`.
+
+| Input            | Rule                                                             |
+| ---------------- | ---------------------------------------------------------------- |
+| Feature name     | kebab-case domain name (`users`, `billing-history`)              |
+| Reserved names   | Rejects names that collide with contract reference/example roots |
+| Existing feature | Conflict when `<features.product>/<name>/` already exists        |
+
+**Default files**
+
+| Path                           | Purpose                                             |
+| ------------------------------ | --------------------------------------------------- |
+| `components/<Name>Feature.tsx` | Route-facing feature composition shell              |
+| `index.ts`                     | Public feature boundary exporting the feature shell |
+
+**Optional flags**
+
+| Flag         | Adds                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `--query`    | `keys.ts`, `queries.ts`, query hook scaffold with explicit domain-owned fetch seam       |
+| `--mutation` | `keys.ts`, `mutations.ts`, mutation hook scaffold with explicit domain-owned create seam |
+| `--form`     | `schema.ts`, `components/<Name>Form.tsx` using `@atlas/ui` forms                         |
+| `--tests`    | Deterministic query-key test scaffold (`__tests__/keys.test.ts`); requires `--query`     |
+
+Optional flags augment the default feature structure. They do not replace the generated feature
+component or public boundary.
+
+Query and mutation scaffolds intentionally do **not** invent URLs, payload types, or CRUD semantics.
+Generated network hooks contain explicit domain-owned implementation seams until the product API
+contract is known.
+
+When `capabilities.openApi` is `true`, query/mutation scaffolds remain compile-safe explicit seams
+and do not fabricate typed OpenAPI client members.
+
+**Examples**
+
+```bash
+atlas generate feature users
+atlas generate feature billing-history --query --mutation
+atlas generate feature account-settings --form --dry-run --json
+```
+
+**Not generated:** business logic, navigation wiring, fake CRUD APIs, reference/example modules, or
+cross-feature imports.
+
+### `atlas generate page <route>`
+
+Generate a thin App Router page under `<application.root>/src/app/<route>/page.tsx`.
+
+| Input          | Rule                                                                 |
+| -------------- | -------------------------------------------------------------------- |
+| Route          | Relative App Router fragment (`settings`, `settings/profile`)        |
+| Dynamic routes | Identifier-safe segments such as `[id]` and `[userId]` are supported |
+| Existing route | May add `page.tsx` when sibling route files already exist            |
+| Conflict       | Fails when the intended `page.tsx` already exists (no overwrite)     |
+
+**Examples**
+
+```bash
+atlas generate page settings/profile
+atlas generate page admin/users --dry-run
+```
+
+**Not generated:** layouts, loading/error files, navigation updates, or domain logic inside the
+route file.
+
+Both generators:
+
+- Require a valid initialized Atlas project (`atlas.config.json` + `@atlas/project`)
+- Plan all files before writing; abort without mutation on conflict
+- Support `--dry-run` and `--json` using the shared CLI output model
+- Emit repository-relative paths and `followUpActions` for automation
+
 ---
 
 ## Exit codes
@@ -129,6 +208,7 @@ remains coordinated with #24.
 | `4`  | Invalid Atlas contract or project          |
 | `5`  | Bootstrap conflict / incompatible checkout |
 | `6`  | Missing prerequisite (Node, pnpm)          |
+| `7`  | Generator conflict (destination exists)    |
 
 ---
 
@@ -202,11 +282,11 @@ Machine-readable `--json` output may include:
 
 ## Deferred capabilities
 
-| Issue | Capability         | Status in v0.1  |
-| ----- | ------------------ | --------------- |
-| #37   | `atlas generate …` | Not implemented |
-| #38   | `atlas doctor`     | Not implemented |
-| #43   | `atlas migrate`    | Not implemented |
+| Issue | Capability         | Status in v0.1        |
+| ----- | ------------------ | --------------------- |
+| #37   | `atlas generate …` | Feature + page shells |
+| #38   | `atlas doctor`     | Not implemented       |
+| #43   | `atlas migrate`    | Not implemented       |
 
 The CLI exposes explicit command registration, shared context loading, exit codes, and output
 conventions so these commands can be added without redesigning the foundation.

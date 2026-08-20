@@ -1,10 +1,30 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 export interface MinimalAtlasFixture {
   root: string;
   cleanup: () => void;
+}
+
+export interface GeneratorAtlasFixtureOptions {
+  withContract?: boolean;
+  invalidContract?: boolean;
+  structurallyInvalidContract?: boolean;
+  wrongUiPackageName?: boolean;
+  withEnvExample?: boolean;
+  withEnvLocal?: boolean;
+  withReferencePaths?: boolean;
+  customProductFeaturesRoot?: string;
+  openApi?: boolean;
 }
 
 export function createMinimalAtlasFixture(options?: {
@@ -16,7 +36,15 @@ export function createMinimalAtlasFixture(options?: {
   withEnvLocal?: boolean;
   withReferencePaths?: boolean;
 }): MinimalAtlasFixture {
+  return createGeneratorAtlasFixture(options);
+}
+
+export function createGeneratorAtlasFixture(
+  options?: GeneratorAtlasFixtureOptions
+): MinimalAtlasFixture {
   const root = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-fixture-"));
+  const productFeaturesRoot = options?.customProductFeaturesRoot ?? "apps/web/src/features";
+  const openApi = options?.openApi ?? false;
 
   writeFileSync(
     path.join(root, "package.json"),
@@ -37,7 +65,8 @@ export function createMinimalAtlasFixture(options?: {
   );
 
   mkdirSync(path.join(root, "apps/web"), { recursive: true });
-  mkdirSync(path.join(root, "apps/web/src/features"), { recursive: true });
+  mkdirSync(path.join(root, productFeaturesRoot), { recursive: true });
+  mkdirSync(path.join(root, "apps/web/src/app"), { recursive: true });
   mkdirSync(path.join(root, "packages/ui"), { recursive: true });
 
   if (options?.structurallyInvalidContract) {
@@ -100,10 +129,22 @@ export function createMinimalAtlasFixture(options?: {
       )}\n`,
       "utf8"
     );
-  } else if (options?.withContract) {
+  } else if (options?.withContract || options?.customProductFeaturesRoot !== undefined) {
     writeFileSync(
       path.join(root, "atlas.config.json"),
-      `${JSON.stringify({ schemaVersion: 1, capabilities: { openApi: false } }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          features: {
+            product: productFeaturesRoot,
+          },
+          capabilities: {
+            openApi,
+          },
+        },
+        null,
+        2
+      )}\n`,
       "utf8"
     );
   }
@@ -135,4 +176,60 @@ export function snapshotFixturePaths(fixtureRoot: string): {
     envLocal: existsSync(envLocalPath) ? readFileSync(envLocalPath, "utf8") : undefined,
     referencePaths: referencePaths.filter((absolutePath) => existsSync(absolutePath)),
   };
+}
+
+export function readFixtureTree(relativeFixtureRoot: string): Record<string, string> {
+  const absoluteRoot = path.join(__dirname, "..", "fixtures", "generators", relativeFixtureRoot);
+  const files: Record<string, string> = {};
+
+  function walk(currentRelative: string): void {
+    const absoluteCurrent = path.join(absoluteRoot, currentRelative);
+    for (const entry of readdirSync(absoluteCurrent)) {
+      const nextRelative = path.join(currentRelative, entry);
+      const absoluteEntry = path.join(absoluteRoot, nextRelative);
+      const stats = statSync(absoluteEntry);
+      if (stats.isDirectory()) {
+        walk(nextRelative);
+        continue;
+      }
+
+      files[nextRelative.replace(/\\/g, "/")] = readFileSync(absoluteEntry, "utf8");
+    }
+  }
+
+  walk(".");
+  return files;
+}
+
+export function readGeneratedTree(
+  fixtureRoot: string,
+  relativeRoot: string
+): Record<string, string> {
+  const absoluteRoot = path.join(fixtureRoot, relativeRoot);
+  if (!existsSync(absoluteRoot)) {
+    return {};
+  }
+
+  const files: Record<string, string> = {};
+
+  function walk(currentRelative: string): void {
+    const absoluteCurrent = path.join(absoluteRoot, currentRelative);
+    for (const entry of readdirSync(absoluteCurrent)) {
+      const nextRelative = path.join(currentRelative, entry);
+      const absoluteEntry = path.join(absoluteRoot, nextRelative);
+      const stats = statSync(absoluteEntry);
+      if (stats.isDirectory()) {
+        walk(nextRelative);
+        continue;
+      }
+
+      files[path.posix.join(relativeRoot, nextRelative).replace(/\\/g, "/")] = readFileSync(
+        absoluteEntry,
+        "utf8"
+      );
+    }
+  }
+
+  walk(".");
+  return files;
 }

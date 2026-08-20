@@ -1,6 +1,6 @@
 import type { CliErrorCode } from "../errors/cli-error";
 
-export type PlannedActionKind = "create" | "skip" | "remove" | "copy";
+export type PlannedActionKind = "create" | "skip" | "remove" | "copy" | "conflict";
 
 export interface PlannedAction {
   kind: PlannedActionKind;

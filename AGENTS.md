@@ -60,21 +60,28 @@ See [Atlas project contract](docs/how-we-build/atlas-contract.md).
 
 ## Atlas CLI
 
-Use the **`atlas`** binary for Atlas-owned workflows when a command exists (bootstrap, future
-generators, Doctor, migrations). Architecture context still comes from `@atlas/project` /
-`atlas.config.json` — do not invent CLI commands that are not implemented.
+Use the **`atlas`** binary for Atlas-owned workflows when a command exists (bootstrap, generators,
+Doctor, migrations). Architecture context still comes from `@atlas/project` / `atlas.config.json` —
+do not invent CLI commands that are not implemented.
 
 | Use `atlas` for          | Use pnpm / Next / Turbo / Git directly for            |
 | ------------------------ | ----------------------------------------------------- |
 | `atlas init`             | `pnpm install`, `pnpm dev`, `pnpm test`, `pnpm build` |
-| Contract-aware bootstrap | ESLint, TypeScript, Changesets, shadcn                |
+| `atlas generate …`       | ESLint, TypeScript, Changesets, shadcn                |
+| Contract-aware bootstrap | Manual boilerplate for supported generator shapes     |
+
+When creating a new Atlas **product feature** or **App Router page**, prefer `atlas generate` where
+its supported shape applies. Do not manually recreate generator-owned structural boilerplate unless
+the generator cannot represent the required shape or you are modifying existing code.
 
 Repository-local invocation: `pnpm atlas --help`. See [Atlas CLI](docs/how-we-build/cli.md).
 
 ## Feature architecture
 
-1. **Route** — Add a thin page under `apps/web/src/app/` that composes feature components.
-2. **Feature module** — Create `apps/web/src/features/<name>/` with:
+1. **Route** — Add a thin page under `apps/web/src/app/` that composes feature components. Prefer
+   `atlas generate page <route>` for new static route shells.
+2. **Feature module** — Prefer `atlas generate feature <name>` for new product feature structure,
+   then add:
    - `keys.ts` — query key factory via `createQueryKeys` from `@/lib/react-query`
    - `queries.ts` / `mutations.ts` (or `hooks.ts` for smaller features)
    - `components/` — feature-specific UI
