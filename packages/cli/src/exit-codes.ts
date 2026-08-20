@@ -8,6 +8,7 @@ export const ExitCode = {
   BOOTSTRAP_CONFLICT: 5,
   PREREQUISITE_ERROR: 6,
   GENERATOR_CONFLICT: 7,
+  DOCTOR_FAILED: 8,
 } as const;
 
 export type ExitCode = (typeof ExitCode)[keyof typeof ExitCode];

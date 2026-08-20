@@ -111,6 +111,7 @@ export function writeHelp(writer: OutputWriter, json: boolean): void {
     "Commands:",
     "  init             Initialize Atlas metadata in an existing compatible checkout",
     "  generate         Generate Atlas feature modules and App Router pages",
+    "  doctor           Diagnose Atlas architecture and configuration drift",
     "",
     "Init options:",
     "  --env <mode>         Environment setup: skip (default) or copy (.env.example → .env.local)",
@@ -123,6 +124,8 @@ export function writeHelp(writer: OutputWriter, json: boolean): void {
     "  atlas init --dry-run --reference remove --env copy",
     "  atlas generate feature users --dry-run",
     "  atlas generate page settings/profile --json",
+    "  atlas doctor",
+    "  atlas doctor --json",
     "  pnpm atlas -- init --json",
   ];
 
