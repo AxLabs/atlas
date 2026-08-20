@@ -20,7 +20,9 @@ atlas/
 │   ├── src/schemas/       # Zod validation schemas
 │   └── e2e/               # Playwright tests
 ├── packages/ui/           # Reusable UI primitives (@atlas/ui)
+├── packages/project/      # Atlas architecture contract loader (@atlas/project)
 ├── packages/config/       # Shared ESLint, TypeScript, Jest, Prettier config
+├── atlas.config.json      # Machine-readable project architecture (author contract)
 ├── openapi/               # OpenAPI specification
 └── docs/how-we-build/     # Canonical platform conventions
 ```
@@ -39,6 +41,21 @@ atlas/
 
 Do not move code into a shared package unless it is genuinely reusable across applications. Prefer
 existing Atlas components and patterns over new abstractions.
+
+## Machine-readable architecture
+
+The canonical machine-readable project architecture lives in **`atlas.config.json`** at the
+repository root. Load and resolve it with **`@atlas/project`** — do not infer core structure from
+Cursor rules, scattered config files, or directory guesses when the contract provides the answer.
+
+- **Author contract:** `atlas.config.json` (minimal; defaults apply for omitted fields)
+- **Resolved architecture:** `resolveAtlasProject(repoRoot)` → deterministic JSON via
+  `serializeResolvedAtlasProject()`
+- **Human context:** [architecture ownership](docs/how-we-build/architecture-ownership.md), ADRs,
+  and this guide explain _why_; the contract states _what_ tooling-relevant architecture this
+  project uses
+
+See [Atlas project contract](docs/how-we-build/atlas-contract.md).
 
 ## Feature architecture
 
@@ -137,6 +154,7 @@ pnpm format:write                           # fix formatting
 | Topic                   | Location                                                                                     |
 | ----------------------- | -------------------------------------------------------------------------------------------- |
 | Architecture ownership  | [docs/how-we-build/architecture-ownership.md](docs/how-we-build/architecture-ownership.md)   |
+| Atlas project contract  | [docs/how-we-build/atlas-contract.md](docs/how-we-build/atlas-contract.md)                   |
 | Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                                   |
 | Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md)               |
 | API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                                         |

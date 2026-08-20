@@ -191,7 +191,6 @@ import, and UI-internal alias rules.
 
 | Issue   | Scope intentionally not in this document's implementation  |
 | ------- | ---------------------------------------------------------- |
-| #35     | Machine-readable architecture contract                     |
 | #36–#38 | CLI, generators, Doctor                                    |
 | #39     | Coherent reference application consuming reference modules |
 | #40     | Deterministic local auth/API harness                       |
@@ -204,6 +203,7 @@ import, and UI-internal alias rules.
 ## Related docs
 
 - [Folder structure](folder-structure.md) — where code lives
+- [Atlas project contract](atlas-contract.md) — machine-readable architecture for tooling
 - [API & data fetching](api.md) — client and contract usage
 - [Reference examples](examples.md) — `/examples` routes
 - [ADR-0007: Architecture ownership model](../adr/0007-architecture-ownership-model.md)
