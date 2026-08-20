@@ -7,12 +7,16 @@ import { ESLint } from "eslint";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const COMPONENT_FILE = path.join(__dirname, "src/components/GlobalErrorHandler.tsx");
-const LIB_FILE = path.join(__dirname, "src/lib/analytics/index.ts");
+const FIXTURE_ROOT = path.join(__dirname, "src");
 
-async function lintSnippet(code, filePath) {
-  const eslint = new ESLint({ cwd: __dirname });
-  const [result] = await eslint.lintText(code, { filePath });
+function fixturePath(...segments) {
+  return path.join(FIXTURE_ROOT, ...segments);
+}
+
+async function lintFixture(...segments) {
+  const eslint = new ESLint({ cwd: __dirname, ignore: false });
+  const filePath = fixturePath(...segments);
+  const [result] = await eslint.lintFiles([filePath]);
   return result.messages;
 }
 
@@ -41,67 +45,56 @@ describe("eslint architecture boundaries (@atlas/web)", () => {
   it("rejects prohibited import and syntax patterns in app code", async () => {
     const cases = [
       {
-        code: 'import { env } from "@/env";\n',
+        file: ["components", "eslint-boundaries", "prohibited-env-import.tsx"],
         ruleId: "no-restricted-imports",
         fragment: "@/env",
       },
       {
-        code: 'import posthog from "posthog-js";\n',
+        file: ["components", "eslint-boundaries", "prohibited-posthog.ts"],
         ruleId: "no-restricted-imports",
         fragment: "PostHog",
       },
       {
-        code: 'import { cn } from "@/lib/utils";\n',
+        file: ["components", "eslint-boundaries", "prohibited-ui-alias.ts"],
         ruleId: "no-restricted-imports",
         fragment: "@atlas/ui",
       },
       {
-        code: 'import { Button } from "../../../../packages/ui/src/components/ui/button";\n',
+        file: ["components", "eslint-boundaries", "prohibited-package-source.ts"],
         ruleId: "no-restricted-imports",
         fragment: "public package exports",
       },
       {
-        code: "process.env.SOMETHING;\n",
+        file: ["components", "eslint-boundaries", "prohibited-process-env.ts"],
         ruleId: "no-restricted-syntax",
         fragment: "process.env",
       },
       {
-        code: 'fetch("/api/foo");\n',
+        file: ["components", "eslint-boundaries", "prohibited-fetch.ts"],
         ruleId: "no-restricted-syntax",
         fragment: "fetch",
       },
     ];
 
     for (const testCase of cases) {
-      const messages = await lintSnippet(testCase.code, COMPONENT_FILE);
+      const messages = await lintFixture(...testCase.file);
       assertRuleViolation(messages, testCase.ruleId, testCase.fragment);
     }
   });
 
   it("accepts public API and config facade patterns", async () => {
-    const componentCode = [
-      'import { Button, cn } from "@atlas/ui";',
-      'import { analytics } from "@/lib/analytics";',
-      "",
-      "void Button;",
-      "void cn;",
-      "void analytics;",
-    ].join("\n");
-
-    const libCode = [
-      'import { getServerConfig } from "@/config/server";',
-      "",
-      "void getServerConfig;",
-    ].join("\n");
-
-    const componentMessages = await lintSnippet(componentCode, COMPONENT_FILE);
+    const componentMessages = await lintFixture(
+      "components",
+      "eslint-boundaries",
+      "allowed-public-api.tsx",
+    );
     assertNoRuleViolation(componentMessages, [
       "no-restricted-imports",
       "no-restricted-syntax",
       "no-restricted-globals",
     ]);
 
-    const libMessages = await lintSnippet(libCode, LIB_FILE);
+    const libMessages = await lintFixture("lib", "eslint-boundaries", "allowed-config-facade.ts");
     assertNoRuleViolation(libMessages, ["no-restricted-imports", "no-restricted-syntax"]);
   });
 });

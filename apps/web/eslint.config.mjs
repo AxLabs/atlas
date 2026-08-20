@@ -123,7 +123,12 @@ export default [
     },
   },
   {
-    ignores: ["eslint.config.mjs", "eslint.boundaries.test.mjs"], // Don't lint boundary test harness
+    ignores: [
+      "eslint.config.mjs",
+      "eslint.boundaries.test.mjs",
+      "src/components/eslint-boundaries/**",
+      "src/lib/eslint-boundaries/**",
+    ],
   },
   {
     // App layers: env facade, analytics adapters, UI public API, and package source boundaries
