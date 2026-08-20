@@ -200,7 +200,46 @@ export default [
     },
   },
   {
-    // Auto-generated OpenAPI schema files
+    // Prevent app code from importing UI package internals via @/lib or @/hooks aliases.
+    // The tsconfig @/lib/* fallback exists only for TypeScript resolution when compiling
+    // @atlas/ui source through the web project — not as an app import path.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/utils", "@/lib/utils/*", "@/hooks/use-zod-form", "@/hooks/use-theme"],
+              message:
+                "Do not import @atlas/ui internals via app aliases. Use the public API:\n" +
+                "  import { cn, useZodForm, useTheme } from '@atlas/ui';",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/packages/ui/**", "**/packages/consent/**", "../../packages/**"],
+              message:
+                "Do not import workspace package source directly. Use public package exports:\n" +
+                "  import { Button } from '@atlas/ui';\n" +
+                "  import '@atlas/ui/globals.css';",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/lib/api/contracts/schema.ts"],
     rules: {
       // Generated code doesn't follow our naming conventions

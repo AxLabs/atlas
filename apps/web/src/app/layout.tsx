@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { getThemeBootScriptContent } from "@atlas/ui/theme-boot";
 
-import { GlobalErrorHandler } from "@/components/SentryErrorBoundary";
+import { GlobalErrorHandler } from "@/components/GlobalErrorHandler";
 import { getNonce } from "@/lib/security/nonce";
 import { MainProvider } from "@/providers";
 

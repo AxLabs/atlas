@@ -21,6 +21,24 @@ These beliefs shape every architectural choice in the platform.
 
 ---
 
+## What Atlas Owns vs What You Own
+
+Atlas is a **frontend platform template**, not a product. Before diving into layers:
+
+| Classification    | What it is                       | Examples                                                  |
+| ----------------- | -------------------------------- | --------------------------------------------------------- |
+| **Core platform** | Infrastructure Atlas establishes | `lib/api`, `lib/auth/session`, `@atlas/ui`, feature flags |
+| **Reference**     | Pattern demos — safe to delete   | `/examples`, `features/reference/users`, Google OAuth     |
+| **Consumer**      | Your product code                | Domain features, app shell, IdP choice, OpenAPI spec      |
+| **Generated**     | Machine-owned                    | `lib/api/contracts/schema.ts`                             |
+
+Full classification: [architecture ownership](../how-we-build/architecture-ownership.md).
+
+The diagram below shows **runtime layers**. Feature boxes labeled "Users" and "Items" represent
+**reference patterns**, not shipped product domains.
+
+---
+
 ## System Overview
 
 ```
@@ -99,11 +117,15 @@ internals.
 
 ### Feature Modules
 
-Business logic lives in feature modules. Each feature is self-contained:
+**Product** business logic lives in feature modules under `features/<name>/`. Each feature is
+self-contained:
 
 - Components specific to that domain
 - Query and mutation hooks for data operations
 - Query key factories for cache management
+
+**Reference** modules (`features/reference/`, `features/examples/`) demonstrate patterns without
+product UI. See [architecture ownership](../how-we-build/architecture-ownership.md).
 
 Features don't import from other features. Shared logic lives in infrastructure.
 

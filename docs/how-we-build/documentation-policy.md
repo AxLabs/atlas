@@ -4,18 +4,18 @@
 
 ## Where Documentation Lives
 
-| Type                        | Location             | Examples                                 |
-| --------------------------- | -------------------- | ---------------------------------------- |
-| **Platform conventions**    | `docs/how-we-build/` | folder-structure, env, api, testing      |
-| **Architecture decisions**  | `docs/adr/`          | Why we chose X over Y                    |
-| **Public capabilities**     | `docs/public/`       | FAQ, architecture, capabilities          |
-| **Claims and evidence**     | `docs/audit/`        | claims-register, showcase follow-up      |
-| **Contributing**            | `CONTRIBUTING.md`    | Access model, PRs, validation            |
-| **Agent rules**             | `AGENTS.md`          | Coding agent authority                   |
-| **Component docs**          | Storybook            | UI components with examples              |
-| **API contracts**           | `openapi/`           | OpenAPI specification                    |
-| **Quick start**             | Root `README.md`     | Getting started, links                   |
-| **Historical/experimental** | `docs/_archive/`     | Superseded documentation (non-canonical) |
+| Type                        | Location             | Examples                                      |
+| --------------------------- | -------------------- | --------------------------------------------- |
+| **Platform conventions**    | `docs/how-we-build/` | folder-structure, architecture-ownership, api |
+| **Architecture decisions**  | `docs/adr/`          | Why we chose X over Y                         |
+| **Public capabilities**     | `docs/public/`       | FAQ, architecture, capabilities               |
+| **Claims and evidence**     | `docs/audit/`        | claims-register, showcase follow-up           |
+| **Contributing**            | `CONTRIBUTING.md`    | Access model, PRs, validation                 |
+| **Agent rules**             | `AGENTS.md`          | Coding agent authority                        |
+| **Component docs**          | Storybook            | UI components with examples                   |
+| **API contracts**           | `openapi/`           | OpenAPI specification                         |
+| **Quick start**             | Root `README.md`     | Getting started, links                        |
+| **Historical/experimental** | `docs/_archive/`     | Superseded documentation (non-canonical)      |
 
 ## Rules
 

@@ -1,0 +1,72 @@
+# ADR-0007: Architecture Ownership Model
+
+## Status
+
+**Accepted**
+
+## Context
+
+Before OSS launch, Atlas contained reference code, platform infrastructure, and aspirational
+scaffolds without explicit ownership classification. Engineers could not determine from folder names
+alone:
+
+- What Atlas owns vs what consumers own
+- What is safe to delete vs what to keep
+- What is generated vs hand-written
+- Whether Google OAuth is the universal auth model
+
+Issue #25 established a canonical taxonomy to unblock the architecture contract (#35), generators
+(#37), reference application (#39), and `@atlas/ui` repositioning (#42).
+
+## Decision
+
+We adopt a six-class ownership model documented in
+[architecture-ownership.md](../how-we-build/architecture-ownership.md):
+
+1. **Core platform** — reusable infrastructure in `lib/` and workspace packages
+2. **App-owned** — reference app composition (providers, navigation wiring)
+3. **Reference** — pattern demonstrations safe to delete (`features/reference/`, `/examples`)
+4. **Generated** — machine-owned OpenAPI types
+5. **Documentation only** — conventions without code
+6. **Removed** — dead abstractions deleted rather than preserved
+
+### Key boundary decisions
+
+| Surface                      | Decision                                                           |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `features/reference/users`   | Retained as canonical OpenAPI hook reference (no UI)               |
+| `components/layout/AppShell` | Removed — unused; ExamplesShell owns reference layout              |
+| `lib/telemetry/sentry.*`     | Removed — duplicated root Sentry config                            |
+| `lib/i18n`                   | Kept minimal — typed key convention, not a localization framework  |
+| `lib/feature-flags`          | Kept — runtime config + kill switches; PostHog adapter is optional |
+| Google OAuth                 | Classified as reference IdP, separate from session security core   |
+| `tsconfig` UI path fallbacks | Removed — enforce `@atlas/ui` public API                           |
+
+## Alternatives Considered
+
+1. **Remove `features/users` entirely** — Rejected. The hook-level OpenAPI pattern is valuable for
+   future `atlas generate feature` (#37) without requiring a fake UI.
+2. **Promote AppShell to platform** — Rejected. No consumers; ExamplesShell already demonstrates
+   layout composition.
+3. **Build full i18n framework** — Rejected. Out of scope; English-only `t()` suffices as
+   convention.
+4. **New package per concern** — Rejected. Monorepo ≠ every concern deserves a package.
+
+## Consequences
+
+### Positive
+
+- Clear keep/delete/replace guidance for consumers
+- Stable foundation for #35–#44 without implementing them early
+- ESLint + tsconfig enforce package boundaries
+
+### Negative
+
+- Reference modules add repo surface area until #39 consumes them
+- Docs must stay synchronized with classification table
+
+## References
+
+- [architecture-ownership.md](../how-we-build/architecture-ownership.md)
+- Issue #25 — architecture classification before OSS launch
+- ADR-0004 (auth), ADR-0003 (data fetching), ADR-0005 (observability), ADR-0006 (consent)

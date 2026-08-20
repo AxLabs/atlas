@@ -31,8 +31,9 @@ In-memory mock routes (reset on server restart):
 
 ## OpenAPI reference
 
-For typed external API consumers, see `features/users/` — hooks that call the OpenAPI-generated
-client (`api.users.*`). Wire your own UI when you connect to a real backend.
+For typed external API consumers, see `features/reference/users/` — hooks that call the
+OpenAPI-generated client (`api.users.*`). Wire your own UI when you connect to a real backend. See
+[architecture ownership](architecture-ownership.md).
 
 ## Related docs
 

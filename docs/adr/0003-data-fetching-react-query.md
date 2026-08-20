@@ -61,7 +61,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 export const userKeys = createQueryKeys("users");
 ```
 
-5. **Feature-based hooks** (`src/features/users/queries.ts`):
+5. **Feature-based hooks** (`src/features/reference/users/queries.ts`):
 
 ```typescript
 export function useUserList() {

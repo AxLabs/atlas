@@ -5,9 +5,9 @@ alwaysApply: true
 
 # Atlas core constraints
 
-Read [AGENTS.md](../../AGENTS.md) before architectural changes. Inspect the closest example page (`apps/web/src/app/examples/`) or existing feature (`apps/web/src/features/`) before writing code.
+Read [AGENTS.md](../../AGENTS.md) and [architecture ownership](../../docs/how-we-build/architecture-ownership.md) before architectural changes. Inspect the closest example page (`apps/web/src/app/examples/`) or reference feature (`apps/web/src/features/reference/`) before writing code.
 
-- **Ownership** — Product code stays in `apps/web`. Reusable visual primitives go in `@atlas/ui`. Do not promote code to shared packages speculatively.
+- **Ownership** — Product code stays in `apps/web`. Reference code lives in `features/reference/`, `components/reference/`, and `/examples`. Reusable visual primitives go in `@atlas/ui`. Do not promote code to shared packages speculatively.
 - **API** — Use `@/lib/api` / `@/lib/api/contracts` and React Query hooks in feature modules. No raw `fetch()` in pages, components, features, or providers.
 - **Config** — Use `useConfig()` or `getServerConfig()` from `@/config`. No direct `process.env` or `@/env` in application code.
 - **States** — Every data-driven UI handles loading, empty, error, and success. Use `SkeletonList`, `EmptyState`, `ErrorFallback` from `@atlas/ui`.

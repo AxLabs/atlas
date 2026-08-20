@@ -1,12 +1,10 @@
 "use client";
 
 /**
- * Auth UI Components
+ * Reference: Google OAuth auth UI
  *
- * Pre-built components for OAuth authentication UI.
- * Integrates with the auth module's useSession hook.
- *
- * @module components/auth
+ * @classification reference — Google-specific; not mounted in the reference app.
+ * @see ./README.md
  */
 
 import { LogOut, User } from "lucide-react";
