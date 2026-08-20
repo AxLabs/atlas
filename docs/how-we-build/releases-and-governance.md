@@ -27,13 +27,15 @@ cutover in #24.
 
 **Atlas itself** — a **repository/platform snapshot**, not independent npm products.
 
-| Package                  | Role                    | Published to npm? | Independently supported? |
-| ------------------------ | ----------------------- | ----------------- | ------------------------ |
-| `@atlas/monorepo` (root) | Canonical Atlas version | No                | This is Atlas            |
-| `@atlas/web`             | Template application    | No                | Part of Atlas snapshot   |
-| `@atlas/ui`              | Internal UI primitives  | No                | Part of Atlas snapshot   |
-| `@atlas/config`          | Internal tooling config | No                | Part of Atlas snapshot   |
-| `@atlas/consent`         | Optional consent module | No                | Part of Atlas snapshot   |
+| Package                  | Role                         | Published to npm? | Independently supported? |
+| ------------------------ | ---------------------------- | ----------------- | ------------------------ |
+| `@atlas/monorepo` (root) | Canonical Atlas version      | No                | This is Atlas            |
+| `@atlas/web`             | Template application         | No                | Part of Atlas snapshot   |
+| `@atlas/ui`              | Internal UI primitives       | No                | Part of Atlas snapshot   |
+| `@atlas/config`          | Internal tooling config      | No                | Part of Atlas snapshot   |
+| `@atlas/consent`         | Optional consent module      | No                | Part of Atlas snapshot   |
+| `@atlas/project`         | Architecture contract loader | No                | Part of Atlas snapshot   |
+| `@atlas/cli`             | Atlas-specific CLI           | No                | Part of Atlas snapshot   |
 
 Workspace `package.json` version fields mirror the Atlas release for tooling only.
 

@@ -21,6 +21,7 @@ atlas/
 │   └── e2e/               # Playwright tests
 ├── packages/ui/           # Reusable UI primitives (@atlas/ui)
 ├── packages/project/      # Atlas architecture contract loader (@atlas/project)
+├── packages/cli/          # Atlas CLI (@atlas/cli)
 ├── packages/config/       # Shared ESLint, TypeScript, Jest, Prettier config
 ├── atlas.config.json      # Machine-readable project architecture (author contract)
 ├── openapi/               # OpenAPI specification
@@ -56,6 +57,19 @@ Cursor rules, scattered config files, or directory guesses when the contract pro
   project uses
 
 See [Atlas project contract](docs/how-we-build/atlas-contract.md).
+
+## Atlas CLI
+
+Use the **`atlas`** binary for Atlas-owned workflows when a command exists (bootstrap, future
+generators, Doctor, migrations). Architecture context still comes from `@atlas/project` /
+`atlas.config.json` — do not invent CLI commands that are not implemented.
+
+| Use `atlas` for          | Use pnpm / Next / Turbo / Git directly for            |
+| ------------------------ | ----------------------------------------------------- |
+| `atlas init`             | `pnpm install`, `pnpm dev`, `pnpm test`, `pnpm build` |
+| Contract-aware bootstrap | ESLint, TypeScript, Changesets, shadcn                |
+
+Repository-local invocation: `pnpm atlas --help`. See [Atlas CLI](docs/how-we-build/cli.md).
 
 ## Feature architecture
 

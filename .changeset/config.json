@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.2/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@atlas/ui", "@atlas/config", "@atlas/consent", "@atlas/web"]],
+  "fixed": [
+    ["@atlas/ui", "@atlas/config", "@atlas/consent", "@atlas/web", "@atlas/project", "@atlas/cli"]
+  ],
   "linked": [],
   "access": "restricted",
   "baseBranch": "main",

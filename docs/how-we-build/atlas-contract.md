@@ -25,7 +25,10 @@ Resolve the current repository contract:
 
 ```bash
 pnpm atlas:resolve-contract
+pnpm atlas --version
 ```
+
+See [Atlas CLI](cli.md) for bootstrap and CLI boundaries.
 
 Programmatic usage:
 
