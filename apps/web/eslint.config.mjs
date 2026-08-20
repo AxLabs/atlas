@@ -196,6 +196,8 @@ export default [
     ignores: [
       "eslint.config.mjs",
       "eslint.boundaries.test.mjs",
+      "src/__gen_validate__/**",
+      ".generated-validation/**",
       "src/components/eslint-boundaries/**",
       "src/lib/eslint-boundaries/**",
       "src/app/api/eslint-boundaries/**",

@@ -12,7 +12,21 @@ export interface FeatureTemplateOptions {
   tests?: boolean;
 }
 
-export function renderFeatureIndex(context: FeatureTemplateContext): string {
+export function renderFeatureComponent(context: FeatureTemplateContext): string {
+  return `export function ${context.naming.pascal}Feature() {
+  return (
+    <section className="space-y-2">
+      <h1 className="text-2xl font-semibold tracking-tight">${context.naming.pascal}</h1>
+      <p className="text-muted-foreground">
+        Implement product-specific UI and behavior in this feature module.
+      </p>
+    </section>
+  );
+}
+`;
+}
+
+function renderFeatureIndexHeader(context: FeatureTemplateContext): string {
   return `/**
  * Product feature module: ${context.naming.kebab}
  *
@@ -22,8 +36,14 @@ export function renderFeatureIndex(context: FeatureTemplateContext): string {
 `;
 }
 
+export function renderFeatureIndex(context: FeatureTemplateContext): string {
+  return `${renderFeatureIndexHeader(context)}
+export { ${context.naming.pascal}Feature } from "./components/${context.naming.pascal}Feature";
+`;
+}
+
 export function renderFeatureKeys(context: FeatureTemplateContext): string {
-  return `import { createQueryKeys } from "@/lib/react-query";
+  return `import { createQueryKeys } from "@/lib/react-query/keys";
 
 export const ${context.naming.camel}Keys = createQueryKeys("${context.naming.kebab}");
 `;
@@ -41,6 +61,10 @@ import { ${context.naming.camel}Keys } from "./keys";
 
 import type { ApiError } from "@/lib/api/errors";
 
+async function fetch${context.naming.pascal}List(): Promise<unknown> {
+  throw new Error("Implement ${context.naming.kebab} list fetching with the product API contract.");
+}
+
 /**
  * Query hook scaffold for ${context.naming.kebab}.
  *
@@ -51,8 +75,7 @@ export function use${context.naming.pascal}List() {
     queryKey: ${context.naming.camel}Keys.lists(),
     queryFn: async () => {
       try {
-        // TODO: replace with api.<resource>.list(...) from @/lib/api/contracts
-        throw new Error("Implement ${context.naming.kebab} list query");
+        return await fetch${context.naming.pascal}List();
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -66,25 +89,27 @@ export function use${context.naming.pascal}List() {
 
 import { useQuery } from "@tanstack/react-query";
 
-import { apiGet } from "@/lib/api";
 import { normalizeApiError } from "@/lib/api/errors";
 
 import { ${context.naming.camel}Keys } from "./keys";
 
 import type { ApiError } from "@/lib/api/errors";
 
+async function fetch${context.naming.pascal}List(): Promise<unknown> {
+  throw new Error("Implement ${context.naming.kebab} list fetching with the product API contract.");
+}
+
 /**
  * Query hook scaffold for ${context.naming.kebab}.
  *
- * Replace the endpoint and response type with product-specific API details.
+ * Replace fetch${context.naming.pascal}List with the product-specific API contract.
  */
 export function use${context.naming.pascal}List() {
   return useQuery<unknown, ApiError>({
     queryKey: ${context.naming.camel}Keys.lists(),
     queryFn: async () => {
       try {
-        // TODO: replace "/api/${context.naming.kebab}" with the product endpoint
-        return await apiGet<unknown>("/api/${context.naming.kebab}");
+        return await fetch${context.naming.pascal}List();
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -106,6 +131,10 @@ import { ${context.naming.camel}Keys } from "./keys";
 
 import type { ApiError } from "@/lib/api/errors";
 
+async function create${context.naming.pascal}(_input: unknown): Promise<unknown> {
+  throw new Error("Implement ${context.naming.kebab} mutation with the product API contract.");
+}
+
 /**
  * Mutation hook scaffold for ${context.naming.kebab}.
  *
@@ -115,10 +144,9 @@ export function useCreate${context.naming.pascal}() {
   const queryClient = useQueryClient();
 
   return useMutation<unknown, ApiError, unknown>({
-    mutationFn: async (_input) => {
+    mutationFn: async (input) => {
       try {
-        // TODO: replace with api.<resource>.create(...) from @/lib/api/contracts
-        throw new Error("Implement ${context.naming.kebab} create mutation");
+        return await create${context.naming.pascal}(input);
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -137,17 +165,20 @@ export function useCreate${context.naming.pascal}() {
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiPost } from "@/lib/api";
 import { normalizeApiError } from "@/lib/api/errors";
 
 import { ${context.naming.camel}Keys } from "./keys";
 
 import type { ApiError } from "@/lib/api/errors";
 
+async function create${context.naming.pascal}(_input: unknown): Promise<unknown> {
+  throw new Error("Implement ${context.naming.kebab} mutation with the product API contract.");
+}
+
 /**
  * Mutation hook scaffold for ${context.naming.kebab}.
  *
- * Replace the endpoint and payload type with product-specific API details.
+ * Replace create${context.naming.pascal} with the product-specific API contract.
  */
 export function useCreate${context.naming.pascal}() {
   const queryClient = useQueryClient();
@@ -155,8 +186,7 @@ export function useCreate${context.naming.pascal}() {
   return useMutation<unknown, ApiError, unknown>({
     mutationFn: async (input) => {
       try {
-        // TODO: replace "/api/${context.naming.kebab}" with the product endpoint
-        return await apiPost<unknown, unknown>("/api/${context.naming.kebab}", input);
+        return await create${context.naming.pascal}(input);
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -203,8 +233,7 @@ import {
 import { ${context.naming.camel}FormSchema, type ${context.naming.pascal}FormValues } from "../schema";
 
 export function ${context.naming.pascal}Form() {
-  const form = useZodForm({
-    schema: ${context.naming.camel}FormSchema,
+  const form = useZodForm(${context.naming.camel}FormSchema, {
     defaultValues: {
       name: "",
     },
@@ -242,34 +271,33 @@ export function renderFeatureIndexWithExports(
   context: FeatureTemplateContext,
   options: FeatureTemplateOptions
 ): string {
-  const exports: string[] = [];
+  const exports: string[] = [
+    `export { ${context.naming.pascal}Feature } from "./components/${context.naming.pascal}Feature";`,
+  ];
+
+  if (options.form) {
+    exports.push(
+      `export { ${context.naming.pascal}Form } from "./components/${context.naming.pascal}Form";`
+    );
+  }
 
   if (options.query || options.mutation) {
     exports.push(`export { ${context.naming.camel}Keys } from "./keys";`);
-  }
-
-  if (options.query) {
-    exports.push(`export { use${context.naming.pascal}List } from "./queries";`);
   }
 
   if (options.mutation) {
     exports.push(`export { useCreate${context.naming.pascal} } from "./mutations";`);
   }
 
-  if (options.form) {
-    exports.push(`export { ${context.naming.camel}FormSchema } from "./schema";`);
-    exports.push(
-      `export { ${context.naming.pascal}Form } from "./components/${context.naming.pascal}Form";`
-    );
+  if (options.query) {
+    exports.push(`export { use${context.naming.pascal}List } from "./queries";`);
   }
 
-  return `/**
- * Product feature module: ${context.naming.kebab}
- *
- * Keep domain logic in this module. Routes under src/app should remain thin and
- * import from this public boundary.
- */
+  if (options.form) {
+    exports.push(`export { ${context.naming.camel}FormSchema } from "./schema";`);
+  }
 
+  return `${renderFeatureIndexHeader(context)}
 ${exports.join("\n")}
 `;
 }
@@ -281,11 +309,7 @@ describe("${context.naming.kebab} query keys", () => {
   it("creates deterministic list keys", () => {
     expect(${context.naming.camel}Keys.all()).toEqual(["${context.naming.kebab}"]);
     expect(${context.naming.camel}Keys.lists()).toEqual(["${context.naming.kebab}", "list"]);
-    expect(${context.naming.camel}Keys.list({ page: 1 })).toEqual([
-      "${context.naming.kebab}",
-      "list",
-      { page: 1 },
-    ]);
+    expect(${context.naming.camel}Keys.list({ page: 1 })).toEqual(["${context.naming.kebab}", "list", { page: 1 }]);
   });
 });
 `;

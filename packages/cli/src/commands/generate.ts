@@ -232,7 +232,7 @@ export function writeGenerateHelp(writer: OutputWriter, json: boolean): void {
     "  --query          Include query key factory and query hook scaffold",
     "  --mutation       Include mutation hook scaffold",
     "  --form           Include Zod schema and form component scaffold",
-    "  --tests          Include feature tests (requires --query, --mutation, or --form)",
+    "  --tests          Include deterministic query-key tests (requires --query)",
     "",
     "Examples:",
     "  atlas generate feature users",

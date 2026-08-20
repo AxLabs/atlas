@@ -13,6 +13,8 @@ bun.lockb
 coverage
 test-results
 playwright-report
+apps/web/.generated-validation
+apps/web/src/__gen_validate__
 *.log
 
 # Next.js

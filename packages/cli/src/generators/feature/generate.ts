@@ -8,6 +8,7 @@ import { parseFeatureName } from "../naming";
 import { assertFeatureDestinationAllowed, resolveFeatureRoot } from "../paths";
 import {
   type FeatureTemplateOptions,
+  renderFeatureComponent,
   renderFeatureFormComponent,
   renderFeatureIndex,
   renderFeatureIndexWithExports,
@@ -24,18 +25,21 @@ export interface FeatureGeneratorOptions extends FeatureTemplateOptions {
   name: string;
 }
 
-function defaultFollowUpActions(options: FeatureGeneratorOptions): string[] {
+function defaultFollowUpActions(
+  naming: ReturnType<typeof parseFeatureName>,
+  options: FeatureGeneratorOptions
+): string[] {
   const actions = [
-    "Implement domain-specific behavior in the generated feature module.",
-    "Add a thin App Router page that composes this feature when the route is ready.",
+    `Implement product-specific UI and behavior inside ${naming.pascal}Feature.`,
+    `Generate or create a thin App Router page that imports ${naming.pascal}Feature from the feature public boundary.`,
   ];
 
   if (options.query) {
-    actions.unshift("Implement the feature's domain-specific API query.");
+    actions.unshift(`Implement ${naming.kebab} list fetching in the query scaffold seam.`);
   }
 
   if (options.mutation) {
-    actions.unshift("Implement the feature's domain-specific mutation behavior.");
+    actions.unshift(`Implement ${naming.kebab} mutation behavior in the mutation scaffold seam.`);
   }
 
   if (options.form) {
@@ -51,11 +55,8 @@ export function renderFeatureFiles(
   project: ResolvedAtlasProject,
   options: FeatureGeneratorOptions
 ): Pick<GenerationPlan, "files" | "normalizedInput" | "targetRoot" | "followUpActions"> {
-  if (options.tests && !options.query && !options.mutation && !options.form) {
-    throw new CliError(
-      CliErrorCode.USAGE_ERROR,
-      "The --tests flag requires --query, --mutation, or --form."
-    );
+  if (options.tests && !options.query) {
+    throw new CliError(CliErrorCode.USAGE_ERROR, "The --tests flag requires --query.");
   }
 
   const naming = parseFeatureName(options.name);
@@ -79,6 +80,11 @@ export function renderFeatureFiles(
   const hasOptionalFiles = Boolean(
     options.query || options.mutation || options.form || options.tests
   );
+
+  files.push({
+    relativePath: path.posix.join(featureRoot, "components", `${naming.pascal}Feature.tsx`),
+    content: renderFeatureComponent(templateContext),
+  });
 
   files.push({
     relativePath: path.posix.join(featureRoot, "index.ts"),
@@ -130,7 +136,7 @@ export function renderFeatureFiles(
     normalizedInput: naming.kebab,
     targetRoot: featureRoot,
     files,
-    followUpActions: defaultFollowUpActions(options),
+    followUpActions: defaultFollowUpActions(naming, options),
   };
 }
 

@@ -132,21 +132,29 @@ resolved contract. The generator loads architecture through `@atlas/project` —
 
 **Default files**
 
-| File       | Purpose                                        |
-| ---------- | ---------------------------------------------- |
-| `index.ts` | Public feature boundary (module documentation) |
+| Path                           | Purpose                                             |
+| ------------------------------ | --------------------------------------------------- |
+| `components/<Name>Feature.tsx` | Route-facing feature composition shell              |
+| `index.ts`                     | Public feature boundary exporting the feature shell |
 
 **Optional flags**
 
-| Flag         | Adds                                                                  |
-| ------------ | --------------------------------------------------------------------- |
-| `--query`    | `keys.ts`, `queries.ts`, query hook scaffold with explicit TODO seams |
-| `--mutation` | `mutations.ts`, mutation hook scaffold with explicit TODO seams       |
-| `--form`     | `schema.ts`, `components/<Name>Form.tsx` using `@atlas/ui` forms      |
-| `--tests`    | Feature tests (requires `--query`, `--mutation`, or `--form`)         |
+| Flag         | Adds                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `--query`    | `keys.ts`, `queries.ts`, query hook scaffold with explicit domain-owned fetch seam       |
+| `--mutation` | `keys.ts`, `mutations.ts`, mutation hook scaffold with explicit domain-owned create seam |
+| `--form`     | `schema.ts`, `components/<Name>Form.tsx` using `@atlas/ui` forms                         |
+| `--tests`    | Deterministic query-key test scaffold (`__tests__/keys.test.ts`); requires `--query`     |
 
-When `capabilities.openApi` is `false`, query/mutation scaffolds use `@/lib/api` helpers instead of
-typed OpenAPI imports. The generator never invents product endpoints or resource models.
+Optional flags augment the default feature structure. They do not replace the generated feature
+component or public boundary.
+
+Query and mutation scaffolds intentionally do **not** invent URLs, payload types, or CRUD semantics.
+Generated network hooks contain explicit domain-owned implementation seams until the product API
+contract is known.
+
+When `capabilities.openApi` is `true`, query/mutation scaffolds remain compile-safe explicit seams
+and do not fabricate typed OpenAPI client members.
 
 **Examples**
 
@@ -163,12 +171,12 @@ cross-feature imports.
 
 Generate a thin App Router page under `<application.root>/src/app/<route>/page.tsx`.
 
-| Input          | Rule                                                             |
-| -------------- | ---------------------------------------------------------------- |
-| Route          | Relative App Router fragment (`settings`, `settings/profile`)    |
-| Dynamic routes | Simple segments such as `[id]` are supported                     |
-| Existing route | May add `page.tsx` when sibling route files already exist        |
-| Conflict       | Fails when the intended `page.tsx` already exists (no overwrite) |
+| Input          | Rule                                                                 |
+| -------------- | -------------------------------------------------------------------- |
+| Route          | Relative App Router fragment (`settings`, `settings/profile`)        |
+| Dynamic routes | Identifier-safe segments such as `[id]` and `[userId]` are supported |
+| Existing route | May add `page.tsx` when sibling route files already exist            |
+| Conflict       | Fails when the intended `page.tsx` already exists (no overwrite)     |
 
 **Examples**
 

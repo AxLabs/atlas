@@ -61,7 +61,8 @@ export function kebabToPascal(value: string): string {
   return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
 
-const ROUTE_SEGMENT_PATTERN = /^([a-z][a-z0-9-]*|\[[a-zA-Z0-9_-]+\])$/;
+const STATIC_ROUTE_SEGMENT_PATTERN = /^[a-z][a-z0-9-]*$/;
+const DYNAMIC_ROUTE_SEGMENT_PATTERN = /^\[[a-zA-Z_][a-zA-Z0-9_]*\]$/;
 
 export function validateAppRouterRoute(raw: string): string {
   if (raw.length === 0) {
@@ -89,10 +90,12 @@ export function validateAppRouterRoute(raw: string): string {
 
   const segments = raw.split("/");
   for (const segment of segments) {
-    if (!ROUTE_SEGMENT_PATTERN.test(segment)) {
+    const isStatic = STATIC_ROUTE_SEGMENT_PATTERN.test(segment);
+    const isDynamic = DYNAMIC_ROUTE_SEGMENT_PATTERN.test(segment);
+    if (!isStatic && !isDynamic) {
       throw new CliError(
         CliErrorCode.USAGE_ERROR,
-        `Invalid route segment: ${segment}. Use static segments (settings) or dynamic segments ([id]).`
+        `Invalid route segment: ${segment}. Use static segments (settings) or dynamic segments with identifier-safe names ([id], [userId]).`
       );
     }
   }

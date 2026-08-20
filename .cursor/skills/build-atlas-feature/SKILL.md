@@ -43,9 +43,10 @@ pnpm atlas -- generate feature <name> [--query] [--mutation] [--form] [--tests]
 pnpm atlas -- generate page <route>
 ```
 
-Then inspect generated files and implement domain behavior. Do not manually recreate generator-owned
-structural boilerplate (feature root, `index.ts` boundary, query-key factory shell, thin route page)
-unless the generator cannot represent the required shape.
+Then inspect generated files and implement domain behavior. The default generator creates a
+route-facing feature component and public boundary (`components/<Name>Feature.tsx`, `index.ts`). Do
+not manually recreate generator-owned structural boilerplate unless the generator cannot represent
+the required shape.
 
 - Keep routes thin; put domain logic in the configured product feature root from `@atlas/project`.
 - Add or extend `keys.ts`, `queries.ts`, `mutations.ts` (or `hooks.ts`), `components/`, `index.ts`.

@@ -5,5 +5,6 @@
  * import from this public boundary.
  */
 
+export { BillingHistoryFeature } from "./components/BillingHistoryFeature";
 export { billingHistoryKeys } from "./keys";
 export { useBillingHistoryList } from "./queries";

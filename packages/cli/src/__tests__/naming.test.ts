@@ -23,8 +23,19 @@ describe("generator naming", () => {
 
   it("validates routes and titles", () => {
     expect(validateAppRouterRoute("settings/profile")).toBe("settings/profile");
+    expect(validateAppRouterRoute("users/[id]")).toBe("users/[id]");
+    expect(validateAppRouterRoute("users/[userId]")).toBe("users/[userId]");
     expect(routeToPageTitle("settings/profile")).toBe("Settings — Profile");
     expect(routeToPageComponentName("settings/profile")).toBe("SettingsProfilePage");
+    expect(routeToPageComponentName("users/[id]")).toBe("UsersIdPage");
+  });
+
+  it("rejects invalid dynamic route segments", () => {
+    for (const route of ["users/[123]", "users/[user-id]", "users/[../id]"]) {
+      expect(() => validateAppRouterRoute(route)).toThrow(
+        expect.objectContaining({ code: CliErrorCode.USAGE_ERROR, exitCode: ExitCode.USAGE_ERROR })
+      );
+    }
   });
 
   it("rejects unsafe feature names", () => {

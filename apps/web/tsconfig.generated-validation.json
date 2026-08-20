@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["next-env.d.ts", "src/__gen_validate__/**/*.ts", "src/__gen_validate__/**/*.tsx"],
+  "compilerOptions": {
+    "noEmit": true
+  }
+}
