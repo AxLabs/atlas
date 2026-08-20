@@ -13,7 +13,6 @@ import "server-only";
 import { getServerConfig } from "@/config/server";
 
 import { createSessionCookie, needsRefresh, readSession } from "../../session";
-
 import { refreshAccessToken } from "../google";
 
 import type { SessionData, SessionResponse } from "../../types";
