@@ -55,6 +55,9 @@ Atlas uses **[Semantic Versioning](https://semver.org/)** for repository release
 - Breaking changes are allowed but must be documented (see below).
 - **`1.0.0` is only created through an explicit maintainer stability decision** — not by routine
   changesets.
+- A future `1.0.0` release requires a dedicated maintainer decision PR that updates or removes the
+  pre-1.0 guard in `scripts/semver-utils.mjs` as part of defining the stable public contract. There
+  is no environment-variable bypass — the intentional friction is useful.
 
 ### Pre-1.0 changeset convention
 
@@ -165,14 +168,23 @@ pnpm docs:check          # documentation links (#13)
 
 ## Changelog
 
-Root [`CHANGELOG.md`](../../CHANGELOG.md) is the **only canonical release history**.
+Root [`CHANGELOG.md`](../../CHANGELOG.md) is the **canonical Atlas release history**.
+
+Workspace `CHANGELOG.md` files under `apps/web` and `packages/*` are **Changesets-generated
+implementation artifacts**. They must remain on disk after `pnpm changeset:version` because
+`changesets/action@v1` reads each changed package changelog **after** the custom version command
+returns. They are not independently supported package release histories.
 
 After `changeset version`, `scripts/consolidate-atlas-release.mjs`:
 
-1. Reads temporary workspace package changelogs written by Changesets
-2. Merges their content into root `CHANGELOG.md` **without replacing prior release sections**
-3. Syncs versions across root and workspaces
-4. Removes workspace package changelogs (they are not canonical)
+1. Reads workspace package changelogs written by Changesets
+2. Moves everything currently under root `[Unreleased]` into the new release section (then resets
+   `[Unreleased]` to empty)
+3. Merges workspace release bodies into that section, deduplicating identical content
+4. Updates root `CHANGELOG.md` **without discarding prior release sections or link references**
+5. Advances the `[Unreleased]` compare link and adds/updates the new version link reference
+6. Syncs versions across root and workspaces
+7. **Does not delete** workspace package changelogs (required by `changesets/action`)
 
 ---
 

@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 
-import { ATLAS_TAG_PATTERN } from "../atlas-workspaces.mjs";
+import { ATLAS_TAG_PATTERN, ATLAS_WORKSPACE_PACKAGES } from "../atlas-workspaces.mjs";
 import {
   collectPackageChangelogSections,
+  consolidateAtlasRelease,
+  extractUnreleasedBody,
+  findPreviousReleaseVersion,
   mergeChangelogSectionBodies,
+  mergeReleaseBodies,
+  updateChangelogLinkReferences,
   updateRootChangelog,
 } from "../consolidate-atlas-release.mjs";
 import {
@@ -59,44 +64,123 @@ describe("extractChangelogSection", () => {
   });
 });
 
-describe("updateRootChangelog", () => {
-  const root = `# Changelog
+describe("extractUnreleasedBody", () => {
+  it("reads content under [Unreleased]", () => {
+    const root = `## [Unreleased]
+
+### Added
+- Pending governance work
+
+## [0.1.0] - 2026-08-19
+`;
+    assert.match(extractUnreleasedBody(root), /Pending governance work/);
+  });
+});
+
+describe("updateRootChangelog lifecycle", () => {
+  const rootAt010 = `# Changelog
 
 ## [Unreleased]
 
 ### Added
-- Pending governance work
+- Pending release work
 
 ## [0.1.0] - 2026-08-19
 
 ### Added
 - Initial baseline
 
-[Unreleased]: https://example.com/compare/v0.1.0...HEAD
-[0.1.0]: https://example.com/releases/tag/v0.1.0
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0
 `;
 
-  it("inserts a new release without removing prior sections", () => {
-    const updated = updateRootChangelog(
-      root,
-      "0.2.0",
-      "### Changed\n- UI export path update",
-      "2026-08-20",
-    );
-
+  function assertPatchRelease(updated, version, previousVersion) {
     assert.match(updated, /## \[Unreleased\]/);
+    assert.doesNotMatch(extractUnreleasedBody(updated), /Pending release work/);
+    assert.match(updated, new RegExp(`## \\[${version.replace(/\./g, "\\.")}\\]`));
+    assert.match(updated, /Pending release work/);
     assert.match(updated, /## \[0\.1\.0\]/);
     assert.match(updated, /Initial baseline/);
-    assert.match(updated, /## \[0\.2\.0\]/);
-    assert.match(updated, /UI export path update/);
-    assert.match(updated, /\[0\.1\.0\]:/);
+    assert.match(updated, new RegExp(`\\[Unreleased\\]: .*/v${version}\\.\\.\\.HEAD`));
+    assert.match(
+      updated,
+      new RegExp(
+        `\\[${version.replace(/\./g, "\\.")}\\]: .*/v${previousVersion}\\.\\.\\.v${version}`,
+      ),
+    );
+    assert.match(updated, /\[0\.1\.0\]: https:\/\/github\.com\/blitzcraftlabs\/atlas\/releases\/tag\/v0\.1\.0/);
+  }
+
+  it("performs a patch release (0.1.0 → 0.1.1)", () => {
+    const updated = updateRootChangelog(
+      rootAt010,
+      "0.1.1",
+      "### Fixed\n- Workspace patch entry",
+      "2026-08-20",
+    );
+    assertPatchRelease(updated, "0.1.1", "0.1.0");
+    assert.match(updated, /Workspace patch entry/);
+  });
+
+  it("performs a minor release (0.1.x → 0.2.0)", () => {
+    const updated = updateRootChangelog(
+      rootAt010,
+      "0.2.0",
+      "### Changed\n- Breaking platform change",
+      "2026-08-21",
+    );
+    assertPatchRelease(updated, "0.2.0", "0.1.0");
+    assert.match(updated, /Breaking platform change/);
+  });
+
+  it("merges multiple package workspace bodies into one release section", () => {
+    const updated = updateRootChangelog(
+      rootAt010,
+      "0.1.1",
+      "### Added\n- UI change\n\n### Added\n- Web change",
+      "2026-08-20",
+    );
+    assert.match(updated, /UI change/);
+    assert.match(updated, /Web change/);
+    const section = extractChangelogSection(updated, "0.1.1");
+    assert.doesNotMatch(section, /## \[0\.1\.0\]/);
   });
 
   it("replaces an existing version section in place", () => {
-    const updated = updateRootChangelog(root, "0.1.0", "### Added\n- Revised baseline", "2026-08-19");
-    assert.match(updated, /Revised baseline/);
-    assert.doesNotMatch(updated, /Initial baseline/);
-    assert.doesNotMatch(updated, /## \[0\.2\.0\]/);
+    const withExisting = updateRootChangelog(
+      rootAt010,
+      "0.1.1",
+      "### Added\n- First pass",
+      "2026-08-20",
+    );
+    const refreshed = updateRootChangelog(
+      withExisting,
+      "0.1.1",
+      "### Added\n- Revised release body",
+      "2026-08-20",
+    );
+    assert.match(refreshed, /Revised release body/);
+    assert.doesNotMatch(refreshed, /First pass/);
+    assert.equal((refreshed.match(/## \[0\.1\.1\]/g) ?? []).length, 1);
+  });
+
+  it("is idempotent when run twice with equivalent workspace state", () => {
+    const first = updateRootChangelog(
+      rootAt010,
+      "0.1.1",
+      "### Fixed\n- Stable entry",
+      "2026-08-20",
+    );
+    const authoritativeWorkspaceBody = extractSectionBody(
+      extractChangelogSection(first, "0.1.1"),
+    );
+    const second = updateRootChangelog(
+      first,
+      "0.1.1",
+      authoritativeWorkspaceBody,
+      "2026-08-20",
+    );
+    assert.equal(second, first);
   });
 });
 
@@ -116,6 +200,40 @@ describe("mergeChangelogSectionBodies", () => {
     ]);
     assert.match(body, /UI change/);
     assert.match(body, /Web change/);
+  });
+});
+
+describe("mergeReleaseBodies", () => {
+  it("deduplicates identical unreleased and workspace content", () => {
+    const body = mergeReleaseBodies("### Added\n- Shared entry", "### Added\n- Shared entry");
+    assert.equal(body, "### Added\n- Shared entry");
+  });
+});
+
+describe("findPreviousReleaseVersion", () => {
+  it("selects the highest prior semver section", () => {
+    const changelog = `## [Unreleased]
+
+## [0.2.0] - 2026-08-20
+
+## [0.1.0] - 2026-08-19
+`;
+    assert.equal(findPreviousReleaseVersion(changelog, "0.2.1"), "0.2.0");
+    assert.equal(findPreviousReleaseVersion(changelog, "0.2.0"), "0.1.0");
+  });
+});
+
+describe("updateChangelogLinkReferences", () => {
+  it("advances [Unreleased] and inserts a new version link", () => {
+    const updated = updateChangelogLinkReferences(
+      `[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0`,
+      "0.1.1",
+      "0.1.0",
+    );
+    assert.match(updated, /\[Unreleased\]: .+\/v0\.1\.1\.\.\.HEAD/);
+    assert.match(updated, /\[0\.1\.1\]: .+\/v0\.1\.0\.\.\.v0\.1\.1/);
+    assert.match(updated, /\[0\.1\.0\]:/);
   });
 });
 
@@ -200,5 +318,67 @@ describe("collectPackageChangelogSections fixture", () => {
     const sections = collectPackageChangelogSections("0.1.1", dir);
     assert.equal(sections.length, 1);
     assert.match(extractSectionBody(sections[0].section), /UI only/);
+  });
+});
+
+describe("preserves workspace changelogs required by changesets/action", () => {
+  it("leaves workspace CHANGELOG.md files in place after consolidation", () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "atlas-consolidate-"));
+    const version = "0.1.1";
+
+    writeFileSync(
+      path.join(dir, "package.json"),
+      JSON.stringify({ name: "@atlas/monorepo", version: "0.1.0", private: true }),
+    );
+    writeFileSync(
+      path.join(dir, "CHANGELOG.md"),
+      `# Changelog
+
+## [Unreleased]
+
+### Added
+- Pending governance work
+
+## [0.1.0] - 2026-08-19
+
+### Added
+- Initial baseline
+
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0
+`,
+      "utf8",
+    );
+
+    for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
+      mkdirSync(path.join(dir, pkg.relativePath), { recursive: true });
+      writeFileSync(
+        path.join(dir, pkg.relativePath, "package.json"),
+        JSON.stringify({ name: pkg.name, version, private: true }),
+      );
+      writeFileSync(
+        path.join(dir, pkg.relativePath, "CHANGELOG.md"),
+        `## [${version}]\n\n### Added\n- ${pkg.name} release entry\n`,
+        "utf8",
+      );
+    }
+
+    consolidateAtlasRelease(dir);
+
+    for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
+      const changelogPath = path.join(dir, pkg.relativePath, "CHANGELOG.md");
+      assert.equal(existsSync(changelogPath), true, `${pkg.name} changelog must exist`);
+      const content = readFileSync(changelogPath, "utf8");
+      assert.match(
+        content,
+        new RegExp(`## \\[${version.replace(/\./g, "\\.")}\\]`),
+        `${pkg.name} changelog must contain version ${version}`,
+      );
+    }
+
+    const root = readFileSync(path.join(dir, "CHANGELOG.md"), "utf8");
+    assert.match(root, /## \[0\.1\.1\]/);
+    assert.match(root, /Pending governance work/);
+    assert.doesNotMatch(extractUnreleasedBody(root), /Pending governance work/);
   });
 });

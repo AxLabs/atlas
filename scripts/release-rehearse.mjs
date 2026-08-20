@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import os from "node:os";
 import path from "node:path";
 
-import { readRootVersion } from "./atlas-workspaces.mjs";
+import { ATLAS_WORKSPACE_PACKAGES, readRootVersion } from "./atlas-workspaces.mjs";
 import { buildReleaseNotesPreview, extractChangelogSection } from "./extract-changelog-section.mjs";
 import { isGithubPrerelease } from "./semver-utils.mjs";
 
@@ -29,6 +29,11 @@ Align ESLint config with new UI export.`,
 ---
 
 **BREAKING**: Rename theme boot export path. Migration: import from @atlas/ui/theme-boot.`,
+  withPendingUpstream: `---
+"@atlas/web": patch
+---
+
+Add release governance documentation and validation scripts for issue #19.`,
 };
 
 const RSYNC_EXCLUDES = [
@@ -51,9 +56,59 @@ function copyWorkspace(source, target) {
   run(`rsync -a --delete ${excludes} "${source}/" "${target}/"`, os.tmpdir());
 }
 
-function runScenario(baselineRoot, fixtureName, fixtureBody, expectations) {
+function readVersion(scenarioRoot) {
+  return JSON.parse(readFileSync(path.join(scenarioRoot, "package.json"), "utf8")).version;
+}
+
+function assertWorkspaceChangelogs(scenarioRoot, version, fixtureName) {
+  for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
+    const changelogPath = path.join(scenarioRoot, pkg.relativePath, "CHANGELOG.md");
+    if (!existsSync(changelogPath)) {
+      throw new Error(
+        `Scenario ${fixtureName}: missing workspace changelog at ${pkg.relativePath}/CHANGELOG.md`,
+      );
+    }
+
+    const content = readFileSync(changelogPath, "utf8");
+    if (!extractChangelogSection(content, version)) {
+      throw new Error(
+        `Scenario ${fixtureName}: ${pkg.relativePath}/CHANGELOG.md missing section for ${version}`,
+      );
+    }
+  }
+}
+
+function assertAlignedVersions(scenarioRoot, version, fixtureName) {
+  const rootVersion = readVersion(scenarioRoot);
+  if (rootVersion !== version) {
+    throw new Error(
+      `Scenario ${fixtureName}: root version ${rootVersion} does not match expected ${version}`,
+    );
+  }
+
+  for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
+    const pkgVersion = JSON.parse(
+      readFileSync(path.join(scenarioRoot, pkg.relativePath, "package.json"), "utf8"),
+    ).version;
+    if (pkgVersion !== version) {
+      throw new Error(
+        `Scenario ${fixtureName}: ${pkg.relativePath} version ${pkgVersion} != ${version}`,
+      );
+    }
+  }
+}
+
+function runScenario(baselineRoot, fixtureName, fixtureBody, expectations, options = {}) {
   const scenarioRoot = path.join(path.dirname(baselineRoot), `scenario-${fixtureName}`);
   copyWorkspace(baselineRoot, scenarioRoot);
+
+  if (options.extraChangeset) {
+    writeFileSync(
+      path.join(scenarioRoot, ".changeset", `rehearse-upstream-${fixtureName}.md`),
+      options.extraChangeset,
+      "utf8",
+    );
+  }
 
   const changesetPath = path.join(scenarioRoot, ".changeset", `rehearse-${fixtureName}.md`);
   writeFileSync(changesetPath, fixtureBody, "utf8");
@@ -61,9 +116,7 @@ function runScenario(baselineRoot, fixtureName, fixtureBody, expectations) {
   run("pnpm install --frozen-lockfile", scenarioRoot);
   run("pnpm changeset:version", scenarioRoot);
 
-  const version = JSON.parse(
-    readFileSync(path.join(scenarioRoot, "package.json"), "utf8"),
-  ).version;
+  const version = readVersion(scenarioRoot);
 
   if (expectations.expectedVersion && version !== expectations.expectedVersion) {
     throw new Error(
@@ -75,11 +128,8 @@ function runScenario(baselineRoot, fixtureName, fixtureBody, expectations) {
     throw new Error(`Scenario ${fixtureName}: version ${version} must remain pre-1.0`);
   }
 
-  for (const pkg of ["apps/web", "packages/ui", "packages/config", "packages/consent"]) {
-    if (existsSync(path.join(scenarioRoot, pkg, "CHANGELOG.md"))) {
-      throw new Error(`Scenario ${fixtureName}: workspace changelog still exists at ${pkg}`);
-    }
-  }
+  assertWorkspaceChangelogs(scenarioRoot, version, fixtureName);
+  assertAlignedVersions(scenarioRoot, version, fixtureName);
 
   const rootChangelog = readFileSync(path.join(scenarioRoot, "CHANGELOG.md"), "utf8");
   if (!extractChangelogSection(rootChangelog, "Unreleased")) {
@@ -96,6 +146,13 @@ function runScenario(baselineRoot, fixtureName, fixtureBody, expectations) {
       if (!versionSection.includes(snippet)) {
         throw new Error(`Scenario ${fixtureName}: changelog missing "${snippet}"`);
       }
+    }
+  }
+
+  if (expectations.unreleasedCleared) {
+    const unreleased = extractChangelogSection(rootChangelog, "Unreleased");
+    if (unreleased && /###\s+/.test(unreleased)) {
+      throw new Error(`Scenario ${fixtureName}: [Unreleased] still contains release headings`);
     }
   }
 
@@ -129,6 +186,7 @@ function main() {
         expectations: {
           expectedVersion: bumpPatch(startVersion),
           bodyIncludes: ["Improve Input search styling"],
+          unreleasedCleared: true,
         },
       },
       {
@@ -137,6 +195,7 @@ function main() {
         expectations: {
           expectedVersion: bumpPatch(startVersion),
           bodyIncludes: ["template examples page"],
+          unreleasedCleared: true,
         },
       },
       {
@@ -145,6 +204,7 @@ function main() {
         expectations: {
           expectedVersion: bumpPatch(startVersion),
           bodyIncludes: ["Align ESLint config"],
+          unreleasedCleared: true,
         },
       },
       {
@@ -153,13 +213,30 @@ function main() {
         expectations: {
           expectedVersion: bumpMinor(startVersion),
           bodyIncludes: ["BREAKING", "theme boot"],
+          unreleasedCleared: true,
+        },
+      },
+      {
+        name: "with-pending-upstream",
+        fixture: FIXTURE_CHANGES.withPendingUpstream,
+        extraChangeset: FIXTURE_CHANGES.uiOnly,
+        expectations: {
+          expectedVersion: bumpPatch(startVersion),
+          bodyIncludes: ["release governance", "Improve Input search styling"],
+          unreleasedCleared: true,
         },
       },
     ];
 
     for (const scenario of scenarios) {
       console.log(`  • scenario: ${scenario.name}`);
-      runScenario(baselineRoot, scenario.name, scenario.fixture, scenario.expectations);
+      runScenario(
+        baselineRoot,
+        scenario.name,
+        scenario.fixture,
+        scenario.expectations,
+        { extraChangeset: scenario.extraChangeset },
+      );
     }
 
     const realStatus = execSync("git status --porcelain", { cwd: repoRoot, encoding: "utf8" }).trim();
