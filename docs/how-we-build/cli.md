@@ -12,14 +12,14 @@ See also: [Atlas project contract](atlas-contract.md),
 
 ## What the Atlas CLI owns
 
-| Concern                 | Example                                                          |
-| ----------------------- | ---------------------------------------------------------------- |
-| Atlas project contract  | Load `atlas.config.json` through `@atlas/project`                |
-| Platform version        | `atlas --version` reports the Atlas repository/platform snapshot |
-| Project bootstrap       | `atlas init` initializes Atlas metadata in a compatible checkout |
-| Future generators (#37) | Scaffold Atlas features using contract paths                     |
-| Future Doctor (#38)     | Report architecture conformance using resolved contract          |
-| Future migrations (#43) | Upgrade contract schema versions                                 |
+| Concern                 | Example                                                                |
+| ----------------------- | ---------------------------------------------------------------------- |
+| Atlas project contract  | Load `atlas.config.json` through `@atlas/project`                      |
+| Platform version        | `atlas --version` reports the installed `@atlas/cli` platform snapshot |
+| Project bootstrap       | `atlas init` initializes Atlas metadata in a compatible checkout       |
+| Future generators (#37) | Scaffold Atlas features using contract paths                           |
+| Future Doctor (#38)     | Report architecture conformance using resolved contract                |
+| Future migrations (#43) | Upgrade contract schema versions                                       |
 
 ---
 
@@ -74,7 +74,7 @@ publishable artifact bundled with or alongside the public Atlas snapshot. Until 
 | Option            | Description                                              |
 | ----------------- | -------------------------------------------------------- |
 | `--help`, `-h`    | Show help                                                |
-| `--version`, `-v` | Show Atlas platform version                              |
+| `--version`, `-v` | Show installed Atlas CLI/platform snapshot version       |
 | `--json`          | Emit machine-readable JSON on stdout                     |
 | `--cwd <path>`    | Resolve the Atlas repository from a starting directory   |
 | `--debug`         | Include stack traces for unexpected internal errors      |
@@ -90,9 +90,17 @@ Initialize Atlas metadata in an **existing compatible checkout**. This command:
 
 - Validates Node/pnpm prerequisites from root `package.json` `engines`
 - Discovers the repository root (walks upward for `atlas.config.json` or structural layout)
-- Creates `atlas.config.json` when absent (minimal `{ "schemaVersion": 1 }`)
+- Resolves existing `atlas.config.json` through `@atlas/project` before treating the project as
+  initialized
+- Validates a proposed contract through `@atlas/project` before writing any files on first init
+- Creates `atlas.config.json` when absent (minimal contract with `openApi: false` when OpenAPI
+  artifacts are absent)
 - Never silently overwrites an existing contract
 - Plans all actions before writing files
+
+Customization options (`--reference`, `--env`) apply **only during first initialization**.
+Re-running `atlas init` on an already initialized valid Atlas project performs no mutations, even
+when those flags are supplied.
 
 | Init option   | Values           | Default |
 | ------------- | ---------------- | ------- |
@@ -165,12 +173,20 @@ Success responses use:
 4. Stop at filesystem root; never search outside the resolved path chain.
 5. Do not silently choose among unrelated contracts — the nearest ancestor wins.
 
+Structural discovery only identifies candidate checkouts. `@atlas/project` validates both existing
+and proposed contracts before `init` reports success or performs mutations.
+
 ---
 
 ## Version source
 
-`atlas --version` reports the **Atlas platform snapshot** SemVer from the repository root
-`package.json` (`@atlas/monorepo`). This is independent of contract `schemaVersion`.
+`atlas --version` reports the **installed `@atlas/cli` platform snapshot** SemVer from the CLI
+package metadata. It works outside an Atlas project and does not depend on the current working
+directory.
+
+During `atlas init`, the CLI separately reports the **checkout/source snapshot** version from the
+target repository root `package.json` (`@atlas/monorepo`). That value identifies the Atlas source
+used to bootstrap the project and is independent of contract `schemaVersion`.
 
 Machine-readable `--json` output may include:
 

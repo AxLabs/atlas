@@ -10,10 +10,9 @@ import {
   writeHelp,
   writeVersion,
 } from "./output/write";
-import { findAtlasRepoRoot } from "./project/find-root";
 import { ExitCode } from "./exit-codes";
 import { parseCliArgs, type ParsedCli } from "./parse-args";
-import { readVersionMetadata } from "./version";
+import { readCliVersionMetadata } from "./version";
 
 import type { CommandResult } from "./types/result";
 
@@ -30,9 +29,11 @@ function argvIncludesFlag(argv: string[], flag: string): boolean {
 export async function runCli(options: RunCliOptions = {}): Promise<number> {
   const argv = options.argv ?? process.argv.slice(2);
   const writer = options.writer ?? createOutputWriter();
+  let commandForError = "atlas";
 
   try {
     const parsed = parseCliArgs(argv);
+    commandForError = parsed.command ?? "atlas";
 
     if (parsed.help) {
       writeHelp(writer, parsed.json);
@@ -40,9 +41,7 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
     }
 
     if (parsed.version) {
-      const startDir = parsed.cwd ?? options.cwd ?? process.cwd();
-      const repoRoot = findAtlasRepoRoot(startDir) ?? process.cwd();
-      writeVersion(writer, readVersionMetadata(repoRoot), parsed.json);
+      writeVersion(writer, readCliVersionMetadata(), parsed.json);
       return ExitCode.SUCCESS;
     }
 
@@ -65,8 +64,7 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
       error,
       argvIncludesFlag(argv, "--debug") || argvIncludesFlag(argv, "-d")
     );
-    const command = extractCommand(argv);
-    writeCommandError(writer, command, cliError, argvIncludesFlag(argv, "--json"));
+    writeCommandError(writer, commandForError, cliError, argvIncludesFlag(argv, "--json"));
     return cliError.exitCode;
   }
 }
@@ -84,11 +82,6 @@ function runInitCommand(parsed: ParsedCli, writer: ReturnType<typeof createOutpu
   );
 
   return ExitCode.SUCCESS;
-}
-
-function extractCommand(argv: string[]): string {
-  const positional = argv.find((arg) => !arg.startsWith("-"));
-  return positional ?? "atlas";
 }
 
 if (require.main === module) {

@@ -1,15 +1,18 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import { ExitCode } from "../exit-codes";
+import { CliErrorCode } from "../errors/cli-error";
 import { resolveAtlasProject } from "@atlas/project";
 
-import { createMinimalAtlasFixture } from "./helpers/fixture";
+import { createMinimalAtlasFixture, snapshotFixturePaths } from "./helpers/fixture";
 import { getRepoRoot, runAtlasCli } from "./helpers/run-cli";
+import { readCliAtlasVersion } from "../version";
 
 describe("atlas CLI executable", () => {
   const repoRoot = getRepoRoot();
+  const cliVersion = readCliAtlasVersion();
 
   it("prints help with exit 0", () => {
     const result = runAtlasCli(["--help"], repoRoot);
@@ -25,7 +28,7 @@ describe("atlas CLI executable", () => {
     const result = runAtlasCli(["--version"], repoRoot);
 
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
-    expect(result.stdout.trim()).toBe("0.1.0");
+    expect(result.stdout.trim()).toBe(cliVersion);
   });
 
   it("prints JSON version without decoration", () => {
@@ -35,11 +38,12 @@ describe("atlas CLI executable", () => {
     expect(result.stderr).toBe("");
     const payload = JSON.parse(result.stdout) as {
       ok: boolean;
-      result: { atlasVersion: string; contractSchemaVersion: number };
+      result: { atlasVersion: string; contractSchemaVersion: number; cliPackage: string };
     };
     expect(payload.ok).toBe(true);
-    expect(payload.result.atlasVersion).toBe("0.1.0");
+    expect(payload.result.atlasVersion).toBe(cliVersion);
     expect(payload.result.contractSchemaVersion).toBe(1);
+    expect(payload.result.cliPackage).toBe("@atlas/cli");
   });
 
   it("returns non-zero for unknown command", () => {
@@ -62,11 +66,80 @@ describe("atlas CLI executable", () => {
     const result = runAtlasCli(["--version"], path.join(repoRoot, "apps/web/src/features"));
 
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
-    expect(result.stdout.trim()).toBe("0.1.0");
+    expect(result.stdout.trim()).toBe(cliVersion);
+  });
+
+  it("prints CLI version from an empty unrelated directory", () => {
+    const outside = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-empty-"));
+    const result = runAtlasCli(["--version"], outside);
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(result.stdout.trim()).toBe(cliVersion);
+  });
+
+  it("does not use unrelated package.json version for --version", () => {
+    const outside = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-unrelated-"));
+    writeFileSync(
+      path.join(outside, "package.json"),
+      `${JSON.stringify({ name: "some-other-project", version: "99.0.0" }, null, 2)}\n`,
+      "utf8"
+    );
+
+    const result = runAtlasCli(["--version"], outside);
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(result.stdout.trim()).toBe(cliVersion);
+    expect(result.stdout.trim()).not.toBe("99.0.0");
+  });
+
+  it("prints JSON version outside an Atlas project", () => {
+    const outside = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-json-outside-"));
+    const result = runAtlasCli(["--version", "--json"], outside);
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(result.stderr).toBe("");
+    const payload = JSON.parse(result.stdout) as {
+      ok: boolean;
+      command: string;
+      result: { atlasVersion: string };
+    };
+    expect(payload.ok).toBe(true);
+    expect(payload.command).toBe("version");
+    expect(payload.result.atlasVersion).toBe(cliVersion);
+  });
+
+  it("identifies init in JSON errors when --cwd precedes the command", () => {
+    const result = runAtlasCli(["--cwd", "/does-not-exist", "init", "--json"], repoRoot);
+
+    expect(result.exitCode).not.toBe(ExitCode.SUCCESS);
+    const payload = JSON.parse(result.stdout) as {
+      ok: boolean;
+      command: string;
+      error: { code: string; message: string };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.command).toBe("init");
+    expect(payload.error.code).toBeDefined();
+  });
+
+  it("uses atlas as JSON command fallback for malformed global options", () => {
+    const result = runAtlasCli(["--cwd", "--json"], repoRoot);
+
+    expect(result.exitCode).toBe(ExitCode.USAGE_ERROR);
+    const payload = JSON.parse(result.stdout) as {
+      ok: boolean;
+      command: string;
+      error: { code: string; message: string };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.command).toBe("atlas");
+    expect(payload.error.code).toBe(CliErrorCode.USAGE_ERROR);
   });
 });
 
 describe("atlas init bootstrap", () => {
+  const cliVersion = readCliAtlasVersion();
+
   it("creates atlas.config.json in a compatible checkout", () => {
     const fixture = createMinimalAtlasFixture({ withEnvExample: true });
     const contractPath = path.join(fixture.root, "atlas.config.json");
@@ -81,7 +154,7 @@ describe("atlas init bootstrap", () => {
     expect(existsSync(path.join(fixture.root, "apps/web/.env.local"))).toBe(true);
   });
 
-  it("does not overwrite an existing contract", () => {
+  it("does not overwrite an existing valid contract", () => {
     const fixture = createMinimalAtlasFixture({ withContract: true });
     const contractPath = path.join(fixture.root, "atlas.config.json");
     const before = readFileSync(contractPath, "utf8");
@@ -91,6 +164,20 @@ describe("atlas init bootstrap", () => {
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
     expect(readFileSync(contractPath, "utf8")).toBe(before);
     expect(result.stdout).toContain("already initialized");
+  });
+
+  it("does not apply init options after the project is already initialized", () => {
+    const fixture = createMinimalAtlasFixture({ withContract: true, withReferencePaths: true });
+    const before = snapshotFixturePaths(fixture.root);
+
+    const result = runAtlasCli(
+      ["init", "--cwd", fixture.root, "--reference", "remove", "--env", "copy"],
+      fixture.root
+    );
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(result.stdout).toContain("already initialized");
+    expect(snapshotFixturePaths(fixture.root)).toEqual(before);
   });
 
   it("supports dry-run without writing files", () => {
@@ -121,5 +208,116 @@ describe("atlas init bootstrap", () => {
     expect(payload.command).toBe("init");
     expect(Array.isArray(payload.result.actions)).toBe(true);
     expect(result.stdout).not.toMatch(/✓/);
+  });
+
+  it("fails with CONTRACT_INVALID for malformed existing atlas.config.json", () => {
+    const fixture = createMinimalAtlasFixture({ invalidContract: true });
+    const before = snapshotFixturePaths(fixture.root);
+
+    const result = runAtlasCli(["init", "--cwd", fixture.root], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.CONTRACT_INVALID);
+    expect(result.stderr).toContain("invalid JSON");
+    expect(snapshotFixturePaths(fixture.root)).toEqual(before);
+  });
+
+  it("returns JSON CONTRACT_INVALID for malformed existing atlas.config.json", () => {
+    const fixture = createMinimalAtlasFixture({ invalidContract: true });
+
+    const result = runAtlasCli(["init", "--cwd", fixture.root, "--json"], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.CONTRACT_INVALID);
+    const payload = JSON.parse(result.stdout) as {
+      ok: boolean;
+      command: string;
+      error: { code: string; message: string };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.command).toBe("init");
+    expect(payload.error.code).toBe(CliErrorCode.CONTRACT_INVALID);
+    expect(payload.error.message).toContain("invalid JSON");
+  });
+
+  it("fails with CONTRACT_INVALID for structurally invalid existing atlas.config.json", () => {
+    const fixture = createMinimalAtlasFixture({ structurallyInvalidContract: true });
+    const before = snapshotFixturePaths(fixture.root);
+
+    const result = runAtlasCli(["init", "--cwd", fixture.root], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.CONTRACT_INVALID);
+    expect(result.stderr).toContain("UI package mismatch");
+    expect(result.stdout).not.toContain("already initialized");
+    expect(snapshotFixturePaths(fixture.root)).toEqual(before);
+  });
+
+  it("validates prospective contract before writing atlas.config.json", () => {
+    const fixture = createMinimalAtlasFixture({ wrongUiPackageName: true });
+    const before = snapshotFixturePaths(fixture.root);
+
+    const result = runAtlasCli(["init", "--cwd", fixture.root], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.CONTRACT_INVALID);
+    expect(existsSync(path.join(fixture.root, "atlas.config.json"))).toBe(false);
+    expect(snapshotFixturePaths(fixture.root)).toEqual(before);
+  });
+
+  it("sets openApi false when OpenAPI artifacts are absent", () => {
+    const fixture = createMinimalAtlasFixture();
+    const result = runAtlasCli(["init", "--cwd", fixture.root], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    const contract = JSON.parse(
+      readFileSync(path.join(fixture.root, "atlas.config.json"), "utf8")
+    ) as { capabilities?: { openApi?: boolean } };
+    expect(contract.capabilities?.openApi).toBe(false);
+    expect(() => resolveAtlasProject(fixture.root)).not.toThrow();
+  });
+
+  it("does not overwrite an existing .env.local", () => {
+    const fixture = createMinimalAtlasFixture({ withEnvExample: true, withEnvLocal: true });
+    const envLocalPath = path.join(fixture.root, "apps/web/.env.local");
+    const before = readFileSync(envLocalPath, "utf8");
+
+    const result = runAtlasCli(["init", "--cwd", fixture.root, "--env", "copy"], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(readFileSync(envLocalPath, "utf8")).toBe(before);
+  });
+
+  it("removes reference paths only when explicitly requested", () => {
+    const fixture = createMinimalAtlasFixture({ withReferencePaths: true });
+    const referencePath = path.join(fixture.root, "apps/web/src/features/reference");
+
+    expect(existsSync(referencePath)).toBe(true);
+
+    const result = runAtlasCli(
+      ["init", "--cwd", fixture.root, "--reference", "remove"],
+      fixture.root
+    );
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(existsSync(referencePath)).toBe(false);
+  });
+
+  it("does not remove reference paths during dry-run", () => {
+    const fixture = createMinimalAtlasFixture({ withReferencePaths: true });
+    const referencePath = path.join(fixture.root, "apps/web/src/features/reference");
+
+    const result = runAtlasCli(
+      ["init", "--cwd", fixture.root, "--reference", "remove", "--dry-run"],
+      fixture.root
+    );
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(existsSync(referencePath)).toBe(true);
+    expect(result.stdout).toContain("dry run");
+  });
+
+  it("reports checkout atlas version during init", () => {
+    const fixture = createMinimalAtlasFixture();
+    const result = runAtlasCli(["init", "--cwd", fixture.root, "--dry-run"], fixture.root);
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(result.stdout).toContain(`Atlas version: ${cliVersion}`);
   });
 });

@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import {
@@ -7,11 +7,14 @@ import {
   joinRepoPath,
   LATEST_SCHEMA_VERSION,
   type RawAtlasProjectContract,
+  resolveAtlasProject,
 } from "@atlas/project";
 
 import { CliError, CliErrorCode } from "../errors/cli-error";
+import { cliErrorFromContract } from "../errors/from-contract";
 import { validatePrerequisites } from "../init/prerequisites";
 import { findAtlasRepoRoot, findStructuralAtlasRoot } from "../project/find-root";
+import { readCheckoutAtlasVersion } from "../version";
 
 import type { CommandResult, PlannedAction } from "../types/result";
 
@@ -25,12 +28,6 @@ export interface InitOptions {
   env: EnvPolicy;
 }
 
-const REQUIRED_STRUCTURE = [
-  DEFAULT_ATLAS_PROJECT_CONTRACT.application.root,
-  DEFAULT_ATLAS_PROJECT_CONTRACT.features.product,
-  DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path,
-];
-
 const REFERENCE_PATHS = [
   DEFAULT_ATLAS_PROJECT_CONTRACT.features.reference,
   DEFAULT_ATLAS_PROJECT_CONTRACT.features.examples,
@@ -38,43 +35,7 @@ const REFERENCE_PATHS = [
   DEFAULT_ATLAS_PROJECT_CONTRACT.reference.routes,
 ];
 
-function readRepoVersion(repoRoot: string): string {
-  const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")) as {
-    version?: string;
-  };
-
-  return packageJson.version ?? "unknown";
-}
-
-function validateCompatibleStructure(repoRoot: string): void {
-  const missing = REQUIRED_STRUCTURE.filter((relativePath) => {
-    const absolutePath = joinRepoPath(repoRoot, relativePath);
-    return !existsSync(absolutePath);
-  });
-
-  if (missing.length > 0) {
-    throw new CliError(
-      CliErrorCode.BOOTSTRAP_CONFLICT,
-      "Checkout does not look like a compatible Atlas project.",
-      {
-        details: missing.map((relativePath) => `Missing required path: ${relativePath}`),
-      }
-    );
-  }
-}
-
-function planContractCreation(repoRoot: string): PlannedAction[] {
-  const contractPath = path.join(repoRoot, ATLAS_CONTRACT_FILENAME);
-  if (existsSync(contractPath)) {
-    return [
-      {
-        kind: "skip",
-        path: ATLAS_CONTRACT_FILENAME,
-        reason: "Atlas contract already exists",
-      },
-    ];
-  }
-
+function planContractCreation(): PlannedAction[] {
   return [
     {
       kind: "create",
@@ -165,60 +126,32 @@ function planEnvActions(repoRoot: string, env: EnvPolicy): PlannedAction[] {
   ];
 }
 
-function resolveInitRepoRoot(cwd?: string): string {
+interface InitContext {
+  repoRoot: string;
+  hasExistingContract: boolean;
+}
+
+/**
+ * Locate a candidate Atlas checkout for init.
+ * Structural discovery only checks shallow layout markers; @atlas/project validates contracts.
+ */
+function resolveInitContext(cwd?: string): InitContext {
   const startDir = cwd ? path.resolve(cwd) : process.cwd();
 
   const contractRoot = findAtlasRepoRoot(startDir);
   if (contractRoot) {
-    return contractRoot;
+    return { repoRoot: contractRoot, hasExistingContract: true };
   }
 
   const structuralRoot = findStructuralAtlasRoot(startDir);
   if (structuralRoot) {
-    return structuralRoot;
+    return { repoRoot: structuralRoot, hasExistingContract: false };
   }
 
   throw new CliError(
     CliErrorCode.PROJECT_NOT_FOUND,
     "Atlas project not found. Run init from an Atlas-compatible checkout."
   );
-}
-
-function planInit(repoRoot: string, options: InitOptions): CommandResult {
-  const contractPath = path.join(repoRoot, ATLAS_CONTRACT_FILENAME);
-  const warnings = validatePrerequisites(repoRoot);
-
-  if (existsSync(contractPath)) {
-    return {
-      repoRoot,
-      atlasVersion: readRepoVersion(repoRoot),
-      actions: [
-        {
-          kind: "skip",
-          path: ATLAS_CONTRACT_FILENAME,
-          reason: "Atlas project already initialized",
-        },
-      ],
-      warnings,
-      alreadyInitialized: true,
-      referencePolicy: options.reference,
-    };
-  }
-
-  validateCompatibleStructure(repoRoot);
-
-  return {
-    repoRoot,
-    atlasVersion: readRepoVersion(repoRoot),
-    actions: [
-      ...planContractCreation(repoRoot),
-      ...planReferenceActions(repoRoot, options.reference),
-      ...planEnvActions(repoRoot, options.env),
-    ],
-    warnings,
-    alreadyInitialized: false,
-    referencePolicy: options.reference,
-  };
 }
 
 function buildInitialContract(repoRoot: string): RawAtlasProjectContract {
@@ -238,6 +171,66 @@ function buildInitialContract(repoRoot: string): RawAtlasProjectContract {
     capabilities: {
       openApi: false,
     },
+  };
+}
+
+function validateExistingContract(repoRoot: string): void {
+  try {
+    resolveAtlasProject(repoRoot);
+  } catch (error) {
+    throw cliErrorFromContract(error);
+  }
+}
+
+function validateProposedContract(
+  repoRoot: string,
+  proposedContract: RawAtlasProjectContract
+): void {
+  try {
+    resolveAtlasProject(repoRoot, proposedContract);
+  } catch (error) {
+    throw cliErrorFromContract(error);
+  }
+}
+
+function planInit(context: InitContext, options: InitOptions): CommandResult {
+  const { repoRoot, hasExistingContract } = context;
+  const warnings = validatePrerequisites(repoRoot);
+  const atlasVersion = readCheckoutAtlasVersion(repoRoot);
+
+  if (hasExistingContract) {
+    validateExistingContract(repoRoot);
+
+    return {
+      repoRoot,
+      atlasVersion,
+      actions: [
+        {
+          kind: "skip",
+          path: ATLAS_CONTRACT_FILENAME,
+          reason: "Atlas project already initialized",
+        },
+      ],
+      warnings,
+      alreadyInitialized: true,
+      referencePolicy: options.reference,
+    };
+  }
+
+  const proposedContract = buildInitialContract(repoRoot);
+  validateProposedContract(repoRoot, proposedContract);
+
+  return {
+    repoRoot,
+    atlasVersion,
+    actions: [
+      ...planContractCreation(),
+      ...planReferenceActions(repoRoot, options.reference),
+      ...planEnvActions(repoRoot, options.env),
+    ],
+    warnings,
+    alreadyInitialized: false,
+    referencePolicy: options.reference,
   };
 }
 
@@ -275,11 +268,11 @@ function applyInitPlan(repoRoot: string, plan: CommandResult): void {
 }
 
 export function runInit(options: InitOptions): CommandResult {
-  const repoRoot = resolveInitRepoRoot(options.cwd);
-  const plan = planInit(repoRoot, options);
+  const context = resolveInitContext(options.cwd);
+  const plan = planInit(context, options);
 
   if (!options.dryRun && !plan.alreadyInitialized) {
-    applyInitPlan(repoRoot, plan);
+    applyInitPlan(context.repoRoot, plan);
   }
 
   return plan;

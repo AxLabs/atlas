@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import {
   LATEST_SCHEMA_VERSION,
   resolveAtlasProject,
@@ -14,23 +11,13 @@ import {
   findStructuralAtlasRoot,
   resolveStartingDirectory,
 } from "../project/find-root";
+import { readCheckoutAtlasVersion } from "../version";
 
 export interface AtlasCliContext {
   repoRoot: string;
   atlasVersion: string;
   contractSchemaVersion: number;
   project?: ResolvedAtlasProject;
-}
-
-function readAtlasVersion(repoRoot: string): string {
-  const packageJsonPath = path.join(repoRoot, "package.json");
-  const parsed = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
-
-  if (typeof parsed.version !== "string" || parsed.version.length === 0) {
-    throw new Error(`Missing version in ${path.join(repoRoot, "package.json")}`);
-  }
-
-  return parsed.version;
 }
 
 export interface CreateContextOptions {
@@ -55,7 +42,7 @@ export function createAtlasContext(options: CreateContextOptions = {}): AtlasCli
     );
   }
 
-  const atlasVersion = readAtlasVersion(repoRoot);
+  const atlasVersion = readCheckoutAtlasVersion(repoRoot);
   const context: AtlasCliContext = {
     repoRoot,
     atlasVersion,
