@@ -36,22 +36,62 @@ function writeContract(tempRoot: string, contract: unknown): void {
   writeFileSync(path.join(tempRoot, "atlas.config.json"), JSON.stringify(contract, null, 2));
 }
 
-function createValidRepoStructure(tempRoot: string): void {
-  for (const relativePath of [
-    DEFAULT_ATLAS_PROJECT_CONTRACT.application.root,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.features.product,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.features.reference,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.features.examples,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.reference.components,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.reference.routes,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.schema,
-  ]) {
-    const absolutePath = path.join(tempRoot, relativePath);
-    mkdirSync(absolutePath, { recursive: true });
-    writeFileSync(path.join(absolutePath, ".keep"), "", "utf8");
+function createDirectory(tempRoot: string, relativePath: string): void {
+  const absolutePath = path.join(tempRoot, relativePath);
+  mkdirSync(absolutePath, { recursive: true });
+}
+
+function createFile(tempRoot: string, relativePath: string, contents = ""): void {
+  const absolutePath = path.join(tempRoot, relativePath);
+  mkdirSync(path.dirname(absolutePath), { recursive: true });
+  writeFileSync(absolutePath, contents, "utf8");
+}
+
+function createPackage(tempRoot: string, relativePath: string, packageName: string): void {
+  createDirectory(tempRoot, relativePath);
+  createFile(
+    tempRoot,
+    path.posix.join(relativePath, "package.json"),
+    `${JSON.stringify({ name: packageName }, null, 2)}\n`
+  );
+}
+
+function createMinimalValidRepoStructure(
+  tempRoot: string,
+  options: {
+    includeReferenceSurfaces?: boolean;
+    includeOpenApi?: boolean;
+    uiPath?: string;
+    uiPackage?: string;
+  } = {}
+): void {
+  const {
+    includeReferenceSurfaces = true,
+    includeOpenApi = true,
+    uiPath = DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path,
+    uiPackage = DEFAULT_ATLAS_PROJECT_CONTRACT.ui.package,
+  } = options;
+
+  createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.application.root);
+  createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.features.product);
+
+  if (includeReferenceSurfaces) {
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.features.reference);
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.features.examples);
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.reference.components);
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.reference.routes);
   }
+
+  createPackage(tempRoot, uiPath, uiPackage);
+
+  if (includeOpenApi) {
+    createFile(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec, "{}");
+    createFile(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.schema, "export {};\n");
+  }
+}
+
+function createValidRepoStructure(tempRoot: string): void {
+  createMinimalValidRepoStructure(tempRoot);
 }
 
 describe("parseAtlasProjectContract", () => {
@@ -234,6 +274,246 @@ describe("resolveAtlasProject", () => {
           AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
         );
         expect((error as AtlasContractError).message).toContain("application.root");
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves when reference surfaces are absent but conventional paths remain in output", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-no-reference-"));
+    createMinimalValidRepoStructure(tempRoot, { includeReferenceSurfaces: false });
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      const resolved = resolveAtlasProject(tempRoot);
+
+      expect(resolved.features.reference).toBe(DEFAULT_ATLAS_PROJECT_CONTRACT.features.reference);
+      expect(resolved.features.examples).toBe(DEFAULT_ATLAS_PROJECT_CONTRACT.features.examples);
+      expect(resolved.reference.components).toBe(
+        DEFAULT_ATLAS_PROJECT_CONTRACT.reference.components
+      );
+      expect(resolved.reference.routes).toBe(DEFAULT_ATLAS_PROJECT_CONTRACT.reference.routes);
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves when OpenAPI is disabled and generated files are absent", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-no-openapi-"));
+    createMinimalValidRepoStructure(tempRoot, { includeOpenApi: false });
+    writeContract(tempRoot, {
+      schemaVersion: 1,
+      capabilities: {
+        openApi: false,
+      },
+    });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).not.toThrow();
+      const resolved = resolveAtlasProject(tempRoot);
+      expect(resolved.capabilities.openApi).toBe(false);
+      expect(resolved.generated.openApi.spec).toBe(
+        DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec
+      );
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when OpenAPI is enabled and the spec file is missing", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-openapi-missing-"));
+    createMinimalValidRepoStructure(tempRoot, { includeOpenApi: false });
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain("generated.openApi.spec");
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when an OpenAPI path is a directory instead of a file", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-openapi-dir-"));
+    createMinimalValidRepoStructure(tempRoot, { includeOpenApi: false });
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec);
+    createFile(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.schema, "export {};\n");
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain(
+          "Expected generated.openApi.spec to be a file"
+        );
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when application.root is a file instead of a directory", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-app-file-"));
+    createFile(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.application.root, "not-a-directory");
+    createDirectory(tempRoot, "apps/features-only");
+    createPackage(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path, "@atlas/ui");
+    writeContract(tempRoot, {
+      schemaVersion: 1,
+      features: {
+        product: "apps/features-only",
+      },
+      capabilities: {
+        openApi: false,
+      },
+    });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain(
+          "Expected application.root to be a directory"
+        );
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves when ui.package matches ui.path/package.json", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-ui-match-"));
+    createMinimalValidRepoStructure(tempRoot, {
+      uiPath: "packages/ui",
+      uiPackage: "@atlas/ui",
+    });
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).not.toThrow();
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when ui.package does not match ui.path/package.json", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-ui-mismatch-"));
+    createMinimalValidRepoStructure(tempRoot, {
+      uiPath: "packages/config",
+      uiPackage: "@atlas/config",
+    });
+    writeContract(tempRoot, {
+      schemaVersion: 1,
+      ui: {
+        package: "@atlas/ui",
+        path: "packages/config",
+      },
+    });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain(
+          "Atlas contract UI package mismatch"
+        );
+        expect((error as AtlasContractError).message).toContain("@atlas/ui");
+        expect((error as AtlasContractError).message).toContain("@atlas/config");
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws AtlasContractError for missing ui.path/package.json", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-ui-no-pkg-"));
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.application.root);
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.features.product);
+    createDirectory(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path);
+    createFile(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec, "{}");
+    createFile(tempRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.schema, "export {};\n");
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain("ui.path/package.json");
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws AtlasContractError for malformed ui.path/package.json", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-ui-bad-json-"));
+    createMinimalValidRepoStructure(tempRoot, { includeOpenApi: true });
+    createFile(
+      tempRoot,
+      path.posix.join(DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path, "package.json"),
+      "{ not-json"
+    );
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain("invalid JSON");
+        expect((error as AtlasContractError).message).not.toContain("JSON.parse");
+      }
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("throws AtlasContractError when ui.path/package.json is missing a name field", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-contract-ui-no-name-"));
+    createMinimalValidRepoStructure(tempRoot, { includeOpenApi: true });
+    createFile(
+      tempRoot,
+      path.posix.join(DEFAULT_ATLAS_PROJECT_CONTRACT.ui.path, "package.json"),
+      JSON.stringify({ version: "0.0.0" })
+    );
+    writeContract(tempRoot, { schemaVersion: 1 });
+
+    try {
+      expect(() => resolveAtlasProject(tempRoot)).toThrow(AtlasContractError);
+      try {
+        resolveAtlasProject(tempRoot);
+      } catch (error) {
+        expect((error as AtlasContractError).code).toBe(
+          AtlasContractErrorCode.CONTRACT_STRUCTURE_INVALID
+        );
+        expect((error as AtlasContractError).message).toContain("missing a package name");
       }
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });

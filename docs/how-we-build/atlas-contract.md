@@ -59,8 +59,30 @@ contract:
 and no `undefined` values.
 
 The loader applies defaults, normalizes paths, validates schema version, and performs lightweight
-structural checks (declared roots exist). It does **not** perform full repository conformance
+structural checks on required project surfaces. It does **not** perform full repository conformance
 diagnostics — that belongs to Atlas Doctor (#38).
+
+### Structural validation semantics
+
+The loader distinguishes three kinds of declared paths:
+
+| Kind                               | Examples                                                                              | Loader behavior                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Required project structure**     | `application.root`, `features.product`, `ui.path`                                     | Must exist and be directories                                                          |
+| **Reference/conventional paths**   | `features.reference`, `features.examples`, `reference.components`, `reference.routes` | Recorded in the resolved contract; may be absent if reference/example code was removed |
+| **Capability-dependent structure** | `generated.openApi.spec`, `generated.openApi.schema`                                  | Required as files only when `capabilities.openApi` is `true`                           |
+
+Reference paths express canonical placement for Atlas reference surfaces. Consumers may delete
+reference/example code (see [architecture ownership](architecture-ownership.md)) without breaking
+contract resolution — the paths remain machine-readable policy, not proof that reference code must
+exist.
+
+When `capabilities.openApi` is `false`, OpenAPI output paths remain in the resolved contract as
+conventional locations but are not required to exist.
+
+The loader also verifies that `ui.path/package.json` exists, parses cleanly, and that its `name`
+matches `ui.package`. This keeps the resolved UI identity internally consistent without scanning the
+whole workspace.
 
 ---
 
