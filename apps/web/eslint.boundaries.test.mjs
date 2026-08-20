@@ -21,8 +21,11 @@ async function lintFixture(...segments) {
 }
 
 function assertRuleViolation(messages, ruleId, fragment) {
-  const match = messages.find((message) => message.ruleId === ruleId);
-  assert.ok(match, `expected ${ruleId} for: ${fragment}`);
+  const matches = messages.filter((message) => message.ruleId === ruleId);
+  const match = fragment
+    ? matches.find((message) => message.message.toLowerCase().includes(fragment.toLowerCase()))
+    : matches[0];
+  assert.ok(match, `expected ${ruleId} for: ${fragment ?? "(any message)"}`);
   if (fragment) {
     assert.ok(
       match.message.toLowerCase().includes(fragment.toLowerCase()),
@@ -31,18 +34,22 @@ function assertRuleViolation(messages, ruleId, fragment) {
   }
 }
 
-function assertNoRuleViolation(messages, ruleIds) {
+function assertNoRuleViolation(messages, ruleIds, fragment) {
   for (const ruleId of ruleIds) {
+    const matches = messages.filter((message) => message.ruleId === ruleId);
+    const match = fragment
+      ? matches.find((message) => message.message.toLowerCase().includes(fragment.toLowerCase()))
+      : matches[0];
     assert.equal(
-      messages.some((message) => message.ruleId === ruleId),
+      match !== undefined,
       false,
-      `did not expect ${ruleId}, got: ${JSON.stringify(messages)}`,
+      `did not expect ${ruleId}${fragment ? ` mentioning "${fragment}"` : ""}, got: ${JSON.stringify(messages)}`,
     );
   }
 }
 
 describe("eslint architecture boundaries (@atlas/web)", () => {
-  it("rejects prohibited import and syntax patterns in app code", async () => {
+  it("rejects prohibited import and syntax patterns in ordinary app code", async () => {
     const cases = [
       {
         file: ["components", "eslint-boundaries", "prohibited-env-import.tsx"],
@@ -96,5 +103,71 @@ describe("eslint architecture boundaries (@atlas/web)", () => {
 
     const libMessages = await lintFixture("lib", "eslint-boundaries", "allowed-config-facade.ts");
     assertNoRuleViolation(libMessages, ["no-restricted-imports", "no-restricted-syntax"]);
+  });
+
+  it("keeps unrelated import boundaries active in API routes", async () => {
+    const allowedMessages = await lintFixture(
+      "app",
+      "api",
+      "eslint-boundaries",
+      "allowed",
+      "route.ts",
+    );
+    assertNoRuleViolation(allowedMessages, [
+      "no-restricted-imports",
+      "no-restricted-syntax",
+      "no-restricted-globals",
+    ]);
+
+    const violationMessages = await lintFixture(
+      "app",
+      "api",
+      "eslint-boundaries",
+      "fixture",
+      "route.ts",
+    );
+    assertRuleViolation(violationMessages, "no-restricted-imports", "PostHog");
+    assertRuleViolation(violationMessages, "no-restricted-imports", "public package exports");
+    assertNoRuleViolation(violationMessages, ["no-restricted-syntax", "no-restricted-globals"]);
+  });
+
+  it("allows raw fetch but not process.env in monitoring routes", async () => {
+    const realRouteMessages = await lintFixture("app", "monitoring", "route.ts");
+    assertNoRuleViolation(realRouteMessages, ["no-restricted-syntax", "no-restricted-globals"]);
+
+    const fixtureMessages = await lintFixture(
+      "app",
+      "monitoring",
+      "eslint-boundaries",
+      "route.ts",
+    );
+    assertRuleViolation(fixtureMessages, "no-restricted-syntax", "process.env");
+    assertNoRuleViolation(fixtureMessages, ["no-restricted-globals"]);
+  });
+
+  it("allows process.env but not raw fetch in analytics provider files", async () => {
+    const realProviderMessages = await lintFixture("providers", "analytics-provider.tsx");
+    assertNoRuleViolation(realProviderMessages, ["no-restricted-syntax", "no-restricted-globals"]);
+
+    const fixtureMessages = await lintFixture(
+      "providers",
+      "eslint-boundaries",
+      "analytics-provider-fixture.tsx",
+    );
+    assertRuleViolation(fixtureMessages, "no-restricted-syntax", "fetch");
+    assertRuleViolation(fixtureMessages, "no-restricted-imports", "public package exports");
+    assertNoRuleViolation(fixtureMessages, ["no-restricted-syntax"], "process.env");
+  });
+
+  it("allows vendor SDK imports but keeps package boundaries in analytics adapters", async () => {
+    const adapterMessages = await lintFixture(
+      "lib",
+      "analytics",
+      "adapters",
+      "eslint-boundaries",
+      "adapter-fixture.ts",
+    );
+    assertNoRuleViolation(adapterMessages, ["no-restricted-imports"], "PostHog");
+    assertRuleViolation(adapterMessages, "no-restricted-imports", "public package exports");
   });
 });
