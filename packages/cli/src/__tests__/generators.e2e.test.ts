@@ -13,6 +13,7 @@ import {
   removeGeneratedSourceValidationFixture,
   stageGeneratedOutput,
   validateGeneratedWebSource,
+  writeGeneratedValidationFeatureFile,
 } from "./helpers/validation-fixture";
 
 describe("atlas generate command", () => {
@@ -46,6 +47,21 @@ describe("atlas generate command", () => {
 });
 
 describe("atlas generate feature", () => {
+  it("generates query keys with the public react-query entry point", () => {
+    const fixture = createGeneratorAtlasFixture({ withContract: true, withReferencePaths: true });
+    const result = runAtlasCli(
+      ["generate", "feature", "example-query", "--query", "--cwd", fixture.root],
+      fixture.root
+    );
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+
+    const keysPath = path.join(fixture.root, "apps/web/src/features/example-query/keys.ts");
+    const keysSource = readFileSync(keysPath, "utf8");
+    expect(keysSource).toContain('from "@/lib/react-query"');
+    expect(keysSource).not.toContain('from "@/lib/react-query/keys"');
+  });
+
   it("matches the default golden fixture", () => {
     const fixture = createGeneratorAtlasFixture({ withContract: true, withReferencePaths: true });
     const result = runAtlasCli(
@@ -383,89 +399,69 @@ describe("generated source validation", () => {
     {
       label: "default feature",
       args: ["generate", "feature", "example"],
-      generatedRoot: "features/example",
-      stagingRoot: "features/example",
-      paths: ["features/example/components/ExampleFeature.tsx", "features/example/index.ts"],
+      generatedRoot: "src/features/example",
+      kind: "feature" as const,
+      name: "example",
     },
     {
       label: "query feature",
       args: ["generate", "feature", "example-query", "--query"],
-      generatedRoot: "features/example-query",
-      stagingRoot: "features/example-query",
-      paths: [
-        "features/example-query/components/ExampleQueryFeature.tsx",
-        "features/example-query/index.ts",
-        "features/example-query/keys.ts",
-        "features/example-query/queries.ts",
-      ],
+      generatedRoot: "src/features/example-query",
+      kind: "feature" as const,
+      name: "example-query",
     },
     {
       label: "mutation feature",
       args: ["generate", "feature", "example-mutation", "--mutation"],
-      generatedRoot: "features/example-mutation",
-      stagingRoot: "features/example-mutation",
-      paths: [
-        "features/example-mutation/components/ExampleMutationFeature.tsx",
-        "features/example-mutation/index.ts",
-        "features/example-mutation/keys.ts",
-        "features/example-mutation/mutations.ts",
-      ],
+      generatedRoot: "src/features/example-mutation",
+      kind: "feature" as const,
+      name: "example-mutation",
     },
     {
       label: "form feature",
       args: ["generate", "feature", "example-form", "--form"],
-      generatedRoot: "features/example-form",
-      stagingRoot: "features/example-form",
-      paths: [
-        "features/example-form/components/ExampleFormFeature.tsx",
-        "features/example-form/components/ExampleFormForm.tsx",
-        "features/example-form/index.ts",
-        "features/example-form/schema.ts",
-      ],
+      generatedRoot: "src/features/example-form",
+      kind: "feature" as const,
+      name: "example-form",
     },
     {
       label: "combined feature",
       args: ["generate", "feature", "example-full", "--query", "--mutation", "--form", "--tests"],
-      generatedRoot: "features/example-full",
-      stagingRoot: "features/example-full",
-      paths: [
-        "features/example-full/components/ExampleFullFeature.tsx",
-        "features/example-full/components/ExampleFullForm.tsx",
-        "features/example-full/index.ts",
-        "features/example-full/keys.ts",
-        "features/example-full/queries.ts",
-        "features/example-full/mutations.ts",
-        "features/example-full/schema.ts",
-        "features/example-full/__tests__/keys.test.ts",
-      ],
+      generatedRoot: "src/features/example-full",
+      kind: "feature" as const,
+      name: "example-full",
     },
     {
       label: "static page",
       args: ["generate", "page", "settings/profile"],
-      generatedRoot: "app/settings/profile",
-      stagingRoot: "app/settings/profile",
-      paths: ["app/settings/profile/page.tsx"],
+      generatedRoot: "src/app/settings/profile",
+      kind: "app" as const,
+      name: "settings/profile",
     },
     {
       label: "dynamic page",
       args: ["generate", "page", "users/[id]"],
-      generatedRoot: "app/users/[id]",
-      stagingRoot: "app/users/[id]",
-      paths: ["app/users/[id]/page.tsx"],
+      generatedRoot: "src/app/users/[id]",
+      kind: "app" as const,
+      name: "users/[id]",
     },
   ] as const;
 
   it.each(validationCases)(
     "validates $label against real Atlas app tooling",
-    ({ args, generatedRoot, stagingRoot, paths }) => {
+    ({ args, generatedRoot, kind, name }) => {
       const fixture = createGeneratedSourceValidationFixture();
       try {
         const result = runAtlasCli([...args, "--cwd", fixture.root], fixture.root);
 
         expect(result.exitCode).toBe(ExitCode.SUCCESS);
-        stageGeneratedOutput(fixture, `src/${generatedRoot}`, stagingRoot);
+        const stagedPaths = stageGeneratedOutput(fixture, {
+          generatedRelativeRoot: generatedRoot,
+          kind,
+          name,
+        });
 
-        const validation = validateGeneratedWebSource(fixture, [...paths]);
+        const validation = validateGeneratedWebSource(fixture, stagedPaths);
         if (validation.typecheck.exitCode !== 0) {
           throw new Error(
             `Typecheck failed for ${args.join(" ")}\n${validation.typecheck.stdout}\n${validation.typecheck.stderr}`
@@ -486,4 +482,71 @@ describe("generated source validation", () => {
       }
     }
   );
+});
+
+describe("generated source validation harness", () => {
+  it("fails ESLint for raw fetch in staged feature paths", () => {
+    const fixture = createGeneratedSourceValidationFixture();
+    try {
+      const invalidPath = writeGeneratedValidationFeatureFile(
+        fixture,
+        "invalid-fetch",
+        "bad.ts",
+        `export async function bad() {
+  return fetch("/should-fail");
+}
+`
+      );
+
+      const validation = validateGeneratedWebSource(fixture, [invalidPath]);
+      expect(validation.eslint.exitCode).not.toBe(0);
+    } finally {
+      removeGeneratedSourceValidationFixture(fixture);
+    }
+  });
+
+  it("fails ESLint for forbidden env imports in staged feature paths", () => {
+    const fixture = createGeneratedSourceValidationFixture();
+    try {
+      const invalidPath = writeGeneratedValidationFeatureFile(
+        fixture,
+        "invalid-import",
+        "bad.ts",
+        `import { serverEnv } from "@/env";
+
+export function bad() {
+  return serverEnv.NODE_ENV;
+}
+`
+      );
+
+      const validation = validateGeneratedWebSource(fixture, [invalidPath]);
+      expect(validation.eslint.exitCode).not.toBe(0);
+    } finally {
+      removeGeneratedSourceValidationFixture(fixture);
+    }
+  });
+
+  it("passes ESLint for a valid generated feature staged under real feature paths", () => {
+    const fixture = createGeneratedSourceValidationFixture();
+    try {
+      const result = runAtlasCli(
+        ["generate", "feature", "example", "--cwd", fixture.root],
+        fixture.root
+      );
+
+      expect(result.exitCode).toBe(ExitCode.SUCCESS);
+
+      const stagedPaths = stageGeneratedOutput(fixture, {
+        generatedRelativeRoot: "src/features/example",
+        kind: "feature",
+        name: "example",
+      });
+
+      const validation = validateGeneratedWebSource(fixture, stagedPaths);
+      expect(validation.eslint.exitCode).toBe(0);
+    } finally {
+      removeGeneratedSourceValidationFixture(fixture);
+    }
+  });
 });

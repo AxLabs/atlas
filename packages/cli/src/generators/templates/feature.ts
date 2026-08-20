@@ -43,7 +43,7 @@ export { ${context.naming.pascal}Feature } from "./components/${context.naming.p
 }
 
 export function renderFeatureKeys(context: FeatureTemplateContext): string {
-  return `import { createQueryKeys } from "@/lib/react-query/keys";
+  return `import { createQueryKeys } from "@/lib/react-query";
 
 export const ${context.naming.camel}Keys = createQueryKeys("${context.naming.kebab}");
 `;

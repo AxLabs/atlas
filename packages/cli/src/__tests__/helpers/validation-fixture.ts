@@ -2,9 +2,10 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -13,24 +14,77 @@ import { spawnSync } from "node:child_process";
 import { createGeneratorAtlasFixture } from "./fixture";
 import { getRepoRoot } from "./run-cli";
 
+export const GEN_VALIDATION_FEATURE_PREFIX = "__gen-validation";
+export const GEN_VALIDATION_APP_PREFIX = "__gen-validation";
+
 export interface GeneratedSourceValidationFixture {
   root: string;
-  stagingRoot: string;
+  runId: string;
+  repoRoot: string;
+  webRoot: string;
   tsconfigPath: string;
   cleanup: () => void;
 }
 
-const STAGING_ROOT = path.join("apps/web/src", "__gen_validate__");
+function createRunId(): string {
+  return `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
-function writeRunValidationTsconfig(stagingRoot: string): string {
-  const tsconfigPath = path.join(stagingRoot, "tsconfig.json");
+export function getGeneratedValidationFeatureRoot(runId: string, featureName: string): string {
+  return path.join(
+    "apps/web/src/features",
+    `${GEN_VALIDATION_FEATURE_PREFIX}-${runId}-${featureName}`
+  );
+}
+
+export function getGeneratedValidationAppRoot(runId: string, appRoute: string): string {
+  return path.join("apps/web/src/app", `${GEN_VALIDATION_APP_PREFIX}-${runId}`, appRoute);
+}
+
+function collectSourceFiles(absoluteRoot: string): string[] {
+  if (!existsSync(absoluteRoot)) {
+    return [];
+  }
+
+  const files: string[] = [];
+
+  function walk(current: string): void {
+    for (const entry of readdirSync(current)) {
+      const absoluteEntry = path.join(current, entry);
+      if (statSync(absoluteEntry).isDirectory()) {
+        walk(absoluteEntry);
+        continue;
+      }
+
+      if (/\.(ts|tsx)$/.test(entry)) {
+        files.push(absoluteEntry);
+      }
+    }
+  }
+
+  walk(absoluteRoot);
+  return files;
+}
+
+function writeRunValidationTsconfig(
+  webRoot: string,
+  runId: string,
+  includeRelativePaths: string[]
+): string {
+  const tsconfigPath = path.join(webRoot, `.gen-validation-${runId}.json`);
+  const include = [
+    "next-env.d.ts",
+    ...includeRelativePaths.map((relativePath) =>
+      path.posix.join(relativePath.replace(/\\/g, "/"), "**/*")
+    ),
+  ];
 
   writeFileSync(
     tsconfigPath,
     `${JSON.stringify(
       {
-        extends: "../../../tsconfig.generated-validation.json",
-        include: ["../../../generated-validation-env.d.ts", "./**/*.ts", "./**/*.tsx"],
+        extends: "./tsconfig.json",
+        include,
         compilerOptions: {
           noEmit: true,
         },
@@ -44,35 +98,75 @@ function writeRunValidationTsconfig(stagingRoot: string): string {
   return tsconfigPath;
 }
 
+function cleanupGeneratedValidationRun(webRoot: string, runId: string): void {
+  const tsconfigPath = path.join(webRoot, `.gen-validation-${runId}.json`);
+  if (existsSync(tsconfigPath)) {
+    rmSync(tsconfigPath, { force: true });
+  }
+
+  const featuresDir = path.join(webRoot, "src/features");
+  if (existsSync(featuresDir)) {
+    for (const entry of readdirSync(featuresDir)) {
+      if (entry.startsWith(`${GEN_VALIDATION_FEATURE_PREFIX}-${runId}-`)) {
+        rmSync(path.join(featuresDir, entry), { recursive: true, force: true });
+      }
+    }
+  }
+
+  const appValidationRoot = path.join(webRoot, "src/app", `${GEN_VALIDATION_APP_PREFIX}-${runId}`);
+  if (existsSync(appValidationRoot)) {
+    rmSync(appValidationRoot, { recursive: true, force: true });
+  }
+}
+
 export function createGeneratedSourceValidationFixture(): GeneratedSourceValidationFixture {
   const repoRoot = getRepoRoot();
+  const webRoot = path.join(repoRoot, "apps/web");
+  const runId = createRunId();
   const fixture = createGeneratorAtlasFixture({ withContract: true, withReferencePaths: true });
-  mkdirSync(path.join(repoRoot, STAGING_ROOT), { recursive: true });
-  const stagingRoot = mkdtempSync(path.join(repoRoot, STAGING_ROOT, "run-"));
-  const tsconfigPath = writeRunValidationTsconfig(stagingRoot);
+  const tsconfigPath = writeRunValidationTsconfig(webRoot, runId, []);
 
   return {
     root: fixture.root,
-    stagingRoot,
+    runId,
+    repoRoot,
+    webRoot,
     tsconfigPath,
     cleanup: () => {
       fixture.cleanup();
-      if (existsSync(stagingRoot)) {
-        rmSync(stagingRoot, { recursive: true, force: true });
-      }
+      cleanupGeneratedValidationRun(webRoot, runId);
     },
   };
 }
 
+export interface StageGeneratedOutputOptions {
+  generatedRelativeRoot: string;
+  kind: "feature" | "app";
+  name: string;
+}
+
 export function stageGeneratedOutput(
   fixture: GeneratedSourceValidationFixture,
-  generatedRelativeRoot: string,
-  stagingRelativeRoot: string
-): void {
-  copyGeneratedTree(
-    path.join(fixture.root, "apps/web", generatedRelativeRoot),
-    path.join(fixture.stagingRoot, stagingRelativeRoot)
-  );
+  options: StageGeneratedOutputOptions
+): string[] {
+  const sourceRoot = path.join(fixture.root, "apps/web", options.generatedRelativeRoot);
+
+  const destinationRelative =
+    options.kind === "feature"
+      ? path.join(
+          "src/features",
+          `${GEN_VALIDATION_FEATURE_PREFIX}-${fixture.runId}-${options.name}`
+        )
+      : path.join("src/app", `${GEN_VALIDATION_APP_PREFIX}-${fixture.runId}`, options.name);
+  const destinationRoot = path.join(fixture.webRoot, destinationRelative);
+
+  copyGeneratedTree(sourceRoot, destinationRoot);
+
+  fixture.tsconfigPath = writeRunValidationTsconfig(fixture.webRoot, fixture.runId, [
+    destinationRelative,
+  ]);
+
+  return collectSourceFiles(destinationRoot);
 }
 
 function copyGeneratedTree(sourceRoot: string, destinationRoot: string): void {
@@ -91,13 +185,12 @@ export interface GeneratedSourceValidationResult {
 
 export function validateGeneratedWebSource(
   fixture: GeneratedSourceValidationFixture,
-  stagingRelativePaths: string[]
+  absolutePaths: string[]
 ): GeneratedSourceValidationResult {
-  const repoRoot = getRepoRoot();
-  const webRoot = path.join(repoRoot, "apps/web");
+  const eslintConfigPath = path.join(fixture.webRoot, "eslint.config.mjs");
 
   const typecheck = spawnSync("pnpm", ["exec", "tsc", "--noEmit", "-p", fixture.tsconfigPath], {
-    cwd: webRoot,
+    cwd: fixture.webRoot,
     encoding: "utf8",
     env: {
       ...process.env,
@@ -106,16 +199,11 @@ export function validateGeneratedWebSource(
     },
   });
 
-  const absolutePaths = stagingRelativePaths.map((relativePath) =>
-    path.join(fixture.stagingRoot, relativePath)
-  );
-
-  const eslintConfigPath = path.join(webRoot, "eslint.config.mjs");
   const eslint = spawnSync(
     "pnpm",
     ["exec", "eslint", "--config", eslintConfigPath, ...absolutePaths],
     {
-      cwd: webRoot,
+      cwd: fixture.webRoot,
       encoding: "utf8",
       env: {
         ...process.env,
@@ -131,12 +219,12 @@ export function validateGeneratedWebSource(
       "exec",
       "prettier",
       "--config",
-      path.join(repoRoot, ".prettierrc.json"),
+      path.join(fixture.repoRoot, ".prettierrc.json"),
       "--check",
       ...absolutePaths,
     ],
     {
-      cwd: webRoot,
+      cwd: fixture.webRoot,
       encoding: "utf8",
       env: {
         ...process.env,
@@ -165,15 +253,35 @@ export function validateGeneratedWebSource(
   };
 }
 
+export function writeGeneratedValidationFeatureFile(
+  fixture: GeneratedSourceValidationFixture,
+  featureName: string,
+  relativeFile: string,
+  content: string
+): string {
+  const featureRelative = path.join(
+    "src/features",
+    `${GEN_VALIDATION_FEATURE_PREFIX}-${fixture.runId}-${featureName}`
+  );
+  const featureRoot = path.join(fixture.webRoot, featureRelative);
+  const absolutePath = path.join(featureRoot, relativeFile);
+
+  mkdirSync(path.dirname(absolutePath), { recursive: true });
+  writeFileSync(absolutePath, content, "utf8");
+
+  fixture.tsconfigPath = writeRunValidationTsconfig(fixture.webRoot, fixture.runId, [
+    featureRelative,
+  ]);
+
+  return absolutePath;
+}
+
 export function removeGeneratedSourceValidationFixture(
   fixture: GeneratedSourceValidationFixture
 ): void {
   fixture.cleanup();
 }
 
-export function readStagedGeneratedSource(
-  fixture: GeneratedSourceValidationFixture,
-  stagingRelativePath: string
-): string {
-  return readFileSync(path.join(fixture.stagingRoot, stagingRelativePath), "utf8");
+export function readStagedGeneratedSource(absolutePath: string): string {
+  return readFileSync(absolutePath, "utf8");
 }

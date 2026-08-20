@@ -13,8 +13,9 @@ bun.lockb
 coverage
 test-results
 playwright-report
-apps/web/.generated-validation
-apps/web/src/__gen_validate__
+apps/web/.gen-validation-*.json
+apps/web/src/features/__gen-validation-*
+apps/web/src/app/__gen-validation-*
 *.log
 
 # Next.js

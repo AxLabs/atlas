@@ -1,3 +1,3 @@
-import { createQueryKeys } from "@/lib/react-query/keys";
+import { createQueryKeys } from "@/lib/react-query";
 
 export const billingHistoryKeys = createQueryKeys("billing-history");
