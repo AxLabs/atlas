@@ -12,6 +12,9 @@ importers:
 
   .:
     devDependencies:
+      '@atlas/cli':
+        specifier: workspace:*
+        version: link:packages/cli
       '@changesets/cli':
         specifier: ^2.29.8
         version: 2.29.8(@types/node@22.10.2)
@@ -235,6 +238,37 @@ importers:
       tsx:
         specifier: 4.19.2
         version: 4.19.2
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+
+  packages/cli:
+    dependencies:
+      '@atlas/project':
+        specifier: workspace:*
+        version: link:../project
+    devDependencies:
+      '@atlas/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/jest':
+        specifier: 29.5.14
+        version: 29.5.14
+      '@types/node':
+        specifier: 22.10.2
+        version: 22.10.2
+      eslint:
+        specifier: 9.17.0
+        version: 9.17.0(jiti@2.6.1)
+      jest:
+        specifier: 29.7.0
+        version: 29.7.0(@types/node@22.10.2)(ts-node@10.9.2(@types/node@22.10.2)(typescript@5.7.2))
+      prettier:
+        specifier: 3.4.2
+        version: 3.4.2
+      ts-jest:
+        specifier: 29.2.5
+        version: 29.2.5(@babel/core@7.28.5)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.28.5))(esbuild@0.25.12)(jest@29.7.0(@types/node@22.10.2)(ts-node@10.9.2(@types/node@22.10.2)(typescript@5.7.2)))(typescript@5.7.2)
       typescript:
         specifier: 5.7.2
         version: 5.7.2

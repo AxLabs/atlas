@@ -7,6 +7,8 @@ export const ATLAS_WORKSPACE_PACKAGES = [
   { name: "@atlas/ui", relativePath: "packages/ui" },
   { name: "@atlas/config", relativePath: "packages/config" },
   { name: "@atlas/consent", relativePath: "packages/consent" },
+  { name: "@atlas/project", relativePath: "packages/project" },
+  { name: "@atlas/cli", relativePath: "packages/cli" },
 ];
 
 export const CANONICAL_GOVERNANCE_DOC = "docs/how-we-build/releases-and-governance.md";

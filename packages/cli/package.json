@@ -1,16 +1,14 @@
 {
-  "name": "@atlas/project",
+  "name": "@atlas/cli",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Atlas project architecture contract schema and loader",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "description": "Atlas command-line interface for project contract and bootstrap workflows",
+  "bin": {
+    "atlas": "./dist/cli.js"
+  },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -19,13 +17,12 @@
     "format": "prettier --check \"src/**/*.{ts,tsx}\"",
     "format:write": "prettier --write \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
+    "test": "pnpm build && jest",
     "test:watch": "jest --watch",
-    "resolve": "tsx scripts/resolve-contract.ts",
     "clean": "rm -rf .turbo node_modules coverage dist"
   },
   "dependencies": {
-    "zod": "3.24.1"
+    "@atlas/project": "workspace:*"
   },
   "devDependencies": {
     "@atlas/config": "workspace:*",
@@ -35,7 +32,6 @@
     "jest": "29.7.0",
     "prettier": "3.4.2",
     "ts-jest": "29.2.5",
-    "tsx": "4.19.2",
     "typescript": "5.7.2"
   }
 }
