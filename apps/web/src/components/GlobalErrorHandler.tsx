@@ -1,20 +1,19 @@
-/**
- * Global error handler for unhandled promise rejections.
- *
- * Mounted in the root layout when Sentry is enabled (NEXT_PUBLIC_SENTRY_DSN).
- * Component-level error boundaries use Sentry's ErrorBoundary from @sentry/nextjs
- * directly or via global-error.tsx for catastrophic failures.
- */
-
 "use client";
 
 import { useEffect } from "react";
 
-const SENTRY_ENABLED = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
+import { getClientConfig } from "@/config/client";
 
+/**
+ * Global error handler for unhandled promise rejections.
+ *
+ * Mounted in the root layout when Sentry is enabled via config.
+ * Component-level error boundaries use Sentry's ErrorBoundary from @sentry/nextjs
+ * directly or via global-error.tsx for catastrophic failures.
+ */
 export function GlobalErrorHandler() {
   useEffect(() => {
-    if (!SENTRY_ENABLED) return;
+    if (!getClientConfig().sentry.enabled) return;
 
     let cleanup: (() => void) | undefined;
 

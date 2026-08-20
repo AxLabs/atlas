@@ -2,6 +2,7 @@
 
 import { ConsentProvider, useConsent } from "@atlas/consent";
 
+import { getClientConfig } from "@/config/client";
 import { analytics } from "@/lib/analytics";
 import { getConsentConfig } from "@/lib/consent/config";
 
@@ -31,7 +32,7 @@ export function ConsentBridge({ children, nonce }: ConsentBridgeProps) {
       onAnalyticsConsentChange={(granted) => {
         analytics.setConsent(granted);
       }}
-      debug={process.env.NEXT_PUBLIC_ANALYTICS_DEBUG === "true"}
+      debug={getClientConfig().analytics.debug}
     >
       <AnalyticsWithConsent nonce={nonce}>{children}</AnalyticsWithConsent>
     </ConsentProvider>

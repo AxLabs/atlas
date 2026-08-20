@@ -1,16 +1,16 @@
 /**
  * OAuth Types and Interfaces
  *
- * Common types for OAuth providers and session management.
- * These types provide a consistent interface across different providers.
+ * Shared session and OAuth data shapes. The session storage core is provider-neutral;
+ * the current reference implementation supports Google only (`OAuthProvider`).
  *
  * @module lib/auth/types
  */
 
 /**
- * Supported OAuth providers.
+ * Supported OAuth providers in the current reference implementation.
  *
- * Add new providers here as they are implemented.
+ * Additional providers can extend this union when reference IdP modules are added.
  */
 export type OAuthProvider = "google";
 

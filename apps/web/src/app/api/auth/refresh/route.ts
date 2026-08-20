@@ -9,7 +9,8 @@
 
 import { NextResponse } from "next/server";
 
-import { readSession, refreshSession } from "@/lib/auth/session";
+import { refreshGoogleSession } from "@/lib/auth/providers/google/session-refresh";
+import { readSession } from "@/lib/auth/session";
 
 export async function POST() {
   try {
@@ -23,7 +24,7 @@ export async function POST() {
       return NextResponse.json({ error: "No refresh token available" }, { status: 400 });
     }
 
-    await refreshSession(session);
+    await refreshGoogleSession(session);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch {

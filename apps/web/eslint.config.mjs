@@ -6,6 +6,109 @@ import { dirname } from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/** Shared test file ignores for architecture boundary rules. */
+const TEST_FILE_IGNORES = [
+  "src/test/**",
+  "**/__tests__/**",
+  "**/*.test.{ts,tsx}",
+  "**/*.spec.{ts,tsx}",
+];
+
+/** Files where direct @/env imports are banned (config facade required). */
+const ENV_IMPORT_IGNORES = [
+  "src/config/**",
+  "src/app/api/**/route.ts",
+  ...TEST_FILE_IGNORES,
+];
+
+/** Files where raw fetch() is banned (central API client required). */
+const NO_FETCH_IGNORES = [
+  "src/lib/api/**",
+  "src/lib/http/**",
+  "src/app/api/**/route.ts",
+  "src/app/monitoring/route.ts",
+];
+
+/** Files where both process.env and fetch restrictions apply together. */
+const APP_LAYER_FILES = [
+  "src/app/**/*.{ts,tsx}",
+  "src/components/**/*.{ts,tsx}",
+  "src/features/**/*.{ts,tsx}",
+  "src/providers/**/*.{ts,tsx}",
+];
+
+const PROCESS_ENV_IGNORES = [
+  "src/env.ts",
+  "src/env/**",
+  "src/schemas/env/**",
+  "src/config/**",
+  "src/app/api/**/route.ts",
+  "src/lib/analytics/adapters/**",
+  "src/providers/analytics-provider.tsx",
+  ...TEST_FILE_IGNORES,
+];
+
+const PROCESS_ENV_MESSAGE =
+  "Direct access to process.env is not allowed. Use the config facade instead:\n" +
+  "  - Server-side: import { getServerConfig } from '@/config'\n" +
+  "  - Client-side: import { useConfig } from '@/config'\n" +
+  "This ensures type safety, validation, and consistent config access patterns.";
+
+const PROCESS_ENV_SELECTOR =
+  "MemberExpression[object.name='process'][property.name='env']";
+
+const FETCH_MESSAGE =
+  "Direct fetch() calls are not allowed. Use the central API client from @/lib/api instead. " +
+  "This ensures consistent error handling, correlation ID propagation, and retry logic.";
+
+/** Combined import restrictions for app layers that also ban analytics vendor SDKs. */
+const APP_LAYER_IMPORT_RESTRICTIONS = {
+  paths: [
+    {
+      name: "posthog-js",
+      message:
+        "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
+        "  import { analytics } from '@/lib/analytics';\n" +
+        "This ensures consistent event tracking and consent management.",
+    },
+    {
+      name: "posthog-js/react",
+      message:
+        "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
+        "  import { analytics } from '@/lib/analytics';\n" +
+        "This ensures consistent event tracking and consent management.",
+    },
+  ],
+  patterns: [
+    {
+      group: ["@/env", "@/env/*"],
+      message:
+        "Direct env imports are discouraged. Use the config facade instead:\n" +
+        "  - Server-side: import { getServerConfig } from '@/config'\n" +
+        "  - Client-side: import { useConfig } from '@/config'\n" +
+        "This provides a stable, typed config interface and separates concerns.",
+    },
+    {
+      group: ["@/lib/utils", "@/lib/utils/*", "@/hooks/use-zod-form", "@/hooks/use-theme"],
+      message:
+        "Do not import @atlas/ui internals via app aliases. Use the public API:\n" +
+        "  import { cn, useZodForm, useTheme } from '@atlas/ui';",
+    },
+    {
+      group: ["**/packages/ui/**", "**/packages/consent/**", "../../packages/**"],
+      message:
+        "Do not import workspace package source directly. Use public package exports:\n" +
+        "  import { Button } from '@atlas/ui';\n" +
+        "  import '@atlas/ui/globals.css';",
+    },
+  ],
+};
+
+/** Import restrictions for lib/providers (no analytics vendor ban — adapters live in lib). */
+const LIB_PROVIDER_IMPORT_RESTRICTIONS = {
+  patterns: APP_LAYER_IMPORT_RESTRICTIONS.patterns,
+};
+
 export default [
   ...baseConfig,
   {
@@ -20,80 +123,64 @@ export default [
     },
   },
   {
-    ignores: ["eslint.config.mjs"], // Don't lint the config file itself
+    ignores: ["eslint.config.mjs", "eslint.boundaries.test.mjs"], // Don't lint boundary test harness
   },
   {
-    // Ban direct process.env usage - use config facade instead
-    // This prevents config sprawl and ensures all config goes through typed facade
+    // App layers: env facade, analytics adapters, UI public API, and package source boundaries
     files: [
-      "src/**/*.{ts,tsx}",
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
     ],
-    ignores: [
-      // Allowed: env module and its schemas
-      "src/env.ts",
-      "src/env/**",
-      "src/schemas/env/**",
-      // Allowed: config module (converts env to config)
-      "src/config/**",
-      // Allowed: analytics adapters and provider (check env vars at runtime)
-      "src/lib/analytics/adapters/**",
-      "src/providers/analytics-provider.tsx",
-      // Allowed: test setup
-      "src/test/**",
-      "**/__tests__/**",
-      "**/*.test.{ts,tsx}",
-      "**/*.spec.{ts,tsx}",
-    ],
+    ignores: ENV_IMPORT_IGNORES,
+    rules: {
+      "no-restricted-imports": ["error", APP_LAYER_IMPORT_RESTRICTIONS],
+    },
+  },
+  {
+    // lib/providers: same import boundaries except analytics vendor SDKs (adapters live here)
+    files: ["src/providers/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
+    ignores: ENV_IMPORT_IGNORES,
+    rules: {
+      "no-restricted-imports": ["error", LIB_PROVIDER_IMPORT_RESTRICTIONS],
+    },
+  },
+  {
+    // Ban direct process.env in src files not covered by the app-layer combined block below
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [...PROCESS_ENV_IGNORES, ...APP_LAYER_FILES],
     rules: {
       "no-restricted-syntax": [
         "error",
         {
-          selector: "MemberExpression[object.name='process'][property.name='env']",
-          message:
-            "Direct access to process.env is not allowed. Use the config facade instead:\n" +
-            "  - Server-side: import { getServerConfig } from '@/config'\n" +
-            "  - Client-side: import { useConfig } from '@/config'\n" +
-            "This ensures type safety, validation, and consistent config access patterns.",
+          selector: PROCESS_ENV_SELECTOR,
+          message: PROCESS_ENV_MESSAGE,
         },
       ],
     },
   },
   {
-    // Ban direct env module usage - use config facade instead
-    // Enforce config facade pattern throughout the app
-    files: [
-      "src/app/**/*.{ts,tsx}",
-      "src/components/**/*.{ts,tsx}",
-      "src/features/**/*.{ts,tsx}",
-      "src/providers/**/*.{ts,tsx}",
-      "src/hooks/**/*.{ts,tsx}",
-      "src/lib/**/*.{ts,tsx}",
-    ],
-    ignores: [
-      // Config module itself needs to import env
-      "src/config/**",
-      // API routes can use env if needed (but prefer config)
-      "src/app/api/**/route.ts",
-      // Tests
-      "src/test/**",
-      "**/__tests__/**",
-      "**/*.test.{ts,tsx}",
-      "**/*.spec.{ts,tsx}",
-    ],
+    // App layers: process.env + raw fetch restrictions in one rule (flat-config safe)
+    files: APP_LAYER_FILES,
+    ignores: [...PROCESS_ENV_IGNORES, ...NO_FETCH_IGNORES],
     rules: {
-      "no-restricted-imports": [
+      "no-restricted-syntax": [
         "error",
         {
-          patterns: [
-            {
-              group: ["@/env", "@/env/*"],
-              message:
-                "Direct env imports are discouraged. Use the config facade instead:\n" +
-                "  - Server-side: import { getServerConfig } from '@/config'\n" +
-                "  - Client-side: import { useConfig } from '@/config'\n" +
-                "This provides a stable, typed config interface and separates concerns.",
-            },
-          ],
+          selector: PROCESS_ENV_SELECTOR,
+          message: PROCESS_ENV_MESSAGE,
+        },
+        {
+          selector: "CallExpression[callee.name='fetch']",
+          message: FETCH_MESSAGE,
+        },
+      ],
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "fetch",
+          message: FETCH_MESSAGE,
         },
       ],
     },
@@ -102,141 +189,6 @@ export default [
     // Ban console.* usage - use structured logging instead
     rules: {
       "no-console": "error",
-    },
-  },
-  {
-    // Ban direct analytics vendor SDK imports outside the analytics adapter layer
-    // Application code should use @/lib/analytics, never posthog-js or gtag directly
-    files: [
-      "src/app/**/*.{ts,tsx}",
-      "src/components/**/*.{ts,tsx}",
-      "src/features/**/*.{ts,tsx}",
-      "src/hooks/**/*.{ts,tsx}",
-    ],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "posthog-js",
-              message:
-                "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
-                "  import { analytics } from '@/lib/analytics';\n" +
-                "This ensures consistent event tracking and consent management.",
-            },
-            {
-              name: "posthog-js/react",
-              message:
-                "Direct PostHog imports are not allowed. Use the analytics adapter instead:\n" +
-                "  import { analytics } from '@/lib/analytics';\n" +
-                "This ensures consistent event tracking and consent management.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    // Ban direct process.env usage - use env module instead
-    // This prevents env var sprawl and ensures validation
-    files: [
-      "src/**/*.{ts,tsx}",
-    ],
-    ignores: [
-      "src/env.ts",
-      "src/env/**",
-      "src/schemas/env/**",
-      "src/app/api/**/route.ts", // API routes may need direct env access for runtime config
-      "src/lib/analytics/adapters/**", // Analytics adapters check for env vars at runtime
-      "src/providers/analytics-provider.tsx", // Analytics provider checks for env vars
-      "src/test/**",
-      "**/__tests__/**",
-      "**/*.test.{ts,tsx}",
-      "**/*.spec.{ts,tsx}",
-    ],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "MemberExpression[object.name='process'][property.name='env']",
-          message:
-            "Direct access to process.env is not allowed. Import environment variables from '@/env' instead. This ensures type safety and validation. For server-only vars use 'serverEnv', for client vars use 'clientEnv'.",
-        },
-      ],
-    },
-  },
-  {
-    // Enforce "no fetch spaghetti" - all API calls go through central client
-    files: [
-      "src/app/**/*.{ts,tsx}",
-      "src/components/**/*.{ts,tsx}",
-      "src/features/**/*.{ts,tsx}",
-      "src/providers/**/*.{ts,tsx}",
-    ],
-    ignores: [
-      "src/lib/api/**",
-      "src/lib/http/**",
-      "src/app/api/**/route.ts",
-      "src/app/monitoring/route.ts",
-    ],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "CallExpression[callee.name='fetch']",
-          message:
-            "Direct fetch() calls are not allowed. Use the central API client from @/lib/api instead. This ensures consistent error handling, correlation ID propagation, and retry logic.",
-        },
-      ],
-      "no-restricted-globals": [
-        "error",
-        {
-          name: "fetch",
-          message:
-            "Direct fetch() calls are not allowed. Use the central API client from @/lib/api instead. This ensures consistent error handling, correlation ID propagation, and retry logic.",
-        },
-      ],
-    },
-  },
-  {
-    // Prevent app code from importing UI package internals via @/lib or @/hooks aliases.
-    // The tsconfig @/lib/* fallback exists only for TypeScript resolution when compiling
-    // @atlas/ui source through the web project — not as an app import path.
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@/lib/utils", "@/lib/utils/*", "@/hooks/use-zod-form", "@/hooks/use-theme"],
-              message:
-                "Do not import @atlas/ui internals via app aliases. Use the public API:\n" +
-                "  import { cn, useZodForm, useTheme } from '@atlas/ui';",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["**/packages/ui/**", "**/packages/consent/**", "../../packages/**"],
-              message:
-                "Do not import workspace package source directly. Use public package exports:\n" +
-                "  import { Button } from '@atlas/ui';\n" +
-                "  import '@atlas/ui/globals.css';",
-            },
-          ],
-        },
-      ],
     },
   },
   {
