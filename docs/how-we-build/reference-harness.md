@@ -24,7 +24,7 @@ AUTH_SESSION_SECRET=local-reference-session-secret-32chars
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Restart the dev server, then open [`/reference`](/reference).
+Restart the dev server, then open `/reference`.
 
 ## Auth personas
 
