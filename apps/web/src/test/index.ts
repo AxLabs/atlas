@@ -13,6 +13,7 @@
 // Helpers
 export * from "./helpers/assertions";
 export * from "./helpers/reactQuery";
+export * from "./helpers/reference";
 export * from "./helpers/render";
 export * from "./helpers/router";
 

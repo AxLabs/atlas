@@ -10,9 +10,19 @@
 import { NextResponse } from "next/server";
 
 import { getGoogleSessionResponse } from "@/lib/auth/providers/google/session-refresh";
+import { getReferenceSessionResponse } from "@/lib/auth/providers/reference/session-refresh";
+import { readSession } from "@/lib/auth/session";
 
 export async function GET() {
-  const session = await getGoogleSessionResponse();
+  const session = await readSession();
 
-  return NextResponse.json(session);
+  if (!session) {
+    return NextResponse.json({ authenticated: false });
+  }
+
+  if (session.user.provider === "reference") {
+    return NextResponse.json(await getReferenceSessionResponse());
+  }
+
+  return NextResponse.json(await getGoogleSessionResponse());
 }

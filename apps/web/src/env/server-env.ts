@@ -86,6 +86,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET,
     AUTH_SESSION_TTL_SECONDS: process.env.AUTH_SESSION_TTL_SECONDS,
+    ATLAS_REFERENCE_MODE: process.env.ATLAS_REFERENCE_MODE,
   },
 
   /**

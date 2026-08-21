@@ -12,6 +12,7 @@ Atlas is a complete frontend platform template. When you run it, you get:
 - A shared UI component library (`packages/ui`)
 - Configured tooling (linting, testing, type checking)
 - Minimal reference examples under `/examples`
+- Optional zero-credential reference harness at `/reference` (see below)
 
 ---
 
@@ -36,6 +37,52 @@ pnpm dev
 ```
 
 The application launches at `http://localhost:3000`.
+
+---
+
+## Local evaluation paths
+
+Atlas supports two local workflows. Pick the one that matches your goal.
+
+### Zero-credential reference harness (recommended for first evaluation)
+
+No Google OAuth credentials and no external backend are required. The harness uses deterministic
+reference fixtures for auth and API responses — development and reference only, **not** evidence of
+production OAuth or API security.
+
+Add to `apps/web/.env.local`:
+
+```bash
+ATLAS_REFERENCE_MODE=true
+NEXT_PUBLIC_API_URL=/api/reference
+AUTH_SESSION_SECRET=local-reference-session-secret-32chars
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+Then:
+
+```text
+pnpm dev
+→ open /reference
+→ select anonymous / reference-user / reference-admin
+→ select deterministic API scenarios
+```
+
+See [Reference harness](../how-we-build/reference-harness.md) for personas, scenarios, reset, and
+test helpers.
+
+### Real Google OAuth and external API
+
+For production-like auth, configure Google OAuth credentials and point `NEXT_PUBLIC_API_URL` at your
+backend. This path is separate from the reference harness.
+
+See the canonical [environment variables](../how-we-build/env.md) guide (OAuth profile) and
+[ADR 0004: Google OAuth with PKCE](../adr/0004-oauth-google-pkce.md).
+
+### Examples-only template (default `.env.example`)
+
+The default `.env.local` copy runs `/examples` with in-memory mock APIs — no reference harness and
+no OAuth setup required.
 
 ---
 
@@ -78,7 +125,8 @@ Force UI states via query param on the data example:
 
 ## What comes next
 
-1. Explore `/examples` to see platform patterns in code
+1. Enable the [reference harness](../how-we-build/reference-harness.md) or explore `/examples` to
+   see platform patterns in code
 2. Read [Architecture](architecture.md) for the system mental model
 3. Delete `app/examples/`, `features/examples/`, and `api/examples/` when you start your product
 4. Add features under `apps/web/src/features/` following `features/reference/users/` for OpenAPI

@@ -263,4 +263,16 @@ export const ServerEnvSchema = {
     .pipe(z.number().positive())
     .optional()
     .default("604800"),
+
+  /**
+   * Enable deterministic reference auth/API adapters for local development.
+   * Must never be true in production — validated by getServerEnvSchema.
+   *
+   * @default false (disabled)
+   */
+  ATLAS_REFERENCE_MODE: z
+    .string()
+    .transform((val) => val === "true")
+    .optional()
+    .default("false"),
 };

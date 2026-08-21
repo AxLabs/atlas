@@ -61,6 +61,7 @@ function validateServerEnv(nodeEnv: string): { success: boolean; errors: string[
     const envVars = {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL,
+      ATLAS_REFERENCE_MODE: process.env.ATLAS_REFERENCE_MODE,
     };
 
     serverSchema.parse(envVars);

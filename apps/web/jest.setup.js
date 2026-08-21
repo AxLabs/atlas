@@ -1,6 +1,8 @@
 // Add custom jest matchers from jest-dom
 require("@testing-library/jest-dom");
 
+jest.mock("server-only", () => ({}));
+
 // Import test setup utilities
 const { setupMSW } = require("./src/test/setup/msw");
 const { setupTestEnv } = require("./src/test/setup/env");
@@ -76,11 +78,26 @@ global.URL = class URL {
 };
 
 // Mock Next.js headers for API route tests
+const cookieStore = new Map();
+
 jest.mock("next/headers", () => ({
   headers: jest.fn(() => ({
     get: jest.fn(),
   })),
+  cookies: jest.fn(async () => ({
+    get: jest.fn((name) => {
+      const value = cookieStore.get(name);
+      return value ? { name, value } : undefined;
+    }),
+    set: jest.fn((name, value) => {
+      cookieStore.set(name, value);
+    }),
+  })),
 }));
+
+beforeEach(() => {
+  cookieStore.clear();
+});
 
 // Mock Next.js navigation
 jest.mock("next/navigation", () => {

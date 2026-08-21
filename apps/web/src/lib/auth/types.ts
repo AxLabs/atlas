@@ -12,7 +12,7 @@
  *
  * Additional providers can extend this union when reference IdP modules are added.
  */
-export type OAuthProvider = "google";
+export type OAuthProvider = "google" | "reference";
 
 /**
  * Normalized user information from OAuth providers.
@@ -51,6 +51,12 @@ export interface OAuthUser {
    * May be null if not provided or if scope not requested.
    */
   avatarUrl: string | null;
+
+  /**
+   * Stable principal identifier for authenticated identity.
+   * Present on reference personas; optional for OAuth users until mapped.
+   */
+  principalId?: string;
 }
 
 /**
