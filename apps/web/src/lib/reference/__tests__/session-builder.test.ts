@@ -18,6 +18,7 @@ describe("buildReferenceSessionData", () => {
       accessToken: "reference-access-token-reference-user",
       accessTokenExpiresAt: 4_102_444_800,
       createdAt: 1_700_000_000,
+      expiresAt: 4_102_444_800,
     });
   });
 
