@@ -99,6 +99,9 @@ export const serverEnv = {
       ? parseInt(process.env.AUTH_SESSION_TTL_SECONDS, 10)
       : 604800;
   },
+  get ATLAS_REFERENCE_MODE() {
+    return process.env.ATLAS_REFERENCE_MODE === "true";
+  },
 };
 
 // Unified env export

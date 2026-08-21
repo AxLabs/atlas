@@ -14,12 +14,13 @@
 
 ## Setup Profiles
 
-| Profile             | Required variables                                                        | Use case                              |
-| ------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
-| **Local template**  | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                              | `/examples` routes with mocked APIs   |
-| **OAuth**           | Above + `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SESSION_SECRET` | Auth API routes when wired in product |
-| **Database-backed** | Above + `DATABASE_URL`                                                    | Features that connect to PostgreSQL   |
-| **Production**      | All production secrets including `DATABASE_URL`                           | CI (`NODE_ENV=production`) and deploy |
+| Profile               | Required variables                                                                               | Use case                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **Local template**    | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                                                     | `/examples` routes with mocked APIs                                                   |
+| **Reference harness** | Above + `ATLAS_REFERENCE_MODE=true`, `NEXT_PUBLIC_API_URL=/api/reference`, `AUTH_SESSION_SECRET` | Zero-credential auth + users API — see [reference-harness.md](./reference-harness.md) |
+| **OAuth**             | Above + `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SESSION_SECRET`                        | Auth API routes when wired in product                                                 |
+| **Database-backed**   | Above + `DATABASE_URL`                                                                           | Features that connect to PostgreSQL                                                   |
+| **Production**        | All production secrets including `DATABASE_URL`                                                  | CI (`NODE_ENV=production`) and deploy                                                 |
 
 `DATABASE_URL` is optional in the Zod schema for local development. The `validate:env` script
 requires it only when `NODE_ENV=production`.

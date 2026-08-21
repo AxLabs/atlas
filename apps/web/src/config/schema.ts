@@ -180,6 +180,16 @@ const authConfigSchema = z.object({
 });
 
 /**
+ * Reference harness configuration (server-only).
+ */
+const referenceConfigSchema = z.object({
+  /**
+   * Whether deterministic reference adapters are active.
+   */
+  enabled: z.boolean(),
+});
+
+/**
  * Complete configuration schema for Atlas application.
  *
  * This is the single source of truth for what configuration looks like.
@@ -233,6 +243,11 @@ export const configSchema = z.object({
    * Analytics adapter configuration.
    */
   analytics: analyticsConfigSchema,
+
+  /**
+   * Reference harness configuration (server-only).
+   */
+  reference: referenceConfigSchema,
 });
 
 /**
@@ -248,6 +263,7 @@ export type Config = z.infer<typeof configSchema>;
 export const clientConfigSchema = configSchema.omit({
   logging: true,
   auth: true,
+  reference: true,
 });
 
 /**

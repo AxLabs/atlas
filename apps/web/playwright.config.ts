@@ -21,5 +21,12 @@ export default defineConfig({
     command: "corepack pnpm dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      ATLAS_REFERENCE_MODE: "true",
+      NEXT_PUBLIC_API_URL: "/api/reference",
+      AUTH_SESSION_SECRET:
+        process.env.AUTH_SESSION_SECRET ?? "local-reference-session-secret-32chars",
+    },
   },
 });

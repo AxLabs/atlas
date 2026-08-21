@@ -12,7 +12,7 @@
  *
  * Add new providers here as they are implemented.
  */
-export type OAuthProvider = "google";
+export type OAuthProvider = "google" | "reference";
 
 /**
  * Normalized user information from OAuth providers.
@@ -51,6 +51,17 @@ export interface OAuthUser {
    * May be null if not provided or if scope not requested.
    */
   avatarUrl: string | null;
+
+  /**
+   * Stable principal identifier for authorization profiles (#41).
+   * Present on reference personas; optional for OAuth users until mapped.
+   */
+  principalId?: string;
+
+  /**
+   * Authorization roles for the principal (#41 harness seam).
+   */
+  roles?: string[];
 }
 
 /**

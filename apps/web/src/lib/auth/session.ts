@@ -289,7 +289,12 @@ export async function refreshSession(session: SessionData): Promise<SessionData>
     throw new Error("No refresh token available");
   }
 
-  // Currently only Google is supported
+  // Reference sessions use long-lived deterministic tokens — no external refresh
+  if (session.user.provider === "reference") {
+    return session;
+  }
+
+  // Currently only Google is supported for external refresh
   if (session.user.provider !== "google") {
     throw new Error(`Refresh not implemented for provider: ${session.user.provider}`);
   }
