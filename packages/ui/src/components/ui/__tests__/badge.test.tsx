@@ -4,34 +4,31 @@ import { CircleCheck } from "lucide-react";
 
 import { Badge } from "../badge";
 
-const sizes = ["xs", "sm", "default", "lg"] as const;
-
 describe("Badge", () => {
-  it.each(sizes)("renders text-only %s badges with leading-none alignment", (size) => {
-    const { container } = render(<Badge size={size}>Status</Badge>);
-    const badge = container.querySelector('[data-slot="badge"]');
-    expect(badge).toHaveClass("leading-none");
+  it("renders badge text", () => {
+    render(<Badge>Status</Badge>);
     expect(screen.getByText("Status")).toBeInTheDocument();
   });
 
-  it.each(sizes)("renders icon-plus-text %s badges", (size) => {
+  it("renders with data-slot attribute", () => {
+    const { container } = render(<Badge>Status</Badge>);
+    expect(container.querySelector('[data-slot="badge"]')).toBeInTheDocument();
+  });
+
+  it("renders icon content", () => {
     const { container } = render(
-      <Badge size={size}>
+      <Badge>
         <CircleCheck aria-hidden="true" />
         Status
       </Badge>
     );
-    const badge = container.querySelector('[data-slot="badge"]');
-    expect(badge).toHaveClass("leading-none");
-    expect(badge?.querySelector("svg")).toBeInTheDocument();
+    expect(container.querySelector("svg")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
   });
 
-  it("gives xs badges a stable fixed height", () => {
-    const { container } = render(<Badge size="xs">XS</Badge>);
+  it("supports destructive variant", () => {
+    const { container } = render(<Badge variant="destructive">Error</Badge>);
     const badge = container.querySelector('[data-slot="badge"]');
-    expect(badge).toHaveClass("h-4");
-    expect(badge).toHaveClass("px-1.5");
-    expect(badge).toHaveClass("py-0");
+    expect(badge).toHaveClass("text-destructive");
   });
 });

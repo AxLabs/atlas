@@ -26,10 +26,6 @@ const meta: Meta<typeof Button> = {
       control: "boolean",
       description: "Whether the button is disabled",
     },
-    asChild: {
-      control: "boolean",
-      description: "Render as a child component (using Radix Slot)",
-    },
   },
 };
 

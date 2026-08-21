@@ -1,25 +1,82 @@
 # @atlas/ui
 
-Shared UI foundation for Atlas applications. Built with React, TypeScript, Tailwind CSS, and
-Radix/shadcn-derived primitives.
+Atlas UI foundation — a governed boundary around a reproducible stock shadcn Base UI preset. Atlas
+ships architecture and behavioral helpers; shadcn owns the visual baseline.
+
+## Locked shadcn preset
+
+| Setting           | Value               |
+| ----------------- | ------------------- |
+| Primitive library | **Base UI**         |
+| Style             | **Vega**            |
+| Base color        | **Neutral**         |
+| Theme             | **Blue**            |
+| Chart color       | **Neutral**         |
+| Heading           | **Inter**           |
+| Font              | **Inter**           |
+| Icons             | **Lucide**          |
+| Radius            | **Default**         |
+| Menu              | **Default / Solid** |
+| Menu accent       | **Subtle**          |
+
+**Preset code:** `bJzBPQGZc`
+
+Verify:
+
+```bash
+pnpm dlx shadcn@latest preset decode bJzBPQGZc --json
+pnpm dlx shadcn@latest preset resolve -c packages/ui --json
+```
+
+Create URL: https://ui.shadcn.com/create?preset=bJzBPQGZc
 
 ## Architectural boundary
 
-| Belongs in `@atlas/ui`                                         | Belongs in `apps/web`      |
-| -------------------------------------------------------------- | -------------------------- |
-| Generic visual primitives (Button, Card, Dialog)               | Product layouts and shells |
-| Form helpers (`useZodForm`, server error mapping)              | Domain-specific feature UI |
-| App-state components (EmptyState, ErrorFallback, SkeletonList) | Navigation wiring          |
-| Theme provider and boot script                                 | Reference examples         |
+| Belongs in `@atlas/ui`                                                           | Belongs in `apps/web`      |
+| -------------------------------------------------------------------------------- | -------------------------- |
+| shadcn/Base UI primitives regenerated from the locked preset                     | Product layouts and shells |
+| Behavioral helpers (`useZodForm`, server error mapping, theme preference)        | Domain-specific feature UI |
+| Ergonomic compositions (`EmptyState`, `ErrorFallback`, `SkeletonList`, `Loader`) | Navigation wiring          |
+| Theme preference + FOUC boot script                                              | Reference examples         |
 
-Atlas differentiation lives in **architecture and conventions**, not in competing with shadcn as a
-general-purpose component library. See
-[architecture ownership](../../docs/how-we-build/architecture-ownership.md) and issue #42 for future
-repositioning.
+Atlas differentiation lives in **architecture and conventions**, not in a competing design system.
+
+## shadcn configuration
+
+- **Canonical config:** `packages/ui/components.json` (`style: base-vega`)
+- **Global CSS:** `packages/ui/src/styles/globals.css` (generated preset tokens + monorepo `@source`
+  directives)
+- **Generation flow:** `packages/ui/components.json` → `packages/ui/src/components/ui` → `@atlas/ui`
+  public API → `apps/web`
+
+`apps/web` consumes `@atlas/ui` only. Do not generate a local `apps/web/src/components/ui` tree.
+
+Refresh upstream primitives:
+
+```bash
+pnpm dlx shadcn@latest apply bJzBPQGZc -c packages/ui -y
+pnpm dlx shadcn@latest add button -c packages/ui --overwrite -y
+pnpm dlx shadcn@latest add dialog -c packages/ui --diff
+```
+
+After regenerating primitives, convert any new `@/` package-internal imports to relative paths
+before committing. The app TypeScript config must not alias into `packages/ui/src`.
+
+**Rule:** For upstream-derived primitives, shadcn-generated styling wins. Do not casually patch
+padding, radii, colors, or focus rings in `packages/ui/src/components/ui/**`. Change the preset
+deliberately, or compose in application code.
+
+### Troubleshooting stale theme output
+
+After changing the shadcn/Tailwind preset or global CSS, if local development appears to retain old
+theme values:
+
+```bash
+rm -rf apps/web/.next .turbo
+pnpm dev
+```
 
 ## Public API
-
-Import from the package root or documented subpaths only:
 
 ```tsx
 import { Button, EmptyState } from "@atlas/ui";
@@ -27,28 +84,30 @@ import "@atlas/ui/globals.css";
 import { getThemeBootScriptContent } from "@atlas/ui/theme-boot";
 ```
 
-Do not import from `packages/ui/src/**` — use `@atlas/ui` public exports.
-
-## Components
-
-- **Primitives** — Button, Card, Dialog, Form, Input, and other shadcn/Radix building blocks
-- **App-state** — EmptyState, ErrorFallback, SkeletonList, Loader
-- **Forms** — FormField wrapper, useZodForm, applyServerFieldErrors
-
-## Styling
+Heavy optional primitives (`Chart`, `Calendar`, `Command`, `Combobox`, `Carousel`, `InputOTP`,
+`Resizable`) live on `@atlas/ui/extended` so default app bundles do not include their large runtime
+dependencies unless a feature imports them explicitly:
 
 ```tsx
-import "@atlas/ui/globals.css";
+import { ChartContainer } from "@atlas/ui/extended";
 ```
 
-Tailwind CSS v4 with design tokens and theme variables. No additional configuration needed.
+Do not import from `packages/ui/src/**`.
+
+## Atlas-owned behavior (non-visual contracts)
+
+- `useTheme` / `ThemeProvider` / theme boot script — preference + `.dark` only
+- `useZodForm`, `applyServerFieldErrors`, `getFormErrorMessage`
+- `FormField` wrapper — accessibility wiring over `Field` primitives
+- `EmptyState`, `ErrorFallback`, `Loader`/`PageLoader` — ergonomic compositions over canonical
+  primitives
 
 ## Testing
 
-Components in this package require unit tests. Run:
-
 ```bash
 pnpm --filter @atlas/ui test
+pnpm --filter @atlas/ui build-storybook
 ```
 
-Storybook stories document component usage.
+Storybook uses the same Inter + Vega baseline as the app
+(`packages/ui/.storybook/preview-head.html`).

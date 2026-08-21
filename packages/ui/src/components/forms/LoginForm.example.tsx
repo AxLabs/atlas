@@ -15,11 +15,12 @@
 import * as React from "react";
 import { z } from "zod";
 
-import { FormField } from "@/components/forms/FormField";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { applyServerFieldErrors, getFormErrorMessage } from "@/lib/forms/server-errors";
+import { useZodForm } from "../../hooks/use-zod-form";
+import { applyServerFieldErrors, getFormErrorMessage } from "../../lib/forms/server-errors";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+
+import { FormField } from "./FormField";
 
 import type { Meta, StoryObj } from "@storybook/react";
 

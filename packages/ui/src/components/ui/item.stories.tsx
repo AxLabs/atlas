@@ -165,16 +165,14 @@ export const Group: Story = {
 export const Clickable: Story = {
   render: () => (
     <div style={{ width: "400px" }}>
-      <Item asChild>
-        <button type="button">
-          <ItemMedia variant="icon">
-            <FileTextIcon className="h-5 w-5" />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>Clickable Item</ItemTitle>
-            <ItemDescription>Click to interact</ItemDescription>
-          </ItemContent>
-        </button>
+      <Item render={<button type="button" />}>
+        <ItemMedia variant="icon">
+          <FileTextIcon className="h-5 w-5" />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>Clickable Item</ItemTitle>
+          <ItemDescription>Click to interact</ItemDescription>
+        </ItemContent>
       </Item>
     </div>
   ),

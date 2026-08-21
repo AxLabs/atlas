@@ -16,7 +16,7 @@ alone:
 - Whether Google OAuth is the universal auth model
 
 Issue #25 established a canonical taxonomy to unblock the architecture contract (#35), generators
-(#37), reference application (#39), and `@atlas/ui` repositioning (#42).
+(#37), reference application (#39), and the `@atlas/ui` shadcn/Base UI foundation (#42, completed).
 
 ## Decision
 
@@ -32,16 +32,16 @@ We adopt a six-class ownership model documented in
 
 ### Key boundary decisions
 
-| Surface                                         | Decision                                                                                                   |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `features/reference/users`                      | Retained as canonical OpenAPI hook reference (no UI)                                                       |
-| `components/layout/AppShell`                    | Removed — unused; ExamplesShell owns reference layout                                                      |
-| `lib/telemetry/sentry.*`                        | Removed — duplicated root Sentry config                                                                    |
-| `lib/i18n`                                      | Kept minimal — typed key convention, not a localization framework                                          |
-| `lib/feature-flags`                             | Kept — runtime config + kill switches; PostHog adapter is optional                                         |
-| Google OAuth                                    | Classified as reference IdP, separate from session security core                                           |
-| `tsconfig` broad `@/*` UI fallback              | Removed — app code must use `@atlas/ui` public API                                                         |
-| `tsconfig` narrow `@/lib/*` / `@/hooks/*` shims | Temporarily retained for UI source typechecking; not valid app import paths; ESLint-guarded; remove in #42 |
+| Surface                                         | Decision                                                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `features/reference/users`                      | Retained as canonical OpenAPI hook reference (no UI)                                              |
+| `components/layout/AppShell`                    | Removed — unused; ExamplesShell owns reference layout                                             |
+| `lib/telemetry/sentry.*`                        | Removed — duplicated root Sentry config                                                           |
+| `lib/i18n`                                      | Kept minimal — typed key convention, not a localization framework                                 |
+| `lib/feature-flags`                             | Kept — runtime config + kill switches; PostHog adapter is optional                                |
+| Google OAuth                                    | Classified as reference IdP, separate from session security core                                  |
+| `tsconfig` broad `@/*` UI fallback              | Removed — app code must use `@atlas/ui` public API                                                |
+| `tsconfig` narrow `@/lib/*` / `@/hooks/*` shims | Removed — `@atlas/ui` uses relative package-local imports; apps consume public exports only (#42) |
 
 ## Alternatives Considered
 
@@ -59,7 +59,7 @@ We adopt a six-class ownership model documented in
 
 - Clear keep/delete/replace guidance for consumers
 - Stable foundation for #35–#44 without implementing them early
-- ESLint + tsconfig enforce package boundaries (including temporary `@/lib/*` / `@/hooks/*` shims)
+- ESLint + tsconfig enforce package boundaries; apps do not alias into `packages/ui/src/**`
 
 ### Negative
 

@@ -1,28 +1,14 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
-const skeletonVariants = cva("bg-accent animate-pulse", {
-  variants: {
-    radius: {
-      sm: "rounded-sm",
-      md: "rounded-md",
-      lg: "rounded-lg",
-    },
-  },
-  defaultVariants: {
-    radius: "md",
-  },
-});
-
-export interface SkeletonProps
-  extends React.ComponentProps<"div">,
-    VariantProps<typeof skeletonVariants> {}
-
-function Skeleton({ className, radius, ...props }: SkeletonProps) {
+function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div data-slot="skeleton" className={cn(skeletonVariants({ radius, className }))} {...props} />
+    <div
+      data-slot="skeleton"
+      className={cn("bg-muted animate-pulse rounded-md", className)}
+      {...props}
+    />
   );
 }
 
@@ -34,63 +20,69 @@ export interface SkeletonTextProps extends React.ComponentProps<"div"> {
 function SkeletonText({ className, lines = 3, lineClassName, ...props }: SkeletonTextProps) {
   return (
     <div data-slot="skeleton-text" className={cn("space-y-2", className)} {...props}>
-      {Array.from({ length: lines }).map((_, i) => (
+      {Array.from({ length: lines }, (_, index) => (
         <Skeleton
-          key={i}
-          className={cn("h-4", i === lines - 1 ? "w-4/5" : "w-full", lineClassName)}
+          key={index}
+          className={cn("h-4 w-full", index === lines - 1 && "w-4/5", lineClassName)}
         />
       ))}
     </div>
   );
 }
 
-const skeletonListVariants = cva("space-y-3", {
-  variants: {
-    variant: {
-      list: "space-y-3",
-      card: "grid gap-4 sm:grid-cols-2 lg:grid-cols-3",
-    },
-  },
-  defaultVariants: {
-    variant: "list",
-  },
-});
-
-export interface SkeletonListProps
-  extends React.ComponentProps<"div">,
-    VariantProps<typeof skeletonListVariants> {
+export interface SkeletonListProps extends React.ComponentProps<"div"> {
   count?: number;
-  itemClassName?: string;
+  variant?: "list" | "card";
   renderItem?: (index: number) => React.ReactNode;
+}
+
+function renderSkeletonListItem(
+  index: number,
+  variant: "list" | "card",
+  renderItem?: (index: number) => React.ReactNode
+) {
+  if (renderItem) {
+    return renderItem(index);
+  }
+
+  if (variant === "card") {
+    return (
+      <div key={index} className="space-y-3 rounded-lg border p-4">
+        <Skeleton className="h-5 w-1/3" />
+        <SkeletonText lines={2} />
+      </div>
+    );
+  }
+
+  return (
+    <div key={index} className="flex items-center gap-3">
+      <Skeleton className="size-10 shrink-0 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+    </div>
+  );
 }
 
 function SkeletonList({
   className,
   count = 5,
-  variant,
-  itemClassName,
+  variant = "list",
   renderItem,
   ...props
 }: SkeletonListProps) {
-  const defaultItem = (index: number) => (
-    <div key={index} className={cn("space-y-3", itemClassName)}>
-      <Skeleton className="h-12 w-12 rounded-full" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
-      </div>
-    </div>
-  );
-
   return (
     <div
       data-slot="skeleton-list"
-      className={cn(skeletonListVariants({ variant, className }))}
+      className={cn(variant === "list" ? "space-y-3" : "grid gap-4 sm:grid-cols-2", className)}
       {...props}
     >
-      {Array.from({ length: count }).map((_, i) => (renderItem ? renderItem(i) : defaultItem(i)))}
+      {Array.from({ length: count }, (_, index) =>
+        renderSkeletonListItem(index, variant, renderItem)
+      )}
     </div>
   );
 }
 
-export { Skeleton, SkeletonList, SkeletonText, skeletonVariants };
+export { Skeleton, SkeletonList, SkeletonText };

@@ -11,6 +11,24 @@ import {
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+const triggerButtonStyle = {
+  padding: "8px 16px",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+  background: "white",
+  cursor: "pointer",
+  fontSize: "14px",
+} as const;
+
+const cancelButtonStyle = {
+  padding: "8px 16px",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+  background: "white",
+  cursor: "pointer",
+  fontSize: "14px",
+} as const;
+
 const meta: Meta<typeof Drawer> = {
   title: "UI/Drawer",
   component: Drawer,
@@ -26,19 +44,8 @@ type Story = StoryObj<typeof Drawer>;
 export const Default: Story = {
   render: () => (
     <Drawer>
-      <DrawerTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Open Drawer
-        </button>
+      <DrawerTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Open Drawer
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
@@ -64,19 +71,8 @@ export const Default: Story = {
           >
             Save changes
           </button>
-          <DrawerClose asChild>
-            <button
-              style={{
-                padding: "8px 16px",
-                border: "1px solid #ccc",
-                borderRadius: "6px",
-                background: "white",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              Cancel
-            </button>
+          <DrawerClose render={<button type="button" style={cancelButtonStyle} />}>
+            Cancel
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

@@ -1,71 +1,37 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import { InboxIcon } from "lucide-react";
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
-const emptyStateVariants = cva(
-  "flex min-w-0 flex-1 flex-col items-center justify-center gap-6 text-center text-balance",
-  {
-    variants: {
-      variant: {
-        default: "rounded-lg border border-dashed p-6 md:p-12",
-        compact: "p-6",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "./empty";
 
-export interface EmptyStateProps
-  extends React.ComponentProps<"div">,
-    VariantProps<typeof emptyStateVariants> {
+export interface EmptyStateProps extends React.ComponentProps<typeof Empty> {
   title: string;
   description?: string;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
 }
 
-function EmptyState({
-  className,
-  variant,
-  title,
-  description,
-  icon,
-  actions,
-  ...props
-}: EmptyStateProps) {
-  const defaultIcon = icon !== undefined ? icon : <InboxIcon className="size-10" />;
+function EmptyState({ className, title, description, icon, actions, ...props }: EmptyStateProps) {
+  const media = icon !== undefined ? icon : <InboxIcon />;
 
   return (
-    <div
-      data-slot="empty-state"
-      className={cn(emptyStateVariants({ variant, className }))}
-      {...props}
-    >
-      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        {defaultIcon && (
-          <div
-            className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-lg"
-            aria-hidden="true"
-          >
-            {defaultIcon}
-          </div>
-        )}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-          {description && (
-            <p className="text-muted-foreground max-w-md text-sm/relaxed">{description}</p>
-          )}
-        </div>
-        {actions && (
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">{actions}</div>
-        )}
-      </div>
-    </div>
+    <Empty data-slot="empty-state" className={cn(className)} {...props}>
+      <EmptyHeader>
+        {media ? <EmptyMedia variant="icon">{media}</EmptyMedia> : null}
+        <EmptyTitle>{title}</EmptyTitle>
+        {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+      </EmptyHeader>
+      {actions ? <EmptyContent>{actions}</EmptyContent> : null}
+    </Empty>
   );
 }
 
-export { EmptyState, emptyStateVariants };
+export { EmptyState };

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { Skeleton, SkeletonText, SkeletonList } from "../skeleton";
 
@@ -13,12 +13,6 @@ describe("Skeleton", () => {
     const { container } = render(<Skeleton className="custom-class" />);
     const skeleton = container.querySelector('[data-slot="skeleton"]');
     expect(skeleton).toHaveClass("custom-class");
-  });
-
-  it("applies radius variants", () => {
-    const { container } = render(<Skeleton radius="lg" />);
-    const skeleton = container.querySelector('[data-slot="skeleton"]');
-    expect(skeleton).toHaveClass("rounded-lg");
   });
 
   it("has pulse animation class", () => {
@@ -65,21 +59,6 @@ describe("SkeletonList", () => {
     const { container } = render(<SkeletonList count={3} />);
     const list = container.querySelector('[data-slot="skeleton-list"]');
     expect(list?.children).toHaveLength(3);
-  });
-
-  it("renders custom items with renderItem", () => {
-    render(
-      <SkeletonList
-        count={2}
-        renderItem={(i) => (
-          <div key={i} data-testid={`item-${i}`}>
-            Custom {i}
-          </div>
-        )}
-      />
-    );
-    expect(screen.getByTestId("item-0")).toBeInTheDocument();
-    expect(screen.getByTestId("item-1")).toBeInTheDocument();
   });
 
   it("applies list variant classes", () => {

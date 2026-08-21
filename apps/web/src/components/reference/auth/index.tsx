@@ -141,15 +141,17 @@ export function UserMenu({ className }: UserMenuProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className={`relative h-8 w-8 rounded-full ${className || ""}`}>
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user.avatarUrl || undefined} alt={user.name || user.email} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" className={`relative h-8 w-8 rounded-full ${className || ""}`} />
+        }
+      >
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={user.avatarUrl || undefined} alt={user.name || user.email} />
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56" align="end">
         <div className="flex items-center gap-2 p-2">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user.avatarUrl || undefined} alt={user.name || user.email} />
@@ -161,17 +163,17 @@ export function UserMenu({ className }: UserMenuProps) {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <a href="/settings" className="flex cursor-pointer items-center">
-            <User className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </a>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => {
+            window.location.assign("/settings");
+          }}
+        >
+          <User className="mr-2 h-4 w-4" />
+          <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer text-red-600 focus:text-red-600"
-          onClick={() => logout()}
-        >
+        <DropdownMenuItem variant="destructive" onClick={() => logout()}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

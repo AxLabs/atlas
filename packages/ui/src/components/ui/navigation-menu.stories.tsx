@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 import {
   NavigationMenu,
@@ -56,25 +56,27 @@ const components: { title: string; description: string }[] = [
   },
 ];
 
+const listItemButtonClassName =
+  "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground block w-full space-y-1 rounded-md p-3 text-left leading-none no-underline transition-colors outline-none select-none";
+
 const ListItem = React.forwardRef<
   React.ElementRef<"button">,
   React.ComponentPropsWithoutRef<"button"> & { title?: string }
 >(({ className, title, children, ...props }, ref) => {
   return (
     <li>
-      <NavigationMenuLink asChild>
-        <button
-          ref={ref}
-          type="button"
-          className={cn(
-            "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground block w-full space-y-1 rounded-md p-3 text-left leading-none no-underline transition-colors outline-none select-none",
-            className
-          )}
-          {...props}
-        >
-          <div className="text-sm leading-none font-medium">{title}</div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">{children}</p>
-        </button>
+      <NavigationMenuLink
+        render={
+          <button
+            ref={ref}
+            type="button"
+            className={cn(listItemButtonClassName, className)}
+            {...props}
+          />
+        }
+      >
+        <div className="text-sm leading-none font-medium">{title}</div>
+        <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">{children}</p>
       </NavigationMenuLink>
     </li>
   );
@@ -99,16 +101,18 @@ export const Default: Story = {
             <NavigationMenuContent>
               <ul className="grid gap-3 p-6 md:w-100 lg:w-125 lg:grid-cols-[.75fr_1fr]">
                 <li className="row-span-3">
-                  <NavigationMenuLink asChild>
-                    <button
-                      type="button"
-                      className="from-muted/50 to-muted flex h-full w-full flex-col justify-end rounded-md bg-linear-to-b p-6 text-left no-underline outline-none select-none focus:shadow-md"
-                    >
-                      <div className="mt-4 mb-2 text-lg font-medium">shadcn/ui</div>
-                      <p className="text-muted-foreground text-sm leading-tight">
-                        Beautifully designed components built with Radix UI and Tailwind CSS.
-                      </p>
-                    </button>
+                  <NavigationMenuLink
+                    render={
+                      <button
+                        type="button"
+                        className="from-muted/50 to-muted flex h-full w-full flex-col justify-end rounded-md bg-linear-to-b p-6 text-left no-underline outline-none select-none focus:shadow-md"
+                      />
+                    }
+                  >
+                    <div className="mt-4 mb-2 text-lg font-medium">shadcn/ui</div>
+                    <p className="text-muted-foreground text-sm leading-tight">
+                      Beautifully designed components built with Radix UI and Tailwind CSS.
+                    </p>
                   </NavigationMenuLink>
                 </li>
                 <ListItem title="Introduction">
@@ -136,10 +140,10 @@ export const Default: Story = {
             </NavigationMenuContent>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <button type="button" className={navigationMenuTriggerStyle()}>
-                Documentation
-              </button>
+            <NavigationMenuLink
+              render={<button type="button" className={navigationMenuTriggerStyle()} />}
+            >
+              Documentation
             </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>
@@ -154,31 +158,31 @@ export const Simple: Story = {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <button type="button" className={navigationMenuTriggerStyle()}>
-                Home
-              </button>
+            <NavigationMenuLink
+              render={<button type="button" className={navigationMenuTriggerStyle()} />}
+            >
+              Home
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <button type="button" className={navigationMenuTriggerStyle()}>
-                About
-              </button>
+            <NavigationMenuLink
+              render={<button type="button" className={navigationMenuTriggerStyle()} />}
+            >
+              About
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <button type="button" className={navigationMenuTriggerStyle()}>
-                Services
-              </button>
+            <NavigationMenuLink
+              render={<button type="button" className={navigationMenuTriggerStyle()} />}
+            >
+              Services
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <button type="button" className={navigationMenuTriggerStyle()}>
-                Contact
-              </button>
+            <NavigationMenuLink
+              render={<button type="button" className={navigationMenuTriggerStyle()} />}
+            >
+              Contact
             </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>

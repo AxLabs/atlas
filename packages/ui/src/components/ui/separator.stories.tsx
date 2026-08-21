@@ -15,10 +15,6 @@ const meta: Meta<typeof Separator> = {
       options: ["horizontal", "vertical"],
       description: "The orientation of the separator",
     },
-    decorative: {
-      control: "boolean",
-      description: "Whether the separator is decorative",
-    },
   },
 };
 

@@ -14,22 +14,8 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     variant: {
       control: "select",
-      options: [
-        "default",
-        "primary",
-        "secondary",
-        "destructive",
-        "outline",
-        "success",
-        "warning",
-        "info",
-      ],
+      options: ["default", "secondary", "destructive", "outline", "ghost", "link"],
       description: "The visual style variant of the badge",
-    },
-    size: {
-      control: "select",
-      options: ["xs", "sm", "default", "lg"],
-      description: "The size of the badge",
     },
   },
 };
@@ -68,46 +54,26 @@ export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
       <Badge>Default</Badge>
-      <Badge variant="primary">Primary</Badge>
       <Badge variant="secondary">Secondary</Badge>
       <Badge variant="destructive">Destructive</Badge>
       <Badge variant="outline">Outline</Badge>
-      <Badge variant="success">Success</Badge>
-      <Badge variant="warning">Warning</Badge>
-      <Badge variant="info">Info</Badge>
+      <Badge variant="ghost">Ghost</Badge>
+      <Badge variant="link">Link</Badge>
     </div>
   ),
 };
 
-const sizes = ["xs", "sm", "default", "lg"] as const;
-
-export const TextOnlyBySize: Story = {
+export const WithIcons: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-2">
-      {sizes.map((size) => (
-        <Badge key={size} size={size}>
-          {size}
-        </Badge>
-      ))}
-    </div>
-  ),
-};
-
-export const IconPlusTextBySize: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-2">
-      {sizes.map((size) => (
-        <Badge key={size} size={size} variant="success">
-          <CircleCheck aria-hidden="true" />
-          {size}
-        </Badge>
-      ))}
-      {sizes.map((size) => (
-        <Badge key={`warning-${size}`} size={size} variant="warning">
-          <TriangleAlert aria-hidden="true" />
-          {size}
-        </Badge>
-      ))}
+      <Badge variant="secondary">
+        <CircleCheck aria-hidden="true" />
+        Active
+      </Badge>
+      <Badge variant="destructive">
+        <TriangleAlert aria-hidden="true" />
+        Retry
+      </Badge>
     </div>
   ),
 };
@@ -120,12 +86,8 @@ export const CompactTableRow: Story = {
           <td className="py-2 align-middle">Queue item</td>
           <td className="py-2 align-middle">
             <div className="flex flex-wrap items-center gap-1.5 leading-none">
-              <Badge size="xs" variant="success">
-                Active
-              </Badge>
-              <Badge size="xs" variant="warning">
-                Retry
-              </Badge>
+              <Badge variant="secondary">Active</Badge>
+              <Badge variant="destructive">Retry</Badge>
             </div>
           </td>
         </tr>

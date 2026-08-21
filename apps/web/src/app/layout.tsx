@@ -1,6 +1,6 @@
 import "@atlas/ui/globals.css";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import { getThemeBootScriptContent } from "@atlas/ui/theme-boot";
 
@@ -10,16 +10,9 @@ import { MainProvider } from "@/providers";
 
 import type { Metadata } from "next";
 
-const geistSans = Geist({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
-  display: "swap",
-  preload: true,
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
   display: "swap",
   preload: true,
 });
@@ -37,7 +30,7 @@ export default async function RootLayout({
   const nonce = await getNonce();
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`font-sans ${inter.variable}`}>
       <head>
         <script
           nonce={nonce}
@@ -47,7 +40,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <MainProvider nonce={nonce}>
           <GlobalErrorHandler />
           {children}

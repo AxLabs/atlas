@@ -33,21 +33,9 @@ We use **Tailwind CSS v4 with CSS-first configuration** and a custom `useTheme` 
 
 ### Implementation
 
-1. **Design tokens in CSS** (`packages/ui/src/styles/globals.css`):
-
-```css
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --primary: oklch(0.61 0.11 222);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --primary: oklch(0.71 0.13 215);
-}
-```
+1. **Design tokens in CSS** (`packages/ui/src/styles/globals.css`) — generated from the locked
+   shadcn preset (`bJzBPQGZc`: Base UI + Vega + Neutral + Blue + Inter). Monorepo `@source`
+   directives are Atlas infrastructure, not theme customization.
 
 2. **Tailwind mapping via `@theme inline`**:
 
