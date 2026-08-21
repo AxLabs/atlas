@@ -162,7 +162,8 @@ Preset code: `bJzBPQGZc` — verify with `pnpm dlx shadcn@latest preset decode b
 
 For upstream-derived primitives, **shadcn-generated styling wins**. Do not casually edit component
 CSS in `packages/ui/src/components/ui/**`; change the preset deliberately or compose in application
-code. See `packages/ui/README.md`.
+code. Canonical shadcn config is `packages/ui/components.json` — generate primitives into
+`packages/ui` only; apps consume `@atlas/ui` public exports. See `packages/ui/README.md`.
 
 - **Local UI state** — `useState` / `useReducer` for ephemeral UI (modals, tabs).
 - **URL-driven state** — `useSearchParams` + `useRouter` when state should be bookmarkable (see

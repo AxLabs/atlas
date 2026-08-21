@@ -26,40 +26,40 @@ For runtime design (layers, data flow, auth sequence), see
 
 ## Classification table
 
-| Surface                                     | Current state                                     | Classification            | Decision    | Reason                                                                         |
-| ------------------------------------------- | ------------------------------------------------- | ------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| `lib/api` (client, errors, correlation)     | Central HTTP gateway, ESLint-enforced             | Core platform             | Keep        | Establishes no-fetch-spaghetti, error normalization, correlation IDs           |
-| `lib/api/contracts`                         | OpenAPI-generated types + typed client            | Generated + core platform | Keep        | Contract-first data fetching (ADR-0003)                                        |
-| `lib/react-query`                           | Provider, `createQueryKeys`, patterns doc         | Core platform             | Keep        | Standard cache key factory; patterns.ts is reference documentation             |
-| `lib/auth` (session, PKCE, state, types)    | Encrypted httpOnly session storage                | Core platform             | Keep        | Provider-neutral session security machinery                                    |
-| `lib/auth/providers/google`                 | Google OAuth code exchange                        | Reference                 | Demonstrate | Google is one reference IdP, not the universal Atlas auth model                |
-| `lib/auth/providers/google/session-refresh` | Google refresh orchestration for session cookies  | Reference                 | Demonstrate | Composes Google refresh with core session primitives                           |
-| `app/api/auth/google/*`                     | OAuth start/callback routes                       | Reference                 | Demonstrate | Replace with consumer's IdP routes                                             |
-| `components/reference/auth`                 | SignInButton, UserMenu, AuthGuard                 | Reference                 | Demonstrate | Not mounted; Google-specific UI for #39                                        |
-| `features/reference/users`                  | OpenAPI React Query hooks, no UI                  | Reference                 | Keep        | Canonical typed-resource pattern for future generators                         |
-| `features/examples`                         | Hooks for mock app routes                         | Reference                 | Keep        | Demonstrates app-route API pattern                                             |
-| `app/examples/**`                           | Data/form demo pages + ExamplesShell              | Reference                 | Keep        | Minimal live demos; delete when building product                               |
-| `app/api/examples/**`                       | In-memory mock APIs                               | Reference                 | Keep        | Supports examples only; delete with examples                                   |
-| `lib/feature-flags`                         | Typed flags, provider, default adapter, guards    | Core platform             | Keep        | Runtime config + kill-switch convention; PostHog adapter is optional reference |
-| `app/__flags`                               | Dev-only flag override panel                      | Reference                 | Keep        | Development tooling, not product                                               |
-| `lib/i18n`                                  | `t()` with English-only strings                   | Core platform (minimal)   | Simplify    | Typed key convention for shared strings; not a localization framework          |
-| `lib/analytics`                             | Typed event map, adapter interface, noop fallback | Core platform             | Keep        | Consent-gated analytics contract; adapters are swappable                       |
-| `lib/analytics/adapters/*`                  | PostHog, GA implementations                       | Reference integrations    | Keep        | Vendor-specific; replace or remove per consumer                                |
-| `lib/consent/config`                        | Maps app config → `@atlas/consent`                | App-owned glue            | Keep        | Thin bridge; consent UI lives in package                                       |
-| `@atlas/consent`                            | Cookie consent provider + banner                  | Core platform package     | Keep        | Optional but first-class when analytics enabled (ADR-0006)                     |
-| `lib/telemetry` (web vitals)                | Client reporting + API route                      | Core platform             | Keep        | Opt-in performance telemetry convention                                        |
-| Root `sentry.*.config.ts`                   | Sentry SDK initialization                         | Core platform             | Keep        | Observability at Next.js integration boundary (ADR-0005)                       |
-| `lib/telemetry/sentry.*`                    | Duplicate Sentry wrappers                         | Removed                   | Remove      | Duplicated root Sentry setup; deleted                                          |
-| `lib/notifications`                         | Sonner wrapper + `notifyApiError`                 | Core platform             | Keep        | Toast convention integrated with i18n and ApiError                             |
-| `lib/breadcrumbs`                           | Tree builder + `useBreadcrumbs`                   | Core platform             | Keep        | Route-aware breadcrumb convention; tree is reference data                      |
-| `components/navigation/AppBreadcrumbs`      | Breadcrumb UI wired to lib                        | App-owned composition     | Keep        | Used by ExamplesShell; consumers relocate or replace                           |
-| `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; ExamplesShell owns layout                        |
-| `components/errors/ErrorBoundary`           | Class error boundary                              | Removed                   | Remove      | Unused; Sentry + global-error handle failures                                  |
-| `providers/*`                               | MainProvider stack, DataProviderLayout            | App-owned composition     | Keep        | Wires platform modules; see `providers/README.md`                              |
-| `@atlas/ui`                                 | shadcn/Base UI preset + behavioral helpers        | Core platform package     | Keep        | UI foundation; not a competing component library (#42)                         |
-| `@atlas/config`                             | ESLint, TS, Jest, Prettier configs                | Core platform package     | Keep        | Tooling boundary for monorepo consistency                                      |
-| `packages/ui` shadcn primitives             | Base UI/Vega preset-generated building blocks     | Upstream-derived          | Keep        | Regenerate from preset; Atlas-owned behavior in forms, theme, app-state        |
-| OpenAPI `schema.ts`                         | Generated from `openapi/openapi.json`             | Generated                 | Keep        | Regenerate via `pnpm --filter @atlas/web api:gen`                              |
+| Surface                                     | Current state                                     | Classification            | Decision    | Reason                                                                          |
+| ------------------------------------------- | ------------------------------------------------- | ------------------------- | ----------- | ------------------------------------------------------------------------------- |
+| `lib/api` (client, errors, correlation)     | Central HTTP gateway, ESLint-enforced             | Core platform             | Keep        | Establishes no-fetch-spaghetti, error normalization, correlation IDs            |
+| `lib/api/contracts`                         | OpenAPI-generated types + typed client            | Generated + core platform | Keep        | Contract-first data fetching (ADR-0003)                                         |
+| `lib/react-query`                           | Provider, `createQueryKeys`, patterns doc         | Core platform             | Keep        | Standard cache key factory; patterns.ts is reference documentation              |
+| `lib/auth` (session, PKCE, state, types)    | Encrypted httpOnly session storage                | Core platform             | Keep        | Provider-neutral session security machinery                                     |
+| `lib/auth/providers/google`                 | Google OAuth code exchange                        | Reference                 | Demonstrate | Google is one reference IdP, not the universal Atlas auth model                 |
+| `lib/auth/providers/google/session-refresh` | Google refresh orchestration for session cookies  | Reference                 | Demonstrate | Composes Google refresh with core session primitives                            |
+| `app/api/auth/google/*`                     | OAuth start/callback routes                       | Reference                 | Demonstrate | Replace with consumer's IdP routes                                              |
+| `components/reference/auth`                 | SignInButton, UserMenu, AuthGuard                 | Reference                 | Demonstrate | Not mounted; Google-specific UI for #39                                         |
+| `features/reference/users`                  | OpenAPI React Query hooks, no UI                  | Reference                 | Keep        | Canonical typed-resource pattern for future generators                          |
+| `features/examples`                         | Hooks for mock app routes                         | Reference                 | Keep        | Demonstrates app-route API pattern                                              |
+| `app/examples/**`                           | Data/form demo pages + ExamplesShell              | Reference                 | Keep        | Minimal live demos; delete when building product                                |
+| `app/api/examples/**`                       | In-memory mock APIs                               | Reference                 | Keep        | Supports examples only; delete with examples                                    |
+| `lib/feature-flags`                         | Typed flags, provider, default adapter, guards    | Core platform             | Keep        | Runtime config + kill-switch convention; PostHog adapter is optional reference  |
+| `app/__flags`                               | Dev-only flag override panel                      | Reference                 | Keep        | Development tooling, not product                                                |
+| `lib/i18n`                                  | `t()` with English-only strings                   | Core platform (minimal)   | Simplify    | Typed key convention for shared strings; not a localization framework           |
+| `lib/analytics`                             | Typed event map, adapter interface, noop fallback | Core platform             | Keep        | Consent-gated analytics contract; adapters are swappable                        |
+| `lib/analytics/adapters/*`                  | PostHog, GA implementations                       | Reference integrations    | Keep        | Vendor-specific; replace or remove per consumer                                 |
+| `lib/consent/config`                        | Maps app config → `@atlas/consent`                | App-owned glue            | Keep        | Thin bridge; consent UI lives in package                                        |
+| `@atlas/consent`                            | Cookie consent provider + banner                  | Core platform package     | Keep        | Optional but first-class when analytics enabled (ADR-0006)                      |
+| `lib/telemetry` (web vitals)                | Client reporting + API route                      | Core platform             | Keep        | Opt-in performance telemetry convention                                         |
+| Root `sentry.*.config.ts`                   | Sentry SDK initialization                         | Core platform             | Keep        | Observability at Next.js integration boundary (ADR-0005)                        |
+| `lib/telemetry/sentry.*`                    | Duplicate Sentry wrappers                         | Removed                   | Remove      | Duplicated root Sentry setup; deleted                                           |
+| `lib/notifications`                         | Sonner wrapper + `notifyApiError`                 | Core platform             | Keep        | Toast convention integrated with i18n and ApiError                              |
+| `lib/breadcrumbs`                           | Tree builder + `useBreadcrumbs`                   | Core platform             | Keep        | Route-aware breadcrumb convention; tree is reference data                       |
+| `components/navigation/AppBreadcrumbs`      | Breadcrumb UI wired to lib                        | App-owned composition     | Keep        | Used by ExamplesShell; consumers relocate or replace                            |
+| `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; ExamplesShell owns layout                         |
+| `components/errors/ErrorBoundary`           | Class error boundary                              | Removed                   | Remove      | Unused; Sentry + global-error handle failures                                   |
+| `providers/*`                               | MainProvider stack, DataProviderLayout            | App-owned composition     | Keep        | Wires platform modules; see `providers/README.md`                               |
+| `@atlas/ui`                                 | shadcn/Base UI preset + behavioral helpers        | Core platform package     | Keep        | Governed UI foundation; shadcn/Base UI visual baseline + Atlas helpers          |
+| `@atlas/config`                             | ESLint, TS, Jest, Prettier configs                | Core platform package     | Keep        | Tooling boundary for monorepo consistency                                       |
+| `packages/ui` shadcn primitives             | Base UI/Vega preset-generated building blocks     | Upstream-derived          | Keep        | Regenerate from `packages/ui/components.json`; Atlas owns behavior, not styling |
+| OpenAPI `schema.ts`                         | Generated from `openapi/openapi.json`             | Generated                 | Keep        | Regenerate via `pnpm --filter @atlas/web api:gen`                               |
 
 ---
 
@@ -135,20 +135,33 @@ Consumer code imports types and the typed client — never duplicates schema sha
 
 ### `@atlas/ui`
 
-| Owns                                                             | Does not own           |
-| ---------------------------------------------------------------- | ---------------------- |
-| shadcn/Base UI preset-generated primitives (Vega/Blue/Inter)     | Product/domain logic   |
-| Form helpers (`useZodForm`, server error mapping)                | API calls              |
-| App-state compositions (EmptyState, ErrorFallback, SkeletonList) | Route-specific layouts |
-| Theme preference provider and boot script (not visual tokens)    | Business features      |
+`@atlas/ui` is Atlas's **governed UI foundation** — not a proprietary design system. shadcn/Base UI
+provides the primitive implementation and visual baseline; Atlas owns architecture, package
+boundaries, behavioral helpers, and conventions.
 
-**Preset:** `bJzBPQGZc` — Base UI + Vega + Neutral + Blue. See `packages/ui/README.md`.
+| Owns                                                             | Does not own                             |
+| ---------------------------------------------------------------- | ---------------------------------------- |
+| shadcn/Base UI preset-generated primitives (Vega/Blue/Inter)     | Product/domain logic                     |
+| Form helpers (`useZodForm`, server error mapping)                | API calls                                |
+| App-state compositions (EmptyState, ErrorFallback, SkeletonList) | Broad application composition catalog    |
+| Theme preference provider and boot script (not visual tokens)    | Competing upstream styling or primitives |
+
+**Preset:** `bJzBPQGZc` — Base UI + Vega + Neutral + Blue + Neutral charts + Inter + Lucide. See
+`packages/ui/README.md`.
+
+**Generation flow:** `packages/ui/components.json` → `packages/ui/src/components/ui` → `@atlas/ui`
+public exports → `apps/web`. `apps/web/components.json` does not exist and must not be recreated as
+an app-local primitive generation target. Run shadcn generation against `packages/ui` only.
 
 **Public API:** `import { Button } from "@atlas/ui"` and documented subpaths (`globals.css`,
-`theme-boot`). Do not import from `packages/ui/src/**` — ESLint and tsconfig enforce this.
+`theme-boot`, `extended`). Do not import from `packages/ui/src/**` — ESLint enforces this.
+
+Heavy optional primitives with substantial runtime dependencies are exported from
+`@atlas/ui/extended`; the default barrel contains the commonly used foundation surface.
 
 **Styling rule:** upstream primitive appearance comes from current shadcn generation; Atlas owns
-behavioral wrappers and monorepo integration only.
+behavioral wrappers and monorepo integration only. Reusable application compositions should be
+extracted only after #39 proves them in a coherent reference application.
 
 ### `@atlas/consent`
 
@@ -176,16 +189,21 @@ published as a library — forked and replaced by consumers.
 
 ## Import boundaries
 
+```text
+apps/web @/*           → apps/web/src/* only
+packages/ui internals  → package-local / relative imports
+apps/web consumption   → @atlas/ui public exports
+```
+
 1. **App → package:** Use public exports only (`@atlas/ui`, `@atlas/consent`).
 2. **Package → app:** Never. Packages do not import consumer code.
 3. **Feature → feature:** Never. Extract shared logic to `lib/`.
 4. **Reference → product:** Never. Reference modules are not imported by product features.
 5. **No `@/*` bypass to package source:** The `@/*` alias resolves to `apps/web/src/*` only.
-6. **TypeScript shim (not an import path):** `apps/web/tsconfig.json` includes secondary fallbacks
-   on `@/lib/*` and `@/hooks/*` so TypeScript can resolve `@atlas/ui` source internal aliases during
-   web project typechecking. ESLint bans app code from importing these paths (`@/lib/utils`, etc.) —
-   use `@atlas/ui` instead. This shim will be removed when `@atlas/ui` adopts relative internal
-   imports (#42).
+6. **No app resolution of package internals:** `apps/web` must not resolve or import
+   `packages/ui/src/**` through TypeScript aliases. `@atlas/ui` is consumed through its public
+   package exports. Package-internal shadcn imports are relative/package-local so the UI package
+   resolves independently.
 
 ESLint guards in `apps/web/eslint.config.mjs` enforce fetch, env, analytics SDK, package source
 import, and UI-internal alias rules.
@@ -194,14 +212,19 @@ import, and UI-internal alias rules.
 
 ## Deferred to future issues
 
-| Issue   | Scope intentionally not in this document's implementation  |
-| ------- | ---------------------------------------------------------- |
-| #36–#38 | CLI, generators, Doctor                                    |
-| #39     | Coherent reference application consuming reference modules |
-| #40     | Deterministic local auth/API harness                       |
-| #41     | Authorization and permissions model                        |
-| #42     | Full `@atlas/ui` repositioning and app compositions        |
-| #43–#44 | Migration framework, agent workflow redesign               |
+The canonical shadcn/Base UI foundation (#42) is complete. Remaining roadmap ownership:
+
+| Issue   | Scope intentionally not in this document's implementation              |
+| ------- | ---------------------------------------------------------------------- |
+| #16     | Storybook, a11y, and visual-regression hardening                       |
+| #36–#38 | CLI, generators, Doctor                                                |
+| #39     | Coherent reference application; proves reusable app-level compositions |
+| #40     | Deterministic local auth/API harness                                   |
+| #41     | Authorization and permissions model                                    |
+| #43–#44 | Migration framework, agent workflow redesign                           |
+
+Extract reusable application compositions to shared packages only after #39 proves them in
+product-like reference surfaces — not as part of the UI foundation reset.
 
 ---
 
