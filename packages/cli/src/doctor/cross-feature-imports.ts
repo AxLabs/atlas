@@ -1,15 +1,16 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { createDiagnostic, DoctorDiagnosticCode } from "./diagnostics";
+import {
+  deriveProductFeatureImportPrefix,
+  resolveImportedProductFeatureName,
+} from "./feature-alias";
 import { joinRepoAbsolutePath, toPosixRepoRelativePath } from "./paths";
+import { extractStaticModuleSpecifiers } from "./static-imports";
 
 import type { DoctorContext } from "./context";
 import type { DoctorDiagnostic } from "./types";
-
-const IMPORT_FROM_PATTERN = /\bfrom\s+["']([^"']+)["']/g;
-const SIDE_EFFECT_IMPORT_PATTERN = /\bimport\s+["']([^"']+)["']/g;
-const REQUIRE_PATTERN = /\brequire\(\s*["']([^"']+)["']\s*\)/g;
 
 const IGNORED_DIRS = new Set([
   "node_modules",
@@ -26,6 +27,11 @@ export function findCrossFeatureImportDiagnostics(context: DoctorContext): Docto
     return [];
   }
 
+  const productImportPrefix = deriveProductFeatureImportPrefix(context.project);
+  if (!productImportPrefix) {
+    return [];
+  }
+
   const productRoot = joinRepoAbsolutePath(context.repoRoot, context.project.features.product);
   if (!existsSync(productRoot)) {
     return [];
@@ -37,43 +43,55 @@ export function findCrossFeatureImportDiagnostics(context: DoctorContext): Docto
   for (const featureName of featureNames) {
     const featureDir = path.join(productRoot, featureName);
     for (const sourceFile of walkSourceFiles(featureDir)) {
-      const content = readFileSync(sourceFile, "utf8");
-      for (const pattern of [IMPORT_FROM_PATTERN, SIDE_EFFECT_IMPORT_PATTERN, REQUIRE_PATTERN]) {
-        for (const match of content.matchAll(pattern)) {
-          const specifier = match[1];
-          if (!specifier) {
-            continue;
-          }
+      for (const entry of extractStaticModuleSpecifiers(sourceFile)) {
+        const importedFeature = resolveImportedProductFeatureName(
+          entry.specifier,
+          featureNames,
+          productImportPrefix
+        );
 
-          const importedFeature = resolveImportedProductFeature(
-            specifier,
-            featureNames,
-            context,
+        if (!importedFeature || importedFeature === featureName) {
+          const relativeImport = resolveRelativeProductFeatureImport(
+            entry.specifier,
             sourceFile,
-            productRoot
+            productRoot,
+            featureNames
           );
-
-          if (!importedFeature || importedFeature === featureName) {
+          if (!relativeImport || relativeImport === featureName) {
             continue;
           }
 
           diagnostics.push(
-            createDiagnostic(
-              DoctorDiagnosticCode.BOUNDARY_CROSS_FEATURE_IMPORT,
-              `Product feature "${featureName}" must not import product feature "${importedFeature}".`,
-              {
-                path: toPosixRepoRelativePath(context.repoRoot, sourceFile),
-                suggestedFix:
-                  "Extract shared logic to src/lib/ and import from there instead of importing another product feature.",
-              }
-            )
+            createCrossFeatureDiagnostic(context, sourceFile, featureName, relativeImport)
           );
+          continue;
         }
+
+        diagnostics.push(
+          createCrossFeatureDiagnostic(context, sourceFile, featureName, importedFeature)
+        );
       }
     }
   }
 
   return diagnostics;
+}
+
+function createCrossFeatureDiagnostic(
+  context: DoctorContext,
+  sourceFile: string,
+  featureName: string,
+  importedFeature: string
+): DoctorDiagnostic {
+  return createDiagnostic(
+    DoctorDiagnosticCode.BOUNDARY_CROSS_FEATURE_IMPORT,
+    `Product feature "${featureName}" must not import product feature "${importedFeature}".`,
+    {
+      path: toPosixRepoRelativePath(context.repoRoot, sourceFile),
+      suggestedFix:
+        "Extract shared logic to src/lib/ and import from there instead of importing another product feature.",
+    }
+  );
 }
 
 function listProductFeatureNames(productRoot: string, context: DoctorContext): string[] {
@@ -95,39 +113,24 @@ function listProductFeatureNames(productRoot: string, context: DoctorContext): s
     .sort();
 }
 
-function resolveImportedProductFeature(
+function resolveRelativeProductFeatureImport(
   specifier: string,
-  featureNames: string[],
-  context: DoctorContext,
   sourceFile: string,
-  productRoot: string
+  productRoot: string,
+  featureNames: string[]
 ): string | undefined {
-  const productImportPrefix = `@/features/`;
-  if (specifier.startsWith(productImportPrefix)) {
-    const remainder = specifier.slice(productImportPrefix.length);
-    const featureName = remainder.split("/")[0];
-    return featureName && featureNames.includes(featureName) ? featureName : undefined;
+  if (!specifier.startsWith(".")) {
+    return undefined;
   }
 
-  if (specifier.startsWith(".")) {
-    const resolved = path.resolve(path.dirname(sourceFile), specifier);
-    const relative = path.relative(productRoot, resolved);
-    if (relative.startsWith("..") || relative === "") {
-      return undefined;
-    }
-
-    const featureName = relative.split(path.sep)[0];
-    return featureName && featureNames.includes(featureName) ? featureName : undefined;
+  const resolved = path.resolve(path.dirname(sourceFile), specifier);
+  const relative = path.relative(productRoot, resolved);
+  if (relative.startsWith("..") || relative === "") {
+    return undefined;
   }
 
-  for (const featureName of featureNames) {
-    const marker = `${context.project!.features.product}/${featureName}`;
-    if (specifier.includes(marker)) {
-      return featureName;
-    }
-  }
-
-  return undefined;
+  const featureName = relative.split(path.sep)[0];
+  return featureName && featureNames.includes(featureName) ? featureName : undefined;
 }
 
 function walkSourceFiles(root: string): string[] {
@@ -158,3 +161,5 @@ function walkSourceFiles(root: string): string[] {
   walk(root);
   return files.sort();
 }
+
+export { deriveProductFeatureImportPrefix };

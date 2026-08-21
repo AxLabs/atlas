@@ -53,10 +53,12 @@ Machine output uses the shared CLI JSON envelope:
     "atlasVersion": "0.1.0",
     "projectRoot": ".",
     "summary": {
-      "passed": 6,
-      "warnings": 0,
-      "errors": 0,
-      "skipped": 0
+      "checksPassed": 6,
+      "checksWarned": 0,
+      "checksFailed": 0,
+      "checksSkipped": 0,
+      "diagnosticWarnings": 0,
+      "diagnosticErrors": 0
     },
     "checks": [],
     "diagnostics": []
@@ -76,8 +78,23 @@ Check status vocabulary: `pass`, `warn`, `fail`, `skip`.
 
 Diagnostic severity vocabulary: `warning`, `error`.
 
-Paths are repository-relative POSIX paths. Reports are deterministic: no timestamps, absolute
+Paths are repository-relative POSIX paths. `projectRoot` is always `"."` and refers to the Atlas
+repository root regardless of invocation cwd. Reports are deterministic: no timestamps, absolute
 machine paths, or random values.
+
+Summary counters use explicit units:
+
+| Field                | Meaning                                |
+| -------------------- | -------------------------------------- |
+| `checksPassed`       | Number of checks with status `pass`    |
+| `checksWarned`       | Number of checks with status `warn`    |
+| `checksFailed`       | Number of checks with status `fail`    |
+| `checksSkipped`      | Number of checks with status `skip`    |
+| `diagnosticWarnings` | Number of warning-severity diagnostics |
+| `diagnosticErrors`   | Number of error-severity diagnostics   |
+
+Top-level report status derives from check failures and diagnostic severity. A failed required check
+never produces a healthy report.
 
 ---
 
@@ -97,14 +114,14 @@ Warnings do **not** fail CI in v0.1.
 
 ## Initial check registry
 
-| Check ID                  | Owns / delegates                       | Possible diagnostics            | Failure policy |
-| ------------------------- | -------------------------------------- | ------------------------------- | -------------- |
-| `project-contract`        | `@atlas/project`                       | `ATLAS_CONTRACT_*`              | error          |
-| `workspace-structure`     | Doctor + manifests                     | `ATLAS_WORKSPACE_*`             | error          |
-| `architecture-boundaries` | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`              | error          |
-| `dependency-declarations` | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`   | error          |
-| `generated-openapi`       | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_STALE` | error / skip   |
-| `atlas-version`           | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`        | warning        |
+| Check ID                  | Owns / delegates                       | Possible diagnostics                                                                           | Failure policy  |
+| ------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------- |
+| `project-contract`        | `@atlas/project`                       | `ATLAS_CONTRACT_*`                                                                             | error           |
+| `workspace-structure`     | Doctor + manifests                     | `ATLAS_WORKSPACE_*`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                                     | error           |
+| `architecture-boundaries` | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`, `ATLAS_ARCHITECTURE_POLICY_MISSING`, `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` | error           |
+| `dependency-declarations` | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                                  | error           |
+| `generated-openapi`       | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                                    | error / skip    |
+| `atlas-version`           | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                                | warning / error |
 
 ---
 
@@ -121,11 +138,16 @@ Warnings do **not** fail CI in v0.1.
 | `ATLAS_BOUNDARY_REFERENCE_IMPORT`          | error    | Do not import reference/example modules from product features    |
 | `ATLAS_BOUNDARY_CROSS_FEATURE_IMPORT`      | error    | Extract shared logic to `src/lib/`                               |
 | `ATLAS_BOUNDARY_ANALYTICS_VENDOR`          | error    | Use `@/lib/analytics` adapter                                    |
+| `ATLAS_ARCHITECTURE_POLICY_MISSING`        | error    | Restore application ESLint config and architecture policy files  |
 | `ATLAS_DEPENDENCY_UNDECLARED`              | error    | Declare imported packages in the owning workspace `package.json` |
 | `ATLAS_GENERATED_OPENAPI_STALE`            | error    | Run `pnpm --filter @atlas/web api:gen`                           |
+| `ATLAS_GENERATED_OPENAPI_INVALID`          | error    | Fix the OpenAPI source or generator error, then rerun Doctor     |
 | `ATLAS_VERSION_MISMATCH`                   | warning  | Align CLI/checkout Atlas snapshot versions                       |
+| `ATLAS_ROOT_PACKAGE_METADATA_INVALID`      | error    | Restore valid root `package.json` version metadata               |
+| `ATLAS_WORKSPACE_CONFIG_MISSING`           | error    | Restore `pnpm-workspace.yaml` with configured workspace roots    |
 | `ATLAS_WORKSPACE_PACKAGE_MANIFEST_MISSING` | error    | Add missing workspace `package.json`                             |
 | `ATLAS_WORKSPACE_NOT_INCLUDED`             | error    | Include configured roots in `pnpm-workspace.yaml`                |
+| `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED`      | error    | Inspect tooling/config errors or report an Atlas CLI defect      |
 
 Only implemented codes are emitted.
 

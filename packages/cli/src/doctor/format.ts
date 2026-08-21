@@ -26,8 +26,17 @@ export function formatDoctorReport(report: DoctorReport): string[] {
   }
 
   lines.push(formatSummary(report));
-  if (report.summary.skipped > 0 && report.summary.errors === 0) {
+
+  const totalChecks =
+    report.summary.checksPassed +
+    report.summary.checksWarned +
+    report.summary.checksFailed +
+    report.summary.checksSkipped;
+
+  if (report.status === "healthy" && report.summary.checksSkipped > 0) {
     lines.push("Doctor found no errors. Some checks were skipped.");
+  } else if (report.status === "healthy") {
+    lines.push(`${totalChecks} checks passed · 0 warnings · 0 errors`);
   }
 
   return lines.filter((line, index, array) => !(line === "" && index === array.length - 1));
@@ -55,5 +64,15 @@ function formatDiagnosticBlock(diagnostic: DoctorDiagnostic): string[] {
 }
 
 function formatSummary(report: DoctorReport): string {
-  return `Summary:\n${report.summary.passed} passed · ${report.summary.warnings} warnings · ${report.summary.errors} errors · ${report.summary.skipped} skipped`;
+  const totalChecks =
+    report.summary.checksPassed +
+    report.summary.checksWarned +
+    report.summary.checksFailed +
+    report.summary.checksSkipped;
+
+  return [
+    "Summary:",
+    `${totalChecks} checks: ${report.summary.checksPassed} passed · ${report.summary.checksFailed} failed · ${report.summary.checksSkipped} skipped`,
+    `${report.summary.diagnosticWarnings + report.summary.diagnosticErrors} diagnostics: ${report.summary.diagnosticWarnings} warnings · ${report.summary.diagnosticErrors} errors`,
+  ].join("\n");
 }

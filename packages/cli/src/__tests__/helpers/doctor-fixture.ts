@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   symlinkSync,
   writeFileSync,
@@ -28,6 +29,18 @@ export interface DoctorFixtureOptions {
   openApi?: boolean;
   withApplicationTooling?: boolean;
   withViolation?: DoctorViolationKind;
+  customProductFeaturesRoot?: string;
+  checkoutVersion?: string;
+  invalidRootPackageJson?: boolean;
+  missingRootPackageJson?: boolean;
+  missingWorkspaceConfig?: boolean;
+  workspacePatterns?: string[];
+  missingEslintConfig?: boolean;
+  brokenEslintConfig?: boolean;
+  withoutOpenApiGenerator?: boolean;
+  invalidOpenApiSpec?: boolean;
+  isolateNodeModules?: boolean;
+  withEslintBoundaryFixtures?: boolean;
 }
 
 export type DoctorViolationKind =
@@ -36,7 +49,11 @@ export type DoctorViolationKind =
   | "raw-fetch"
   | "reference-import"
   | "cross-feature-import"
+  | "custom-feature-root-cross-import"
+  | "custom-feature-root-reference-import"
   | "undeclared-dependency"
+  | "undeclared-next-navigation"
+  | "undeclared-react-jsx-runtime"
   | "stale-openapi";
 
 const REPO_ROOT = path.resolve(__dirname, "../../../../..");
@@ -59,13 +76,42 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
   const fixture = createGeneratorAtlasFixture({
     withContract: options?.withContract ?? true,
     openApi: options?.openApi ?? false,
+    customProductFeaturesRoot: options?.customProductFeaturesRoot,
   });
 
-  writeFileSync(
-    path.join(fixture.root, "pnpm-workspace.yaml"),
-    'packages:\n  - "apps/*"\n  - "packages/*"\n',
-    "utf8"
-  );
+  if (options?.missingRootPackageJson) {
+    rmSync(path.join(fixture.root, "package.json"));
+  } else if (options?.invalidRootPackageJson) {
+    writeFileSync(path.join(fixture.root, "package.json"), "{ invalid", "utf8");
+  } else if (options?.checkoutVersion) {
+    writeFileSync(
+      path.join(fixture.root, "package.json"),
+      `${JSON.stringify(
+        {
+          name: "@atlas/monorepo",
+          version: options.checkoutVersion,
+          private: true,
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+  }
+
+  if (options?.missingWorkspaceConfig) {
+    const workspacePath = path.join(fixture.root, "pnpm-workspace.yaml");
+    if (existsSync(workspacePath)) {
+      rmSync(workspacePath);
+    }
+  } else {
+    const patterns = options?.workspacePatterns ?? ['"apps/*"', '"packages/*"'];
+    writeFileSync(
+      path.join(fixture.root, "pnpm-workspace.yaml"),
+      `packages:\n${patterns.map((pattern) => `  - ${pattern}`).join("\n")}\n`,
+      "utf8"
+    );
+  }
 
   writeFileSync(
     path.join(fixture.root, "apps/web/package.json"),
@@ -80,7 +126,7 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
         devDependencies: {
           eslint: "9.17.0",
           typescript: "5.7.2",
-          "openapi-typescript": "7.10.1",
+          ...(options?.withoutOpenApiGenerator ? {} : { "openapi-typescript": "7.10.1" }),
         },
       },
       null,
@@ -91,16 +137,46 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
 
   mkdirSync(path.join(fixture.root, "apps/web/src"), { recursive: true });
 
+  if (options?.customProductFeaturesRoot) {
+    writeFileSync(
+      path.join(fixture.root, "atlas.config.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          features: {
+            product: options.customProductFeaturesRoot,
+            reference: `${options.customProductFeaturesRoot}/reference`,
+            examples: `${options.customProductFeaturesRoot}/examples`,
+          },
+          capabilities: {
+            openApi: options.openApi ?? false,
+          },
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+  }
+
   if (options?.withApplicationTooling ?? true) {
-    copyApplicationDoctorTooling(fixture.root);
+    copyApplicationDoctorTooling(fixture.root, {
+      missingEslintConfig: options?.missingEslintConfig,
+      brokenEslintConfig: options?.brokenEslintConfig,
+      linkNodeModules: !options?.isolateNodeModules,
+      withBoundaryFixtures: options?.withEslintBoundaryFixtures ?? true,
+    });
   }
 
   if (options?.openApi) {
-    seedOpenApiArtifacts(fixture.root, options.withViolation === "stale-openapi");
+    seedOpenApiArtifacts(fixture.root, {
+      stale: options.withViolation === "stale-openapi",
+      invalidSpec: options.invalidOpenApiSpec,
+    });
   }
 
   if (options?.withViolation) {
-    applyDoctorViolation(fixture.root, options.withViolation);
+    applyDoctorViolation(fixture.root, options.withViolation, options.customProductFeaturesRoot);
   }
 
   return fixture;
@@ -134,25 +210,61 @@ function createContractFixture(options: {
   return { root, cleanup: () => undefined };
 }
 
-function copyApplicationDoctorTooling(fixtureRoot: string): void {
+function copyApplicationDoctorTooling(
+  fixtureRoot: string,
+  options: {
+    missingEslintConfig?: boolean;
+    brokenEslintConfig?: boolean;
+    linkNodeModules?: boolean;
+    withBoundaryFixtures?: boolean;
+  }
+): void {
   const sourceAppRoot = path.join(REPO_ROOT, "apps/web");
   const targetAppRoot = path.join(fixtureRoot, "apps/web");
 
-  for (const fileName of ["eslint.config.mjs", "architecture-policy.mjs", "tsconfig.json"]) {
+  for (const fileName of ["architecture-policy.mjs", "tsconfig.json"]) {
     copyFileSync(path.join(sourceAppRoot, fileName), path.join(targetAppRoot, fileName));
   }
 
-  cpSync(
-    path.join(sourceAppRoot, "src/components/eslint-boundaries"),
-    path.join(targetAppRoot, "src/components/eslint-boundaries"),
-    {
-      recursive: true,
-    }
-  );
+  if (options.missingEslintConfig) {
+    return;
+  }
 
-  linkIfAbsent(path.join(REPO_ROOT, "node_modules"), path.join(fixtureRoot, "node_modules"));
-  linkIfAbsent(path.join(sourceAppRoot, "node_modules"), path.join(targetAppRoot, "node_modules"));
-  linkIfAbsent(path.join(REPO_ROOT, "packages/ui"), path.join(fixtureRoot, "packages/ui"));
+  if (options.brokenEslintConfig) {
+    writeFileSync(
+      path.join(targetAppRoot, "eslint.config.mjs"),
+      "import broken from 'definitely-not-a-real-eslint-module';\nexport default broken;\n",
+      "utf8"
+    );
+  } else {
+    copyFileSync(
+      path.join(sourceAppRoot, "eslint.config.mjs"),
+      path.join(targetAppRoot, "eslint.config.mjs")
+    );
+  }
+
+  if (options.withBoundaryFixtures ?? true) {
+    cpSync(
+      path.join(sourceAppRoot, "src/components/eslint-boundaries"),
+      path.join(targetAppRoot, "src/components/eslint-boundaries"),
+      {
+        recursive: true,
+      }
+    );
+  }
+
+  if (options.linkNodeModules ?? true) {
+    linkIfAbsent(path.join(REPO_ROOT, "node_modules"), path.join(fixtureRoot, "node_modules"));
+    linkIfAbsent(
+      path.join(sourceAppRoot, "node_modules"),
+      path.join(targetAppRoot, "node_modules")
+    );
+    linkIfAbsent(path.join(REPO_ROOT, "packages/ui"), path.join(fixtureRoot, "packages/ui"));
+  } else {
+    cpSync(path.join(REPO_ROOT, "packages/ui"), path.join(fixtureRoot, "packages/ui"), {
+      recursive: true,
+    });
+  }
 }
 
 function linkIfAbsent(source: string, target: string): void {
@@ -163,7 +275,10 @@ function linkIfAbsent(source: string, target: string): void {
   symlinkSync(source, target, "dir");
 }
 
-function seedOpenApiArtifacts(fixtureRoot: string, stale: boolean): void {
+function seedOpenApiArtifacts(
+  fixtureRoot: string,
+  options: { stale: boolean; invalidSpec?: boolean }
+): void {
   const specSource = path.join(REPO_ROOT, "openapi/openapi.json");
   const schemaSource = path.join(REPO_ROOT, "apps/web/src/lib/api/contracts/schema.ts");
   const specTarget = path.join(fixtureRoot, "openapi/openapi.json");
@@ -171,7 +286,13 @@ function seedOpenApiArtifacts(fixtureRoot: string, stale: boolean): void {
 
   mkdirSync(path.dirname(specTarget), { recursive: true });
   mkdirSync(path.dirname(schemaTarget), { recursive: true });
-  copyFileSync(specSource, specTarget);
+
+  if (options.invalidSpec) {
+    writeFileSync(specTarget, "{ invalid openapi", "utf8");
+  } else {
+    copyFileSync(specSource, specTarget);
+  }
+
   copyFileSync(schemaSource, schemaTarget);
 
   writeFileSync(
@@ -187,67 +308,95 @@ function seedOpenApiArtifacts(fixtureRoot: string, stale: boolean): void {
     "utf8"
   );
 
-  if (stale) {
+  if (options.stale) {
     writeFileSync(schemaTarget, "// stale generated artifact\n", "utf8");
   }
 }
 
-function applyDoctorViolation(fixtureRoot: string, violation: DoctorViolationKind): void {
+function applyDoctorViolation(
+  fixtureRoot: string,
+  violation: DoctorViolationKind,
+  customProductFeaturesRoot?: string
+): void {
+  const productRoot = customProductFeaturesRoot ?? "apps/web/src/features";
+
   switch (violation) {
     case "private-import":
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/features/billing/example.ts",
+        `${productRoot}/billing/example.ts`,
         "import { Button } from '../../../../../packages/ui/src/components/ui/button';\nvoid Button;\n"
       );
       break;
     case "direct-env":
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/features/billing/env.ts",
+        `${productRoot}/billing/env.ts`,
         "export const apiUrl = process.env.NEXT_PUBLIC_API_URL;\n"
       );
       break;
     case "raw-fetch":
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/features/billing/network.ts",
+        `${productRoot}/billing/network.ts`,
         "export async function load() { return fetch('/api/example'); }\n"
       );
       break;
     case "reference-import":
-      mkdirSync(path.join(fixtureRoot, "apps/web/src/features/reference/users"), {
-        recursive: true,
-      });
+      mkdirSync(path.join(fixtureRoot, `${productRoot}/reference/users`), { recursive: true });
       writeFileSync(
-        path.join(fixtureRoot, "apps/web/src/features/reference/users/index.ts"),
+        path.join(fixtureRoot, `${productRoot}/reference/users/index.ts`),
         "export const reference = true;\n",
         "utf8"
       );
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/features/billing/reference.ts",
-        "import { userKeys } from '@/features/reference/users';\nvoid userKeys;\n"
+        `${productRoot}/billing/reference.ts`,
+        customProductFeaturesRoot
+          ? "import { reference } from '@/domains/reference/users';\nvoid reference;\n"
+          : "import { userKeys } from '@/features/reference/users';\nvoid userKeys;\n"
       );
       break;
     case "cross-feature-import":
-      mkdirSync(path.join(fixtureRoot, "apps/web/src/features/users"), { recursive: true });
+      mkdirSync(path.join(fixtureRoot, `${productRoot}/users`), { recursive: true });
       writeFileSync(
-        path.join(fixtureRoot, "apps/web/src/features/users/index.ts"),
+        path.join(fixtureRoot, `${productRoot}/users/index.ts`),
         "export const users = true;\n",
         "utf8"
       );
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/features/billing/cross.ts",
-        "import { users } from '@/features/users';\nvoid users;\n"
+        `${productRoot}/billing/cross.ts`,
+        customProductFeaturesRoot
+          ? "import { users } from '@/domains/users';\nvoid users;\n"
+          : "import { users } from '@/features/users';\nvoid users;\n"
       );
+      break;
+    case "custom-feature-root-cross-import":
+      applyDoctorViolation(fixtureRoot, "cross-feature-import", "apps/web/src/domains");
+      break;
+    case "custom-feature-root-reference-import":
+      applyDoctorViolation(fixtureRoot, "reference-import", "apps/web/src/domains");
       break;
     case "undeclared-dependency":
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/features/billing/undeclared.ts",
+        `${productRoot}/billing/undeclared.ts`,
         "import { z } from 'zod';\nexport const schema = z.object({ id: z.string() });\n"
+      );
+      break;
+    case "undeclared-next-navigation":
+      writeViolationFile(
+        fixtureRoot,
+        "apps/web/src/features/billing/navigation.ts",
+        "import { redirect } from 'next/navigation';\nvoid redirect;\n"
+      );
+      break;
+    case "undeclared-react-jsx-runtime":
+      writeViolationFile(
+        fixtureRoot,
+        "apps/web/src/features/billing/runtime.ts",
+        "import 'react/jsx-runtime';\n"
       );
       break;
     default:
@@ -304,4 +453,12 @@ export function createMissingContractFixture(): DoctorAtlasFixture {
   mkdirSync(path.join(root, "apps/web"), { recursive: true });
   mkdirSync(path.join(root, "packages/ui"), { recursive: true });
   return { root, cleanup: () => undefined };
+}
+
+export function writeCommentedImportFixture(fixtureRoot: string): void {
+  writeViolationFile(
+    fixtureRoot,
+    "apps/web/src/features/billing/commented.ts",
+    '// import { z } from "fake-package";\nconst text = \'import foo from "fake-package"\';\nexport const ok = true;\n'
+  );
 }

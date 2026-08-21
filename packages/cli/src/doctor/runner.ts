@@ -1,3 +1,4 @@
+import { DoctorCheckExecutionError } from "./check-execution-error";
 import {
   runArchitectureBoundariesCheck,
   runAtlasVersionCheck,
@@ -6,6 +7,7 @@ import {
   runProjectContractCheck,
   runWorkspaceStructureCheck,
 } from "./checks";
+import { createCheckExecutionFailedDiagnostic } from "./diagnostics";
 import { sortDiagnostics } from "./map-eslint";
 import { DOCTOR_REPORT_SCHEMA_VERSION } from "./types";
 
@@ -71,22 +73,18 @@ export async function runDoctorChecks(context: DoctorContext): Promise<DoctorRep
     try {
       checks.push(await check.run(context));
     } catch (error) {
+      const reason = error instanceof Error ? error.message : undefined;
+      const partialDiagnostics =
+        error instanceof DoctorCheckExecutionError ? error.partialDiagnostics : [];
       checks.push({
         id: check.id,
         title: check.title,
         rationale: check.rationale,
         status: "fail",
-        diagnostics: [
-          {
-            code: "DOCTOR_CHECK_EXECUTION_FAILED",
-            severity: "error",
-            message:
-              error instanceof Error
-                ? `Doctor could not execute check "${check.id}": ${error.message}`
-                : `Doctor could not execute check "${check.id}".`,
-            suggestedFix: "Report this as an Atlas CLI internal error if it persists.",
-          },
-        ],
+        diagnostics: dedupeExecutionDiagnostics(
+          createCheckExecutionFailedDiagnostic(check.id, reason),
+          partialDiagnostics
+        ),
       });
     }
   }
@@ -96,9 +94,9 @@ export async function runDoctorChecks(context: DoctorContext): Promise<DoctorRep
 
   return {
     schemaVersion: DOCTOR_REPORT_SCHEMA_VERSION,
-    status: deriveReportStatus(summary),
+    status: deriveReportStatus(summary, checks),
     atlasVersion: context.atlasVersion,
-    projectRoot: context.projectRootRelative,
+    projectRoot: ".",
     summary,
     checks,
     diagnostics,
@@ -136,19 +134,29 @@ function summarizeChecks(
   diagnostics: DoctorDiagnostic[]
 ): DoctorReportSummary {
   return {
-    passed: checks.filter((check) => check.status === "pass").length,
-    warnings: checks.filter((check) => check.status === "warn").length,
-    errors: diagnostics.filter((diagnostic) => diagnostic.severity === "error").length,
-    skipped: checks.filter((check) => check.status === "skip").length,
+    checksPassed: checks.filter((check) => check.status === "pass").length,
+    checksWarned: checks.filter((check) => check.status === "warn").length,
+    checksFailed: checks.filter((check) => check.status === "fail").length,
+    checksSkipped: checks.filter((check) => check.status === "skip").length,
+    diagnosticWarnings: diagnostics.filter((diagnostic) => diagnostic.severity === "warning")
+      .length,
+    diagnosticErrors: diagnostics.filter((diagnostic) => diagnostic.severity === "error").length,
   };
 }
 
-function deriveReportStatus(summary: DoctorReportSummary): DoctorReportStatus {
-  if (summary.errors > 0) {
+function deriveReportStatus(
+  summary: DoctorReportSummary,
+  checks: DoctorCheckResult[]
+): DoctorReportStatus {
+  if (
+    summary.checksFailed > 0 ||
+    summary.diagnosticErrors > 0 ||
+    checks.some((check) => check.status === "fail")
+  ) {
     return "failed";
   }
 
-  if (summary.warnings > 0) {
+  if (summary.checksWarned > 0 || summary.diagnosticWarnings > 0) {
     return "warning";
   }
 
@@ -156,5 +164,30 @@ function deriveReportStatus(summary: DoctorReportSummary): DoctorReportStatus {
 }
 
 export function doctorReportHasErrors(report: DoctorReport): boolean {
-  return report.summary.errors > 0;
+  return report.summary.checksFailed > 0 || report.summary.diagnosticErrors > 0;
+}
+
+function dedupeExecutionDiagnostics(
+  executionDiagnostic: DoctorDiagnostic,
+  partialDiagnostics: DoctorDiagnostic[]
+): DoctorDiagnostic[] {
+  const merged = [executionDiagnostic, ...partialDiagnostics];
+  const seen = new Set<string>();
+
+  return merged.filter((diagnostic) => {
+    const key = [
+      diagnostic.code,
+      diagnostic.path ?? "",
+      diagnostic.line ?? "",
+      diagnostic.column ?? "",
+      diagnostic.message,
+    ].join("|");
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }

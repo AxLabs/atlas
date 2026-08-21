@@ -45,14 +45,35 @@ export async function compareOpenApiFreshness(
       };
     }
 
-    execFileSync(
-      process.execPath,
-      [openapiTypescriptBin, specPath, "-o", generatedPath, "--empty-objects-unknown"],
-      {
-        cwd: applicationRoot,
-        stdio: "pipe",
+    try {
+      execFileSync(
+        process.execPath,
+        [openapiTypescriptBin, specPath, "-o", generatedPath, "--empty-objects-unknown"],
+        {
+          cwd: applicationRoot,
+          stdio: "pipe",
+        }
+      );
+    } catch (error) {
+      let reason = "OpenAPI generation failed.";
+      if (error instanceof Error && "stderr" in error) {
+        const stderr = (error as NodeJS.ErrnoException & { stderr?: Buffer }).stderr;
+        const stderrText = stderr ? String(stderr).trim() : error.message;
+        reason = stderrText.split("\n")[0] ?? error.message;
+      } else if (error instanceof Error) {
+        reason = error.message;
       }
-    );
+
+      return {
+        diagnostics: [
+          createDiagnostic(
+            DoctorDiagnosticCode.GENERATED_OPENAPI_INVALID,
+            `OpenAPI generation failed for ${context.project.generated.openApi.spec}: ${reason}`,
+            { path: context.project.generated.openApi.spec }
+          ),
+        ],
+      };
+    }
 
     const expected = readFileSync(schemaPath, "utf8");
     const actual = readFileSync(generatedPath, "utf8");
@@ -70,21 +91,37 @@ export async function compareOpenApiFreshness(
         ),
       ],
     };
-  } catch {
-    return {
-      diagnostics: [],
-      skipReason: "Unable to compare OpenAPI artifacts deterministically in this checkout.",
-    };
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 }
 
 function resolveOpenApiTypescriptBin(applicationRoot: string): string | undefined {
+  const packageJsonPath = path.join(applicationRoot, "package.json");
+  if (!existsSync(packageJsonPath)) {
+    return undefined;
+  }
+
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+    peerDependencies?: Record<string, string>;
+  };
+
+  const declaredDependencies = {
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+    ...packageJson.peerDependencies,
+  };
+
+  if (!("openapi-typescript" in declaredDependencies)) {
+    return undefined;
+  }
+
   try {
-    const requireFromApp = createRequire(path.join(applicationRoot, "package.json"));
-    const packageJsonPath = requireFromApp.resolve("openapi-typescript/package.json");
-    return path.join(path.dirname(packageJsonPath), "bin/cli.js");
+    const requireFromApp = createRequire(packageJsonPath);
+    const resolvedPackageJson = requireFromApp.resolve("openapi-typescript/package.json");
+    return path.join(path.dirname(resolvedPackageJson), "bin/cli.js");
   } catch {
     return undefined;
   }

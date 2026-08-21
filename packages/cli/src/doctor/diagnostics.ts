@@ -10,11 +10,16 @@ export const DoctorDiagnosticCode = {
   BOUNDARY_REFERENCE_IMPORT: "ATLAS_BOUNDARY_REFERENCE_IMPORT",
   BOUNDARY_CROSS_FEATURE_IMPORT: "ATLAS_BOUNDARY_CROSS_FEATURE_IMPORT",
   BOUNDARY_ANALYTICS_VENDOR: "ATLAS_BOUNDARY_ANALYTICS_VENDOR",
+  ARCHITECTURE_POLICY_MISSING: "ATLAS_ARCHITECTURE_POLICY_MISSING",
   DEPENDENCY_UNDECLARED: "ATLAS_DEPENDENCY_UNDECLARED",
   GENERATED_OPENAPI_STALE: "ATLAS_GENERATED_OPENAPI_STALE",
+  GENERATED_OPENAPI_INVALID: "ATLAS_GENERATED_OPENAPI_INVALID",
   VERSION_MISMATCH: "ATLAS_VERSION_MISMATCH",
+  ROOT_PACKAGE_METADATA_INVALID: "ATLAS_ROOT_PACKAGE_METADATA_INVALID",
+  WORKSPACE_CONFIG_MISSING: "ATLAS_WORKSPACE_CONFIG_MISSING",
   WORKSPACE_PACKAGE_MANIFEST_MISSING: "ATLAS_WORKSPACE_PACKAGE_MANIFEST_MISSING",
   WORKSPACE_NOT_INCLUDED: "ATLAS_WORKSPACE_NOT_INCLUDED",
+  DOCTOR_CHECK_EXECUTION_FAILED: "ATLAS_DOCTOR_CHECK_EXECUTION_FAILED",
 } as const;
 
 export type DoctorDiagnosticCodeType =
@@ -93,6 +98,35 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
       "Run `pnpm --filter @atlas/web api:gen` and commit the updated OpenAPI client artifact.",
     documentation: "docs/how-we-build/architecture-ownership.md",
   },
+  [DoctorDiagnosticCode.GENERATED_OPENAPI_INVALID]: {
+    severity: "error",
+    suggestedFix:
+      "Run the canonical API generation command locally, fix the OpenAPI source or generator error, then rerun `atlas doctor`.",
+    documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.ARCHITECTURE_POLICY_MISSING]: {
+    severity: "error",
+    suggestedFix:
+      "Restore the application ESLint config and architecture policy files required for Atlas boundary enforcement.",
+    documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.ROOT_PACKAGE_METADATA_INVALID]: {
+    severity: "error",
+    suggestedFix:
+      "Restore a valid root package.json with a meaningful version field so Atlas Doctor can compare checkout metadata.",
+    documentation: "docs/how-we-build/releases-and-governance.md",
+  },
+  [DoctorDiagnosticCode.WORKSPACE_CONFIG_MISSING]: {
+    severity: "error",
+    suggestedFix:
+      "Restore pnpm-workspace.yaml and include the configured application and UI workspace roots.",
+    documentation: "docs/how-we-build/folder-structure.md",
+  },
+  [DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED]: {
+    severity: "error",
+    suggestedFix:
+      "Inspect the underlying tooling or configuration error. If the checkout is valid, report this as an Atlas CLI defect.",
+  },
   [DoctorDiagnosticCode.VERSION_MISMATCH]: {
     severity: "warning",
     suggestedFix:
@@ -112,6 +146,17 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
     documentation: "docs/how-we-build/folder-structure.md",
   },
 };
+
+export function createCheckExecutionFailedDiagnostic(
+  checkId: string,
+  reason?: string
+): DoctorDiagnostic {
+  const reasonSuffix = reason ? `: ${reason}` : "";
+  return createDiagnostic(
+    DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED,
+    `Doctor could not execute the "${checkId}" check${reasonSuffix}.`
+  );
+}
 
 export function createDiagnostic(
   code: string,

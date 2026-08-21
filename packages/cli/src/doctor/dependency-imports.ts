@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { builtinModules } from "node:module";
 import path from "node:path";
 
 import { createDiagnostic, DoctorDiagnosticCode } from "./diagnostics";
 import { joinRepoAbsolutePath, toPosixRepoRelativePath } from "./paths";
+import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "./static-imports";
 
 import type { DoctorContext } from "./context";
 import type { DoctorDiagnostic } from "./types";
@@ -22,10 +22,6 @@ const IGNORED_DIRS = new Set([
   "test",
   "scripts",
 ]);
-
-const IMPORT_FROM_PATTERN = /\bfrom\s+["']([^"']+)["']/g;
-const SIDE_EFFECT_IMPORT_PATTERN = /\bimport\s+["']([^"']+)["']/g;
-const REQUIRE_PATTERN = /\brequire\(\s*["']([^"']+)["']\s*\)/g;
 
 interface WorkspacePackage {
   relativeRoot: string;
@@ -52,11 +48,10 @@ export function findUndeclaredDependencyDiagnostics(context: DoctorContext): Doc
   }
 
   for (const sourceFile of walkSourceFiles(sourceRoot)) {
-    const content = readFileSync(sourceFile, "utf8");
-    const imports = extractImportSpecifiers(content);
+    const imports = extractStaticModuleSpecifiers(sourceFile);
 
-    for (const specifier of imports) {
-      const packageName = classifyPackageName(specifier);
+    for (const entry of imports) {
+      const packageName = packageRootFromSpecifier(entry.specifier);
       if (!packageName || workspace.dependencies.has(packageName)) {
         continue;
       }
@@ -67,6 +62,8 @@ export function findUndeclaredDependencyDiagnostics(context: DoctorContext): Doc
           `Workspace ${workspace.relativeRoot} imports "${packageName}" but does not declare it in package.json.`,
           {
             path: toPosixRepoRelativePath(context.repoRoot, sourceFile),
+            line: entry.line,
+            column: entry.column,
             suggestedFix: `Declare "${packageName}" in ${path.posix.join(workspace.relativeRoot, "package.json")} because this workspace imports it directly.`,
           }
         )
@@ -145,53 +142,6 @@ function walkSourceFiles(root: string): string[] {
   return files.sort();
 }
 
-function extractImportSpecifiers(content: string): string[] {
-  const specifiers = new Set<string>();
-
-  for (const pattern of [IMPORT_FROM_PATTERN, SIDE_EFFECT_IMPORT_PATTERN, REQUIRE_PATTERN]) {
-    for (const match of content.matchAll(pattern)) {
-      const specifier = match[1];
-      if (specifier) {
-        specifiers.add(specifier);
-      }
-    }
-  }
-
-  return [...specifiers].sort();
-}
-
-function classifyPackageName(specifier: string): string | undefined {
-  if (
-    specifier.startsWith(".") ||
-    specifier.startsWith("@/") ||
-    specifier.startsWith("~/") ||
-    specifier.startsWith("#")
-  ) {
-    return undefined;
-  }
-
-  const normalized = specifier.startsWith("node:") ? specifier.slice(5) : specifier;
-  if (builtinModules.includes(normalized) || builtinModules.includes(`node:${normalized}`)) {
-    return undefined;
-  }
-
-  if (specifier.startsWith("@atlas/")) {
-    const workspaceName = specifier.split("/").slice(0, 2).join("/");
-    return workspaceName;
-  }
-
-  if (specifier.startsWith("@")) {
-    const segments = specifier.split("/");
-    return segments.length >= 2 ? `${segments[0]}/${segments[1]}` : segments[0];
-  }
-
-  if (specifier.includes("/")) {
-    return undefined;
-  }
-
-  return specifier;
-}
-
 function dedupeByKey<T>(items: T[], keyFn: (item: T) => string): T[] {
   const seen = new Set<string>();
   const unique: T[] = [];
@@ -207,3 +157,5 @@ function dedupeByKey<T>(items: T[], keyFn: (item: T) => string): T[] {
 
   return unique;
 }
+
+export { packageRootFromSpecifier };

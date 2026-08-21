@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import {
   AtlasContractError,
   AtlasContractErrorCode,
@@ -16,9 +14,9 @@ import { readCheckoutAtlasVersion, readCliAtlasVersion } from "../version";
 
 export interface DoctorContext {
   repoRoot: string;
-  projectRootRelative: string;
   atlasVersion: string;
-  checkoutAtlasVersion: string;
+  checkoutAtlasVersion?: string;
+  checkoutVersionError?: string;
   project?: ResolvedAtlasProject;
   contractError?: AtlasContractError;
 }
@@ -32,12 +30,17 @@ export function createDoctorContext(options: CreateDoctorContextOptions = {}): D
   const contractRoot = findAtlasRepoRoot(startDir);
   const repoRoot = contractRoot ?? findStructuralAtlasRoot(startDir) ?? startDir;
 
+  const checkoutVersion = readCheckoutVersionMetadata(repoRoot);
+  const contextBase = {
+    repoRoot,
+    atlasVersion: readCliAtlasVersion(),
+    checkoutAtlasVersion: checkoutVersion.version,
+    checkoutVersionError: checkoutVersion.error,
+  };
+
   if (!contractRoot) {
     return {
-      repoRoot,
-      projectRootRelative: normalizeProjectRootRelative(repoRoot, startDir),
-      atlasVersion: readCliAtlasVersion(),
-      checkoutAtlasVersion: safeReadCheckoutVersion(repoRoot),
+      ...contextBase,
       contractError: new AtlasContractError(
         AtlasContractErrorCode.CONTRACT_NOT_FOUND,
         "Atlas contract not found at atlas.config.json. Expected file at repository root."
@@ -45,13 +48,7 @@ export function createDoctorContext(options: CreateDoctorContextOptions = {}): D
     };
   }
 
-  const checkoutAtlasVersion = safeReadCheckoutVersion(repoRoot);
-  const context: DoctorContext = {
-    repoRoot,
-    projectRootRelative: normalizeProjectRootRelative(repoRoot, startDir),
-    atlasVersion: readCliAtlasVersion(),
-    checkoutAtlasVersion,
-  };
+  const context: DoctorContext = { ...contextBase };
 
   try {
     context.project = resolveAtlasProject(repoRoot);
@@ -66,19 +63,15 @@ export function createDoctorContext(options: CreateDoctorContextOptions = {}): D
   return context;
 }
 
-function safeReadCheckoutVersion(repoRoot: string): string {
+function readCheckoutVersionMetadata(repoRoot: string): { version?: string; error?: string } {
   try {
-    return readCheckoutAtlasVersion(repoRoot);
-  } catch {
-    return readCliAtlasVersion();
+    return { version: readCheckoutAtlasVersion(repoRoot) };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to read checkout version from root package.json.",
+    };
   }
-}
-
-function normalizeProjectRootRelative(repoRoot: string, startDir: string): string {
-  const relative = path.relative(startDir, repoRoot);
-  if (relative === "") {
-    return ".";
-  }
-
-  return relative.split(path.sep).join("/");
 }

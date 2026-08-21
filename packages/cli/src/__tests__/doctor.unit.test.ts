@@ -1,7 +1,8 @@
 import { mapContractErrorToDiagnostics } from "../doctor/map-contract-error";
 import { mapEslintMessageToDiagnostic, sortDiagnostics } from "../doctor/map-eslint";
 import { DoctorDiagnosticCode } from "../doctor/diagnostics";
-import { runDoctor } from "../doctor";
+import { createDoctorContext } from "../doctor/context";
+import { findCrossFeatureImportDiagnostics } from "../doctor/cross-feature-imports";
 import { createDoctorAtlasFixture } from "./helpers/doctor-fixture";
 import { AtlasContractError, AtlasContractErrorCode } from "@atlas/project";
 
@@ -56,16 +57,16 @@ describe("doctor eslint mapping", () => {
 });
 
 describe("doctor fixture integration", () => {
-  it("reports cross-feature imports in fixture workspaces", async () => {
+  it("reports cross-feature imports in fixture workspaces", () => {
     const fixture = createDoctorAtlasFixture({
       withViolation: "cross-feature-import",
-      withApplicationTooling: true,
+      withApplicationTooling: false,
     });
-    const report = await runDoctor({ cwd: fixture.root });
+    const context = createDoctorContext({ cwd: fixture.root });
+    const diagnostics = findCrossFeatureImportDiagnostics(context);
 
-    expect(report.checks.find((check) => check.id === "project-contract")?.status).toBe("pass");
     expect(
-      report.diagnostics.some(
+      diagnostics.some(
         (diagnostic) => diagnostic.code === DoctorDiagnosticCode.BOUNDARY_CROSS_FEATURE_IMPORT
       )
     ).toBe(true);

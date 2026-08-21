@@ -27,10 +27,12 @@ export interface DoctorCheckResult {
 }
 
 export interface DoctorReportSummary {
-  passed: number;
-  warnings: number;
-  errors: number;
-  skipped: number;
+  checksPassed: number;
+  checksWarned: number;
+  checksFailed: number;
+  checksSkipped: number;
+  diagnosticWarnings: number;
+  diagnosticErrors: number;
 }
 
 export interface DoctorReport {
