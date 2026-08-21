@@ -53,15 +53,10 @@ export interface OAuthUser {
   avatarUrl: string | null;
 
   /**
-   * Stable principal identifier for authorization profiles (#41).
+   * Stable principal identifier for authenticated identity.
    * Present on reference personas; optional for OAuth users until mapped.
    */
   principalId?: string;
-
-  /**
-   * Authorization roles for the principal (#41 harness seam).
-   */
-  roles?: string[];
 }
 
 /**

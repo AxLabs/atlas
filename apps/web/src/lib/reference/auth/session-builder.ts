@@ -6,7 +6,7 @@
 
 import "server-only";
 
-import { getReferencePersona } from "./personas";
+import { getReferencePersona, referencePersonaToSessionUser } from "./personas";
 
 import type { ReferenceAuthPersona } from "../scenario-types";
 import type { SessionData } from "@/lib/auth/types";
@@ -26,7 +26,7 @@ export function buildReferenceSessionData(persona: ReferenceAuthPersona): Sessio
   const now = 1_700_000_000; // Fixed timestamp for deterministic sessions
 
   return {
-    user,
+    user: referencePersonaToSessionUser(user),
     accessToken: `reference-access-token-${user.principalId}`,
     refreshToken: `reference-refresh-token-${user.principalId}`,
     accessTokenExpiresAt: REFERENCE_SESSION_EXPIRES_AT,

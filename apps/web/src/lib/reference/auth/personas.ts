@@ -2,7 +2,8 @@
  * Deterministic reference auth personas.
  *
  * Stable fixture identities for local development and automated tests.
- * Permission profiles for #41 can extend roles without replacing personas.
+ * Reference persona metadata provides deterministic profiles for #41 to map
+ * into the eventual authorization model.
  *
  * @module lib/reference/auth/personas
  */
@@ -12,7 +13,20 @@ import type { OAuthUser } from "@/lib/auth/types";
 
 export interface ReferencePersona extends OAuthUser {
   principalId: string;
+  /** Reference-only profile metadata — not part of the core auth contract. */
   roles: string[];
+}
+
+/** Strip reference-only metadata before persisting to the standard session contract. */
+export function referencePersonaToSessionUser(persona: ReferencePersona): OAuthUser {
+  return {
+    provider: persona.provider,
+    providerAccountId: persona.providerAccountId,
+    principalId: persona.principalId,
+    email: persona.email,
+    name: persona.name,
+    avatarUrl: persona.avatarUrl,
+  };
 }
 
 export const REFERENCE_PERSONA_IDS = {

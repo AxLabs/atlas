@@ -1,5 +1,5 @@
 import { buildReferenceSessionData } from "@/lib/reference/auth/session-builder";
-import { REFERENCE_PERSONA_IDS } from "@/lib/reference/auth/personas";
+import { getReferencePersona, REFERENCE_PERSONA_IDS } from "@/lib/reference/auth/personas";
 
 describe("buildReferenceSessionData", () => {
   it("returns null for anonymous persona", () => {
@@ -13,7 +13,6 @@ describe("buildReferenceSessionData", () => {
         provider: "reference",
         principalId: REFERENCE_PERSONA_IDS.user,
         email: "reference.user@atlas.local",
-        roles: ["user"],
       },
       accessToken: "reference-access-token-reference-user",
       accessTokenExpiresAt: 4_102_444_800,
@@ -22,10 +21,15 @@ describe("buildReferenceSessionData", () => {
     });
   });
 
-  it("builds deterministic session data for reference-admin with elevated roles", () => {
+  it("builds deterministic session data for reference-admin", () => {
     const session = buildReferenceSessionData("reference-admin");
-    expect(session?.user.roles).toEqual(["user", "admin"]);
     expect(session?.user.principalId).toBe(REFERENCE_PERSONA_IDS.admin);
+    expect(getReferencePersona("reference-admin")?.roles).toEqual(["user", "admin"]);
+  });
+
+  it("does not persist reference-only roles on the session user contract", () => {
+    const session = buildReferenceSessionData("reference-user");
+    expect(session?.user).not.toHaveProperty("roles");
   });
 
   it("produces identical sessions on repeated calls", () => {

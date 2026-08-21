@@ -28,11 +28,14 @@ Restart the dev server, then open `/reference`.
 
 ## Auth personas
 
-| Persona           | Session                       | Roles (for #41) |
-| ----------------- | ----------------------------- | --------------- |
-| `anonymous`       | Signed out                    | —               |
-| `reference-user`  | `reference.user@atlas.local`  | `user`          |
-| `reference-admin` | `reference.admin@atlas.local` | `user`, `admin` |
+| Persona           | Session                       | Reference profile metadata |
+| ----------------- | ----------------------------- | -------------------------- |
+| `anonymous`       | Signed out                    | —                          |
+| `reference-user`  | `reference.user@atlas.local`  | `user`                     |
+| `reference-admin` | `reference.admin@atlas.local` | `user`, `admin`            |
+
+Profile metadata lives on reference fixtures only. Sessions use the standard `OAuthUser` contract
+without roles; #41 will map these profiles into the eventual authorization model.
 
 Select personas via the `/reference` control panel or programmatically:
 
@@ -90,13 +93,13 @@ these guards.
 
 ## Architecture boundaries
 
-| Layer                    | Location                                     |
-| ------------------------ | -------------------------------------------- |
-| Application contract     | `useSession`, `api.users.*`, OpenAPI types   |
-| Reference adapters       | `lib/reference/**`, `/api/reference/**`      |
-| Developer UI             | `/reference`, `features/reference/`          |
-| Future #41 authorization | `OAuthUser.roles`, `principalId` on personas |
-| Future #39 reference app | Consumes this harness; not implemented here  |
+| Layer                    | Location                                                                 |
+| ------------------------ | ------------------------------------------------------------------------ |
+| Application contract     | `useSession`, `api.users.*`, OpenAPI types                               |
+| Reference adapters       | `lib/reference/**`, `/api/reference/**`                                  |
+| Developer UI             | `/reference`, `features/reference/`                                      |
+| Future #41 authorization | Reference persona profile metadata (e.g. roles) — not on `OAuthUser` yet |
+| Future #39 reference app | Consumes this harness; not implemented here                              |
 
 ## Real provider configuration
 
