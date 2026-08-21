@@ -187,3 +187,80 @@ export const PRODUCT_FEATURE_IMPORT_RESTRICTIONS = {
     ...REFERENCE_IMPORT_PATTERNS,
   ],
 };
+
+/** Shared test file ignores for architecture boundary rules. */
+export const TEST_FILE_IGNORES = [
+  "src/test/**",
+  "**/__tests__/**",
+  "**/*.test.{ts,tsx}",
+  "**/*.spec.{ts,tsx}",
+];
+
+export function processEnvSyntaxRule() {
+  return {
+    selector: PROCESS_ENV_SELECTOR,
+    message: PROCESS_ENV_MESSAGE,
+  };
+}
+
+export function fetchCallSyntaxRule() {
+  return {
+    selector: "CallExpression[callee.name='fetch']",
+    message: FETCH_MESSAGE,
+  };
+}
+
+export function fetchGlobalRestriction() {
+  return {
+    name: "fetch",
+    message: FETCH_MESSAGE,
+  };
+}
+
+/** Standard product-feature syntax policy — process.env and raw fetch both banned. */
+export function productFeatureSyntaxRules() {
+  return {
+    "no-restricted-syntax": ["error", processEnvSyntaxRule(), fetchCallSyntaxRule()],
+    "no-restricted-globals": ["error", fetchGlobalRestriction()],
+  };
+}
+
+export function fetchSyntaxRules() {
+  return {
+    "no-restricted-syntax": ["error", fetchCallSyntaxRule()],
+    "no-restricted-globals": ["error", fetchGlobalRestriction()],
+  };
+}
+
+/**
+ * ESLint flat-config override for a custom product feature root under application src.
+ *
+ * @param {object} options
+ * @param {string} options.relativeFromApplication
+ * @param {string | undefined} options.referenceIgnoreGlob
+ * @param {string | undefined} options.examplesIgnoreGlob
+ * @param {unknown} options.productRestrictions
+ */
+export function buildCustomProductFeatureEslintOverride(options) {
+  const {
+    relativeFromApplication,
+    referenceIgnoreGlob,
+    examplesIgnoreGlob,
+    productRestrictions,
+  } = options;
+
+  const ignores = [
+    ...(referenceIgnoreGlob ? [referenceIgnoreGlob] : []),
+    ...(examplesIgnoreGlob ? [examplesIgnoreGlob] : []),
+    ...TEST_FILE_IGNORES,
+  ];
+
+  return {
+    files: [`${relativeFromApplication}/**/*.{ts,tsx}`],
+    ignores,
+    rules: {
+      "no-restricted-imports": ["error", productRestrictions],
+      ...productFeatureSyntaxRules(),
+    },
+  };
+}

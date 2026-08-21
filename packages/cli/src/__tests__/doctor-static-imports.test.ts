@@ -3,6 +3,7 @@ import { isWorkspaceRootIncluded, parsePnpmWorkspaceFile } from "../doctor/works
 import {
   deriveProductFeatureImportPrefix,
   resolveImportedProductFeatureName,
+  resolveProductFeaturePolicyTarget,
 } from "../doctor/feature-alias";
 import { DOCTOR_DIAGNOSTIC_DEFINITIONS, DoctorDiagnosticCode } from "../doctor/diagnostics";
 import { doctorReportHasErrors, runDoctorChecks } from "../doctor/runner";
@@ -123,6 +124,42 @@ describe("contract-driven feature alias", () => {
     expect(
       resolveImportedProductFeatureName("@/domains/users", ["users", "billing"], "@/domains/")
     ).toBe("users");
+  });
+
+  it("classifies custom application-src roots as supported", () => {
+    const project = {
+      ...DEFAULT_ATLAS_PROJECT_CONTRACT,
+      schemaVersion: 1 as const,
+      application: { root: "apps/web" },
+      features: {
+        product: "apps/web/src/domains",
+        reference: "apps/web/src/domains/reference",
+        examples: "apps/web/src/domains/examples",
+      },
+    };
+
+    const target = resolveProductFeaturePolicyTarget("/repo", project);
+    expect(target.kind).toBe("application-source");
+    if (target.kind === "application-source") {
+      expect(target.relativeFromApplication).toBe("src/domains");
+      expect(target.isDefaultRoot).toBe(false);
+    }
+  });
+
+  it("classifies external product feature roots as unsupported", () => {
+    const project = {
+      ...DEFAULT_ATLAS_PROJECT_CONTRACT,
+      schemaVersion: 1 as const,
+      application: { root: "apps/web" },
+      features: {
+        product: "packages/product-features",
+        reference: "packages/product-features/reference",
+        examples: "packages/product-features/examples",
+      },
+    };
+
+    const target = resolveProductFeaturePolicyTarget("/repo", project);
+    expect(target.kind).toBe("unsupported");
   });
 });
 

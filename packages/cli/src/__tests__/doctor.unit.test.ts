@@ -3,6 +3,7 @@ import { mapEslintMessageToDiagnostic, sortDiagnostics } from "../doctor/map-esl
 import { DoctorDiagnosticCode } from "../doctor/diagnostics";
 import { createDoctorContext } from "../doctor/context";
 import { findCrossFeatureImportDiagnostics } from "../doctor/cross-feature-imports";
+import { resolveProductFeaturePolicyTarget } from "../doctor/feature-alias";
 import { createDoctorAtlasFixture } from "./helpers/doctor-fixture";
 import { AtlasContractError, AtlasContractErrorCode } from "@atlas/project";
 
@@ -63,7 +64,14 @@ describe("doctor fixture integration", () => {
       withApplicationTooling: false,
     });
     const context = createDoctorContext({ cwd: fixture.root });
-    const diagnostics = findCrossFeatureImportDiagnostics(context);
+    if (!context.project) {
+      throw new Error("Expected resolved project contract in fixture.");
+    }
+    const policyTarget = resolveProductFeaturePolicyTarget(context.repoRoot, context.project);
+    if (policyTarget.kind !== "application-source") {
+      throw new Error("Expected default product feature root in fixture.");
+    }
+    const diagnostics = findCrossFeatureImportDiagnostics(context, policyTarget);
 
     expect(
       diagnostics.some(

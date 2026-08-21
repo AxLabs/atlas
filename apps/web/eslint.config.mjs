@@ -6,24 +6,18 @@ import { dirname } from "node:path";
 import {
   API_ROUTE_IMPORT_RESTRICTIONS,
   CONFIG_IMPORT_RESTRICTIONS,
-  FETCH_MESSAGE,
+  fetchCallSyntaxRule,
+  fetchGlobalRestriction,
+  fetchSyntaxRules,
   LIB_PROVIDER_IMPORT_RESTRICTIONS,
-  PROCESS_ENV_MESSAGE,
-  PROCESS_ENV_SELECTOR,
+  processEnvSyntaxRule,
   PRODUCT_FEATURE_IMPORT_RESTRICTIONS,
   STANDARD_APP_IMPORT_RESTRICTIONS,
+  TEST_FILE_IGNORES,
 } from "./architecture-policy.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-/** Shared test file ignores for architecture boundary rules. */
-const TEST_FILE_IGNORES = [
-  "src/test/**",
-  "**/__tests__/**",
-  "**/*.test.{ts,tsx}",
-  "**/*.spec.{ts,tsx}",
-];
 
 /**
  * File policy classes — each group is mutually exclusive and carries the complete
@@ -89,32 +83,6 @@ const PROCESS_ENV_ALLOWED_FILES = [
   ...ANALYTICS_PROVIDER_FILES,
   ...TEST_FILE_IGNORES,
 ];
-
-function processEnvSyntaxRule() {
-  return {
-    selector: PROCESS_ENV_SELECTOR,
-    message: PROCESS_ENV_MESSAGE,
-  };
-}
-
-function fetchSyntaxRules() {
-  return {
-    "no-restricted-syntax": [
-      "error",
-      {
-        selector: "CallExpression[callee.name='fetch']",
-        message: FETCH_MESSAGE,
-      },
-    ],
-    "no-restricted-globals": [
-      "error",
-      {
-        name: "fetch",
-        message: FETCH_MESSAGE,
-      },
-    ],
-  };
-}
 
 export default [
   ...baseConfig,
@@ -196,21 +164,8 @@ export default [
     files: STANDARD_APP_LAYER_FILES,
     ignores: [...SPECIAL_APP_LAYER_SYNTAX_IGNORES, ...TEST_FILE_IGNORES],
     rules: {
-      "no-restricted-syntax": [
-        "error",
-        processEnvSyntaxRule(),
-        {
-          selector: "CallExpression[callee.name='fetch']",
-          message: FETCH_MESSAGE,
-        },
-      ],
-      "no-restricted-globals": [
-        "error",
-        {
-          name: "fetch",
-          message: FETCH_MESSAGE,
-        },
-      ],
+      "no-restricted-syntax": ["error", processEnvSyntaxRule(), fetchCallSyntaxRule()],
+      "no-restricted-globals": ["error", fetchGlobalRestriction()],
     },
   },
   {

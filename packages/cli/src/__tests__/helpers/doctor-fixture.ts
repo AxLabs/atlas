@@ -30,6 +30,7 @@ export interface DoctorFixtureOptions {
   withApplicationTooling?: boolean;
   withViolation?: DoctorViolationKind;
   customProductFeaturesRoot?: string;
+  externalProductFeaturesRoot?: string;
   checkoutVersion?: string;
   invalidRootPackageJson?: boolean;
   missingRootPackageJson?: boolean;
@@ -51,6 +52,9 @@ export type DoctorViolationKind =
   | "cross-feature-import"
   | "custom-feature-root-cross-import"
   | "custom-feature-root-reference-import"
+  | "custom-feature-root-raw-fetch"
+  | "custom-feature-root-direct-env"
+  | "custom-feature-root-allowed"
   | "undeclared-dependency"
   | "undeclared-next-navigation"
   | "undeclared-react-jsx-runtime"
@@ -137,16 +141,21 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
 
   mkdirSync(path.join(fixture.root, "apps/web/src"), { recursive: true });
 
-  if (options?.customProductFeaturesRoot) {
+  if (options?.customProductFeaturesRoot || options?.externalProductFeaturesRoot) {
+    const productRoot = options.externalProductFeaturesRoot ?? options.customProductFeaturesRoot!;
     writeFileSync(
       path.join(fixture.root, "atlas.config.json"),
       `${JSON.stringify(
         {
           schemaVersion: 1,
           features: {
-            product: options.customProductFeaturesRoot,
-            reference: `${options.customProductFeaturesRoot}/reference`,
-            examples: `${options.customProductFeaturesRoot}/examples`,
+            product: productRoot,
+            reference: options.externalProductFeaturesRoot
+              ? `${productRoot}/reference`
+              : `${options.customProductFeaturesRoot}/reference`,
+            examples: options.externalProductFeaturesRoot
+              ? `${productRoot}/examples`
+              : `${options.customProductFeaturesRoot}/examples`,
           },
           capabilities: {
             openApi: options.openApi ?? false,
@@ -157,6 +166,8 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
       )}\n`,
       "utf8"
     );
+
+    mkdirSync(path.join(fixture.root, productRoot, "billing"), { recursive: true });
   }
 
   if (options?.withApplicationTooling ?? true) {
@@ -222,7 +233,11 @@ function copyApplicationDoctorTooling(
   const sourceAppRoot = path.join(REPO_ROOT, "apps/web");
   const targetAppRoot = path.join(fixtureRoot, "apps/web");
 
-  for (const fileName of ["architecture-policy.mjs", "tsconfig.json"]) {
+  for (const fileName of [
+    "architecture-policy.mjs",
+    "doctor-architecture-eslint.config.mjs",
+    "tsconfig.json",
+  ]) {
     copyFileSync(path.join(sourceAppRoot, fileName), path.join(targetAppRoot, fileName));
   }
 
@@ -377,6 +392,19 @@ function applyDoctorViolation(
       break;
     case "custom-feature-root-reference-import":
       applyDoctorViolation(fixtureRoot, "reference-import", "apps/web/src/domains");
+      break;
+    case "custom-feature-root-raw-fetch":
+      applyDoctorViolation(fixtureRoot, "raw-fetch", "apps/web/src/domains");
+      break;
+    case "custom-feature-root-direct-env":
+      applyDoctorViolation(fixtureRoot, "direct-env", "apps/web/src/domains");
+      break;
+    case "custom-feature-root-allowed":
+      writeViolationFile(
+        fixtureRoot,
+        "apps/web/src/domains/billing/allowed.ts",
+        "import { apiGet } from '@/lib/api';\nexport async function loadBilling() { return apiGet('/api/billing'); }\n"
+      );
       break;
     case "undeclared-dependency":
       writeViolationFile(

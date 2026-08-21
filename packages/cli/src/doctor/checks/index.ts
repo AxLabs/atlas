@@ -10,8 +10,10 @@ import { createDiagnostic, DoctorDiagnosticCode } from "../diagnostics";
 import {
   applicationSourceRoot,
   deriveAppAliasPrefix,
-  deriveProductFeatureImportPrefix,
+  deriveReferenceExamplesIgnoreGlobs,
+  resolveProductFeaturePolicyTarget,
 } from "../feature-alias";
+import { importEsmModule } from "../import-esm-module";
 import { dedupeDiagnostics, mapContractErrorToDiagnostics } from "../map-contract-error";
 import { mapEslintMessageToDiagnostic } from "../map-eslint";
 import { compareOpenApiFreshness } from "../openapi-freshness";
@@ -21,8 +23,6 @@ import { isWorkspaceRootIncluded, readPnpmWorkspacePatterns } from "../workspace
 import type { DoctorContext } from "../context";
 import type { DoctorCheckResult, DoctorDiagnostic } from "../types";
 import type { ESLint } from "eslint";
-
-const DEFAULT_PRODUCT_FEATURE_GLOB = "src/features";
 
 export function runProjectContractCheck(context: DoctorContext): DoctorCheckResult {
   const base = {
@@ -65,16 +65,6 @@ export function runWorkspaceStructureCheck(context: DoctorContext): DoctorCheckR
   }
 
   const diagnostics: DoctorDiagnostic[] = [];
-
-  if (context.checkoutVersionError) {
-    diagnostics.push(
-      createDiagnostic(
-        DoctorDiagnosticCode.ROOT_PACKAGE_METADATA_INVALID,
-        context.checkoutVersionError,
-        { path: "package.json" }
-      )
-    );
-  }
 
   const applicationManifest = joinRepoAbsolutePath(
     context.repoRoot,
@@ -171,10 +161,33 @@ export async function runArchitectureBoundariesCheck(
     };
   }
 
-  const crossFeatureDiagnostics = findCrossFeatureImportDiagnostics(context);
+  const policyTarget = resolveProductFeaturePolicyTarget(context.repoRoot, context.project);
+  if (policyTarget.kind === "unsupported") {
+    return {
+      ...base,
+      status: "fail",
+      diagnostics: [
+        createDiagnostic(
+          DoctorDiagnosticCode.ARCHITECTURE_POLICY_UNSUPPORTED_ROOT,
+          policyTarget.reason,
+          {
+            path: policyTarget.configuredPath,
+            suggestedFix:
+              "Move the product feature root under `<application.root>/src`, or extend the Atlas architecture contract/tooling before using an external feature root.",
+          }
+        ),
+      ],
+    };
+  }
+
+  const crossFeatureDiagnostics = findCrossFeatureImportDiagnostics(context, policyTarget);
 
   try {
-    const eslintDiagnostics = await collectEslintArchitectureDiagnostics(context, applicationRoot);
+    const eslintDiagnostics = await collectEslintArchitectureDiagnostics(
+      context,
+      applicationRoot,
+      policyTarget
+    );
     const diagnostics = dedupeDiagnostics([...eslintDiagnostics, ...crossFeatureDiagnostics]);
 
     return {
@@ -193,7 +206,11 @@ export async function runArchitectureBoundariesCheck(
 
 async function collectEslintArchitectureDiagnostics(
   context: DoctorContext,
-  applicationRoot: string
+  applicationRoot: string,
+  policyTarget: Extract<
+    ReturnType<typeof resolveProductFeaturePolicyTarget>,
+    { kind: "application-source" }
+  >
 ): Promise<DoctorDiagnostic[]> {
   const eslint = loadEslintModule(applicationRoot);
   const eslintConfigPath = path.join(applicationRoot, "eslint.config.mjs");
@@ -212,49 +229,30 @@ async function collectEslintArchitectureDiagnostics(
   ];
   const lintTargets = collectArchitectureLintFiles(applicationRoot, targetPatterns);
 
-  if (context.project) {
-    const productRootAbsolute = joinRepoAbsolutePath(
-      context.repoRoot,
-      context.project.features.product
-    );
-    const relativeFromApp = path
-      .relative(applicationRoot, productRootAbsolute)
-      .split(path.sep)
-      .join("/");
-
-    if (
-      existsSync(productRootAbsolute) &&
-      relativeFromApp !== DEFAULT_PRODUCT_FEATURE_GLOB &&
-      !relativeFromApp.startsWith("..")
-    ) {
-      lintTargets.push(
-        ...collectArchitectureLintFiles(productRootAbsolute, ["."], productRootAbsolute)
-      );
-    }
-  }
-
   const uniqueLintTargets = [...new Set(lintTargets)].sort();
-
-  if (uniqueLintTargets.length === 0) {
-    return [];
-  }
-
-  const results = await eslintInstance.lintFiles(uniqueLintTargets);
   const diagnostics: DoctorDiagnostic[] = [];
 
-  for (const result of results) {
-    for (const message of result.messages) {
-      const diagnostic = mapEslintMessageToDiagnostic(context.repoRoot, applicationRoot, {
-        ...message,
-        filePath: result.filePath,
-      });
-      if (diagnostic) {
-        diagnostics.push(diagnostic);
+  if (uniqueLintTargets.length > 0) {
+    const results = await eslintInstance.lintFiles(uniqueLintTargets);
+
+    for (const result of results) {
+      for (const message of result.messages) {
+        const diagnostic = mapEslintMessageToDiagnostic(context.repoRoot, applicationRoot, {
+          ...message,
+          filePath: result.filePath,
+        });
+        if (diagnostic) {
+          diagnostics.push(diagnostic);
+        }
       }
     }
   }
 
-  const customFeatureDiagnostics = await lintCustomProductFeatureRoot(context, applicationRoot);
+  const customFeatureDiagnostics = await lintCustomProductFeatureRoot(
+    context,
+    applicationRoot,
+    policyTarget
+  );
   return dedupeDiagnostics([...diagnostics, ...customFeatureDiagnostics]);
 }
 
@@ -317,33 +315,24 @@ function walkArchitectureLintDirectory(directory: string, files: string[]): void
 
 async function lintCustomProductFeatureRoot(
   context: DoctorContext,
-  applicationRoot: string
+  applicationRoot: string,
+  policyTarget: Extract<
+    ReturnType<typeof resolveProductFeaturePolicyTarget>,
+    { kind: "application-source" }
+  >
 ): Promise<DoctorDiagnostic[]> {
-  if (!context.project) {
+  if (!context.project || policyTarget.isDefaultRoot) {
     return [];
   }
 
-  const productRootAbsolute = joinRepoAbsolutePath(
-    context.repoRoot,
-    context.project.features.product
-  );
-  if (!existsSync(productRootAbsolute)) {
-    return [];
-  }
-
-  const relativeFromApp = path
-    .relative(applicationRoot, productRootAbsolute)
-    .split(path.sep)
-    .join("/");
-
-  if (relativeFromApp === DEFAULT_PRODUCT_FEATURE_GLOB || relativeFromApp.startsWith("..")) {
+  if (!existsSync(policyTarget.absolutePath)) {
     return [];
   }
 
   const productFiles = collectArchitectureLintFiles(
-    productRootAbsolute,
+    policyTarget.absolutePath,
     ["."],
-    productRootAbsolute
+    policyTarget.absolutePath
   );
   if (productFiles.length === 0) {
     return [];
@@ -356,9 +345,15 @@ async function lintCustomProductFeatureRoot(
     );
   }
 
-  const policyModule = (await import(pathToFileURL(policyModulePath).href)) as {
+  const policyModule = await importEsmModule<{
     PRODUCT_FEATURE_IMPORT_RESTRICTIONS: unknown;
-  };
+    buildCustomProductFeatureEslintOverride: (options: {
+      relativeFromApplication: string;
+      referenceIgnoreGlob?: string;
+      examplesIgnoreGlob?: string;
+      productRestrictions: unknown;
+    }) => Record<string, unknown>;
+  }>(policyModulePath);
 
   const referenceAlias = deriveAppAliasPrefix(context.project, context.project.features.reference);
   const examplesAlias = deriveAppAliasPrefix(context.project, context.project.features.examples);
@@ -367,26 +362,32 @@ async function lintCustomProductFeatureRoot(
     referenceAlias,
     examplesAlias
   );
+  const { referenceIgnoreGlob, examplesIgnoreGlob } = deriveReferenceExamplesIgnoreGlobs(
+    context.repoRoot,
+    context.project
+  );
+
+  const doctorEslintConfigPath = path.join(
+    applicationRoot,
+    "doctor-architecture-eslint.config.mjs"
+  );
+  if (!existsSync(doctorEslintConfigPath)) {
+    throw new Error(
+      `Missing Doctor architecture ESLint config at ${context.project.application.root}/doctor-architecture-eslint.config.mjs.`
+    );
+  }
 
   const eslint = loadEslintModule(applicationRoot);
-  const eslintConfigPath = path.join(applicationRoot, "eslint.config.mjs");
   const eslintInstance = new eslint.ESLint({
     cwd: applicationRoot,
-    overrideConfigFile: eslintConfigPath,
+    overrideConfigFile: doctorEslintConfigPath,
     overrideConfig: [
-      {
-        files: [`${relativeFromApp}/**/*.{ts,tsx}`],
-        ignores: [
-          `${relativeFromApp}/reference/**`,
-          `${relativeFromApp}/examples/**`,
-          "**/__tests__/**",
-          "**/*.test.{ts,tsx}",
-          "**/*.spec.{ts,tsx}",
-        ],
-        rules: {
-          "no-restricted-imports": ["error", productRestrictions],
-        },
-      },
+      policyModule.buildCustomProductFeatureEslintOverride({
+        relativeFromApplication: policyTarget.relativeFromApplication,
+        referenceIgnoreGlob,
+        examplesIgnoreGlob,
+        productRestrictions,
+      }),
     ],
   });
 
@@ -569,4 +570,4 @@ export function runAtlasVersionCheck(context: DoctorContext): DoctorCheckResult 
   };
 }
 
-export { applicationSourceRoot, deriveProductFeatureImportPrefix };
+export { applicationSourceRoot, resolveProductFeaturePolicyTarget };

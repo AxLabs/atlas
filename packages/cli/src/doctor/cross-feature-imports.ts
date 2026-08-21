@@ -3,10 +3,10 @@ import path from "node:path";
 
 import { createDiagnostic, DoctorDiagnosticCode } from "./diagnostics";
 import {
-  deriveProductFeatureImportPrefix,
+  type ProductFeaturePolicyTarget,
   resolveImportedProductFeatureName,
 } from "./feature-alias";
-import { joinRepoAbsolutePath, toPosixRepoRelativePath } from "./paths";
+import { toPosixRepoRelativePath } from "./paths";
 import { extractStaticModuleSpecifiers } from "./static-imports";
 
 import type { DoctorContext } from "./context";
@@ -22,39 +22,36 @@ const IGNORED_DIRS = new Set([
   "__tests__",
 ]);
 
-export function findCrossFeatureImportDiagnostics(context: DoctorContext): DoctorDiagnostic[] {
+export function findCrossFeatureImportDiagnostics(
+  context: DoctorContext,
+  policyTarget: Extract<ProductFeaturePolicyTarget, { kind: "application-source" }>
+): DoctorDiagnostic[] {
   if (!context.project?.boundaries.noFeatureToFeatureImports) {
     return [];
   }
 
-  const productImportPrefix = deriveProductFeatureImportPrefix(context.project);
-  if (!productImportPrefix) {
+  if (!existsSync(policyTarget.absolutePath)) {
     return [];
   }
 
-  const productRoot = joinRepoAbsolutePath(context.repoRoot, context.project.features.product);
-  if (!existsSync(productRoot)) {
-    return [];
-  }
-
-  const featureNames = listProductFeatureNames(productRoot, context);
+  const featureNames = listProductFeatureNames(policyTarget.absolutePath, context);
   const diagnostics: DoctorDiagnostic[] = [];
 
   for (const featureName of featureNames) {
-    const featureDir = path.join(productRoot, featureName);
+    const featureDir = path.join(policyTarget.absolutePath, featureName);
     for (const sourceFile of walkSourceFiles(featureDir)) {
       for (const entry of extractStaticModuleSpecifiers(sourceFile)) {
         const importedFeature = resolveImportedProductFeatureName(
           entry.specifier,
           featureNames,
-          productImportPrefix
+          policyTarget.aliasPrefix
         );
 
         if (!importedFeature || importedFeature === featureName) {
           const relativeImport = resolveRelativeProductFeatureImport(
             entry.specifier,
             sourceFile,
-            productRoot,
+            policyTarget.absolutePath,
             featureNames
           );
           if (!relativeImport || relativeImport === featureName) {
@@ -162,4 +159,4 @@ function walkSourceFiles(root: string): string[] {
   return files.sort();
 }
 
-export { deriveProductFeatureImportPrefix };
+export { resolveProductFeaturePolicyTarget } from "./feature-alias";

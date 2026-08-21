@@ -114,42 +114,58 @@ Warnings do **not** fail CI in v0.1.
 
 ## Initial check registry
 
-| Check ID                  | Owns / delegates                       | Possible diagnostics                                                                           | Failure policy  |
-| ------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------- |
-| `project-contract`        | `@atlas/project`                       | `ATLAS_CONTRACT_*`                                                                             | error           |
-| `workspace-structure`     | Doctor + manifests                     | `ATLAS_WORKSPACE_*`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                                     | error           |
-| `architecture-boundaries` | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`, `ATLAS_ARCHITECTURE_POLICY_MISSING`, `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` | error           |
-| `dependency-declarations` | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                                  | error           |
-| `generated-openapi`       | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                                    | error / skip    |
-| `atlas-version`           | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                                | warning / error |
+| Check ID                  | Owns / delegates                       | Possible diagnostics                                                                     | Failure policy  |
+| ------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- | --------------- |
+| `project-contract`        | `@atlas/project`                       | `ATLAS_CONTRACT_*`                                                                       | error           |
+| `workspace-structure`     | Doctor + manifests                     | `ATLAS_WORKSPACE_*`                                                                      | error           |
+| `architecture-boundaries` | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`, `ATLAS_ARCHITECTURE_POLICY_*`, `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` | error           |
+| `dependency-declarations` | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                            | error           |
+| `generated-openapi`       | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                              | error / skip    |
+| `atlas-version`           | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                          | warning / error |
 
 ---
 
 ## Diagnostic codes
 
-| Code                                       | Severity | Suggested remediation                                            |
-| ------------------------------------------ | -------- | ---------------------------------------------------------------- |
-| `ATLAS_CONTRACT_MISSING`                   | error    | Create `atlas.config.json` or run `atlas init`                   |
-| `ATLAS_CONTRACT_INVALID`                   | error    | Fix contract validation/structure via `@atlas/project`           |
-| `ATLAS_CONTRACT_UNSUPPORTED`               | error    | Use a supported contract `schemaVersion`                         |
-| `ATLAS_BOUNDARY_PRIVATE_IMPORT`            | error    | Import from public package entry points such as `@atlas/ui`      |
-| `ATLAS_BOUNDARY_DIRECT_ENV`                | error    | Use `getServerConfig()` / `useConfig()`                          |
-| `ATLAS_BOUNDARY_RAW_NETWORK`               | error    | Use `@/lib/api` instead of raw `fetch()`                         |
-| `ATLAS_BOUNDARY_REFERENCE_IMPORT`          | error    | Do not import reference/example modules from product features    |
-| `ATLAS_BOUNDARY_CROSS_FEATURE_IMPORT`      | error    | Extract shared logic to `src/lib/`                               |
-| `ATLAS_BOUNDARY_ANALYTICS_VENDOR`          | error    | Use `@/lib/analytics` adapter                                    |
-| `ATLAS_ARCHITECTURE_POLICY_MISSING`        | error    | Restore application ESLint config and architecture policy files  |
-| `ATLAS_DEPENDENCY_UNDECLARED`              | error    | Declare imported packages in the owning workspace `package.json` |
-| `ATLAS_GENERATED_OPENAPI_STALE`            | error    | Run `pnpm --filter @atlas/web api:gen`                           |
-| `ATLAS_GENERATED_OPENAPI_INVALID`          | error    | Fix the OpenAPI source or generator error, then rerun Doctor     |
-| `ATLAS_VERSION_MISMATCH`                   | warning  | Align CLI/checkout Atlas snapshot versions                       |
-| `ATLAS_ROOT_PACKAGE_METADATA_INVALID`      | error    | Restore valid root `package.json` version metadata               |
-| `ATLAS_WORKSPACE_CONFIG_MISSING`           | error    | Restore `pnpm-workspace.yaml` with configured workspace roots    |
-| `ATLAS_WORKSPACE_PACKAGE_MANIFEST_MISSING` | error    | Add missing workspace `package.json`                             |
-| `ATLAS_WORKSPACE_NOT_INCLUDED`             | error    | Include configured roots in `pnpm-workspace.yaml`                |
-| `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED`      | error    | Inspect tooling/config errors or report an Atlas CLI defect      |
+| Code                                         | Severity | Suggested remediation                                                  |
+| -------------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| `ATLAS_CONTRACT_MISSING`                     | error    | Create `atlas.config.json` or run `atlas init`                         |
+| `ATLAS_CONTRACT_INVALID`                     | error    | Fix contract validation/structure via `@atlas/project`                 |
+| `ATLAS_CONTRACT_UNSUPPORTED`                 | error    | Use a supported contract `schemaVersion`                               |
+| `ATLAS_BOUNDARY_PRIVATE_IMPORT`              | error    | Import from public package entry points such as `@atlas/ui`            |
+| `ATLAS_BOUNDARY_DIRECT_ENV`                  | error    | Use `getServerConfig()` / `useConfig()`                                |
+| `ATLAS_BOUNDARY_RAW_NETWORK`                 | error    | Use `@/lib/api` instead of raw `fetch()`                               |
+| `ATLAS_BOUNDARY_REFERENCE_IMPORT`            | error    | Do not import reference/example modules from product features          |
+| `ATLAS_BOUNDARY_CROSS_FEATURE_IMPORT`        | error    | Extract shared logic to `src/lib/`                                     |
+| `ATLAS_BOUNDARY_ANALYTICS_VENDOR`            | error    | Use `@/lib/analytics` adapter                                          |
+| `ATLAS_ARCHITECTURE_POLICY_MISSING`          | error    | Restore application ESLint config and architecture policy files        |
+| `ATLAS_ARCHITECTURE_POLICY_UNSUPPORTED_ROOT` | error    | Move product features under `<application.root>/src` or extend tooling |
+| `ATLAS_DEPENDENCY_UNDECLARED`                | error    | Declare imported packages in the owning workspace `package.json`       |
+| `ATLAS_GENERATED_OPENAPI_STALE`              | error    | Run `pnpm --filter @atlas/web api:gen`                                 |
+| `ATLAS_GENERATED_OPENAPI_INVALID`            | error    | Fix the OpenAPI source or generator error, then rerun Doctor           |
+| `ATLAS_VERSION_MISMATCH`                     | warning  | Align CLI/checkout Atlas snapshot versions                             |
+| `ATLAS_ROOT_PACKAGE_METADATA_INVALID`        | error    | Restore valid root `package.json` version metadata                     |
+| `ATLAS_WORKSPACE_CONFIG_MISSING`             | error    | Restore `pnpm-workspace.yaml` with configured workspace roots          |
+| `ATLAS_WORKSPACE_PACKAGE_MANIFEST_MISSING`   | error    | Add missing workspace `package.json`                                   |
+| `ATLAS_WORKSPACE_NOT_INCLUDED`               | error    | Include configured roots in `pnpm-workspace.yaml`                      |
+| `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED`        | error    | Inspect tooling/config errors or report an Atlas CLI defect            |
 
 Only implemented codes are emitted.
+
+---
+
+## Product feature root support
+
+Atlas Doctor applies the product feature architecture policy to configured feature roots under
+`<application.root>/src`. Custom roots such as `apps/web/src/domains` receive the same effective
+feature-layer enforcement as the default `apps/web/src/features` root: import restrictions,
+reference/examples ownership boundaries, direct `process.env` prohibition, and raw `fetch`
+prohibition.
+
+Product feature roots outside the application source tree are not currently supported by the web
+architecture-policy evaluator. Doctor emits `ATLAS_ARCHITECTURE_POLICY_UNSUPPORTED_ROOT` and fails
+the `architecture-boundaries` check. This is an architecture-policy capability diagnostic — it does
+not mean `@atlas/project` rejects the configured path.
 
 ---
 

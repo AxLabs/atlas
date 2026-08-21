@@ -23,7 +23,7 @@ interface DoctorJsonResult {
     diagnosticErrors: number;
   };
   checks: { id: string; status: string; skipReason?: string }[];
-  diagnostics: { code: string; message?: string }[];
+  diagnostics: { code: string; message?: string; path?: string }[];
 }
 
 function runDoctorJson(
@@ -154,6 +154,91 @@ describe("atlas doctor architecture diagnostics", () => {
     expect(
       result.diagnostics.some(
         (diagnostic) => diagnostic.code === DoctorDiagnosticCode.BOUNDARY_CROSS_FEATURE_IMPORT
+      )
+    ).toBe(true);
+  });
+
+  it("detects raw fetch in custom configured feature roots", () => {
+    const fixture = createDoctorAtlasFixture({
+      customProductFeaturesRoot: "apps/web/src/domains",
+      withViolation: "custom-feature-root-raw-fetch",
+      withApplicationTooling: true,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+    const architectureCheck = result.checks.find((check) => check.id === "architecture-boundaries");
+
+    expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(architectureCheck?.status).toBe("fail");
+    expect(
+      result.diagnostics.some(
+        (diagnostic) =>
+          diagnostic.code === DoctorDiagnosticCode.BOUNDARY_RAW_NETWORK &&
+          diagnostic.path?.includes("domains/billing")
+      )
+    ).toBe(true);
+  });
+
+  it("detects direct process.env in custom configured feature roots", () => {
+    const fixture = createDoctorAtlasFixture({
+      customProductFeaturesRoot: "apps/web/src/domains",
+      withViolation: "custom-feature-root-direct-env",
+      withApplicationTooling: true,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+
+    expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.BOUNDARY_DIRECT_ENV
+      )
+    ).toBe(true);
+  });
+
+  it("passes valid Atlas APIs in custom configured feature roots", () => {
+    const fixture = createDoctorAtlasFixture({
+      customProductFeaturesRoot: "apps/web/src/domains",
+      withViolation: "custom-feature-root-allowed",
+      withApplicationTooling: true,
+      withEslintBoundaryFixtures: false,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+
+    expect(exitCode).toBe(ExitCode.SUCCESS);
+    expect(
+      result.diagnostics.some((diagnostic) => diagnostic.code.startsWith("ATLAS_BOUNDARY_"))
+    ).toBe(false);
+  });
+
+  it("detects reference imports in custom configured feature roots", () => {
+    const fixture = createDoctorAtlasFixture({
+      customProductFeaturesRoot: "apps/web/src/domains",
+      withViolation: "custom-feature-root-reference-import",
+      withApplicationTooling: true,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+
+    expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.BOUNDARY_REFERENCE_IMPORT
+      )
+    ).toBe(true);
+  });
+
+  it("fails explicitly for product feature roots outside application src", () => {
+    const fixture = createDoctorAtlasFixture({
+      externalProductFeaturesRoot: "packages/product-features",
+      withApplicationTooling: true,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+    const architectureCheck = result.checks.find((check) => check.id === "architecture-boundaries");
+
+    expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(architectureCheck?.status).toBe("fail");
+    expect(
+      result.diagnostics.some(
+        (diagnostic) =>
+          diagnostic.code === DoctorDiagnosticCode.ARCHITECTURE_POLICY_UNSUPPORTED_ROOT
       )
     ).toBe(true);
   });
@@ -389,11 +474,16 @@ describe("atlas doctor version diagnostics", () => {
   it("fails when root package metadata is invalid", () => {
     const fixture = createDoctorAtlasFixture({ invalidRootPackageJson: true });
     const { exitCode, result } = runDoctorJson(fixture.root);
+    const versionCheck = result.checks.find((check) => check.id === "atlas-version");
+    const workspaceCheck = result.checks.find((check) => check.id === "workspace-structure");
+    const metadataDiagnostics = result.diagnostics.filter(
+      (diagnostic) => diagnostic.code === DoctorDiagnosticCode.ROOT_PACKAGE_METADATA_INVALID
+    );
 
     expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
-    expect(
-      result.diagnostics.some((d) => d.code === DoctorDiagnosticCode.ROOT_PACKAGE_METADATA_INVALID)
-    ).toBe(true);
+    expect(metadataDiagnostics).toHaveLength(1);
+    expect(versionCheck?.status).toBe("fail");
+    expect(workspaceCheck?.status).not.toBe("fail");
   });
 });
 

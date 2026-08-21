@@ -11,6 +11,7 @@ export const DoctorDiagnosticCode = {
   BOUNDARY_CROSS_FEATURE_IMPORT: "ATLAS_BOUNDARY_CROSS_FEATURE_IMPORT",
   BOUNDARY_ANALYTICS_VENDOR: "ATLAS_BOUNDARY_ANALYTICS_VENDOR",
   ARCHITECTURE_POLICY_MISSING: "ATLAS_ARCHITECTURE_POLICY_MISSING",
+  ARCHITECTURE_POLICY_UNSUPPORTED_ROOT: "ATLAS_ARCHITECTURE_POLICY_UNSUPPORTED_ROOT",
   DEPENDENCY_UNDECLARED: "ATLAS_DEPENDENCY_UNDECLARED",
   GENERATED_OPENAPI_STALE: "ATLAS_GENERATED_OPENAPI_STALE",
   GENERATED_OPENAPI_INVALID: "ATLAS_GENERATED_OPENAPI_INVALID",
@@ -109,6 +110,12 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
     suggestedFix:
       "Restore the application ESLint config and architecture policy files required for Atlas boundary enforcement.",
     documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.ARCHITECTURE_POLICY_UNSUPPORTED_ROOT]: {
+    severity: "error",
+    suggestedFix:
+      "Move the product feature root under `<application.root>/src`, or extend the Atlas architecture contract/tooling before using an external feature root.",
+    documentation: "docs/how-we-build/atlas-contract.md",
   },
   [DoctorDiagnosticCode.ROOT_PACKAGE_METADATA_INVALID]: {
     severity: "error",
