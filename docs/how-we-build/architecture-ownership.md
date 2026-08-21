@@ -217,10 +217,7 @@ The canonical shadcn/Base UI foundation (#42) is complete. Remaining roadmap own
 | Issue   | Scope intentionally not in this document's implementation              |
 | ------- | ---------------------------------------------------------------------- |
 | #16     | Storybook, a11y, and visual-regression hardening                       |
-| #36–#38 | CLI, generators, Doctor                                                |
 | #39     | Coherent reference application; proves reusable app-level compositions |
-| #40     | Deterministic local auth/API harness                                   |
-| #41     | Authorization and permissions model                                    |
 | #43–#44 | Migration framework, agent workflow redesign                           |
 
 Extract reusable application compositions to shared packages only after #39 proves them in
