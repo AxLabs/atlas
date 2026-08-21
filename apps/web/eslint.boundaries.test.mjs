@@ -52,6 +52,11 @@ describe("eslint architecture boundaries (@atlas/web)", () => {
   it("rejects prohibited import and syntax patterns in ordinary app code", async () => {
     const cases = [
       {
+        file: ["features", "eslint-boundaries", "prohibited-reference-import.ts"],
+        ruleId: "no-restricted-imports",
+        fragment: "reference or example modules",
+      },
+      {
         file: ["components", "eslint-boundaries", "prohibited-env-import.tsx"],
         ruleId: "no-restricted-imports",
         fragment: "@/env",

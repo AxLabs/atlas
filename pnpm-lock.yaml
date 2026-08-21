@@ -247,6 +247,15 @@ importers:
       '@atlas/project':
         specifier: workspace:*
         version: link:../project
+      minimatch:
+        specifier: 10.2.5
+        version: 10.2.5
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+      yaml:
+        specifier: 2.5.1
+        version: 2.5.1
     devDependencies:
       '@atlas/config':
         specifier: workspace:*
@@ -269,9 +278,6 @@ importers:
       ts-jest:
         specifier: 29.2.5
         version: 29.2.5(@babel/core@7.28.5)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.28.5))(esbuild@0.25.12)(jest@29.7.0(@types/node@22.10.2)(ts-node@10.9.2(@types/node@22.10.2)(typescript@5.7.2)))(typescript@5.7.2)
-      typescript:
-        specifier: 5.7.2
-        version: 5.7.2
 
   packages/config:
     devDependencies:
@@ -10978,7 +10984,7 @@ snapshots:
 
   '@types/minimatch@6.0.0':
     dependencies:
-      minimatch: 9.0.5
+      minimatch: 10.2.5
 
   '@types/ms@2.1.0': {}
 

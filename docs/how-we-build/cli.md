@@ -18,7 +18,7 @@ See also: [Atlas project contract](atlas-contract.md),
 | Platform version        | `atlas --version` reports the installed `@atlas/cli` platform snapshot |
 | Project bootstrap       | `atlas init` initializes Atlas metadata in a compatible checkout       |
 | Atlas generators        | `atlas generate feature …`, `atlas generate page …`                    |
-| Future Doctor (#38)     | Report architecture conformance using resolved contract                |
+| Architecture Doctor     | `atlas doctor` reports contract, boundary, and workspace drift         |
 | Future migrations (#43) | Upgrade contract schema versions                                       |
 
 ---
@@ -195,20 +195,39 @@ Both generators:
 - Support `--dry-run` and `--json` using the shared CLI output model
 - Emit repository-relative paths and `followUpActions` for automation
 
+### `atlas doctor`
+
+Diagnose Atlas-specific architecture and configuration drift. Doctor validates the project contract,
+workspace structure, architecture boundaries, high-confidence undeclared application dependencies,
+generated OpenAPI freshness (when enabled), and Atlas version consistency.
+
+Doctor does **not** replace `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, or security
+audits. See [Atlas Doctor](doctor.md).
+
+```bash
+pnpm atlas doctor
+pnpm atlas doctor --json
+pnpm atlas doctor --cwd apps/web
+```
+
+Exit `0` for healthy or warning-only reports. Exit `8` when one or more error diagnostics are
+present.
+
 ---
 
 ## Exit codes
 
-| Code | Meaning                                    |
-| ---- | ------------------------------------------ |
-| `0`  | Success                                    |
-| `1`  | Unexpected internal error                  |
-| `2`  | Invalid CLI usage                          |
-| `3`  | Atlas project / contract not found         |
-| `4`  | Invalid Atlas contract or project          |
-| `5`  | Bootstrap conflict / incompatible checkout |
-| `6`  | Missing prerequisite (Node, pnpm)          |
-| `7`  | Generator conflict (destination exists)    |
+| Code | Meaning                                      |
+| ---- | -------------------------------------------- |
+| `0`  | Success                                      |
+| `1`  | Unexpected internal error                    |
+| `2`  | Invalid CLI usage                            |
+| `3`  | Atlas project / contract not found           |
+| `4`  | Invalid Atlas contract or project            |
+| `5`  | Bootstrap conflict / incompatible checkout   |
+| `6`  | Missing prerequisite (Node, pnpm)            |
+| `7`  | Generator conflict (destination exists)      |
+| `8`  | Doctor found architectural error diagnostics |
 
 ---
 
@@ -285,7 +304,7 @@ Machine-readable `--json` output may include:
 | Issue | Capability         | Status in v0.1        |
 | ----- | ------------------ | --------------------- |
 | #37   | `atlas generate …` | Feature + page shells |
-| #38   | `atlas doctor`     | Not implemented       |
+| #38   | `atlas doctor`     | Initial diagnostics   |
 | #43   | `atlas migrate`    | Not implemented       |
 
 The CLI exposes explicit command registration, shared context loading, exit codes, and output
@@ -296,5 +315,6 @@ conventions so these commands can be added without redesigning the foundation.
 ## Related docs
 
 - [Atlas project contract](atlas-contract.md)
+- [Atlas Doctor](doctor.md)
 - [Architecture ownership](architecture-ownership.md)
 - [AGENTS.md](../../AGENTS.md)

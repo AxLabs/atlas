@@ -138,12 +138,17 @@ See `apps/web/src/app/examples/form/page.tsx`.
 Before claiming completion, run the checks relevant to your change:
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test    # minimum bar (matches CONTRIBUTING.md)
-pnpm docs:check                             # when changing documentation links
-pnpm governance:check                       # when changing release/licensing policy
-pnpm build                                  # when build-affecting
-pnpm --filter @atlas/web test:e2e           # for user-facing flows
+pnpm --filter @atlas/cli build && pnpm atlas doctor   # after architecture-sensitive changes
+pnpm lint && pnpm typecheck && pnpm test                # minimum bar (matches CONTRIBUTING.md)
+pnpm docs:check                                       # when changing documentation links
+pnpm governance:check                                 # when changing release/licensing policy
+pnpm build                                            # when build-affecting
+pnpm --filter @atlas/web test:e2e                     # for user-facing flows
 ```
+
+`atlas doctor` validates Atlas-specific contract and architecture drift. It does not replace lint,
+typecheck, or tests. Treat Doctor error diagnostics as architectural failures and follow the
+suggested remediation rather than suppressing checks.
 
 Unit tests: `renderWithProviders` from `@/test`, MSW for network mocking, query by role/label (not
 test IDs first). Shared package code (`packages/ui`) requires tests.

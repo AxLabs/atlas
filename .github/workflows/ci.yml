@@ -176,6 +176,10 @@ jobs:
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm lint
 
+      - name: Run Atlas Doctor
+        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+        run: pnpm --filter @atlas/cli build && pnpm atlas doctor --json
+
       - name: Run TypeScript check
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm typecheck
