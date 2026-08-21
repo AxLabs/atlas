@@ -1,36 +1,24 @@
-import Link from "next/link";
+import { Button, Kbd } from "@atlas/ui";
 
-import { Button, ThemeToggle } from "@atlas/ui";
+import { ThemeHotkey } from "@/components/ThemeHotkey";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
-      <div className="fixed top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <main className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-        <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-          Frontend <span className="text-primary">Platform</span>
-        </h1>
-        <p className="text-muted-foreground max-w-2xl text-center text-xl">
-          Enterprise-grade monorepo with Next.js, TypeScript, and Tailwind CSS. Fork this repo and
-          replace the examples with your product.
-        </p>
-        <div className="flex gap-4">
-          <Link href="/examples">
-            <Button size="lg">View examples</Button>
-          </Link>
-          <a
-            href="https://github.com/thedanielmark/atlas"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="outline" size="lg">
-              GitHub
-            </Button>
-          </a>
+    <>
+      <ThemeHotkey />
+      <div className="flex min-h-svh p-6">
+        <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
+          <div>
+            <h1 className="font-medium">Project ready!</h1>
+            <p>You may now add components and start building.</p>
+            <p>We&apos;ve already added the button component for you.</p>
+            <Button className="mt-2">Button</Button>
+          </div>
+          <div className="text-muted-foreground font-mono text-xs">
+            (Press <Kbd>d</Kbd> to toggle dark mode)
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
