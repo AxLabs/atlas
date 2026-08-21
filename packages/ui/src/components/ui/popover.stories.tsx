@@ -4,6 +4,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+const triggerButtonClassName =
+  "ring-offset-background focus-visible:ring-ring border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
+
 const meta: Meta<typeof Popover> = {
   title: "UI/Popover",
   component: Popover,
@@ -29,10 +32,8 @@ export const Default: Story = {
   render: () => (
     <div style={{ paddingTop: "300px", paddingBottom: "50px" }}>
       <Popover modal={false}>
-        <PopoverTrigger asChild>
-          <button className="ring-offset-background focus-visible:ring-ring border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
-            Open popover
-          </button>
+        <PopoverTrigger render={<button type="button" className={triggerButtonClassName} />}>
+          Open popover
         </PopoverTrigger>
         <PopoverContent className="w-80">
           <div className="grid gap-4">

@@ -25,7 +25,7 @@ Verify:
 
 ```bash
 pnpm dlx shadcn@latest preset decode bJzBPQGZc --json
-pnpm dlx shadcn@latest preset resolve -c apps/web --json
+pnpm dlx shadcn@latest preset resolve -c packages/ui --json
 ```
 
 Create URL: https://ui.shadcn.com/create?preset=bJzBPQGZc
@@ -43,22 +43,38 @@ Atlas differentiation lives in **architecture and conventions**, not in a compet
 
 ## shadcn configuration
 
-- App config: `apps/web/components.json` (`style: base-vega`, monorepo aliases → `packages/ui`)
-- Package config: `packages/ui/components.json`
-- Global CSS: `packages/ui/src/styles/globals.css` (generated preset tokens + monorepo `@source`
+- **Canonical config:** `packages/ui/components.json` (`style: base-vega`)
+- **Global CSS:** `packages/ui/src/styles/globals.css` (generated preset tokens + monorepo `@source`
   directives)
+- **Generation flow:** `packages/ui/components.json` → `packages/ui/src/components/ui` → `@atlas/ui`
+  public API → `apps/web`
+
+`apps/web` consumes `@atlas/ui` only. Do not generate a local `apps/web/src/components/ui` tree.
 
 Refresh upstream primitives:
 
 ```bash
-pnpm dlx shadcn@latest apply bJzBPQGZc -c apps/web -y
+pnpm dlx shadcn@latest apply bJzBPQGZc -c packages/ui -y
 pnpm dlx shadcn@latest add button -c packages/ui --overwrite -y
-pnpm dlx shadcn@latest add dialog -c apps/web --diff
+pnpm dlx shadcn@latest add dialog -c packages/ui --diff
 ```
+
+After regenerating primitives, convert any new `@/` package-internal imports to relative paths
+before committing. The app TypeScript config must not alias into `packages/ui/src`.
 
 **Rule:** For upstream-derived primitives, shadcn-generated styling wins. Do not casually patch
 padding, radii, colors, or focus rings in `packages/ui/src/components/ui/**`. Change the preset
 deliberately, or compose in application code.
+
+### Troubleshooting stale theme output
+
+After changing the shadcn/Tailwind preset or global CSS, if local development appears to retain old
+theme values:
+
+```bash
+rm -rf apps/web/.next .turbo
+pnpm dev
+```
 
 ## Public API
 
@@ -66,6 +82,14 @@ deliberately, or compose in application code.
 import { Button, EmptyState } from "@atlas/ui";
 import "@atlas/ui/globals.css";
 import { getThemeBootScriptContent } from "@atlas/ui/theme-boot";
+```
+
+Heavy optional primitives (`Chart`, `Calendar`, `Command`, `Combobox`, `Carousel`, `InputOTP`,
+`Resizable`) live on `@atlas/ui/extended` so default app bundles do not include their large runtime
+dependencies unless a feature imports them explicitly:
+
+```tsx
+import { ChartContainer } from "@atlas/ui/extended";
 ```
 
 Do not import from `packages/ui/src/**`.

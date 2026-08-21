@@ -11,6 +11,15 @@ import {
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+const triggerButtonStyle = {
+  padding: "8px 16px",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+  background: "white",
+  cursor: "pointer",
+  fontSize: "14px",
+} as const;
+
 const meta: Meta<typeof Sheet> = {
   title: "UI/Sheet",
   component: Sheet,
@@ -26,19 +35,8 @@ type Story = StoryObj<typeof Sheet>;
 export const Default: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Open Sheet
-        </button>
+      <SheetTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Open Sheet
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
@@ -51,19 +49,8 @@ export const Default: Story = {
           <p>Sheet content goes here.</p>
         </div>
         <SheetFooter>
-          <SheetClose asChild>
-            <button
-              style={{
-                padding: "8px 16px",
-                border: "1px solid #ccc",
-                borderRadius: "6px",
-                background: "white",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              Close
-            </button>
+          <SheetClose render={<button type="button" style={triggerButtonStyle} />}>
+            Close
           </SheetClose>
         </SheetFooter>
       </SheetContent>
@@ -74,19 +61,8 @@ export const Default: Story = {
 export const Left: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Open Left Sheet
-        </button>
+      <SheetTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Open Left Sheet
       </SheetTrigger>
       <SheetContent side="left">
         <SheetHeader>
@@ -101,19 +77,8 @@ export const Left: Story = {
 export const Top: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Open Top Sheet
-        </button>
+      <SheetTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Open Top Sheet
       </SheetTrigger>
       <SheetContent side="top">
         <SheetHeader>
@@ -128,19 +93,8 @@ export const Top: Story = {
 export const Bottom: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Open Bottom Sheet
-        </button>
+      <SheetTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Open Bottom Sheet
       </SheetTrigger>
       <SheetContent side="bottom">
         <SheetHeader>

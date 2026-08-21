@@ -1,7 +1,7 @@
 import { AlertTriangleIcon, RefreshCwIcon } from "lucide-react";
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 import { Alert, AlertDescription, AlertTitle } from "./alert";
 import { Button } from "./button";
@@ -94,7 +94,9 @@ function ErrorFallback({
         <EmptyMedia variant="icon">
           <AlertTriangleIcon className="text-destructive" />
         </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyTitle>
+          <h2>{title}</h2>
+        </EmptyTitle>
         {finalDescription ? <EmptyDescription>{finalDescription}</EmptyDescription> : null}
       </EmptyHeader>
 

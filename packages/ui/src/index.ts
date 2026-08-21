@@ -72,7 +72,6 @@ export {
   ButtonGroupText,
   buttonGroupVariants,
 } from "./components/ui/button-group";
-export { Calendar } from "./components/ui/calendar";
 export {
   Card,
   CardAction,
@@ -82,53 +81,8 @@ export {
   CardHeader,
   CardTitle,
 } from "./components/ui/card";
-export {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "./components/ui/carousel";
-export type { ChartConfig } from "./components/ui/chart";
-export {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartStyle,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "./components/ui/chart";
 export { Checkbox } from "./components/ui/checkbox";
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./components/ui/collapsible";
-export {
-  Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
-  ComboboxCollection,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxLabel,
-  ComboboxList,
-  ComboboxSeparator,
-  ComboboxTrigger,
-  ComboboxValue,
-  useComboboxAnchor,
-} from "./components/ui/combobox";
-export {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "./components/ui/command";
 export {
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -232,12 +186,6 @@ export {
   InputGroupTextarea,
 } from "./components/ui/input-group";
 export {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "./components/ui/input-otp";
-export {
   Item,
   ItemActions,
   ItemContent,
@@ -297,7 +245,6 @@ export {
 export { Popover, PopoverContent, PopoverTrigger } from "./components/ui/popover";
 export { Progress } from "./components/ui/progress";
 export { RadioGroup, RadioGroupItem } from "./components/ui/radio-group";
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./components/ui/resizable";
 export { ScrollArea, ScrollBar } from "./components/ui/scroll-area";
 export {
   Select,

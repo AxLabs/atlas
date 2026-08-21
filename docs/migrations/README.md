@@ -12,6 +12,19 @@ For policy, see
 | ------------- | ----- | ----------------------- |
 | —             | —     | No migration guides yet |
 
+## shadcn Base UI / Vega preset troubleshooting
+
+After changing the shadcn/Tailwind preset or global CSS, if local development appears to retain old
+theme values:
+
+```bash
+rm -rf apps/web/.next .turbo
+pnpm dev
+```
+
+Do not add automatic destructive cache clearing to normal dev scripts unless there is a reproducible
+framework bug.
+
 ## Template
 
 When adding a migration guide, copy this structure:

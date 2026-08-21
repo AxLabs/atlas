@@ -12,6 +12,9 @@ import {
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+const triggerButtonClassName =
+  "ring-offset-background focus-visible:ring-ring border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
+
 const meta: Meta<typeof AlertDialog> = {
   title: "UI/AlertDialog",
   component: AlertDialog,
@@ -27,19 +30,8 @@ type Story = StoryObj<typeof AlertDialog>;
 export const Default: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Open Alert Dialog
-        </button>
+      <AlertDialogTrigger render={<button type="button" className={triggerButtonClassName} />}>
+        Open Alert Dialog
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

@@ -29,9 +29,7 @@ type Story = StoryObj<typeof Dialog>;
 export const Default: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Open Dialog</Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" />}>Open Dialog</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Are you absolutely sure?</DialogTitle>
@@ -48,9 +46,7 @@ export const Default: Story = {
 export const WithForm: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button>Edit Profile</Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button />}>Edit Profile</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit profile</DialogTitle>
@@ -83,9 +79,7 @@ export const WithForm: Story = {
 export const WithCustomClose: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Share</Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" />}>Share</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Share link</DialogTitle>
@@ -103,11 +97,7 @@ export const WithCustomClose: Story = {
           </Button>
         </div>
         <DialogFooter className="sm:justify-start">
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
-            </Button>
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="secondary" />}>Close</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

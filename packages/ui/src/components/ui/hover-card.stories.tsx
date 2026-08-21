@@ -20,20 +20,23 @@ type Story = StoryObj<typeof HoverCard>;
 export const Default: Story = {
   render: () => (
     <HoverCard>
-      <HoverCardTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-            textDecoration: "underline",
-          }}
-        >
-          @nextjs
-        </button>
+      <HoverCardTrigger
+        render={
+          <button
+            type="button"
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              background: "white",
+              cursor: "pointer",
+              fontSize: "14px",
+              textDecoration: "underline",
+            }}
+          />
+        }
+      >
+        @nextjs
       </HoverCardTrigger>
       <HoverCardContent className="w-80">
         <div className="flex justify-between space-x-4">

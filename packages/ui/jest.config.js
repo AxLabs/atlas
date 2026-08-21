@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+const baseConfig = require("@atlas/config/jest");
+
 module.exports = {
-  ...require("@atlas/config/jest"),
+  ...baseConfig,
   roots: ["<rootDir>/src"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  collectCoverageFrom: [...baseConfig.collectCoverageFrom, "!src/extended.ts"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",

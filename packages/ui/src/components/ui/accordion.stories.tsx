@@ -16,7 +16,7 @@ type Story = StoryObj<typeof Accordion>;
 
 export const Single: Story = {
   render: () => (
-    <Accordion type="single" collapsible className="w-full max-w-md">
+    <Accordion className="w-full max-w-md">
       <AccordionItem value="item-1">
         <AccordionTrigger>Is it accessible?</AccordionTrigger>
         <AccordionContent>Yes. It adheres to the WAI-ARIA design pattern.</AccordionContent>
@@ -39,7 +39,7 @@ export const Single: Story = {
 
 export const Multiple: Story = {
   render: () => (
-    <Accordion type="multiple" className="w-full max-w-md">
+    <Accordion multiple className="w-full max-w-md">
       <AccordionItem value="item-1">
         <AccordionTrigger>Can I open multiple items?</AccordionTrigger>
         <AccordionContent>
@@ -49,8 +49,7 @@ export const Multiple: Story = {
       <AccordionItem value="item-2">
         <AccordionTrigger>How does it work?</AccordionTrigger>
         <AccordionContent>
-          By setting the type to &quot;multiple&quot;, you enable multiple items to be expanded
-          simultaneously.
+          Set `multiple` on the accordion root to allow several panels to stay open.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-3">

@@ -2,6 +2,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tool
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+const triggerButtonStyle = {
+  padding: "8px 16px",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+  background: "white",
+  cursor: "pointer",
+  fontSize: "14px",
+} as const;
+
 const meta: Meta<typeof Tooltip> = {
   title: "UI/Tooltip",
   component: Tooltip,
@@ -11,7 +20,7 @@ const meta: Meta<typeof Tooltip> = {
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <TooltipProvider>
+      <TooltipProvider delay={0}>
         <Story />
       </TooltipProvider>
     ),
@@ -23,20 +32,9 @@ type Story = StoryObj<typeof Tooltip>;
 
 export const Default: Story = {
   render: () => (
-    <Tooltip delayDuration={0}>
-      <TooltipTrigger asChild>
-        <button
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Hover me
-        </button>
+    <Tooltip>
+      <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Hover me
       </TooltipTrigger>
       <TooltipContent>
         <p>Add to library</p>
@@ -48,77 +46,33 @@ export const Default: Story = {
 export const WithSide: Story = {
   render: () => (
     <div style={{ display: "flex", gap: "16px" }}>
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          <button
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              background: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Top
-          </button>
+      <Tooltip>
+        <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+          Top
         </TooltipTrigger>
         <TooltipContent side="top">
           <p>Tooltip on top</p>
         </TooltipContent>
       </Tooltip>
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          <button
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              background: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Right
-          </button>
+      <Tooltip>
+        <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+          Right
         </TooltipTrigger>
         <TooltipContent side="right">
           <p>Tooltip on right</p>
         </TooltipContent>
       </Tooltip>
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          <button
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              background: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Bottom
-          </button>
+      <Tooltip>
+        <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+          Bottom
         </TooltipTrigger>
         <TooltipContent side="bottom">
           <p>Tooltip on bottom</p>
         </TooltipContent>
       </Tooltip>
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          <button
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              background: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Left
-          </button>
+      <Tooltip>
+        <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+          Left
         </TooltipTrigger>
         <TooltipContent side="left">
           <p>Tooltip on left</p>

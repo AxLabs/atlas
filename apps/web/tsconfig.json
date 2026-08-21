@@ -6,11 +6,6 @@
     "types": ["jest", "@testing-library/jest-dom"],
     "lib": ["ES2022", "DOM"],
     "paths": {
-      "@/components/ui/*": ["../../packages/ui/src/components/ui/*"],
-      "@/components/*": ["../../packages/ui/src/components/*", "./src/components/*"],
-      "@/lib/utils": ["../../packages/ui/src/lib/utils.ts"],
-      "@/lib/*": ["../../packages/ui/src/lib/*", "./src/lib/*"],
-      "@/hooks/*": ["../../packages/ui/src/hooks/*", "./src/hooks/*"],
       "@/*": ["./src/*"]
     },
     "noEmit": true
