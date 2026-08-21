@@ -4,6 +4,7 @@
  * @module lib/reference
  */
 
+export { referenceRolesToPermissions, resolveReferencePermissions } from "./auth/permissions";
 export type { ReferencePersona } from "./auth/personas";
 export {
   getReferencePersona,

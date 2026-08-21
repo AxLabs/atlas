@@ -1,4 +1,4 @@
-import { ReferenceBanner, ReferenceHarnessPanel } from "@/features/reference";
+import { ReferenceBanner, ReferencePageClient } from "@/features/reference";
 
 export const metadata = {
   title: "Reference Harness",
@@ -18,7 +18,7 @@ export default function ReferencePage() {
             integrations.
           </p>
         </header>
-        <ReferenceHarnessPanel />
+        <ReferencePageClient />
       </main>
     </div>
   );

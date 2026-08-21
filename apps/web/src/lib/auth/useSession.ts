@@ -38,6 +38,16 @@ export interface UseSessionReturn {
   provider: SessionResponse["provider"] | null;
 
   /**
+   * Stable principal identifier (only present when authenticated).
+   */
+  principalId: string | null;
+
+  /**
+   * Resolved permissions for presentation gating only — not a security boundary.
+   */
+  permissions: SessionResponse["permissions"] | null;
+
+  /**
    * Refresh session data from server.
    */
   refresh: () => Promise<void>;
@@ -74,6 +84,8 @@ export function useSession(): UseSessionReturn {
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<SessionResponse["user"] | null>(null);
   const [provider, setProvider] = useState<SessionResponse["provider"] | null>(null);
+  const [principalId, setPrincipalId] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<SessionResponse["permissions"] | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -91,15 +103,21 @@ export function useSession(): UseSessionReturn {
         setStatus("authenticated");
         setUser(data.user);
         setProvider(data.provider || null);
+        setPrincipalId(data.principalId ?? null);
+        setPermissions(data.permissions ?? null);
       } else {
         setStatus("unauthenticated");
         setUser(null);
         setProvider(null);
+        setPrincipalId(null);
+        setPermissions(null);
       }
     } catch {
       setStatus("unauthenticated");
       setUser(null);
       setProvider(null);
+      setPrincipalId(null);
+      setPermissions(null);
     }
   }, []);
 
@@ -113,6 +131,8 @@ export function useSession(): UseSessionReturn {
       setStatus("unauthenticated");
       setUser(null);
       setProvider(null);
+      setPrincipalId(null);
+      setPermissions(null);
     }
   }, []);
 
@@ -125,6 +145,8 @@ export function useSession(): UseSessionReturn {
     status,
     user,
     provider,
+    principalId,
+    permissions,
     refresh,
     logout,
   };

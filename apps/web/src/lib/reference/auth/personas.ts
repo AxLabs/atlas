@@ -34,6 +34,9 @@ export const REFERENCE_PERSONA_IDS = {
   admin: "reference-admin",
 } as const;
 
+/** Protected from updates by the reference resource policy demonstration. */
+export const PROTECTED_REFERENCE_USER_ID = REFERENCE_PERSONA_IDS.admin;
+
 const REFERENCE_USER: ReferencePersona = {
   provider: "reference",
   providerAccountId: REFERENCE_PERSONA_IDS.user,

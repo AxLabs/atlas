@@ -11,6 +11,7 @@
 import "server-only";
 
 import { getServerConfig } from "@/config/server";
+import { enrichSessionResponse } from "@/lib/application/authz";
 
 import { createSessionCookie, needsRefresh, readSession } from "../../session";
 import { refreshAccessToken } from "../google";
@@ -95,13 +96,5 @@ export async function getGoogleSessionResponse(): Promise<SessionResponse> {
     return { authenticated: false };
   }
 
-  return {
-    authenticated: true,
-    user: {
-      email: session.user.email,
-      name: session.user.name,
-      avatarUrl: session.user.avatarUrl,
-    },
-    provider: session.user.provider,
-  };
+  return enrichSessionResponse(session);
 }

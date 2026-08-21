@@ -1,16 +1,20 @@
 /**
  * OAuth Types and Interfaces
  *
- * Shared session and OAuth data shapes. The session storage core is provider-neutral;
- * the current reference implementation supports Google only (`OAuthProvider`).
+ * Shared session and OAuth data shapes. Session storage is provider-neutral.
+ * Google is the real OAuth reference integration; `reference` is the deterministic
+ * development/reference provider for local harness flows.
  *
  * @module lib/auth/types
  */
 
+import type { Permission } from "@/lib/authz/permissions";
+
 /**
- * Supported OAuth providers in the current reference implementation.
+ * Supported OAuth providers.
  *
- * Additional providers can extend this union when reference IdP modules are added.
+ * `google` — production OAuth reference integration.
+ * `reference` — deterministic development/reference harness provider.
  */
 export type OAuthProvider = "google" | "reference";
 
@@ -183,4 +187,15 @@ export interface SessionResponse {
    * OAuth provider used (only present if authenticated).
    */
   provider?: OAuthProvider;
+
+  /**
+   * Stable principal identifier (only present if authenticated).
+   */
+  principalId?: string;
+
+  /**
+   * Resolved permissions for the current principal (only present if authenticated).
+   * Derived server-side — not stored in the session cookie.
+   */
+  permissions?: readonly Permission[];
 }
