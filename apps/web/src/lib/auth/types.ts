@@ -7,6 +7,8 @@
  * @module lib/auth/types
  */
 
+import type { Permission } from "@/lib/authz/permissions";
+
 /**
  * Supported OAuth providers in the current reference implementation.
  *
@@ -183,4 +185,15 @@ export interface SessionResponse {
    * OAuth provider used (only present if authenticated).
    */
   provider?: OAuthProvider;
+
+  /**
+   * Stable principal identifier (only present if authenticated).
+   */
+  principalId?: string;
+
+  /**
+   * Resolved permissions for the current principal (only present if authenticated).
+   * Derived server-side — not stored in the session cookie.
+   */
+  permissions?: readonly Permission[];
 }

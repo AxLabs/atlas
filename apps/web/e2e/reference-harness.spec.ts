@@ -12,3 +12,37 @@ test.describe("Reference harness", () => {
     await expect(page.getByText("Reference User (reference.user@atlas.local)")).toBeVisible();
   });
 });
+
+test.describe("Authorization", () => {
+  test("reference-user is denied protected delete via direct API", async ({ page }) => {
+    await page.goto("/reference");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Direct delete API call (bypasses UI gate)" }).click();
+    await expect(page.getByText(/Delete denied or failed/i)).toBeVisible({ timeout: 10000 });
+  });
+
+  test("reference-user cannot access server-protected route", async ({ page }) => {
+    await page.goto("/reference");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/reference/authorization");
+    await expect(page.getByRole("heading", { name: "Permission denied" })).toBeVisible();
+  });
+
+  test("reference-admin can perform protected actions", async ({ page }) => {
+    await page.goto("/reference");
+    await page.getByRole("button", { name: "reference-admin" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await expect(page.getByText("users.delete")).toBeVisible();
+
+    await expect(
+      page.getByRole("button", { name: "Delete reference user (UI gated)" })
+    ).toBeVisible();
+
+    await page.goto("/reference/authorization");
+    await expect(page.getByText("Server-protected content")).toBeVisible();
+  });
+});

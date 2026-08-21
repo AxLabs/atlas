@@ -4,9 +4,13 @@
  * @module api/reference/users/[userId]
  */
 
+import "@/lib/reference/auth/register";
+
 import { NextResponse } from "next/server";
 
 import { CORRELATION_ID_HEADER, generateCorrelationId } from "@/lib/api/correlation";
+import { permissions } from "@/lib/authz/permissions";
+import { authorizationErrorResponse, requirePermission } from "@/lib/authz/server";
 import { assertReferenceModeEnabled } from "@/lib/reference/mode";
 import { resolveUsersScenario } from "@/lib/reference/scenario";
 import {
@@ -36,6 +40,20 @@ export async function GET(
   const correlationId = request.headers.get(CORRELATION_ID_HEADER) ?? generateCorrelationId();
   const scenario = await resolveUsersScenario(request);
 
+  try {
+    await requirePermission(permissions.users.read, {
+      resourceType: "users",
+      resourceId: userId,
+      correlationId,
+    });
+  } catch (error) {
+    const response = authorizationErrorResponse(error, correlationId);
+    if (response) {
+      return response;
+    }
+    throw error;
+  }
+
   return handleGetUserScenario(userId, { correlationId, scenario });
 }
 
@@ -54,6 +72,20 @@ export async function PATCH(
 
   const correlationId = request.headers.get(CORRELATION_ID_HEADER) ?? generateCorrelationId();
   const scenario = await resolveUsersScenario(request);
+
+  try {
+    await requirePermission(permissions.users.update, {
+      resourceType: "users",
+      resourceId: userId,
+      correlationId,
+    });
+  } catch (error) {
+    const response = authorizationErrorResponse(error, correlationId);
+    if (response) {
+      return response;
+    }
+    throw error;
+  }
 
   try {
     const body = (await request.json()) as components["schemas"]["UpdateUserRequest"];
@@ -86,6 +118,20 @@ export async function DELETE(
 
   const correlationId = request.headers.get(CORRELATION_ID_HEADER) ?? generateCorrelationId();
   const scenario = await resolveUsersScenario(request);
+
+  try {
+    await requirePermission(permissions.users.delete, {
+      resourceType: "users",
+      resourceId: userId,
+      correlationId,
+    });
+  } catch (error) {
+    const response = authorizationErrorResponse(error, correlationId);
+    if (response) {
+      return response;
+    }
+    throw error;
+  }
 
   return handleDeleteUserScenario(userId, { correlationId, scenario });
 }

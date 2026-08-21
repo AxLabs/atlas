@@ -17,16 +17,20 @@ import {
 } from "@atlas/ui";
 
 import { apiPost } from "@/lib/api";
-import { useSession } from "@/lib/auth";
 
 import { useReferenceStatus, useReferenceUserList } from "../queries";
 
+import type { UseSessionReturn } from "@/lib/auth";
 import type { ReferenceAuthPersona, ReferenceUsersScenario } from "@/lib/reference/scenario-types";
 
 const PERSONAS: ReferenceAuthPersona[] = ["anonymous", "reference-user", "reference-admin"];
 
-export function ReferenceHarnessPanel() {
-  const { status, user, refresh } = useSession();
+interface ReferenceHarnessPanelProps {
+  session: UseSessionReturn;
+}
+
+export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
+  const { status, user, refresh } = session;
   const { data: referenceStatus, isLoading, isError, error, refetch } = useReferenceStatus();
   const [selectedScenario, setSelectedScenario] = useState<ReferenceUsersScenario>("success");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -48,12 +52,13 @@ export function ReferenceHarnessPanel() {
           scenario: { users: selectedScenario },
         });
         await refresh();
+        await refetchUsers();
         setActionMessage(`Persona set to ${persona}`);
       } catch (error) {
         setActionMessage(error instanceof Error ? error.message : "Failed to set persona");
       }
     },
-    [refresh, selectedScenario]
+    [refresh, refetchUsers, selectedScenario]
   );
 
   const resetReference = useCallback(async () => {

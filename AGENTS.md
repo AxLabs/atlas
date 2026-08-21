@@ -107,6 +107,22 @@ Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI cli
   spec changes: `pnpm --filter @atlas/web api:gen`.
 - **Notifications** — Use `notify` / `notifyApiError` from `@/lib/notifications` for toasts.
 
+## Authorization architecture
+
+- **Permissions** — Use typed `permissions` from `@/lib/authz`; never scatter permission string
+  literals or check reference roles directly in product code.
+- **Server enforcement** — `requirePermission` / `authorize` from `@/lib/authz/server` in route
+  handlers, server components, and server actions. Distinguish 401 (unauthenticated) from 403
+  (forbidden).
+- **Client gating** — `Can` / `usePermission` from `@/lib/authz` for presentation only — **not a
+  security boundary**. Every protected action must also enforce on the server.
+- **Roles** — Reference profile metadata maps to permissions via
+  `lib/reference/auth/permissions.ts`. Roles are not part of the core `OAuthUser` contract.
+- **Backend** — Real backends remain authoritative for data protection; Atlas frontend checks are UX
+  and route-level enforcement only.
+
+See [authorization](docs/how-we-build/authorization.md).
+
 ## Form and validation architecture
 
 - **Schema** — Define Zod schemas in the feature or `apps/web/src/schemas/`; align client rules with
@@ -169,6 +185,7 @@ pnpm format:write                           # fix formatting
 - `console.*` in source (use structured logging on the server)
 - Hand-written API types when OpenAPI types exist
 - Inline query key strings (use key factories)
+- Checking reference roles directly in product code (use typed permissions from `@/lib/authz`)
 - Business logic in `app/` pages
 - Feature-to-feature imports
 - Premature extraction to `packages/ui`
@@ -180,6 +197,7 @@ pnpm format:write                           # fix formatting
 | Topic                   | Location                                                                                     |
 | ----------------------- | -------------------------------------------------------------------------------------------- |
 | Architecture ownership  | [docs/how-we-build/architecture-ownership.md](docs/how-we-build/architecture-ownership.md)   |
+| Authorization           | [docs/how-we-build/authorization.md](docs/how-we-build/authorization.md)                     |
 | Atlas project contract  | [docs/how-we-build/atlas-contract.md](docs/how-we-build/atlas-contract.md)                   |
 | Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                                   |
 | Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md)               |

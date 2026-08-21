@@ -4,9 +4,13 @@
  * @module api/reference/users
  */
 
+import "@/lib/reference/auth/register";
+
 import { NextResponse } from "next/server";
 
 import { CORRELATION_ID_HEADER, generateCorrelationId } from "@/lib/api/correlation";
+import { permissions } from "@/lib/authz/permissions";
+import { authorizationErrorResponse, requirePermission } from "@/lib/authz/server";
 import { assertReferenceModeEnabled } from "@/lib/reference/mode";
 import { resolveUsersScenario } from "@/lib/reference/scenario";
 import { handleCreateUserScenario, handleListUsersScenario } from "@/lib/reference/users/scenarios";
@@ -27,6 +31,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const correlationId = request.headers.get(CORRELATION_ID_HEADER) ?? generateCorrelationId();
   const scenario = await resolveUsersScenario(request);
 
+  try {
+    await requirePermission(permissions.users.read, {
+      resourceType: "users",
+      correlationId,
+    });
+  } catch (error) {
+    const response = authorizationErrorResponse(error, correlationId);
+    if (response) {
+      return response;
+    }
+    throw error;
+  }
+
   return handleListUsersScenario(request, { correlationId, scenario });
 }
 
@@ -40,6 +57,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const correlationId = request.headers.get(CORRELATION_ID_HEADER) ?? generateCorrelationId();
   const scenario = await resolveUsersScenario(request);
+
+  try {
+    await requirePermission(permissions.users.create, {
+      resourceType: "users",
+      correlationId,
+    });
+  } catch (error) {
+    const response = authorizationErrorResponse(error, correlationId);
+    if (response) {
+      return response;
+    }
+    throw error;
+  }
 
   try {
     const body = (await request.json()) as components["schemas"]["CreateUserRequest"];

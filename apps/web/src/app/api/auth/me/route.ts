@@ -7,6 +7,8 @@
  * @route GET /api/auth/me
  */
 
+import "@/lib/reference/auth/register";
+
 import { NextResponse } from "next/server";
 
 import { getGoogleSessionResponse } from "@/lib/auth/providers/google/session-refresh";

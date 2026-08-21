@@ -8,6 +8,8 @@
 
 import "server-only";
 
+import { enrichSessionResponse } from "@/lib/authz/session-response";
+
 import { readSession } from "../../session";
 
 import type { SessionData, SessionResponse } from "../../types";
@@ -33,13 +35,5 @@ export async function getReferenceSessionResponse(): Promise<SessionResponse> {
     return { authenticated: false };
   }
 
-  return {
-    authenticated: true,
-    user: {
-      email: session.user.email,
-      name: session.user.name,
-      avatarUrl: session.user.avatarUrl,
-    },
-    provider: session.user.provider,
-  };
+  return enrichSessionResponse(session);
 }
