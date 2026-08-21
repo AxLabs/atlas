@@ -235,9 +235,15 @@ function copyApplicationDoctorTooling(
   const sourceAppRoot = path.join(REPO_ROOT, "apps/web");
   const targetAppRoot = path.join(fixtureRoot, "apps/web");
 
-  for (const fileName of ["architecture-policy.mjs", "next-env.d.ts", "tsconfig.json"]) {
+  for (const fileName of ["architecture-policy.mjs", "tsconfig.json"]) {
     copyFileSync(path.join(sourceAppRoot, fileName), path.join(targetAppRoot, fileName));
   }
+
+  writeFileSync(
+    path.join(targetAppRoot, "next-env.d.ts"),
+    '/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n',
+    "utf8"
+  );
 
   if (options.missingEslintConfig) {
     return;
