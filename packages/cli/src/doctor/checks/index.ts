@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +7,7 @@ import { DoctorCheckExecutionError } from "../check-execution-error";
 import { findCrossFeatureImportDiagnostics } from "../cross-feature-imports";
 import { findUndeclaredDependencyDiagnostics } from "../dependency-imports";
 import { createDiagnostic, DoctorDiagnosticCode } from "../diagnostics";
+import { assertNoFatalEslintResults } from "../eslint-execution";
 import {
   applicationSourceRoot,
   deriveAppAliasPrefix,
@@ -213,10 +214,10 @@ async function collectEslintArchitectureDiagnostics(
   >
 ): Promise<DoctorDiagnostic[]> {
   const eslint = loadEslintModule(applicationRoot);
-  const eslintConfigPath = path.join(applicationRoot, "eslint.config.mjs");
+  const eslintWorkingDirectory = resolveEslintWorkingDirectory(applicationRoot);
   const eslintInstance = new eslint.ESLint({
-    cwd: applicationRoot,
-    overrideConfigFile: eslintConfigPath,
+    cwd: eslintWorkingDirectory,
+    overrideConfigFile: path.join(eslintWorkingDirectory, "eslint.config.mjs"),
   });
 
   const targetPatterns = [
@@ -230,23 +231,16 @@ async function collectEslintArchitectureDiagnostics(
   const lintTargets = collectArchitectureLintFiles(applicationRoot, targetPatterns);
 
   const uniqueLintTargets = [...new Set(lintTargets)].sort();
-  const diagnostics: DoctorDiagnostic[] = [];
-
-  if (uniqueLintTargets.length > 0) {
-    const results = await eslintInstance.lintFiles(uniqueLintTargets);
-
-    for (const result of results) {
-      for (const message of result.messages) {
-        const diagnostic = mapEslintMessageToDiagnostic(context.repoRoot, applicationRoot, {
-          ...message,
-          filePath: result.filePath,
-        });
-        if (diagnostic) {
-          diagnostics.push(diagnostic);
-        }
-      }
-    }
-  }
+  const diagnostics =
+    uniqueLintTargets.length > 0
+      ? await lintFilesAndMapArchitectureDiagnostics(
+          context,
+          applicationRoot,
+          eslintInstance,
+          uniqueLintTargets,
+          eslintWorkingDirectory
+        )
+      : [];
 
   const customFeatureDiagnostics = await lintCustomProductFeatureRoot(
     context,
@@ -254,6 +248,35 @@ async function collectEslintArchitectureDiagnostics(
     policyTarget
   );
   return dedupeDiagnostics([...diagnostics, ...customFeatureDiagnostics]);
+}
+
+async function lintFilesAndMapArchitectureDiagnostics(
+  context: DoctorContext,
+  applicationRoot: string,
+  eslintInstance: ESLint,
+  files: string[],
+  eslintWorkingDirectory: string
+): Promise<DoctorDiagnostic[]> {
+  const normalizedFiles = files.map((filePath) =>
+    toEslintLintTargetPath(eslintWorkingDirectory, filePath)
+  );
+  const results = await eslintInstance.lintFiles(normalizedFiles);
+  assertNoFatalEslintResults(context.repoRoot, results);
+
+  const diagnostics: DoctorDiagnostic[] = [];
+  for (const result of results) {
+    for (const message of result.messages) {
+      const diagnostic = mapEslintMessageToDiagnostic(context.repoRoot, applicationRoot, {
+        ...message,
+        filePath: result.filePath,
+      });
+      if (diagnostic) {
+        diagnostics.push(diagnostic);
+      }
+    }
+  }
+
+  return diagnostics;
 }
 
 const ARCHITECTURE_LINT_EXTENSIONS = /\.(ts|tsx|js|jsx|mts|cts)$/;
@@ -288,6 +311,7 @@ function collectArchitectureLintFiles(
 function walkArchitectureLintDirectory(directory: string, files: string[]): void {
   for (const entry of readdirSync(directory)) {
     if (
+      entry.startsWith("__gen-validation") ||
       entry.endsWith(".test.ts") ||
       entry.endsWith(".test.tsx") ||
       entry.endsWith(".spec.ts") ||
@@ -310,6 +334,32 @@ function walkArchitectureLintDirectory(directory: string, files: string[]): void
     if (ARCHITECTURE_LINT_EXTENSIONS.test(entry)) {
       files.push(absolutePath);
     }
+  }
+}
+
+function resolveEslintWorkingDirectory(applicationRoot: string): string {
+  try {
+    return realpathSync(applicationRoot);
+  } catch {
+    return applicationRoot;
+  }
+}
+
+function toEslintLintTargetPath(eslintWorkingDirectory: string, filePath: string): string {
+  const resolvedFilePath = resolveLintFilePath(filePath);
+  const relativePath = path.relative(eslintWorkingDirectory, resolvedFilePath);
+  if (relativePath && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
+    return relativePath.split(path.sep).join("/");
+  }
+
+  return resolvedFilePath;
+}
+
+function resolveLintFilePath(filePath: string): string {
+  try {
+    return realpathSync(filePath);
+  } catch {
+    return filePath;
   }
 }
 
@@ -367,20 +417,11 @@ async function lintCustomProductFeatureRoot(
     context.project
   );
 
-  const doctorEslintConfigPath = path.join(
-    applicationRoot,
-    "doctor-architecture-eslint.config.mjs"
-  );
-  if (!existsSync(doctorEslintConfigPath)) {
-    throw new Error(
-      `Missing Doctor architecture ESLint config at ${context.project.application.root}/doctor-architecture-eslint.config.mjs.`
-    );
-  }
-
   const eslint = loadEslintModule(applicationRoot);
+  const eslintWorkingDirectory = resolveEslintWorkingDirectory(applicationRoot);
   const eslintInstance = new eslint.ESLint({
-    cwd: applicationRoot,
-    overrideConfigFile: doctorEslintConfigPath,
+    cwd: eslintWorkingDirectory,
+    overrideConfigFile: path.join(eslintWorkingDirectory, "eslint.config.mjs"),
     overrideConfig: [
       policyModule.buildCustomProductFeatureEslintOverride({
         relativeFromApplication: policyTarget.relativeFromApplication,
@@ -391,22 +432,13 @@ async function lintCustomProductFeatureRoot(
     ],
   });
 
-  const results = await eslintInstance.lintFiles(productFiles);
-  const diagnostics: DoctorDiagnostic[] = [];
-
-  for (const result of results) {
-    for (const message of result.messages) {
-      const diagnostic = mapEslintMessageToDiagnostic(context.repoRoot, applicationRoot, {
-        ...message,
-        filePath: result.filePath,
-      });
-      if (diagnostic) {
-        diagnostics.push(diagnostic);
-      }
-    }
-  }
-
-  return diagnostics;
+  return lintFilesAndMapArchitectureDiagnostics(
+    context,
+    applicationRoot,
+    eslintInstance,
+    productFiles,
+    eslintWorkingDirectory
+  );
 }
 
 function buildCustomProductFeatureRestrictions(

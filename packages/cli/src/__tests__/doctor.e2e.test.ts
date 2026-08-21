@@ -173,12 +173,17 @@ describe("atlas doctor architecture diagnostics", () => {
       result.diagnostics.some(
         (diagnostic) =>
           diagnostic.code === DoctorDiagnosticCode.BOUNDARY_RAW_NETWORK &&
-          diagnostic.path?.includes("domains/billing")
+          diagnostic.path?.includes("domains/billing/query.ts")
       )
     ).toBe(true);
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED
+      )
+    ).toBe(false);
   });
 
-  it("detects direct process.env in custom configured feature roots", () => {
+  it("detects direct process.env in custom configured feature roots with TypeScript syntax", () => {
     const fixture = createDoctorAtlasFixture({
       customProductFeaturesRoot: "apps/web/src/domains",
       withViolation: "custom-feature-root-direct-env",
@@ -189,9 +194,16 @@ describe("atlas doctor architecture diagnostics", () => {
     expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
     expect(
       result.diagnostics.some(
-        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.BOUNDARY_DIRECT_ENV
+        (diagnostic) =>
+          diagnostic.code === DoctorDiagnosticCode.BOUNDARY_DIRECT_ENV &&
+          diagnostic.path?.includes("domains/billing/env.ts")
       )
     ).toBe(true);
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED
+      )
+    ).toBe(false);
   });
 
   it("passes valid Atlas APIs in custom configured feature roots", () => {
@@ -202,10 +214,62 @@ describe("atlas doctor architecture diagnostics", () => {
       withEslintBoundaryFixtures: false,
     });
     const { exitCode, result } = runDoctorJson(fixture.root);
+    const architectureCheck = result.checks.find((check) => check.id === "architecture-boundaries");
 
     expect(exitCode).toBe(ExitCode.SUCCESS);
+    expect(architectureCheck?.status).toBe("pass");
     expect(
       result.diagnostics.some((diagnostic) => diagnostic.code.startsWith("ATLAS_BOUNDARY_"))
+    ).toBe(false);
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED
+      )
+    ).toBe(false);
+  });
+
+  it("fails when custom feature root source has a parser error", () => {
+    const fixture = createDoctorAtlasFixture({
+      customProductFeaturesRoot: "apps/web/src/domains",
+      withViolation: "custom-feature-root-parser-failure",
+      withApplicationTooling: true,
+      withEslintBoundaryFixtures: false,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+    const architectureCheck = result.checks.find((check) => check.id === "architecture-boundaries");
+
+    expect(exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(result.status).toBe("failed");
+    expect(architectureCheck?.status).toBe("fail");
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED
+      )
+    ).toBe(true);
+    expect(
+      result.diagnostics.some((diagnostic) => diagnostic.code.startsWith("ATLAS_BOUNDARY_"))
+    ).toBe(false);
+  });
+
+  it("ignores unrelated ESLint violations in custom configured feature roots", () => {
+    const fixture = createDoctorAtlasFixture({
+      customProductFeaturesRoot: "apps/web/src/domains",
+      withViolation: "custom-feature-root-unrelated-lint",
+      withApplicationTooling: true,
+      withEslintBoundaryFixtures: false,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+    const architectureCheck = result.checks.find((check) => check.id === "architecture-boundaries");
+
+    expect(exitCode).toBe(ExitCode.SUCCESS);
+    expect(architectureCheck?.status).toBe("pass");
+    expect(
+      result.diagnostics.some((diagnostic) => diagnostic.code.startsWith("ATLAS_BOUNDARY_"))
+    ).toBe(false);
+    expect(
+      result.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.DOCTOR_CHECK_EXECUTION_FAILED
+      )
     ).toBe(false);
   });
 

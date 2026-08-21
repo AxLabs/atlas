@@ -55,6 +55,8 @@ export type DoctorViolationKind =
   | "custom-feature-root-raw-fetch"
   | "custom-feature-root-direct-env"
   | "custom-feature-root-allowed"
+  | "custom-feature-root-parser-failure"
+  | "custom-feature-root-unrelated-lint"
   | "undeclared-dependency"
   | "undeclared-next-navigation"
   | "undeclared-react-jsx-runtime"
@@ -233,11 +235,7 @@ function copyApplicationDoctorTooling(
   const sourceAppRoot = path.join(REPO_ROOT, "apps/web");
   const targetAppRoot = path.join(fixtureRoot, "apps/web");
 
-  for (const fileName of [
-    "architecture-policy.mjs",
-    "doctor-architecture-eslint.config.mjs",
-    "tsconfig.json",
-  ]) {
+  for (const fileName of ["architecture-policy.mjs", "next-env.d.ts", "tsconfig.json"]) {
     copyFileSync(path.join(sourceAppRoot, fileName), path.join(targetAppRoot, fileName));
   }
 
@@ -275,8 +273,15 @@ function copyApplicationDoctorTooling(
       path.join(targetAppRoot, "node_modules")
     );
     linkIfAbsent(path.join(REPO_ROOT, "packages/ui"), path.join(fixtureRoot, "packages/ui"));
+    linkIfAbsent(
+      path.join(REPO_ROOT, "packages/config"),
+      path.join(fixtureRoot, "packages/config")
+    );
   } else {
     cpSync(path.join(REPO_ROOT, "packages/ui"), path.join(fixtureRoot, "packages/ui"), {
+      recursive: true,
+    });
+    cpSync(path.join(REPO_ROOT, "packages/config"), path.join(fixtureRoot, "packages/config"), {
       recursive: true,
     });
   }
@@ -328,6 +333,12 @@ function seedOpenApiArtifacts(
   }
 }
 
+const CUSTOM_PRODUCT_ROOT = "apps/web/src/domains";
+
+function isCustomProductRoot(productRoot: string): boolean {
+  return productRoot === CUSTOM_PRODUCT_ROOT;
+}
+
 function applyDoctorViolation(
   fixtureRoot: string,
   violation: DoctorViolationKind,
@@ -344,18 +355,34 @@ function applyDoctorViolation(
       );
       break;
     case "direct-env":
-      writeViolationFile(
-        fixtureRoot,
-        `${productRoot}/billing/env.ts`,
-        "export const apiUrl = process.env.NEXT_PUBLIC_API_URL;\n"
-      );
+      if (isCustomProductRoot(productRoot)) {
+        writeViolationFile(
+          fixtureRoot,
+          `${productRoot}/billing/env.ts`,
+          "type ConfigValue = string | undefined;\n\nexport const value: ConfigValue = process.env.SECRET;\n"
+        );
+      } else {
+        writeViolationFile(
+          fixtureRoot,
+          `${productRoot}/billing/env.ts`,
+          "export const apiUrl = process.env.NEXT_PUBLIC_API_URL;\n"
+        );
+      }
       break;
     case "raw-fetch":
-      writeViolationFile(
-        fixtureRoot,
-        `${productRoot}/billing/network.ts`,
-        "export async function load() { return fetch('/api/example'); }\n"
-      );
+      if (isCustomProductRoot(productRoot)) {
+        writeViolationFile(
+          fixtureRoot,
+          `${productRoot}/billing/query.ts`,
+          "interface BillingResult {\n  id: string;\n}\n\nexport async function loadBilling(): Promise<BillingResult> {\n  return fetch('/api/billing');\n}\n"
+        );
+      } else {
+        writeViolationFile(
+          fixtureRoot,
+          `${productRoot}/billing/network.ts`,
+          "export async function load() { return fetch('/api/example'); }\n"
+        );
+      }
       break;
     case "reference-import":
       mkdirSync(path.join(fixtureRoot, `${productRoot}/reference/users`), { recursive: true });
@@ -388,22 +415,36 @@ function applyDoctorViolation(
       );
       break;
     case "custom-feature-root-cross-import":
-      applyDoctorViolation(fixtureRoot, "cross-feature-import", "apps/web/src/domains");
+      applyDoctorViolation(fixtureRoot, "cross-feature-import", CUSTOM_PRODUCT_ROOT);
       break;
     case "custom-feature-root-reference-import":
-      applyDoctorViolation(fixtureRoot, "reference-import", "apps/web/src/domains");
+      applyDoctorViolation(fixtureRoot, "reference-import", CUSTOM_PRODUCT_ROOT);
       break;
     case "custom-feature-root-raw-fetch":
-      applyDoctorViolation(fixtureRoot, "raw-fetch", "apps/web/src/domains");
+      applyDoctorViolation(fixtureRoot, "raw-fetch", CUSTOM_PRODUCT_ROOT);
       break;
     case "custom-feature-root-direct-env":
-      applyDoctorViolation(fixtureRoot, "direct-env", "apps/web/src/domains");
+      applyDoctorViolation(fixtureRoot, "direct-env", CUSTOM_PRODUCT_ROOT);
       break;
     case "custom-feature-root-allowed":
       writeViolationFile(
         fixtureRoot,
-        "apps/web/src/domains/billing/allowed.ts",
-        "import { apiGet } from '@/lib/api';\nexport async function loadBilling() { return apiGet('/api/billing'); }\n"
+        `${CUSTOM_PRODUCT_ROOT}/billing/allowed.ts`,
+        "import { apiGet } from '@/lib/api';\n\ninterface Billing {\n  id: string;\n}\n\nexport async function loadBilling(): Promise<Billing> {\n  return apiGet<Billing>('/api/billing');\n}\n"
+      );
+      break;
+    case "custom-feature-root-parser-failure":
+      writeViolationFile(
+        fixtureRoot,
+        `${CUSTOM_PRODUCT_ROOT}/billing/broken.ts`,
+        "interface Broken {\n  value:\n}\n"
+      );
+      break;
+    case "custom-feature-root-unrelated-lint":
+      writeViolationFile(
+        fixtureRoot,
+        `${CUSTOM_PRODUCT_ROOT}/billing/console.ts`,
+        "console.log('test');\nexport const ok = true;\n"
       );
       break;
     case "undeclared-dependency":

@@ -167,6 +167,11 @@ architecture-policy evaluator. Doctor emits `ATLAS_ARCHITECTURE_POLICY_UNSUPPORT
 the `architecture-boundaries` check. This is an architecture-policy capability diagnostic — it does
 not mean `@atlas/project` rejects the configured path.
 
+Custom roots are linted with the application's real ESLint configuration and TypeScript parser
+setup, with a runtime product-feature policy override for the configured root. Fatal ESLint parser
+or configuration execution failures fail the `architecture-boundaries` check with
+`ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` instead of being ignored.
+
 ---
 
 ## Deferred scope

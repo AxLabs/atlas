@@ -1,4 +1,8 @@
 import { mapContractErrorToDiagnostics } from "../doctor/map-contract-error";
+import {
+  assertNoFatalEslintResults,
+  extractEslintExecutionFailure,
+} from "../doctor/eslint-execution";
 import { mapEslintMessageToDiagnostic, sortDiagnostics } from "../doctor/map-eslint";
 import { DoctorDiagnosticCode } from "../doctor/diagnostics";
 import { createDoctorContext } from "../doctor/context";
@@ -54,6 +58,85 @@ describe("doctor eslint mapping", () => {
     ]);
 
     expect(sorted.map((diagnostic) => diagnostic.path)).toEqual(["apps/web/a.ts", "apps/web/b.ts"]);
+  });
+
+  it("detects fatal ESLint parser failures", () => {
+    const failure = extractEslintExecutionFailure("/repo", [
+      {
+        filePath: "/repo/apps/web/src/domains/billing/broken.ts",
+        messages: [
+          {
+            ruleId: null,
+            severity: 2,
+            message: "Parsing error: Expression expected.",
+            line: 2,
+            column: 9,
+            fatal: true,
+          },
+        ],
+        suppressedMessages: [],
+        errorCount: 1,
+        fatalErrorCount: 1,
+        warningCount: 0,
+        fixableErrorCount: 0,
+        fixableWarningCount: 0,
+        usedDeprecatedRules: [],
+      },
+    ]);
+
+    expect(failure).toBe(
+      "Parsing error in apps/web/src/domains/billing/broken.ts: Parsing error: Expression expected."
+    );
+    expect(() =>
+      assertNoFatalEslintResults("/repo", [
+        {
+          filePath: "/repo/apps/web/src/domains/billing/broken.ts",
+          messages: [
+            {
+              ruleId: null,
+              severity: 2,
+              message: "Parsing error: Expression expected.",
+              line: 2,
+              column: 9,
+              fatal: true,
+            },
+          ],
+          suppressedMessages: [],
+          errorCount: 1,
+          fatalErrorCount: 1,
+          warningCount: 0,
+          fixableErrorCount: 0,
+          fixableWarningCount: 0,
+          usedDeprecatedRules: [],
+        },
+      ])
+    ).toThrow(/Parsing error in apps\/web\/src\/domains\/billing\/broken.ts/);
+  });
+
+  it("ignores ordinary untagged ESLint messages without fatal errors", () => {
+    expect(
+      extractEslintExecutionFailure("/repo", [
+        {
+          filePath: "/repo/apps/web/src/domains/billing/console.ts",
+          messages: [
+            {
+              ruleId: "no-console",
+              severity: 2,
+              message: "Unexpected console statement.",
+              line: 1,
+              column: 1,
+            },
+          ],
+          suppressedMessages: [],
+          errorCount: 1,
+          fatalErrorCount: 0,
+          warningCount: 0,
+          fixableErrorCount: 0,
+          fixableWarningCount: 0,
+          usedDeprecatedRules: [],
+        },
+      ])
+    ).toBeUndefined();
   });
 });
 
