@@ -1,9 +1,9 @@
 # Atlas — Agent Guide
 
-Atlas is an enterprise-grade frontend platform monorepo (Next.js App Router, TypeScript, Tailwind
-CSS, pnpm workspaces). It provides opinionated patterns for authentication, data fetching,
-validation, theming, accessibility, and observability so product teams ship features without
-reinventing infrastructure.
+Atlas is a forkable frontend platform template monorepo (Next.js App Router, TypeScript, Tailwind
+CSS, pnpm workspaces) for selected clients and authorized evaluators. It provides opinionated
+patterns for authentication, data fetching, validation, theming, accessibility, and observability so
+product teams ship features without reinventing infrastructure.
 
 ## Repository map
 
@@ -12,43 +12,85 @@ atlas/
 ├── apps/web/              # Next.js application (@atlas/web)
 │   ├── src/app/           # Routes and layouts (thin — no business logic)
 │   ├── src/features/      # Domain modules (queries, mutations, feature UI)
+│   │   ├── reference/     # Reference-only hook patterns (safe to delete)
+│   │   └── examples/      # Reference hooks for /examples routes
 │   ├── src/components/    # App-level shared components
 │   ├── src/lib/           # Infrastructure (api, auth, react-query, telemetry)
 │   ├── src/providers/     # React context providers
 │   ├── src/schemas/       # Zod validation schemas
 │   └── e2e/               # Playwright tests
 ├── packages/ui/           # Reusable UI primitives (@atlas/ui)
+├── packages/project/      # Atlas architecture contract loader (@atlas/project)
+├── packages/cli/          # Atlas CLI (@atlas/cli)
 ├── packages/config/       # Shared ESLint, TypeScript, Jest, Prettier config
+├── atlas.config.json      # Machine-readable project architecture (author contract)
 ├── openapi/               # OpenAPI specification
 └── docs/how-we-build/     # Canonical platform conventions
 ```
 
 ## Ownership boundaries
 
-| Location                   | Owns                                                           | Does not own                              |
-| -------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
-| `apps/web/src/app/`        | Routes, layouts, page composition                              | Business logic, reusable components       |
-| `apps/web/src/features/`   | Domain logic, feature hooks, feature UI                        | Generic primitives, cross-feature imports |
-| `apps/web/src/components/` | App-specific compositions                                      | Generic design-system components          |
-| `packages/ui/`             | Reusable visual primitives, form helpers, app-state components | Product/domain logic, API calls           |
-| `packages/config/`         | Tooling configuration                                          | Application or product code               |
-| `apps/web/src/lib/`        | Shared infrastructure                                          | UI components, domain logic               |
+| Location                           | Owns                                                           | Does not own                              |
+| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| `apps/web/src/app/`                | Routes, layouts, page composition                              | Business logic, reusable components       |
+| `apps/web/src/features/`           | Domain logic, feature hooks, feature UI                        | Generic primitives, cross-feature imports |
+| `apps/web/src/features/reference/` | Reference hook patterns (no product UI)                        | Product features importing reference code |
+| `apps/web/src/components/`         | App-specific compositions                                      | Generic design-system components          |
+| `packages/ui/`                     | Reusable visual primitives, form helpers, app-state components | Product/domain logic, API calls           |
+| `packages/config/`                 | Tooling configuration                                          | Application or product code               |
+| `apps/web/src/lib/`                | Shared infrastructure                                          | UI components, domain logic               |
 
 Do not move code into a shared package unless it is genuinely reusable across applications. Prefer
 existing Atlas components and patterns over new abstractions.
 
+## Machine-readable architecture
+
+The canonical machine-readable project architecture lives in **`atlas.config.json`** at the
+repository root. Load and resolve it with **`@atlas/project`** — do not infer core structure from
+Cursor rules, scattered config files, or directory guesses when the contract provides the answer.
+
+- **Author contract:** `atlas.config.json` (minimal; defaults apply for omitted fields)
+- **Resolved architecture:** `resolveAtlasProject(repoRoot)` → deterministic JSON via
+  `serializeResolvedAtlasProject()`
+- **Human context:** [architecture ownership](docs/how-we-build/architecture-ownership.md), ADRs,
+  and this guide explain _why_; the contract states _what_ tooling-relevant architecture this
+  project uses
+
+See [Atlas project contract](docs/how-we-build/atlas-contract.md).
+
+## Atlas CLI
+
+Use the **`atlas`** binary for Atlas-owned workflows when a command exists (bootstrap, generators,
+Doctor, migrations). Architecture context still comes from `@atlas/project` / `atlas.config.json` —
+do not invent CLI commands that are not implemented.
+
+| Use `atlas` for          | Use pnpm / Next / Turbo / Git directly for            |
+| ------------------------ | ----------------------------------------------------- |
+| `atlas init`             | `pnpm install`, `pnpm dev`, `pnpm test`, `pnpm build` |
+| `atlas generate …`       | ESLint, TypeScript, Changesets, shadcn                |
+| Contract-aware bootstrap | Manual boilerplate for supported generator shapes     |
+
+When creating a new Atlas **product feature** or **App Router page**, prefer `atlas generate` where
+its supported shape applies. Do not manually recreate generator-owned structural boilerplate unless
+the generator cannot represent the required shape or you are modifying existing code.
+
+Repository-local invocation: `pnpm atlas --help`. See [Atlas CLI](docs/how-we-build/cli.md).
+
 ## Feature architecture
 
-1. **Route** — Add a thin page under `apps/web/src/app/` that composes feature components.
-2. **Feature module** — Create `apps/web/src/features/<name>/` with:
+1. **Route** — Add a thin page under `apps/web/src/app/` that composes feature components. Prefer
+   `atlas generate page <route>` for new static route shells.
+2. **Feature module** — Prefer `atlas generate feature <name>` for new product feature structure,
+   then add:
    - `keys.ts` — query key factory via `createQueryKeys` from `@/lib/react-query`
    - `queries.ts` / `mutations.ts` (or `hooks.ts` for smaller features)
    - `components/` — feature-specific UI
    - `index.ts` — public exports only
 3. **No cross-feature imports** — extract shared logic to `lib/` if needed.
 
-Reference implementations: `apps/web/src/features/users/` (OpenAPI client),
-`apps/web/src/features/examples/` (app-route mocks).
+Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI client hooks),
+`apps/web/src/features/examples/` (app-route mocks). See
+[architecture ownership](docs/how-we-build/architecture-ownership.md).
 
 ## API and server-state architecture
 
@@ -96,10 +138,17 @@ See `apps/web/src/app/examples/form/page.tsx`.
 Before claiming completion, run the checks relevant to your change:
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test    # minimum bar (matches CONTRIBUTING)
-pnpm build                                  # when build-affecting
-pnpm --filter @atlas/web test:e2e           # for user-facing flows
+pnpm --filter @atlas/cli build && pnpm atlas doctor   # after architecture-sensitive changes
+pnpm lint && pnpm typecheck && pnpm test                # minimum bar (matches CONTRIBUTING.md)
+pnpm docs:check                                       # when changing documentation links
+pnpm governance:check                                 # when changing release/licensing policy
+pnpm build                                            # when build-affecting
+pnpm --filter @atlas/web test:e2e                     # for user-facing flows
 ```
+
+`atlas doctor` validates Atlas-specific contract and architecture drift. It does not replace lint,
+typecheck, or tests. Treat Doctor error diagnostics as architectural failures and follow the
+suggested remediation rather than suppressing checks.
 
 Unit tests: `renderWithProviders` from `@/test`, MSW for network mocking, query by role/label (not
 test IDs first). Shared package code (`packages/ui`) requires tests.
@@ -128,18 +177,23 @@ pnpm format:write                           # fix formatting
 
 ## Documentation and examples
 
-| Topic                   | Location                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                     |
-| Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md) |
-| API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                           |
-| Environment variables   | [docs/how-we-build/env.md](docs/how-we-build/env.md)                           |
-| Testing                 | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                   |
-| Continuous Integration  | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                             |
-| Accessibility           | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)       |
-| Example patterns        | [docs/how-we-build/examples.md](docs/how-we-build/examples.md)                 |
-| Architecture decisions  | [docs/adr/README.md](docs/adr/README.md)                                       |
-| Canonical imports       | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md) |
-| Data states example     | `apps/web/src/app/examples/data/page.tsx`                                      |
-| Form example            | `apps/web/src/app/examples/form/page.tsx`                                      |
-| Users feature (OpenAPI) | `apps/web/src/features/users/`                                                 |
+| Topic                   | Location                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| Architecture ownership  | [docs/how-we-build/architecture-ownership.md](docs/how-we-build/architecture-ownership.md)   |
+| Atlas project contract  | [docs/how-we-build/atlas-contract.md](docs/how-we-build/atlas-contract.md)                   |
+| Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                                   |
+| Folder structure        | [docs/how-we-build/folder-structure.md](docs/how-we-build/folder-structure.md)               |
+| API & React Query       | [docs/how-we-build/api.md](docs/how-we-build/api.md)                                         |
+| Environment variables   | [docs/how-we-build/env.md](docs/how-we-build/env.md)                                         |
+| Testing                 | [docs/how-we-build/testing.md](docs/how-we-build/testing.md)                                 |
+| Continuous Integration  | [docs/how-we-build/ci.md](docs/how-we-build/ci.md)                                           |
+| Releases & governance   | [docs/how-we-build/releases-and-governance.md](docs/how-we-build/releases-and-governance.md) |
+| Accessibility           | [docs/how-we-build/accessibility.md](docs/how-we-build/accessibility.md)                     |
+| Example patterns        | [docs/how-we-build/examples.md](docs/how-we-build/examples.md)                               |
+| Architecture decisions  | [docs/adr/README.md](docs/adr/README.md)                                                     |
+| Canonical imports       | [docs/audit/atlas-consistency-audit.md](docs/audit/atlas-consistency-audit.md)               |
+| Claims register         | [docs/audit/claims-register.md](docs/audit/claims-register.md)                               |
+| Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                           |
+| Data states example     | `apps/web/src/app/examples/data/page.tsx`                                                    |
+| Form example            | `apps/web/src/app/examples/form/page.tsx`                                                    |
+| OpenAPI reference hooks | `apps/web/src/features/reference/users/`                                                     |

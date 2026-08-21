@@ -282,5 +282,6 @@ pnpm test:e2e
 
 ## Related
 
-- [Jest Config](../../jest.config.js)
-- [Jest Setup](../../jest.setup.js)
+- [Shared Jest config](../../packages/config/jest.config.js)
+- [Web app Jest setup](../../apps/web/jest.setup.js)
+- [UI package Jest setup](../../packages/ui/jest.setup.js)

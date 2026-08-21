@@ -2,6 +2,7 @@
   "name": "@atlas/config",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Shared configuration for linting, formatting, and TypeScript",
   "exports": {
     "./eslint": "./eslint.config.mjs",

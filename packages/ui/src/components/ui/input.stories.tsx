@@ -75,3 +75,32 @@ export const WithLabelAndHelperText: Story = {
     </div>
   ),
 };
+
+export const Search: Story = {
+  args: {
+    type: "search",
+    placeholder: "Search...",
+    "aria-label": "Search",
+  },
+};
+
+export const SearchWithCustomClear: Story = {
+  render: () => (
+    <div className="relative w-full max-w-sm">
+      <Input
+        type="search"
+        defaultValue="Atlas"
+        placeholder="Search..."
+        aria-label="Search projects"
+        className="pr-10"
+      />
+      <button
+        type="button"
+        aria-label="Clear search"
+        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm"
+      >
+        Clear
+      </button>
+    </div>
+  ),
+};

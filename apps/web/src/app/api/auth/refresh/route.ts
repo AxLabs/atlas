@@ -9,7 +9,9 @@
 
 import { NextResponse } from "next/server";
 
-import { readSession, refreshSession } from "@/lib/auth/session";
+import { refreshGoogleSession } from "@/lib/auth/providers/google/session-refresh";
+import { refreshReferenceSession } from "@/lib/auth/providers/reference/session-refresh";
+import { readSession } from "@/lib/auth/session";
 
 export async function POST() {
   try {
@@ -19,11 +21,16 @@ export async function POST() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    if (session.user.provider === "reference") {
+      await refreshReferenceSession(session);
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
     if (!session.refreshToken) {
       return NextResponse.json({ error: "No refresh token available" }, { status: 400 });
     }
 
-    await refreshSession(session);
+    await refreshGoogleSession(session);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch {

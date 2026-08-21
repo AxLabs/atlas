@@ -4,21 +4,26 @@
 
 ## Where Documentation Lives
 
-| Type                        | Location             | Examples                            |
-| --------------------------- | -------------------- | ----------------------------------- |
-| **Platform conventions**    | `docs/how-we-build/` | folder-structure, env, api, testing |
-| **Architecture decisions**  | `docs/adr/`          | Why we chose X over Y               |
-| **Component docs**          | Storybook            | UI components with examples         |
-| **API contracts**           | `openapi/`           | OpenAPI specification               |
-| **Quick start**             | Root `README.md`     | Getting started, links              |
-| **Historical/experimental** | `docs/_archive/`     | Superseded documentation            |
+| Type                        | Location             | Examples                                      |
+| --------------------------- | -------------------- | --------------------------------------------- |
+| **Platform conventions**    | `docs/how-we-build/` | folder-structure, architecture-ownership, api |
+| **Architecture decisions**  | `docs/adr/`          | Why we chose X over Y                         |
+| **Public capabilities**     | `docs/public/`       | FAQ, architecture, capabilities               |
+| **Claims and evidence**     | `docs/audit/`        | claims-register, showcase follow-up           |
+| **Contributing**            | `CONTRIBUTING.md`    | Access model, PRs, validation                 |
+| **Agent rules**             | `AGENTS.md`          | Coding agent authority                        |
+| **Component docs**          | Storybook            | UI components with examples                   |
+| **API contracts**           | `openapi/`           | OpenAPI specification                         |
+| **Quick start**             | Root `README.md`     | Getting started, links                        |
+| **Historical/experimental** | `docs/_archive/`     | Superseded documentation (non-canonical)      |
 
 ## Rules
 
 ### 1. Single Source of Truth
 
 - Each topic has **one** canonical document
-- `docs/how-we-build/` is the authoritative source for conventions
+- `docs/how-we-build/` is the authoritative source for internal conventions
+- `docs/public/` is the authoritative source for external capability descriptions
 - Don't create alternate docs that cover the same topic
 
 ### 2. ADRs for Major Decisions
@@ -35,7 +40,7 @@ Create an ADR when you:
 The root `README.md` is a **map, not the territory**:
 
 - Quick start only
-- Links to `docs/how-we-build/`
+- Links to `docs/public/`, `CONTRIBUTING.md`, and `docs/how-we-build/`
 - Links to common tasks
 - No long explanations
 
@@ -44,20 +49,16 @@ The root `README.md` is a **map, not the territory**:
 When documentation becomes outdated:
 
 1. Move to `docs/_archive/[YYYY-MM]-[description]/`
-2. Don't modify the archived content
+2. Don't modify the archived content (except archive banners)
 3. Update links in canonical docs
 4. Keep git history intact (use `git mv`)
 
-### 5. No Random Markdown at Root
+Canonical docs **must not** link into `docs/_archive/`. `pnpm docs:check` enforces this.
 
-All documentation lives in `docs/`:
+### 5. Root CONTRIBUTING.md
 
-- ❌ `/CONTRIBUTING.md`
-- ❌ `/ARCHITECTURE.md`
-- ✅ `docs/how-we-build/contributing.md`
-- ✅ `docs/adr/0001-architecture-decision.md`
-
-Exception: `README.md` at root (required by GitHub).
+`CONTRIBUTING.md` at the repository root is the canonical contribution guide. Do not duplicate it in
+`docs/how-we-build/` unless linking to specific sections.
 
 ### 6. Experimental Docs Go to Archive First
 
@@ -68,7 +69,16 @@ AI-generated or experimental documentation:
 3. If accurate, promote to canonical docs
 4. If not, leave archived with a note
 
-### 7. No Infrastructure Without Features
+### 7. Claims Register Reviews
+
+Update [claims-register.md](../audit/claims-register.md) when public claims, CI gates, or Showcase
+copy change. Review policy:
+
+- on relevant PRs;
+- quarterly;
+- before every tagged release.
+
+### 8. No Infrastructure Without Features
 
 Do not add infrastructure services (Postgres, Redis, etc.) to the default Docker Compose unless:
 
@@ -82,9 +92,11 @@ Atlas is a pure frontend platform. Keep `pnpm dev` fast.
 
 ### When Adding a Feature
 
-1. Update relevant `docs/how-we-build/` doc
-2. Create ADR if it's a significant pattern change
-3. Update Storybook if it involves UI
+1. Update relevant `docs/how-we-build/` or `docs/public/` doc
+2. Update the claims register if capabilities or positioning change
+3. Create ADR if it's a significant pattern change
+4. Update Storybook if it involves UI
+5. Run `pnpm docs:check`
 
 ### When Reviewing PRs
 
@@ -93,23 +105,43 @@ Check that:
 - New patterns are documented
 - Existing docs are updated if behavior changes
 - No duplicate documentation created
+- Claims register updated for material public claims
+- No new links from canonical docs to `docs/_archive/`
 
 ### When Docs Conflict
 
 If you find conflicting information:
 
 1. Determine which is correct (check the code)
-2. Update canonical doc in `docs/how-we-build/`
+2. Update canonical doc in `docs/how-we-build/` or `docs/public/`
 3. Archive the outdated version
-4. Note the resolution in PR description
+4. Update the claims register
+5. Note the resolution in PR description
+
+## Link checking
+
+`pnpm docs:check` validates internal Markdown links and heading fragments. It:
+
+- scans maintained surfaces: root `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/public`,
+  `docs/how-we-build`, `docs/adr`, `docs/audit`, and `.github`;
+- excludes `docs/_archive`, nested package READMEs, `.cursor`, and build artifacts;
+- strips fenced code and inline code before extracting links;
+- flags missing files and fragments;
+- flags canonical → archive links.
+
+It does **not** check external HTTP links unless you pass `--external` (best-effort; may flake).
 
 ## Quick Reference
 
 ```
+CONTRIBUTING.md       ← How to contribute
+AGENTS.md             ← Coding agent authority
 docs/
-├── how-we-build/     ← Conventions go here
-├── adr/              ← Architecture decisions go here
-└── _archive/         ← Old/experimental docs go here
+├── public/           ← External capability docs
+├── how-we-build/     ← Internal conventions
+├── adr/              ← Architecture decisions
+├── audit/            ← Claims register and audits
+└── _archive/         ← Historical only (non-canonical)
 ```
 
-**All platform conventions live in `docs/how-we-build/`.**
+**Canonical platform guidance lives in `AGENTS.md`, `docs/public`, and `docs/how-we-build/`.**

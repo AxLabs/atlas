@@ -226,24 +226,26 @@ Error tracking and performance monitoring uses Sentry across all runtimes (clien
 
 ---
 
-## Closed Source by Design
+## Private Template, Client Access
 
 ### Decision
 
-Atlas is closed source. It's not a framework for others; it's a platform for specific use cases.
+Atlas is a private repository template for selected clients and authorized evaluators—not a public
+open-source offering.
 
 ### Why
 
-- No obligation to generalize beyond our needs
-- Can move fast without backward compatibility concerns
-- Implementation details stay internal
-- Focus on solving real problems, not community management
+- Delivery through engagements with explicit access terms
+- Freedom to evolve without anonymous-consumer compatibility pressure
+- Focus on client outcomes rather than community management
+- Public docs explain capabilities; source access is controlled
 
 ### Tradeoffs
 
-- **Accepted:** No community contributions
-- **Accepted:** No external adoption growth
-- **Mitigated:** Platform serves its intended purpose well
+- **Accepted:** No anonymous public forks or inspections
+- **Accepted:** Licensing and public access model still being defined
+  ([#19](https://github.com/blitzcraftlabs/atlas/issues/19))
+- **Mitigated:** Forkable for authorized clients under engagement terms
 
 ---
 
@@ -268,24 +270,25 @@ Atlas uses a monorepo with shared packages, but packages are internal—not publ
 
 ---
 
-## Accessibility Enforcement via Linting
+## Accessibility Baseline via Linting
 
 ### Decision
 
-Accessibility violations cause build errors via ESLint, not just warnings.
+Common accessibility issues are ESLint errors via `eslint-plugin-jsx-a11y`, supplemented by
+Storybook a11y review and documented keyboard checks.
 
 ### Why
 
 - Accessibility is a requirement, not a suggestion
-- Errors can't be ignored or deferred
-- Catches common issues automatically
-- Establishes baseline before manual testing
+- Automatable rules catch high-value issues early
+- Manual review covers patterns lint cannot enforce
+- Establishes a baseline before formal conformance work
 
 ### Tradeoffs
 
-- **Accepted:** Developers must fix issues before merging
-- **Accepted:** Some false positives require justification
-- **Mitigated:** Rules focus on high-value, automatable checks
+- **Accepted:** Developers must fix jsx-a11y violations before merging
+- **Accepted:** Not equivalent to WCAG conformance or CI a11y gates
+- **Mitigated:** [#16](https://github.com/blitzcraftlabs/atlas/issues/16) tracks Storybook/a11y CI
 
 ---
 
@@ -303,9 +306,9 @@ Accessibility violations cause build errors via ESLint, not just warnings.
 | No magic frameworks       | Debuggable behavior          |
 | Feature modules           | Clear boundaries             |
 | Sentry observability      | Cross-runtime visibility     |
-| Closed source             | Focus on our needs           |
+| Private client template   | Controlled access model      |
 | Soft monorepo             | Shared code without publish  |
-| Accessibility linting     | Enforcement, not suggestion  |
+| Accessibility linting     | Baseline, not full WCAG CI   |
 
 Each decision reflects a belief about what makes production applications reliable, maintainable, and
 secure.

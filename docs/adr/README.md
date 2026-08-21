@@ -34,6 +34,8 @@ Write an ADR when you:
 | [0004](0004-oauth-google-pkce.md)             | OAuth with Google PKCE                   | Accepted |
 | [0005](0005-observability-sentry.md)          | Observability with Sentry                | Accepted |
 | [0006](0006-consent-management.md)            | Optional Consent Management              | Accepted |
+| [0007](0007-architecture-ownership-model.md)  | Architecture Ownership Model             | Accepted |
+| [0008](0008-atlas-project-contract.md)        | Atlas Project Architecture Contract      | Accepted |
 
 ## Status Lifecycle
 

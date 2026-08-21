@@ -32,12 +32,24 @@ src/lib/
     └── index.ts
 ```
 
+## Generated vs platform vs consumer
+
+| Layer           | Location                                           | Ownership                                      |
+| --------------- | -------------------------------------------------- | ---------------------------------------------- |
+| OpenAPI spec    | `openapi/openapi.json`                             | Consumer replaces with their API contract      |
+| Generated types | `lib/api/contracts/schema.ts`                      | **Generated** — run `api:gen`; never hand-edit |
+| Typed client    | `lib/api/contracts/index.ts`                       | **Platform** — wraps generated types           |
+| HTTP client     | `lib/api/client.ts`                                | **Platform** — fetch gateway, retries, errors  |
+| Feature hooks   | `features/<name>/` or `features/reference/<name>/` | **Consumer** or **reference**                  |
+
+See [architecture ownership](architecture-ownership.md) for the full classification.
+
 ## Using React Query Hooks
 
 ### Queries
 
 ```typescript
-// src/features/users/queries.ts
+// src/features/reference/users/queries.ts
 import { useQuery } from "@tanstack/react-query";
 import { api, normalizeApiError } from "@/lib/api";
 import { userKeys } from "./keys";
@@ -72,7 +84,7 @@ export function useUser(id: string) {
 ### Mutations
 
 ```typescript
-// src/features/users/mutations.ts
+// src/features/reference/users/mutations.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, normalizeApiError } from "@/lib/api";
 import { userKeys } from "./keys";
@@ -99,7 +111,7 @@ export function useCreateUser() {
 ### In Components
 
 ```tsx
-import { useUserList, useCreateUser } from "@/features/users";
+import { useUserList, useCreateUser } from "@/features/reference/users";
 import { getUserFacingMessage } from "@/lib/api";
 
 function UserList() {
@@ -124,7 +136,7 @@ function UserList() {
 Use the factory pattern for consistent keys:
 
 ```typescript
-// src/features/users/keys.ts
+// src/features/reference/users/keys.ts
 import { createQueryKeys } from "@/lib/react-query";
 
 export const userKeys = createQueryKeys("users");

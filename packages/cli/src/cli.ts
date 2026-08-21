@@ -1,0 +1,147 @@
+#!/usr/bin/env node
+
+import { runDoctorCommand, writeDoctorHelp } from "./commands/doctor";
+import { parseGenerateArgs, runGenerateCommand, writeGenerateHelp } from "./commands/generate";
+import { formatInitResult, runInit } from "./commands/init";
+import { CliError, CliErrorCode, isCliError } from "./errors/cli-error";
+import { cliErrorFromUnknown } from "./errors/from-contract";
+import {
+  createOutputWriter,
+  writeCommandError,
+  writeCommandSuccess,
+  writeHelp,
+  writeVersion,
+} from "./output/write";
+import { ExitCode } from "./exit-codes";
+import { parseCliArgs, type ParsedCli } from "./parse-args";
+import { readCliVersionMetadata } from "./version";
+
+import type { CommandResult } from "./types/result";
+
+export interface RunCliOptions {
+  argv?: string[];
+  cwd?: string;
+  writer?: ReturnType<typeof createOutputWriter>;
+}
+
+function argvIncludesFlag(argv: string[], flag: string): boolean {
+  return argv.includes(flag);
+}
+
+export async function runCli(options: RunCliOptions = {}): Promise<number> {
+  const argv = options.argv ?? process.argv.slice(2);
+  const writer = options.writer ?? createOutputWriter();
+  let commandForError = "atlas";
+
+  try {
+    const parsed = parseCliArgs(argv);
+    commandForError = parsed.command ?? "atlas";
+
+    if (parsed.help) {
+      if (parsed.command === "generate") {
+        writeGenerateHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
+      if (parsed.command === "doctor") {
+        writeDoctorHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
+      writeHelp(writer, parsed.json);
+      return ExitCode.SUCCESS;
+    }
+
+    if (parsed.version) {
+      writeVersion(writer, readCliVersionMetadata(), parsed.json);
+      return ExitCode.SUCCESS;
+    }
+
+    if (!parsed.command) {
+      writeHelp(writer, parsed.json);
+      return ExitCode.SUCCESS;
+    }
+
+    switch (parsed.command) {
+      case "init":
+        return runInitCommand(parsed, writer);
+      case "generate":
+        return runGenerateCliCommand(parsed, writer);
+      case "doctor":
+        return runDoctorCommand({
+          cwd: parsed.cwd,
+          json: parsed.json,
+          writer,
+        });
+      default:
+        throw new CliError(
+          CliErrorCode.USAGE_ERROR,
+          `Unknown command: ${parsed.command}. Run atlas --help for available commands.`
+        );
+    }
+  } catch (error) {
+    if (error instanceof CliError && error.message === "generate-help") {
+      writeGenerateHelp(writer, argvIncludesFlag(argv, "--json"));
+      return ExitCode.SUCCESS;
+    }
+
+    const cliError = cliErrorFromUnknown(
+      error,
+      argvIncludesFlag(argv, "--debug") || argvIncludesFlag(argv, "-d")
+    );
+    writeCommandError(writer, commandForError, cliError, argvIncludesFlag(argv, "--json"));
+    return cliError.exitCode;
+  }
+}
+
+function runInitCommand(parsed: ParsedCli, writer: ReturnType<typeof createOutputWriter>): number {
+  const result = runInit({
+    cwd: parsed.cwd,
+    dryRun: parsed.dryRun,
+    env: parsed.env,
+    reference: parsed.reference,
+  });
+
+  writeCommandSuccess(writer, "init", result, parsed.json, (value: CommandResult) =>
+    formatInitResult(value, parsed.dryRun)
+  );
+
+  return ExitCode.SUCCESS;
+}
+
+function runGenerateCliCommand(
+  parsed: ParsedCli,
+  writer: ReturnType<typeof createOutputWriter>
+): number {
+  if (parsed.generateArgs.length === 0) {
+    writeGenerateHelp(writer, parsed.json);
+    return ExitCode.SUCCESS;
+  }
+
+  const generateParsed = parseGenerateArgs(parsed.generateArgs);
+  generateParsed.cwd = generateParsed.cwd ?? parsed.cwd;
+  generateParsed.dryRun = generateParsed.dryRun || parsed.dryRun;
+  generateParsed.json = generateParsed.json || parsed.json;
+
+  return runGenerateCommand({
+    parsed: generateParsed,
+    writer,
+  });
+}
+
+if (require.main === module) {
+  void runCli()
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((error: unknown) => {
+      if (isCliError(error)) {
+        process.stderr.write(`${error.message}\n`);
+        process.exitCode = error.exitCode;
+        return;
+      }
+
+      process.stderr.write("Unexpected CLI failure.\n");
+      process.exitCode = ExitCode.INTERNAL_ERROR;
+    });
+}

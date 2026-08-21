@@ -50,14 +50,21 @@ NextAuth.js.
    - AES-256-GCM encrypted session cookie
    - Contains access token, refresh token, user info
    - httpOnly, Secure, SameSite=Lax
+   - Provider-neutral read/write/expiration primitives only
 
-4. **Client hook** (`lib/auth/useSession.ts`):
+4. **Google token refresh** (`lib/auth/providers/google/session-refresh.ts`):
+
+   - Reference integration that refreshes Google tokens and updates the session cookie
+   - Used by `/api/auth/me` and `/api/auth/refresh` in the reference Google OAuth flow
+
+5. **Client hook** (`lib/auth/useSession.ts`):
 
    - Fetches session from `/api/auth/me`
    - Returns user info (never tokens)
    - Handles loading/error states
 
-5. **Token refresh** — Server-side, transparent to client
+Token refresh is server-side in the Google reference layer and transparent to the client via
+`/api/auth/me`.
 
 ### Security Properties
 
@@ -142,7 +149,25 @@ abstractions made customization difficult.
 
 ### Neutral
 
-- Google-only initially (designed for multi-provider)
+- Google is the **reference** identity provider — not the universal Atlas auth model. Platform
+  session security (`lib/auth/session.ts`, PKCE, encrypted cookies) is provider-independent.
+- Additional providers follow the same pattern as `lib/auth/providers/google.ts`
+
+## Platform vs reference
+
+| Layer                                           | Classification | Location                                                           |
+| ----------------------------------------------- | -------------- | ------------------------------------------------------------------ |
+| Session storage (encrypted cookies, read/write) | Core platform  | `lib/auth/session.ts`                                              |
+| Server session helper (read-only)               | Core platform  | `lib/auth/server.ts`                                               |
+| PKCE, CSRF state                                | Core platform  | `lib/auth/pkce.ts`, `lib/auth/state.ts`                            |
+| Client session hook                             | Core platform  | `lib/auth/useSession.ts`                                           |
+| Google token refresh orchestration              | Reference      | `lib/auth/providers/google/session-refresh.ts`                     |
+| Google OAuth provider                           | Reference      | `lib/auth/providers/google.ts`                                     |
+| Google OAuth routes                             | Reference      | `app/api/auth/google/*`, `app/api/auth/me`, `app/api/auth/refresh` |
+| Auth UI components                              | Reference      | `components/reference/auth/`                                       |
+
+Consumers replace Google-specific layers with their chosen IdP while keeping the session
+architecture.
 
 ## References
 

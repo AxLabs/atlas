@@ -34,6 +34,8 @@ services:
   # Connection string for .env.local:
   #   DATABASE_URL=postgresql://atlas:atlas_dev_password@localhost:5432/atlas_dev
   #
+  # Ports bind to 127.0.0.1 only so dev credentials are not exposed on all interfaces.
+  #
   # Access via psql:
   #   docker compose --profile infra exec postgres psql -U atlas -d atlas_dev
   # ---------------------------------------------------------------------------
@@ -49,7 +51,7 @@ services:
       POSTGRES_USER: atlas
       POSTGRES_PASSWORD: atlas_dev_password
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -67,6 +69,8 @@ services:
   # Connection for .env.local:
   #   REDIS_URL=redis://:redis_dev_password@localhost:6379
   #
+  # Ports bind to 127.0.0.1 only so dev credentials are not exposed on all interfaces.
+  #
   # Access via redis-cli:
   #   docker compose --profile infra exec redis redis-cli -a redis_dev_password
   # ---------------------------------------------------------------------------
@@ -78,7 +82,7 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass redis_dev_password
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

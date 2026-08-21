@@ -12,11 +12,11 @@ description:
 
 1. Read [AGENTS.md](../../../AGENTS.md).
 2. Read relevant docs in `docs/how-we-build/` (especially `folder-structure.md`, `api.md`,
-   `testing.md`, `accessibility.md`).
+   `testing.md`, `accessibility.md`, `cli.md`).
 3. Inspect the closest example page under `apps/web/src/app/examples/` and matching feature under
-   `apps/web/src/features/`.
-4. Identify reusable `@atlas/ui` components, query/mutation patterns, and form helpers already in
-   use.
+   `apps/web/src/features/examples/` or reference module under `apps/web/src/features/reference/`.
+4. Read [architecture ownership](../../docs/how-we-build/architecture-ownership.md) to confirm
+   whether you are building product code or touching reference/platform surfaces.
 
 ## 2. Plan
 
@@ -26,6 +26,7 @@ Before editing, report:
 | ------------------- | ----------------------------------------------------------------------- |
 | Proposed route      | `apps/web/src/app/(app)/reports/page.tsx`                               |
 | Feature module      | `apps/web/src/features/reports/`                                        |
+| Generator command   | `atlas generate feature reports --query --mutation` when applicable     |
 | Components to reuse | `Card`, `EmptyState`, `ErrorFallback` from `@atlas/ui`                  |
 | API contract        | `components["schemas"]["Report"]` from `@/lib/api/contracts`            |
 | Hooks               | `useReportList` query, `useCreateReport` mutation, `reportKeys` factory |
@@ -35,8 +36,20 @@ Before editing, report:
 
 ## 3. Implement
 
-- Keep routes thin; put domain logic in `apps/web/src/features/<name>/`.
-- Add `keys.ts`, `queries.ts`, `mutations.ts` (or `hooks.ts`), `components/`, `index.ts`.
+For **new** product structure, start with Atlas generators when the shape matches:
+
+```bash
+pnpm atlas -- generate feature <name> [--query] [--mutation] [--form] [--tests]
+pnpm atlas -- generate page <route>
+```
+
+Then inspect generated files and implement domain behavior. The default generator creates a
+route-facing feature component and public boundary (`components/<Name>Feature.tsx`, `index.ts`). Do
+not manually recreate generator-owned structural boilerplate unless the generator cannot represent
+the required shape.
+
+- Keep routes thin; put domain logic in the configured product feature root from `@atlas/project`.
+- Add or extend `keys.ts`, `queries.ts`, `mutations.ts` (or `hooks.ts`), `components/`, `index.ts`.
 - Wire the typed API client (`api` from `@/lib/api/contracts` or `apiGet`/`apiPost` from
   `@/lib/api`); normalize errors with `normalizeApiError`.
 - Use `createQueryKeys` from `@/lib/react-query` for cache keys; invalidate on mutation success.
@@ -51,6 +64,10 @@ Derive commands from root `package.json` and `apps/web/package.json`. Run the su
 your change:
 
 ```bash
+# Atlas architecture drift (after contract/routing/feature-structure changes)
+pnpm --filter @atlas/cli build
+pnpm atlas doctor
+
 # Formatting & lint
 pnpm format              # or pnpm format:write to fix
 pnpm lint

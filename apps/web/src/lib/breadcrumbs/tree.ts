@@ -1,10 +1,13 @@
 /**
  * Breadcrumb Tree Definition
  *
+ * Route segment tree for breadcrumb resolution. Extend this when adding product routes.
+ * Reference routes only — consumers replace with their own tree.
+ *
  * @module breadcrumbs/tree
  */
 
-import { i18nResolver, staticResolver } from "./builder";
+import { staticResolver } from "./builder";
 
 import type { BreadcrumbNode } from "./types";
 
@@ -23,18 +26,4 @@ export const breadcrumbTree: BreadcrumbNode[] = [
       },
     ],
   },
-  {
-    segment: "settings",
-    resolver: i18nResolver("nav.settings", "Settings"),
-    children: [
-      {
-        segment: "profile",
-        resolver: i18nResolver("nav.profile", "Profile"),
-      },
-    ],
-  },
 ];
-
-export function getBreadcrumbTree(): BreadcrumbNode[] {
-  return breadcrumbTree;
-}

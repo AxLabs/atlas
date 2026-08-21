@@ -17,8 +17,11 @@ Atlas is a complete frontend platform template. When you run it, you get:
 
 ## Prerequisites
 
+- **Repository access** (selected clients, collaborators, or evaluators)
 - **Node.js 22+**
 - **pnpm 10+**
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for access and setup expectations.
 
 ---
 
@@ -78,6 +81,7 @@ Force UI states via query param on the data example:
 1. Explore `/examples` to see platform patterns in code
 2. Read [Architecture](architecture.md) for the system mental model
 3. Delete `app/examples/`, `features/examples/`, and `api/examples/` when you start your product
-4. Add features under `apps/web/src/features/` following `features/users/` for OpenAPI APIs
+4. Add features under `apps/web/src/features/` following `features/reference/users/` for OpenAPI
+   APIs
 
 See [Examples](examples.md) for more detail.

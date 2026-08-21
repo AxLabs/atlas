@@ -1,0 +1,52 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import tseslint from "typescript-eslint";
+
+import baseConfig from "@atlas/config/eslint";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export default [
+  ...baseConfig,
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    ignores: ["**/*.test.ts", "**/__tests__/**", "scripts/**"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        tsconfigRootDir: __dirname,
+        project: "./tsconfig.json",
+      },
+    },
+  },
+  {
+    files: ["**/*.test.ts", "**/__tests__/**/*.ts", "scripts/**/*.ts"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["jest.config.js"],
+    languageOptions: {
+      globals: {
+        module: "readonly",
+      },
+    },
+    rules: {
+      "no-undef": "off",
+    },
+  },
+];

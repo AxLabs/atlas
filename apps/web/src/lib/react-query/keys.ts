@@ -79,11 +79,6 @@ export function createQueryKeys<TResource extends string>(resource: TResource) {
 }
 
 /**
- * Predefined query keys for the users resource.
- */
-export const userKeys = createQueryKeys("users");
-
-/**
  * Predefined query keys for the system resource.
  */
 export const systemKeys = createQueryKeys("system");

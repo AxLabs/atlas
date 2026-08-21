@@ -9,7 +9,7 @@
 
 import { useEffect } from "react";
 
-const WEB_VITALS_ENABLED = process.env.NEXT_PUBLIC_WEB_VITALS_ENABLED === "true";
+import { getClientConfig } from "@/config/client";
 
 /**
  * WebVitalsReporter component
@@ -19,7 +19,7 @@ const WEB_VITALS_ENABLED = process.env.NEXT_PUBLIC_WEB_VITALS_ENABLED === "true"
  */
 export function WebVitalsReporter() {
   useEffect(() => {
-    if (!WEB_VITALS_ENABLED) return;
+    if (!getClientConfig().webVitals.enabled) return;
 
     void import("@/lib/telemetry/webVitals").then(({ initWebVitalsReporting }) => {
       initWebVitalsReporting();

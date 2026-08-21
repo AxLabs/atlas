@@ -210,9 +210,9 @@ After approval:
 
 ## Additional Resources
 
-- [Project Documentation](/docs)
-- [Environment Variables Guide](/docs/how-we-build/env.md)
-- [How We Build](/docs/how-we-build/README.md)
+- [Project documentation](../docs/how-we-build/README.md)
+- [Environment variables guide](../docs/how-we-build/env.md)
+- [How we build](../docs/how-we-build/README.md)
 
 ---
 

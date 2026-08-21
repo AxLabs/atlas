@@ -9,15 +9,17 @@
 
 import "server-only";
 
-import { readSessionWithRefresh } from "./session";
+import { readSession } from "./session";
 
 import type { OAuthUser, SessionData, SessionResponse } from "./types";
 
 /**
  * Get the current user session from cookies (server-side only).
  *
- * This function reads and validates the session cookie, automatically
- * refreshing the access token if needed.
+ * This function reads and validates the session cookie.
+ *
+ * Token refresh is provider-specific. The reference Google integration refreshes
+ * tokens in `/api/auth/me` via `lib/auth/providers/google/session-refresh.ts`.
  *
  * Use this in:
  * - Server Components
@@ -60,7 +62,7 @@ import type { OAuthUser, SessionData, SessionResponse } from "./types";
  * ```
  */
 export async function getServerSession(): Promise<SessionData | null> {
-  return readSessionWithRefresh();
+  return readSession();
 }
 
 /**

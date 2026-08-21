@@ -10,7 +10,8 @@ Atlas ships with a small `/examples` section so you can see core patterns workin
 These pages are **not** a full product demo — they are copy-friendly references meant to be removed
 once you start building.
 
-For a comprehensive live showcase, see the Atlas demo site (hosted separately from this repository).
+For a comprehensive live showcase, see [shipwithatlas.com](https://shipwithatlas.com) (hosted from
+[blitzcraftlabs/atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
 
 ---
 
@@ -43,5 +44,5 @@ After forking Atlas for a new product:
 3. Remove `app/api/examples/`
 4. Update the homepage CTA in `app/page.tsx`
 
-Keep `features/users/` as a hook-level reference for OpenAPI-backed APIs, or remove it once you have
-your own feature modules.
+Keep `features/reference/users/` as a hook-level reference for OpenAPI-backed APIs, or remove it
+once you have your own feature modules.
