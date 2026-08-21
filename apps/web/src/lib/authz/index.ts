@@ -7,7 +7,7 @@
  * @module lib/authz
  */
 
-export { can, hasPermission } from "./check";
+export { can, hasClientPermission, hasPermission } from "./check";
 export type { AuthorizationContext } from "./context";
 export { resolveAuthorizationContext, serializeAuthorizationContext } from "./context";
 export { AuthenticationRequiredError, PermissionDeniedError } from "./errors";
@@ -17,6 +17,7 @@ export type { ResourcePolicyContext, ResourcePolicyFn } from "./policy";
 export {
   canOnResource,
   evaluateResourcePolicy,
+  hasRegisteredResourcePolicy,
   registerResourcePolicy,
   resetResourcePolicy,
 } from "./policy";

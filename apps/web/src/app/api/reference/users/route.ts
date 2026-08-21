@@ -4,8 +4,6 @@
  * @module api/reference/users
  */
 
-import "@/lib/reference/auth/register";
-
 import { NextResponse } from "next/server";
 
 import { CORRELATION_ID_HEADER, generateCorrelationId } from "@/lib/api/correlation";

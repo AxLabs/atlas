@@ -1,8 +1,12 @@
-import { can, hasPermission } from "@/lib/authz/check";
+import { can, hasClientPermission, hasPermission } from "@/lib/authz/check";
 import { resolveAuthorizationContext } from "@/lib/authz/context";
 import { permissions } from "@/lib/authz/permissions";
 import { principalFromUser } from "@/lib/authz/principal";
-import { registerPermissionResolver, resetPermissionResolvers } from "@/lib/authz/resolvers";
+import {
+  registerPermissionResolver,
+  resetPermissionResolvers,
+  resolveAllPermissions,
+} from "@/lib/authz/resolvers";
 import { referenceRolesToPermissions } from "@/lib/reference/auth/permissions";
 
 import type { OAuthUser } from "@/lib/auth/types";
@@ -25,9 +29,8 @@ const REFERENCE_ADMIN: OAuthUser = {
   avatarUrl: null,
 };
 
-beforeEach(() => {
-  resetPermissionResolvers();
-  registerPermissionResolver(({ principal, user }) => {
+function registerTestReferenceResolver(): void {
+  registerPermissionResolver("reference-test", ({ principal, user }) => {
     if (user.provider !== "reference") {
       return [];
     }
@@ -37,6 +40,11 @@ beforeEach(() => {
 
     return referenceRolesToPermissions([...personaRoles]);
   });
+}
+
+beforeEach(() => {
+  resetPermissionResolvers();
+  registerTestReferenceResolver();
 });
 
 describe("permission model", () => {
@@ -57,5 +65,44 @@ describe("permission model", () => {
   it("derives principal id from OAuthUser", () => {
     const principal = principalFromUser(REFERENCE_USER);
     expect(principal.id).toBe("reference-user");
+  });
+});
+
+describe("permission resolver registration", () => {
+  it("returns empty permissions when no resolver is registered", () => {
+    resetPermissionResolvers();
+
+    const resolved = resolveAllPermissions({
+      principal: principalFromUser(REFERENCE_USER),
+      user: REFERENCE_USER,
+    });
+
+    expect(resolved).toEqual([]);
+  });
+
+  it("does not duplicate permissions when the same resolver is registered twice", () => {
+    resetPermissionResolvers();
+
+    const resolver = () => [permissions.users.read, permissions.users.read] as const;
+    registerPermissionResolver("duplicate-test", resolver);
+    registerPermissionResolver("duplicate-test", resolver);
+
+    const resolved = resolveAllPermissions({
+      principal: principalFromUser(REFERENCE_USER),
+      user: REFERENCE_USER,
+    });
+
+    expect(resolved).toEqual([permissions.users.read]);
+  });
+});
+
+describe("client permission helper", () => {
+  it("grants when permission is present", () => {
+    expect(hasClientPermission([permissions.users.read], permissions.users.read)).toBe(true);
+  });
+
+  it("denies when permission is absent or permissions are null", () => {
+    expect(hasClientPermission([permissions.users.read], permissions.users.delete)).toBe(false);
+    expect(hasClientPermission(null, permissions.users.read)).toBe(false);
   });
 });

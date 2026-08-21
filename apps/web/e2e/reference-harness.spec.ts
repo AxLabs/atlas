@@ -45,4 +45,13 @@ test.describe("Authorization", () => {
     await page.goto("/reference/authorization");
     await expect(page.getByText("Server-protected content")).toBeVisible();
   });
+
+  test("reference-admin is denied protected update by resource policy", async ({ page }) => {
+    await page.goto("/reference");
+    await page.getByRole("button", { name: "reference-admin" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Update protected admin (resource policy)" }).click();
+    await expect(page.getByText(/Update denied or failed/i)).toBeVisible({ timeout: 10000 });
+  });
 });

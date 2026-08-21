@@ -2,11 +2,14 @@
  * Consumer-supplied resource policy seam.
  *
  * Global capability checks are typed centrally; resource ownership and domain
- * policy can remain with the application or backend via this extension point.
+ * policy can further restrict already-granted permissions via this extension point.
  *
  * @module lib/authz/policy
  */
 
+import { hasPermission } from "./check";
+
+import type { AuthorizationContext } from "./context";
 import type { Permission } from "./permissions";
 import type { Principal } from "./principal";
 
@@ -37,7 +40,14 @@ export function resetResourcePolicy(): void {
 }
 
 /**
- * Evaluate consumer resource policy when global permissions are insufficient.
+ * Whether a consumer resource policy is registered.
+ */
+export function hasRegisteredResourcePolicy(): boolean {
+  return resourcePolicy !== null;
+}
+
+/**
+ * Evaluate the registered consumer resource policy.
  * Returns false when no policy is registered.
  */
 export async function evaluateResourcePolicy(ctx: ResourcePolicyContext): Promise<boolean> {
@@ -49,17 +59,27 @@ export async function evaluateResourcePolicy(ctx: ResourcePolicyContext): Promis
 }
 
 /**
- * Check whether a principal may perform an action on a specific resource,
- * deferring to the consumer policy when registered.
+ * Complete authorization decision for an action on a specific resource:
+ * global typed permission first, then optional consumer resource policy.
+ *
+ * When no resource policy is registered, a granted global permission is sufficient.
  */
 export async function canOnResource(
-  principal: Principal,
+  ctx: AuthorizationContext,
   action: Permission,
   resourceType: string,
   resourceId?: string
 ): Promise<boolean> {
+  if (!hasPermission(ctx, action)) {
+    return false;
+  }
+
+  if (!resourcePolicy) {
+    return true;
+  }
+
   return evaluateResourcePolicy({
-    principal,
+    principal: ctx.principal,
     action,
     resourceType,
     resourceId,

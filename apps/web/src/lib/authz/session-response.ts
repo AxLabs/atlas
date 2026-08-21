@@ -7,6 +7,7 @@
 import "server-only";
 
 import { resolveAuthorizationContext, serializeAuthorizationContext } from "./context";
+import { ensureAuthzSetup } from "./setup";
 
 import type { SessionData, SessionResponse } from "@/lib/auth/types";
 
@@ -14,6 +15,7 @@ import type { SessionData, SessionResponse } from "@/lib/auth/types";
  * Build a client-safe session response including resolved permissions.
  */
 export function enrichSessionResponse(session: SessionData): SessionResponse {
+  ensureAuthzSetup();
   const authz = resolveAuthorizationContext(session.user);
   const serialized = serializeAuthorizationContext(authz);
 

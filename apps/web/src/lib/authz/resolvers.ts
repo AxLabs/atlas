@@ -18,27 +18,29 @@ export interface PermissionResolverContext {
 
 export type PermissionResolver = (ctx: PermissionResolverContext) => readonly Permission[];
 
-const resolvers: PermissionResolver[] = [];
+const resolvers = new Map<string, PermissionResolver>();
 
 /**
- * Register a permission resolver (reference adapter, consumer mapping, etc.).
+ * Register a named permission resolver (reference adapter, consumer mapping, etc.).
+ * Repeated registration with the same id replaces the previous resolver — no duplicates.
  */
-export function registerPermissionResolver(resolver: PermissionResolver): void {
-  resolvers.push(resolver);
+export function registerPermissionResolver(id: string, resolver: PermissionResolver): void {
+  resolvers.set(id, resolver);
 }
 
 /** Reset resolvers (for tests). */
 export function resetPermissionResolvers(): void {
-  resolvers.length = 0;
+  resolvers.clear();
 }
 
 /**
  * Resolve all permissions from registered resolvers.
+ * When no resolver is registered, returns an empty list.
  */
 export function resolveAllPermissions(ctx: PermissionResolverContext): readonly Permission[] {
   const granted = new Set<Permission>();
 
-  for (const resolver of resolvers) {
+  for (const resolver of resolvers.values()) {
     for (const permission of resolver(ctx)) {
       granted.add(permission);
     }

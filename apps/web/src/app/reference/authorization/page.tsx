@@ -1,5 +1,3 @@
-import "@/lib/reference/auth/register";
-
 import { PermissionDenied } from "@/components/authz/PermissionDenied";
 import { AuthenticationRequiredError, PermissionDeniedError } from "@/lib/authz";
 import { permissions } from "@/lib/authz/permissions";

@@ -9,6 +9,8 @@
  * @module lib/authz/client/Can
  */
 
+import { hasClientPermission } from "../check";
+
 import { usePermission } from "./usePermission";
 
 import type { Permission } from "../permissions";
@@ -19,12 +21,11 @@ export interface CanProps {
   children: ReactNode;
   /** Rendered when permission is denied (default: nothing). */
   fallback?: ReactNode;
+  /** Pre-resolved permissions from a parent session source. */
+  grantedPermissions?: readonly Permission[] | null;
 }
 
-/**
- * Renders children when the current session grants the permission.
- */
-export function Can({ permission, children, fallback = null }: CanProps) {
+function CanWithSession({ permission, children, fallback }: Omit<CanProps, "grantedPermissions">) {
   const allowed = usePermission(permission);
 
   if (!allowed) {
@@ -32,4 +33,42 @@ export function Can({ permission, children, fallback = null }: CanProps) {
   }
 
   return <>{children}</>;
+}
+
+function CanWithGranted({
+  permission,
+  grantedPermissions,
+  children,
+  fallback,
+}: Required<Pick<CanProps, "grantedPermissions">> & Omit<CanProps, "grantedPermissions">) {
+  const allowed = hasClientPermission(grantedPermissions, permission);
+
+  if (!allowed) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * Renders children when the current session grants the permission.
+ */
+export function Can({ permission, children, fallback = null, grantedPermissions }: CanProps) {
+  if (grantedPermissions !== undefined) {
+    return (
+      <CanWithGranted
+        permission={permission}
+        grantedPermissions={grantedPermissions}
+        fallback={fallback}
+      >
+        {children}
+      </CanWithGranted>
+    );
+  }
+
+  return (
+    <CanWithSession permission={permission} fallback={fallback}>
+      {children}
+    </CanWithSession>
+  );
 }

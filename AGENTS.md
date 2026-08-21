@@ -111,11 +111,16 @@ Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI cli
 
 - **Permissions** — Use typed `permissions` from `@/lib/authz`; never scatter permission string
   literals or check reference roles directly in product code.
-- **Server enforcement** — `requirePermission` / `authorize` from `@/lib/authz/server` in route
-  handlers, server components, and server actions. Distinguish 401 (unauthenticated) from 403
+- **Server enforcement** — `requirePermission` for global capabilities; `requireResourcePermission`
+  when a consumer resource policy may further restrict access. Import from `@/lib/authz/server` in
+  route handlers, server components, and server actions. Distinguish 401 (unauthenticated) from 403
   (forbidden).
-- **Client gating** — `Can` / `usePermission` from `@/lib/authz` for presentation only — **not a
-  security boundary**. Every protected action must also enforce on the server.
+- **Resolver setup** — Permission resolvers register in application composition
+  (`lib/authz/setup.ts` via `ensureAuthzSetup()`). Do not depend on side-effect imports in route
+  handlers.
+- **Client gating** — `Can`, `usePermission`, and `hasClientPermission` from `@/lib/authz` for
+  presentation only — **not a security boundary**. Pass `grantedPermissions` from an existing
+  `useSession()` call when possible. Every protected action must also enforce on the server.
 - **Roles** — Reference profile metadata maps to permissions via
   `lib/reference/auth/permissions.ts`. Roles are not part of the core `OAuthUser` contract.
 - **Backend** — Real backends remain authoritative for data protection; Atlas frontend checks are UX

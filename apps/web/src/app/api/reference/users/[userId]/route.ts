@@ -4,13 +4,15 @@
  * @module api/reference/users/[userId]
  */
 
-import "@/lib/reference/auth/register";
-
 import { NextResponse } from "next/server";
 
 import { CORRELATION_ID_HEADER, generateCorrelationId } from "@/lib/api/correlation";
 import { permissions } from "@/lib/authz/permissions";
-import { authorizationErrorResponse, requirePermission } from "@/lib/authz/server";
+import {
+  authorizationErrorResponse,
+  requirePermission,
+  requireResourcePermission,
+} from "@/lib/authz/server";
 import { assertReferenceModeEnabled } from "@/lib/reference/mode";
 import { resolveUsersScenario } from "@/lib/reference/scenario";
 import {
@@ -74,7 +76,7 @@ export async function PATCH(
   const scenario = await resolveUsersScenario(request);
 
   try {
-    await requirePermission(permissions.users.update, {
+    await requireResourcePermission(permissions.users.update, {
       resourceType: "users",
       resourceId: userId,
       correlationId,

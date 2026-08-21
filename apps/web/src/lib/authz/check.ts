@@ -20,3 +20,18 @@ export function hasPermission(ctx: AuthorizationContext, permission: Permission)
 export function can(ctx: AuthorizationContext, permission: Permission): boolean {
   return hasPermission(ctx, permission);
 }
+
+/**
+ * Client-safe presentation check against resolved session permissions.
+ * Not a security boundary — server enforcement is required for protected actions.
+ */
+export function hasClientPermission(
+  granted: readonly Permission[] | null | undefined,
+  permission: Permission
+): boolean {
+  if (!granted?.length) {
+    return false;
+  }
+
+  return granted.includes(permission);
+}

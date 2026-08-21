@@ -6,11 +6,13 @@ enforcement is the security boundary; client checks control presentation only.
 ## Model
 
 ```text
-authentication  →  principal  →  authorization context  →  permission checks
-       ↓                                                              ↓
-  session cookie                                    server enforcement (authoritative)
-                                                            ↓
-                                              optional client presentation gating
+authentication
+    ↓
+global typed capability
+    ↓
+optional consumer resource/domain policy
+    ↓
+server authorization decision
 ```
 
 | Concept        | Answers                       | Location                                      |
@@ -20,7 +22,7 @@ authentication  →  principal  →  authorization context  →  permission chec
 | Authorization  | What may this principal do?   | `lib/authz/` (resolved, not stored in cookie) |
 | Roles          | Consumer/reference input only | `lib/reference/auth/personas.ts`              |
 
-**Do not check reference roles in product code.** Map roles to permissions in a reference adapter,
+**Do not check reference roles in product code.** Map roles to permissions in a consumer adapter,
 then use the typed permission API.
 
 ## Permissions
@@ -38,7 +40,41 @@ permissions.users.delete; // "users.delete"
 
 Add permissions as domains grow. Avoid scattered string literals.
 
+## Consumer integration
+
+Permissions are resolved at request time from the authenticated principal — not from client input
+and not from the encrypted session cookie.
+
+Register an application-specific resolver during server bootstrap:
+
+```typescript
+import { registerPermissionResolver } from "@/lib/authz/resolvers";
+
+registerPermissionResolver("application", ({ principal, user }) => {
+  // Derive from backend claims, application profile, or server-side policy.
+  return [...];
+});
+```
+
+In this repository, `lib/authz/setup.ts` calls `ensureAuthzSetup()` from server entry points. That
+registers the reference harness adapter once — no side-effect imports in route handlers.
+
+Possible permission sources for a real Atlas consumer:
+
+- backend-provided claims or capability responses
+- an application-owned user profile loaded server-side
+- local consumer policy derived from authenticated identity
+
+**Trust boundary:** do not trust arbitrary client-supplied role or permission values. A real backend
+remains authoritative for backend-owned data and actions.
+
 ## Server enforcement (authoritative)
+
+### Global capability
+
+`requirePermission()` enforces authentication plus a global typed permission. Optional
+`resourceType` / `resourceId` parameters are audit metadata only — they do not evaluate resource
+policy.
 
 ```typescript
 import { permissions } from "@/lib/authz/permissions";
@@ -60,33 +96,92 @@ export async function DELETE(request: NextRequest) {
 }
 ```
 
-| State             | HTTP | Error                         |
-| ----------------- | ---- | ----------------------------- |
-| Not signed in     | 401  | `AuthenticationRequiredError` |
-| Signed in, denied | 403  | `PermissionDeniedError`       |
+### Resource-aware guard
+
+`requireResourcePermission()` composes global permission enforcement with an optional consumer
+resource policy:
+
+```text
+global permission granted
+    ↓
+resource policy registered?
+    ↓ no                          ↓ yes
+allowed                    policy allows?
+                               ↓ no      ↓ yes
+                             denied    allowed
+```
+
+Resource policy may **further restrict** an already-granted global permission. It cannot mint
+missing global capabilities.
+
+```typescript
+import { requireResourcePermission } from "@/lib/authz/server";
+
+await requireResourcePermission(permissions.users.update, {
+  resourceType: "users",
+  resourceId: userId,
+  correlationId,
+});
+```
+
+| State                                      | HTTP | Error                         |
+| ------------------------------------------ | ---- | ----------------------------- |
+| Not signed in                              | 401  | `AuthenticationRequiredError` |
+| Signed in, missing global permission       | 403  | `PermissionDeniedError`       |
+| Signed in, global OK, resource policy deny | 403  | `PermissionDeniedError`       |
 
 Protected surfaces in the reference harness:
 
 - `/api/reference/users` — CRUD with permission checks
+- `/api/reference/users/[userId]` PATCH — resource-aware update guard
 - `/reference/authorization` — server component guarded by `users.update`
+
+## Resource policy seam
+
+Register a consumer policy once at bootstrap:
+
+```typescript
+import { registerResourcePolicy } from "@/lib/authz";
+
+registerResourcePolicy(({ principal, resourceType, resourceId, action }) => {
+  if (resourceType === "document" && action === permissions.users.update) {
+    return principal.id === resourceId; // owner-only example
+  }
+  return true; // no additional restriction for other resources
+});
+```
+
+Pure helpers:
+
+- `evaluateResourcePolicy()` — raw consumer policy evaluation
+- `canOnResource(ctx, action, resourceType, resourceId)` — complete decision (global permission +
+  optional policy)
+
+When no resource policy is registered, a granted global permission is sufficient.
 
 ## Client presentation gating (not security)
 
 **Client-side authorization controls presentation only. It is not a security boundary.**
 
-```tsx
-import { Can, usePermission, permissions } from "@/lib/authz";
+Use the canonical helpers — do not inspect `session.permissions` arrays directly in product code:
 
-function UserActions() {
-  const canDelete = usePermission(permissions.users.delete);
+```tsx
+import { Can, hasClientPermission, usePermission, permissions } from "@/lib/authz";
+
+function UserActions({ sessionPermissions }: { sessionPermissions: readonly string[] | null }) {
+  const canDelete = hasClientPermission(sessionPermissions, permissions.users.delete);
 
   return (
-    <Can permission={permissions.users.delete}>
+    <Can permission={permissions.users.delete} grantedPermissions={sessionPermissions}>
       <DeleteButton />
     </Can>
   );
 }
 ```
+
+Pass `grantedPermissions` to `Can` from an existing `useSession()` call to avoid duplicate session
+fetches. Use `hasClientPermission(sessionPermissions, permission)` for non-component checks.
+`usePermission(permission)` remains available when no parent session is present.
 
 Permissions are resolved server-side and exposed via `/api/auth/me` (`SessionResponse.permissions`).
 
@@ -99,25 +194,29 @@ Reference personas carry profile metadata (`roles`) that maps to permissions:
 | `reference-user`  | `users.read`                                                 |
 | `reference-admin` | `users.read`, `users.create`, `users.update`, `users.delete` |
 
-Mapping lives in `lib/reference/auth/permissions.ts` and registers via
-`lib/reference/auth/register.ts`. Roles never appear on `OAuthUser`.
+Mapping lives in `lib/reference/auth/permissions.ts` and registers via `lib/authz/setup.ts`. Roles
+never appear on `OAuthUser`.
 
-## Resource policy seam
+The reference resource policy blocks updates to the protected admin account even when `users.update`
+is granted globally — demonstrating the resource restriction seam.
 
-Global capabilities are typed centrally. Resource ownership stays with the consumer/backend:
+## Resolver registration
+
+Permission resolvers register by stable id and replace on duplicate registration:
 
 ```typescript
-import { registerResourcePolicy, canOnResource } from "@/lib/authz";
-
-registerResourcePolicy(({ principal, resourceType, resourceId, action }) => {
-  if (resourceType === "document" && action === permissions.users.update) {
-    return principal.id === resourceId; // owner-only example
-  }
-  return false;
-});
+registerPermissionResolver("application", ({ principal, user }) => [...]);
 ```
 
-This is an extension point — not a policy DSL or IAM engine.
+Core authz does not import reference modules directly:
+
+```text
+core authz
+    ↑
+application composition (`lib/authz/setup.ts`)
+    ↑
+reference/consumer resolver
+```
 
 ## Backend trust boundary
 

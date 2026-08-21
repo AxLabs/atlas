@@ -10,10 +10,10 @@ import { useCallback, useState } from "react";
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@atlas/ui";
 
-import { apiDelete, apiGet } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch } from "@/lib/api";
 import { getUserFacingMessage } from "@/lib/api/errors";
-import { permissions } from "@/lib/authz";
-import { REFERENCE_PERSONA_IDS } from "@/lib/reference/auth/personas";
+import { Can, hasClientPermission, permissions } from "@/lib/authz";
+import { PROTECTED_REFERENCE_USER_ID, REFERENCE_PERSONA_IDS } from "@/lib/reference/auth/personas";
 
 import type { UseSessionReturn } from "@/lib/auth";
 
@@ -23,7 +23,8 @@ interface AuthorizationDemoPanelProps {
 
 export function AuthorizationDemoPanel({ session }: AuthorizationDemoPanelProps) {
   const { status, permissions: sessionPermissions, refresh } = session;
-  const canDelete = sessionPermissions?.includes(permissions.users.delete) ?? false;
+  const canDelete = hasClientPermission(sessionPermissions, permissions.users.delete);
+  const canUpdate = hasClientPermission(sessionPermissions, permissions.users.update);
   const [apiResult, setApiResult] = useState<string | null>(null);
 
   const attemptProtectedDelete = useCallback(async () => {
@@ -34,6 +35,17 @@ export function AuthorizationDemoPanel({ session }: AuthorizationDemoPanelProps)
       await refresh();
     } catch (error) {
       setApiResult(`Delete denied or failed: ${getUserFacingMessage(error)}`);
+    }
+  }, [refresh]);
+
+  const attemptProtectedUpdate = useCallback(async () => {
+    setApiResult(null);
+    try {
+      await apiPatch(`/api/reference/users/${PROTECTED_REFERENCE_USER_ID}`, { name: "Blocked" });
+      setApiResult("Update succeeded (server allowed the request).");
+      await refresh();
+    } catch (error) {
+      setApiResult(`Update denied or failed: ${getUserFacingMessage(error)}`);
     }
   }, [refresh]);
 
@@ -77,25 +89,34 @@ export function AuthorizationDemoPanel({ session }: AuthorizationDemoPanelProps)
             List users (server-protected read)
           </Button>
 
-          {canDelete ? (
+          <Can permission={permissions.users.delete} grantedPermissions={sessionPermissions}>
             <Button variant="destructive" size="sm" onClick={attemptProtectedDelete}>
               Delete reference user (UI gated)
             </Button>
-          ) : (
+          </Can>
+
+          {!canDelete ? (
             <Button variant="outline" size="sm" disabled>
               Delete user (hidden — no permission)
             </Button>
-          )}
+          ) : null}
 
           <Button variant="outline" size="sm" onClick={attemptProtectedDelete}>
             Direct delete API call (bypasses UI gate)
           </Button>
+
+          {canUpdate ? (
+            <Button variant="outline" size="sm" onClick={attemptProtectedUpdate}>
+              Update protected admin (resource policy)
+            </Button>
+          ) : null}
         </div>
 
         <p className="text-muted-foreground text-xs">
-          UI gating ({canDelete ? "allowed" : "denied"} for delete) is presentation only. The direct
-          API button proves server enforcement — reference-user receives 403 even when UI is
-          bypassed.
+          UI gating ({canDelete ? "allowed" : "denied"} for delete) uses{" "}
+          <code>hasClientPermission</code> and <code>Can</code> — presentation only. The direct API
+          buttons prove server enforcement. Updating <code>{PROTECTED_REFERENCE_USER_ID}</code> is
+          blocked by resource policy even when <code>users.update</code> is granted globally.
         </p>
 
         {apiResult ? <p className="text-sm">{apiResult}</p> : null}
