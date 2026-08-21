@@ -217,6 +217,7 @@ async function collectEslintArchitectureDiagnostics(
   const eslintWorkingDirectory = resolveEslintWorkingDirectory(applicationRoot);
   const eslintInstance = new eslint.ESLint({
     cwd: eslintWorkingDirectory,
+    cache: false,
     overrideConfigFile: path.join(eslintWorkingDirectory, "eslint.config.mjs"),
   });
 
@@ -421,6 +422,7 @@ async function lintCustomProductFeatureRoot(
   const eslintWorkingDirectory = resolveEslintWorkingDirectory(applicationRoot);
   const eslintInstance = new eslint.ESLint({
     cwd: eslintWorkingDirectory,
+    cache: false,
     overrideConfigFile: path.join(eslintWorkingDirectory, "eslint.config.mjs"),
     overrideConfig: [
       policyModule.buildCustomProductFeatureEslintOverride({

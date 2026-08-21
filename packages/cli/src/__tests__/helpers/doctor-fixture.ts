@@ -489,13 +489,14 @@ export function snapshotFixtureTree(fixtureRoot: string): Record<string, string>
   const files: Record<string, string> = {};
 
   function walk(relativePath: string): void {
-    if (relativePath.split("/").includes("node_modules")) {
+    const segments = relativePath.split(/[/\\]/);
+    if (segments.includes("node_modules") || segments.includes("packages")) {
       return;
     }
 
     const absolutePath = path.join(fixtureRoot, relativePath);
     for (const entry of readdirSync(absolutePath)) {
-      if (entry === "node_modules") {
+      if (entry === "node_modules" || entry === "packages" || entry.startsWith(".")) {
         continue;
       }
 
