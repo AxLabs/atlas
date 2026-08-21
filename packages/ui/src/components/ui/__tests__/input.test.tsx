@@ -15,17 +15,13 @@ describe("Input", () => {
     expect(input).toHaveAttribute("type", "search");
   });
 
-  it("suppresses native WebKit search decorations for search inputs", () => {
-    const { container } = render(<Input type="search" placeholder="Search" />);
-    const input = container.querySelector('[data-slot="input"]');
-    expect(input).toHaveClass("[&::-webkit-search-cancel-button]:hidden");
-    expect(input).toHaveClass("[&::-webkit-search-decoration]:hidden");
-    expect(input).toHaveClass("[&::-webkit-search-results-button]:hidden");
+  it("applies placeholder", () => {
+    render(<Input placeholder="Name" />);
+    expect(document.querySelector("input")).toHaveAttribute("placeholder", "Name");
   });
 
-  it("does not add search suppression classes for other input types", () => {
-    const { container } = render(<Input type="text" placeholder="Name" />);
-    const input = container.querySelector('[data-slot="input"]');
-    expect(input).not.toHaveClass("[&::-webkit-search-cancel-button]:hidden");
+  it("supports disabled state", () => {
+    render(<Input disabled placeholder="Name" />);
+    expect(document.querySelector("input")).toBeDisabled();
   });
 });

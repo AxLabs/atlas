@@ -149,6 +149,21 @@ See `apps/web/src/app/examples/form/page.tsx`.
 - **Server/async data** — React Query (`isLoading`, `isError`, `data`, `refetch`).
 - **Interface states** — Use `@atlas/ui` primitives: `Skeleton` / `SkeletonList`, `EmptyState`,
   `ErrorFallback`, `Loader`.
+
+## UI foundation (shadcn preset)
+
+`@atlas/ui` is Atlas's governed UI boundary — not a proprietary component library. The default
+visual baseline is a reproducible stock shadcn preset:
+
+**Base UI + Vega + Neutral + Blue + Neutral charts + Inter + Lucide + default radius + default/solid
+menu + subtle menu accent**
+
+Preset code: `bJzBPQGZc` — verify with `pnpm dlx shadcn@latest preset decode bJzBPQGZc --json`.
+
+For upstream-derived primitives, **shadcn-generated styling wins**. Do not casually edit component
+CSS in `packages/ui/src/components/ui/**`; change the preset deliberately or compose in application
+code. See `packages/ui/README.md`.
+
 - **Local UI state** — `useState` / `useReducer` for ephemeral UI (modals, tabs).
 - **URL-driven state** — `useSearchParams` + `useRouter` when state should be bookmarkable (see
   `/examples/data?mode=`).

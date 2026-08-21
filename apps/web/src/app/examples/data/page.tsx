@@ -81,11 +81,13 @@ function DataContent({
         title="No items yet"
         description="Create an item from the form example."
         actions={
-          <Button asChild>
-            <a href="/examples/form">
-              <Plus className="mr-2 h-4 w-4" />
-              Create item
-            </a>
+          <Button
+            onClick={() => {
+              window.location.assign("/examples/form");
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create item
           </Button>
         }
       />
@@ -107,7 +109,7 @@ function DataContent({
           <TableRow key={item.id}>
             <TableCell>
               {item.status === "closed" ? (
-                <CircleCheck className="h-5 w-5 text-green-500" />
+                <CircleCheck className="text-primary h-5 w-5" />
               ) : (
                 <Circle className="text-muted-foreground h-5 w-5" />
               )}
@@ -179,7 +181,14 @@ export default function DataExamplePage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-4">
-            <Select value={mode} onValueChange={handleModeChange}>
+            <Select
+              value={mode}
+              onValueChange={(value) => {
+                if (value) {
+                  handleModeChange(value as ExampleMode);
+                }
+              }}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>

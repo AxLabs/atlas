@@ -56,9 +56,9 @@ For runtime design (layers, data flow, auth sequence), see
 | `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; ExamplesShell owns layout                        |
 | `components/errors/ErrorBoundary`           | Class error boundary                              | Removed                   | Remove      | Unused; Sentry + global-error handle failures                                  |
 | `providers/*`                               | MainProvider stack, DataProviderLayout            | App-owned composition     | Keep        | Wires platform modules; see `providers/README.md`                              |
-| `@atlas/ui`                                 | Primitives, forms, app-state components           | Core platform package     | Keep        | UI foundation; not a competing component library (#42)                         |
+| `@atlas/ui`                                 | shadcn/Base UI preset + behavioral helpers        | Core platform package     | Keep        | UI foundation; not a competing component library (#42)                         |
 | `@atlas/config`                             | ESLint, TS, Jest, Prettier configs                | Core platform package     | Keep        | Tooling boundary for monorepo consistency                                      |
-| `packages/ui` shadcn primitives             | Radix-based UI building blocks                    | Upstream-derived          | Keep        | Atlas-owned behavior in forms, theme, app-state components                     |
+| `packages/ui` shadcn primitives             | Base UI/Vega preset-generated building blocks     | Upstream-derived          | Keep        | Regenerate from preset; Atlas-owned behavior in forms, theme, app-state        |
 | OpenAPI `schema.ts`                         | Generated from `openapi/openapi.json`             | Generated                 | Keep        | Regenerate via `pnpm --filter @atlas/web api:gen`                              |
 
 ---
@@ -135,15 +135,20 @@ Consumer code imports types and the typed client — never duplicates schema sha
 
 ### `@atlas/ui`
 
-| Owns                                                           | Does not own           |
-| -------------------------------------------------------------- | ---------------------- |
-| Radix/shadcn-derived primitives                                | Product/domain logic   |
-| Form helpers (`useZodForm`, server error mapping)              | API calls              |
-| App-state components (EmptyState, ErrorFallback, SkeletonList) | Route-specific layouts |
-| Theme provider and boot script                                 | Business features      |
+| Owns                                                             | Does not own           |
+| ---------------------------------------------------------------- | ---------------------- |
+| shadcn/Base UI preset-generated primitives (Vega/Blue/Inter)     | Product/domain logic   |
+| Form helpers (`useZodForm`, server error mapping)                | API calls              |
+| App-state compositions (EmptyState, ErrorFallback, SkeletonList) | Route-specific layouts |
+| Theme preference provider and boot script (not visual tokens)    | Business features      |
+
+**Preset:** `bJzBPQGZc` — Base UI + Vega + Neutral + Blue. See `packages/ui/README.md`.
 
 **Public API:** `import { Button } from "@atlas/ui"` and documented subpaths (`globals.css`,
 `theme-boot`). Do not import from `packages/ui/src/**` — ESLint and tsconfig enforce this.
+
+**Styling rule:** upstream primitive appearance comes from current shadcn generation; Atlas owns
+behavioral wrappers and monorepo integration only.
 
 ### `@atlas/consent`
 

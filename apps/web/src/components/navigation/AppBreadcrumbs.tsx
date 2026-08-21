@@ -90,10 +90,10 @@ export function AppBreadcrumbs({ className, showHomeIcon = true, maxItems }: App
                 {item.current || !item.href ? (
                   <BreadcrumbPage>{hasIcon ? item.icon : item.label}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild>
-                    <Link href={item.href} aria-label={isHomeIcon ? "Home" : undefined}>
-                      {hasIcon ? item.icon : item.label}
-                    </Link>
+                  <BreadcrumbLink
+                    render={<Link href={item.href} aria-label={isHomeIcon ? "Home" : undefined} />}
+                  >
+                    {hasIcon ? item.icon : item.label}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
