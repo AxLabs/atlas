@@ -22,40 +22,47 @@ export interface ResourcePolicyContext {
 
 export type ResourcePolicyFn = (ctx: ResourcePolicyContext) => boolean | Promise<boolean>;
 
-let resourcePolicy: ResourcePolicyFn | null = null;
+const resourcePolicies = new Map<string, ResourcePolicyFn>();
 
 /**
- * Register a consumer-supplied resource policy function.
- * Call once at application bootstrap — not a generic policy engine.
+ * Register a named consumer resource policy function.
+ * Repeated registration with the same id replaces the previous policy — no duplicates.
  */
-export function registerResourcePolicy(fn: ResourcePolicyFn): void {
-  resourcePolicy = fn;
+export function registerResourcePolicy(id: string, fn: ResourcePolicyFn): void {
+  resourcePolicies.set(id, fn);
 }
 
 /**
- * Reset the resource policy (for tests).
+ * Reset all resource policies (for tests).
  */
 export function resetResourcePolicy(): void {
-  resourcePolicy = null;
+  resourcePolicies.clear();
 }
 
 /**
- * Whether a consumer resource policy is registered.
+ * Whether any consumer resource policy is registered.
  */
 export function hasRegisteredResourcePolicy(): boolean {
-  return resourcePolicy !== null;
+  return resourcePolicies.size > 0;
 }
 
 /**
- * Evaluate the registered consumer resource policy.
- * Returns false when no policy is registered.
+ * Evaluate all registered consumer resource policies.
+ * All applicable policies must allow — returns false when none are registered.
  */
 export async function evaluateResourcePolicy(ctx: ResourcePolicyContext): Promise<boolean> {
-  if (!resourcePolicy) {
+  if (resourcePolicies.size === 0) {
     return false;
   }
 
-  return resourcePolicy(ctx);
+  for (const policy of resourcePolicies.values()) {
+    const allowed = await policy(ctx);
+    if (!allowed) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -74,7 +81,7 @@ export async function canOnResource(
     return false;
   }
 
-  if (!resourcePolicy) {
+  if (resourcePolicies.size === 0) {
     return true;
   }
 

@@ -18,7 +18,6 @@ import { resolveAuthorizationContext } from "./context";
 import { AuthenticationRequiredError, PermissionDeniedError } from "./errors";
 import { canOnResource, evaluateResourcePolicy, hasRegisteredResourcePolicy } from "./policy";
 import { principalFromUser } from "./principal";
-import { ensureAuthzSetup } from "./setup";
 
 import type { AuthorizationContext } from "./context";
 import type { Permission } from "./permissions";
@@ -44,7 +43,6 @@ export interface GlobalAuthorizationOptions {
  * Require an authenticated principal or throw AuthenticationRequiredError.
  */
 export async function requirePrincipal(): Promise<Principal> {
-  ensureAuthzSetup();
   const session = await getServerSession();
 
   if (!session) {
@@ -58,7 +56,6 @@ export async function requirePrincipal(): Promise<Principal> {
  * Require an authenticated authorization context or throw AuthenticationRequiredError.
  */
 export async function requireAuthorizationContext(): Promise<AuthorizationContext> {
-  ensureAuthzSetup();
   const session = await getServerSession();
 
   if (!session) {

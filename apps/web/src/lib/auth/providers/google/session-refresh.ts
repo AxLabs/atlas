@@ -11,7 +11,7 @@
 import "server-only";
 
 import { getServerConfig } from "@/config/server";
-import { enrichSessionResponse } from "@/lib/authz/session-response";
+import { enrichSessionResponse } from "@/lib/application/authz";
 
 import { createSessionCookie, needsRefresh, readSession } from "../../session";
 import { refreshAccessToken } from "../google";

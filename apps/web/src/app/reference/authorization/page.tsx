@@ -1,7 +1,7 @@
 import { PermissionDenied } from "@/components/authz/PermissionDenied";
+import { requirePermission } from "@/lib/application/authz";
 import { AuthenticationRequiredError, PermissionDeniedError } from "@/lib/authz";
 import { permissions } from "@/lib/authz/permissions";
-import { requirePermission } from "@/lib/authz/server";
 
 export const metadata = {
   title: "Protected route — Authorization",

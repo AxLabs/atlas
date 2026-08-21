@@ -1,7 +1,7 @@
 /**
  * Register the reference harness permission resolver.
  *
- * Called from `@/lib/authz/setup` — do not import this module for side effects.
+ * Called from `@/lib/application/authz` when reference mode is enabled.
  *
  * @module lib/reference/auth/register
  */

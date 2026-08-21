@@ -8,7 +8,7 @@
 
 import "server-only";
 
-import { enrichSessionResponse } from "@/lib/authz/session-response";
+import { enrichSessionResponse } from "@/lib/application/authz";
 
 import { readSession } from "../../session";
 

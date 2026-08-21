@@ -112,12 +112,15 @@ Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI cli
 - **Permissions** — Use typed `permissions` from `@/lib/authz`; never scatter permission string
   literals or check reference roles directly in product code.
 - **Server enforcement** — `requirePermission` for global capabilities; `requireResourcePermission`
-  when a consumer resource policy may further restrict access. Import from `@/lib/authz/server` in
-  route handlers, server components, and server actions. Distinguish 401 (unauthenticated) from 403
-  (forbidden).
-- **Resolver setup** — Permission resolvers register in application composition
-  (`lib/authz/setup.ts` via `ensureAuthzSetup()`). Do not depend on side-effect imports in route
-  handlers.
+  when a consumer resource policy may further restrict access. Import from `@/lib/application/authz`
+  in route handlers, server components, and server actions. Distinguish 401 (unauthenticated) from
+  403 (forbidden).
+- **Resolver setup** — Permission resolvers and resource policies register in application
+  composition (`lib/application/authz.ts` via `ensureApplicationAuthzConfigured()`). Do not import
+  reference authz adapters into core authz; do not register authz adapters from feature routes or
+  route handlers.
+- **Reference mode** — Reference resolver and resource policy register only when reference mode is
+  enabled (`isReferenceModeEnabled()`). Reference policies are scoped to reference principals.
 - **Client gating** — `Can`, `usePermission`, and `hasClientPermission` from `@/lib/authz` for
   presentation only — **not a security boundary**. Pass `grantedPermissions` from an existing
   `useSession()` call when possible. Every protected action must also enforce on the server.

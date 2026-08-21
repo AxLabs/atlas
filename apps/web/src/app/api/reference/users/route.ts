@@ -7,8 +7,8 @@
 import { NextResponse } from "next/server";
 
 import { CORRELATION_ID_HEADER, generateCorrelationId } from "@/lib/api/correlation";
+import { authorizationErrorResponse, requirePermission } from "@/lib/application/authz";
 import { permissions } from "@/lib/authz/permissions";
-import { authorizationErrorResponse, requirePermission } from "@/lib/authz/server";
 import { assertReferenceModeEnabled } from "@/lib/reference/mode";
 import { resolveUsersScenario } from "@/lib/reference/scenario";
 import { handleCreateUserScenario, handleListUsersScenario } from "@/lib/reference/users/scenarios";

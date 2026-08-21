@@ -1,8 +1,12 @@
-import { canOnResource, registerResourcePolicy, resetResourcePolicy } from "@/lib/authz/policy";
+import {
+  canOnResource,
+  hasRegisteredResourcePolicy,
+  registerResourcePolicy,
+  resetResourcePolicy,
+} from "@/lib/authz/policy";
 import { permissions } from "@/lib/authz/permissions";
 import { resolveAuthorizationContext } from "@/lib/authz/context";
-import { resetPermissionResolvers } from "@/lib/authz/resolvers";
-import { ensureAuthzSetup, resetAuthzSetup } from "@/lib/authz/setup";
+import { registerPermissionResolver, resetPermissionResolvers } from "@/lib/authz/resolvers";
 
 import type { OAuthUser } from "@/lib/auth/types";
 
@@ -24,16 +28,34 @@ const REFERENCE_ADMIN: OAuthUser = {
   avatarUrl: null,
 };
 
+function registerTestPermissionResolver(): void {
+  registerPermissionResolver("test", ({ user }) => {
+    if (user.providerAccountId === "reference-admin") {
+      return [
+        permissions.users.read,
+        permissions.users.create,
+        permissions.users.update,
+        permissions.users.delete,
+      ];
+    }
+
+    if (user.providerAccountId === "reference-user") {
+      return [permissions.users.read];
+    }
+
+    return [];
+  });
+}
+
 describe("canOnResource", () => {
   beforeEach(() => {
     resetPermissionResolvers();
     resetResourcePolicy();
-    resetAuthzSetup();
-    ensureAuthzSetup();
+    registerTestPermissionResolver();
   });
 
   it("returns false when global permission is missing even if policy allows", async () => {
-    registerResourcePolicy(() => true);
+    registerResourcePolicy("test", () => true);
     const ctx = resolveAuthorizationContext(REFERENCE_USER);
 
     await expect(canOnResource(ctx, permissions.users.delete, "users", "any-user")).resolves.toBe(
@@ -41,7 +63,8 @@ describe("canOnResource", () => {
     );
   });
 
-  it("returns true when global permission is present and no policy is registered", async () => {
+  it("returns true when global permission is present and no resource policy is registered", async () => {
+    expect(hasRegisteredResourcePolicy()).toBe(false);
     const ctx = resolveAuthorizationContext(REFERENCE_ADMIN);
 
     await expect(
@@ -50,7 +73,7 @@ describe("canOnResource", () => {
   });
 
   it("returns true when global permission and resource policy allow", async () => {
-    registerResourcePolicy(() => true);
+    registerResourcePolicy("test", () => true);
     const ctx = resolveAuthorizationContext(REFERENCE_ADMIN);
 
     await expect(
@@ -59,7 +82,7 @@ describe("canOnResource", () => {
   });
 
   it("returns false when global permission is present but resource policy denies", async () => {
-    registerResourcePolicy(() => false);
+    registerResourcePolicy("test", () => false);
     const ctx = resolveAuthorizationContext(REFERENCE_ADMIN);
 
     await expect(

@@ -25,6 +25,42 @@ server authorization decision
 **Do not check reference roles in product code.** Map roles to permissions in a consumer adapter,
 then use the typed permission API.
 
+## Architecture layers
+
+```text
+core authorization (`lib/authz/**`)
+    ↑
+application composition (`lib/application/authz.ts`)
+    ↑
+permission resolver / resource policy integrations
+      ├── reference harness (reference mode only)
+      └── real application consumer adapters
+```
+
+### Core (`lib/authz/**`)
+
+Owns typed permissions, principal, authorization context, server guards, policy interfaces, resolver
+registry, and client presentation helpers. Core authz does **not** import reference modules and does
+**not** bootstrap consumer integrations.
+
+### Application composition (`lib/application/authz.ts`)
+
+Owns which resolvers and resource policies are installed, and environment/mode-specific integration.
+Server entry points import configured helpers from here — for example `requirePermission`,
+`requireResourcePermission`, and `enrichSessionResponse` — which call
+`ensureApplicationAuthzConfigured()` before delegating to core authz.
+
+### Reference harness (`lib/reference/auth/**`)
+
+Owns deterministic role → permission mapping and reference resource restrictions. Registers only
+when reference mode is enabled (`isReferenceModeEnabled()`). Reference resource policy is scoped to
+reference principals — it does not affect unrelated application identities.
+
+### Real consumers
+
+Own application/backend permission mapping and application resource restrictions. Register via the
+same core registry APIs during application composition.
+
 ## Permissions
 
 Central registry in `lib/authz/permissions.ts`:
@@ -45,7 +81,7 @@ Add permissions as domains grow. Avoid scattered string literals.
 Permissions are resolved at request time from the authenticated principal — not from client input
 and not from the encrypted session cookie.
 
-Register an application-specific resolver during server bootstrap:
+Register an application-specific resolver during application composition:
 
 ```typescript
 import { registerPermissionResolver } from "@/lib/authz/resolvers";
@@ -56,8 +92,8 @@ registerPermissionResolver("application", ({ principal, user }) => {
 });
 ```
 
-In this repository, `lib/authz/setup.ts` calls `ensureAuthzSetup()` from server entry points. That
-registers the reference harness adapter once — no side-effect imports in route handlers.
+In this repository, `lib/application/authz.ts` registers the reference harness adapter when
+reference mode is enabled — no side-effect imports in route handlers.
 
 Possible permission sources for a real Atlas consumer:
 
@@ -70,6 +106,10 @@ remains authoritative for backend-owned data and actions.
 
 ## Server enforcement (authoritative)
 
+Import configured guards from `@/lib/application/authz` in route handlers, server components, and
+session orchestration. Core `@/lib/authz/server` functions assume resolvers and policies are already
+registered.
+
 ### Global capability
 
 `requirePermission()` enforces authentication plus a global typed permission. Optional
@@ -78,7 +118,7 @@ policy.
 
 ```typescript
 import { permissions } from "@/lib/authz/permissions";
-import { requirePermission, authorizationErrorResponse } from "@/lib/authz/server";
+import { requirePermission, authorizationErrorResponse } from "@/lib/application/authz";
 
 export async function DELETE(request: NextRequest) {
   const correlationId = generateCorrelationId();
@@ -98,15 +138,15 @@ export async function DELETE(request: NextRequest) {
 
 ### Resource-aware guard
 
-`requireResourcePermission()` composes global permission enforcement with an optional consumer
-resource policy:
+`requireResourcePermission()` composes global permission enforcement with optional consumer resource
+policy:
 
 ```text
 global permission granted
     ↓
 resource policy registered?
     ↓ no                          ↓ yes
-allowed                    policy allows?
+allowed                    all policies allow?
                                ↓ no      ↓ yes
                              denied    allowed
 ```
@@ -115,7 +155,7 @@ Resource policy may **further restrict** an already-granted global permission. I
 missing global capabilities.
 
 ```typescript
-import { requireResourcePermission } from "@/lib/authz/server";
+import { requireResourcePermission } from "@/lib/application/authz";
 
 await requireResourcePermission(permissions.users.update, {
   resourceType: "users",
@@ -138,18 +178,20 @@ Protected surfaces in the reference harness:
 
 ## Resource policy seam
 
-Register a consumer policy once at bootstrap:
+Register named consumer policies during application composition:
 
 ```typescript
 import { registerResourcePolicy } from "@/lib/authz";
 
-registerResourcePolicy(({ principal, resourceType, resourceId, action }) => {
+registerResourcePolicy("application", ({ principal, resourceType, resourceId, action }) => {
   if (resourceType === "document" && action === permissions.users.update) {
     return principal.id === resourceId; // owner-only example
   }
   return true; // no additional restriction for other resources
 });
 ```
+
+Multiple registered policies compose conservatively: **all applicable policies must allow**.
 
 Pure helpers:
 
@@ -194,11 +236,12 @@ Reference personas carry profile metadata (`roles`) that maps to permissions:
 | `reference-user`  | `users.read`                                                 |
 | `reference-admin` | `users.read`, `users.create`, `users.update`, `users.delete` |
 
-Mapping lives in `lib/reference/auth/permissions.ts` and registers via `lib/authz/setup.ts`. Roles
-never appear on `OAuthUser`.
+Mapping lives in `lib/reference/auth/permissions.ts` and registers via `lib/application/authz.ts`
+when reference mode is enabled. Roles never appear on `OAuthUser`.
 
 The reference resource policy blocks updates to the protected admin account even when `users.update`
-is granted globally — demonstrating the resource restriction seam.
+is granted globally — demonstrating the resource restriction seam. The policy applies only to
+reference principals.
 
 ## Resolver registration
 
@@ -206,16 +249,17 @@ Permission resolvers register by stable id and replace on duplicate registration
 
 ```typescript
 registerPermissionResolver("application", ({ principal, user }) => [...]);
+registerResourcePolicy("application", (ctx) => true);
 ```
 
-Core authz does not import reference modules directly:
+Dependency direction:
 
 ```text
 core authz
     ↑
-application composition (`lib/authz/setup.ts`)
+application composition (`lib/application/authz.ts`)
     ↑
-reference/consumer resolver
+reference/consumer resolver and policy
 ```
 
 ## Backend trust boundary

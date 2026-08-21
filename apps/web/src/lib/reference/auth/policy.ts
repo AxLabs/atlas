@@ -14,19 +14,35 @@ import { registerResourcePolicy } from "@/lib/authz/policy";
 
 import { PROTECTED_REFERENCE_USER_ID } from "./personas";
 
+import type { ResourcePolicyContext } from "@/lib/authz/policy";
+
+/**
+ * Reference-only resource restriction — scoped to reference principals only.
+ */
+export function referenceResourcePolicy({
+  principal,
+  resourceType,
+  resourceId,
+  action,
+}: ResourcePolicyContext): boolean {
+  if (principal.provider !== "reference") {
+    return true;
+  }
+
+  if (resourceType !== "users" || action !== permissions.users.update) {
+    return true;
+  }
+
+  if (resourceId === PROTECTED_REFERENCE_USER_ID) {
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Register the reference resource policy seam demonstration.
  */
 export function registerReferenceResourcePolicy(): void {
-  registerResourcePolicy(({ resourceType, resourceId, action }) => {
-    if (resourceType !== "users" || action !== permissions.users.update) {
-      return true;
-    }
-
-    if (resourceId === PROTECTED_REFERENCE_USER_ID) {
-      return false;
-    }
-
-    return true;
-  });
+  registerResourcePolicy("reference", referenceResourcePolicy);
 }

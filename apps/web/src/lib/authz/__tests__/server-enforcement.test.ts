@@ -20,15 +20,18 @@ import { buildReferenceSessionData } from "@/lib/reference/auth/session-builder"
 import { resolveAuthorizationContext } from "@/lib/authz/context";
 import { AuthenticationRequiredError, PermissionDeniedError } from "@/lib/authz/errors";
 import { permissions } from "@/lib/authz/permissions";
-import { registerResourcePolicy, resetResourcePolicy } from "@/lib/authz/policy";
-import { resetPermissionResolvers } from "@/lib/authz/resolvers";
+import {
+  registerResourcePolicy,
+  hasRegisteredResourcePolicy,
+  resetResourcePolicy,
+} from "@/lib/authz/policy";
+import { registerPermissionResolver, resetPermissionResolvers } from "@/lib/authz/resolvers";
 import {
   authorizationErrorResponse,
   authorizeResource,
   requirePermission,
   requireResourcePermission,
 } from "@/lib/authz/server";
-import { ensureAuthzSetup, resetAuthzSetup } from "@/lib/authz/setup";
 
 jest.mock("@/lib/auth/session", () => ({
   readSession: jest.fn(),
@@ -42,13 +45,31 @@ import { getServerSession } from "@/lib/auth/server";
 
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 
+function registerTestAdminResolver(): void {
+  registerPermissionResolver("test", ({ user }) => {
+    if (user.providerAccountId === "reference-admin") {
+      return [
+        permissions.users.read,
+        permissions.users.create,
+        permissions.users.update,
+        permissions.users.delete,
+      ];
+    }
+
+    if (user.providerAccountId === "reference-user") {
+      return [permissions.users.read];
+    }
+
+    return [];
+  });
+}
+
 describe("resource authorization composition", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetPermissionResolvers();
     resetResourcePolicy();
-    resetAuthzSetup();
-    ensureAuthzSetup();
+    registerTestAdminResolver();
   });
 
   it("requireResourcePermission throws AuthenticationRequiredError for anonymous requests", async () => {
@@ -63,7 +84,7 @@ describe("resource authorization composition", () => {
     const session = buildReferenceSessionData("reference-user");
     mockedGetServerSession.mockResolvedValue(session);
 
-    registerResourcePolicy(() => true);
+    registerResourcePolicy("test", () => true);
 
     await expect(
       requireResourcePermission(permissions.users.delete, {
@@ -74,6 +95,7 @@ describe("resource authorization composition", () => {
   });
 
   it("allows global permission when no resource policy is registered", async () => {
+    expect(hasRegisteredResourcePolicy()).toBe(false);
     const session = buildReferenceSessionData("reference-admin");
     mockedGetServerSession.mockResolvedValue(session);
 
@@ -89,7 +111,7 @@ describe("resource authorization composition", () => {
     const session = buildReferenceSessionData("reference-admin");
     mockedGetServerSession.mockResolvedValue(session);
 
-    registerResourcePolicy(() => true);
+    registerResourcePolicy("test", () => true);
 
     await expect(
       requireResourcePermission(permissions.users.update, {
@@ -105,7 +127,7 @@ describe("resource authorization composition", () => {
     const session = buildReferenceSessionData("reference-admin");
     mockedGetServerSession.mockResolvedValue(session);
 
-    registerResourcePolicy(() => false);
+    registerResourcePolicy("test", () => false);
 
     await expect(
       requireResourcePermission(permissions.users.update, {
@@ -121,7 +143,7 @@ describe("resource authorization composition", () => {
     mockedGetServerSession.mockResolvedValue(session);
     const ctx = resolveAuthorizationContext(session!.user);
 
-    registerResourcePolicy(() => false);
+    registerResourcePolicy("test", () => false);
 
     await expect(
       authorizeResource(ctx, permissions.users.update, {
@@ -164,8 +186,7 @@ describe("global permission enforcement", () => {
     jest.clearAllMocks();
     resetPermissionResolvers();
     resetResourcePolicy();
-    resetAuthzSetup();
-    ensureAuthzSetup();
+    registerTestAdminResolver();
   });
 
   it("throws AuthenticationRequiredError for anonymous requirePermission", async () => {
@@ -191,18 +212,6 @@ describe("global permission enforcement", () => {
 
     const ctx = await requirePermission(permissions.users.delete);
     expect(ctx.permissions).toContain(permissions.users.delete);
-  });
-
-  it("denies reference-admin update of protected account via reference resource policy", async () => {
-    const session = buildReferenceSessionData("reference-admin");
-    mockedGetServerSession.mockResolvedValue(session);
-
-    await expect(
-      requireResourcePermission(permissions.users.update, {
-        resourceType: "users",
-        resourceId: "reference-admin",
-      })
-    ).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 
   it("produces materially different contexts for user vs admin", () => {
