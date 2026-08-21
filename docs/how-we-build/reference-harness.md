@@ -35,7 +35,13 @@ Restart the dev server, then open `/reference`.
 | `reference-admin` | `reference.admin@atlas.local` | `user`, `admin`            |
 
 Profile metadata lives on reference fixtures only. Sessions use the standard `OAuthUser` contract
-without roles; #41 will map these profiles into the eventual authorization model.
+without roles. The reference adapter maps profile roles to typed permissions — see
+[authorization.md](./authorization.md).
+
+| Persona           | Effective permissions                                        |
+| ----------------- | ------------------------------------------------------------ |
+| `reference-user`  | `users.read`                                                 |
+| `reference-admin` | `users.read`, `users.create`, `users.update`, `users.delete` |
 
 Select personas via the `/reference` control panel or programmatically:
 
@@ -93,13 +99,13 @@ these guards.
 
 ## Architecture boundaries
 
-| Layer                    | Location                                                                 |
-| ------------------------ | ------------------------------------------------------------------------ |
-| Application contract     | `useSession`, `api.users.*`, OpenAPI types                               |
-| Reference adapters       | `lib/reference/**`, `/api/reference/**`                                  |
-| Developer UI             | `/reference`, `features/reference/`                                      |
-| Future #41 authorization | Reference persona profile metadata (e.g. roles) — not on `OAuthUser` yet |
-| Future #39 reference app | Consumes this harness; not implemented here                              |
+| Layer                    | Location                                          |
+| ------------------------ | ------------------------------------------------- |
+| Application contract     | `useSession`, `api.users.*`, OpenAPI types        |
+| Reference adapters       | `lib/reference/**`, `/api/reference/**`           |
+| Developer UI             | `/reference`, `features/reference/`               |
+| Authorization (#41)      | `lib/authz/`, reference role → permission adapter |
+| Future #39 reference app | Consumes this harness; not implemented here       |
 
 ## Real provider configuration
 
