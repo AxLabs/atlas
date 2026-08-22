@@ -568,7 +568,22 @@ describe("normalizeRepoRelativePath", () => {
 describe("repository atlas.config.json", () => {
   it("matches the checked-in contract file", () => {
     const raw = loadAtlasProject(REPO_ROOT);
-    expect(raw).toEqual({ schemaVersion: 1 });
+    expect(raw).toEqual({
+      schemaVersion: 1,
+      features: {
+        reference: "apps/reference/src/features",
+        examples: "apps/web/src/features/examples",
+      },
+      reference: {
+        components: "apps/reference/src/features/components",
+        routes: "apps/reference/src/app",
+      },
+      generated: {
+        openApi: {
+          schema: "apps/web/src/lib/api/contracts/schema.ts",
+        },
+      },
+    });
   });
 
   it("can be resolved against the real repository layout", () => {

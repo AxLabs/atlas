@@ -79,8 +79,15 @@ Atlas is a **frontend platform template** — not a product. It owns:
 Atlas does **not** own: backend architecture, domain features, vendor choice (beyond reference
 adapters), or consumer deployment infrastructure.
 
-The coherent reference application lives under `/reference` (#39). `/examples` remains a minimal
-pattern showcase for isolated concerns (data states, forms).
+The monorepo contains two applications:
+
+| Application          | Purpose                                                                   |
+| -------------------- | ------------------------------------------------------------------------- |
+| **`apps/web`**       | Clean Atlas starter for consumer product development                      |
+| **`apps/reference`** | Executable reference product demonstrating Atlas architecture in practice |
+
+`apps/web` keeps minimal `/examples` routes for isolated pattern showcases (data states, forms). The
+coherent reference product (users CRUD, harness, authz demos) lives entirely in `apps/reference`.
 
 ---
 
@@ -89,11 +96,11 @@ pattern showcase for isolated concerns (data states, forms).
 Reference code exists to **teach patterns**, not to ship as product functionality.
 
 | Location                                       | Demonstrates                                    | Safe to delete?                |
-| ---------------------------------------------- | ----------------------------------------------- | ------------------------------ |
-| `app/examples/**`                              | Data states, forms, ExamplesShell layout        | Yes — when building product    |
-| `app/reference/**`                             | Coherent reference application + harness        | Yes — when building product    |
-| `features/examples/`                           | React Query hooks against app routes            | Yes — with examples            |
-| `features/reference/users/`                    | OpenAPI typed-resource hooks + reference app UI | Yes — once you have your own   |
+| ---------------------------------------------- | ----------------------------------------------- | ------------------------------ | ---- | ---------------------------------------------- |
+| `app/examples/**`                              | Data states, forms, ExamplesShell layout        | Reference                      | Keep | Starter app only; delete when building product |
+| `apps/reference/**`                            | Coherent reference application + harness        | Reference                      | Keep | Separate workspace app; optional in forks      |
+| `features/examples/`                           | React Query hooks against app routes            | Reference                      | Keep | Starter app only; with examples                |
+| `apps/reference/src/features/users/`           | OpenAPI typed-resource hooks + reference app UI | Reference                      | Keep | Canonical product pattern in reference app     |
 | `app/api/examples/**`                          | Mock in-memory APIs                             | Yes — with examples            |
 | `components/reference/auth/`                   | Google OAuth UI wiring                          | Yes — replace with your IdP UI |
 | `app/api/auth/google/**`                       | Google OAuth flow                               | Yes — replace with your IdP    |

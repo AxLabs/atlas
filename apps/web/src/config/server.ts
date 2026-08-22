@@ -12,7 +12,6 @@
  */
 import { clientEnv, serverEnv } from "@/env";
 
-import { isReferenceModeEnabled } from "./reference";
 import { configSchema } from "./schema";
 
 import type { Config } from "./schema";
@@ -111,7 +110,7 @@ export function getServerConfig(): Config {
     },
 
     reference: {
-      enabled: isReferenceModeEnabled(),
+      enabled: false,
     },
   };
 

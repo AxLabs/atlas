@@ -1,15 +1,14 @@
 /**
  * Application authorization composition boundary.
  *
- * Connects core authz with consumer integrations (reference harness, future
- * application resolvers/policies). Core authz must not import reference modules.
+ * Connects core authz with consumer integrations. Register application-specific
+ * permission resolvers and resource policies here.
  *
  * @module lib/application/authz
  */
 
 import "server-only";
 
-import { isReferenceModeEnabled } from "@/config/reference";
 import { resetResourcePolicy } from "@/lib/authz/policy";
 import { resetPermissionResolvers } from "@/lib/authz/resolvers";
 import {
@@ -23,8 +22,6 @@ import {
   requireResourcePermission as coreRequireResourcePermission,
 } from "@/lib/authz/server";
 import { enrichSessionResponse as coreEnrichSessionResponse } from "@/lib/authz/session-response";
-import { registerReferenceResourcePolicy } from "@/lib/reference/auth/policy";
-import { registerReferenceAuthz } from "@/lib/reference/auth/register";
 
 import type { SessionData, SessionResponse } from "@/lib/auth/types";
 import type { Permission } from "@/lib/authz/permissions";
@@ -42,11 +39,6 @@ export function ensureApplicationAuthzConfigured(): void {
   }
 
   initialized = true;
-
-  if (isReferenceModeEnabled()) {
-    registerReferenceAuthz();
-    registerReferenceResourcePolicy();
-  }
 }
 
 /** Reset bootstrap and registry state (for tests). */

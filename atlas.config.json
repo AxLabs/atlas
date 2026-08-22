@@ -1,3 +1,16 @@
 {
-  "schemaVersion": 1
+  "schemaVersion": 1,
+  "features": {
+    "reference": "apps/reference/src/features",
+    "examples": "apps/web/src/features/examples"
+  },
+  "reference": {
+    "components": "apps/reference/src/features/components",
+    "routes": "apps/reference/src/app"
+  },
+  "generated": {
+    "openApi": {
+      "schema": "apps/web/src/lib/api/contracts/schema.ts"
+    }
+  }
 }

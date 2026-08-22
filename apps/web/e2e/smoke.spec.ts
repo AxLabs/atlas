@@ -24,4 +24,9 @@ test.describe("Smoke Tests", () => {
     await page.goto("/examples/data?mode=success");
     await expect(page.getByRole("heading", { name: /Data fetching/i })).toBeVisible();
   });
+
+  test("does not expose reference product routes", async ({ page }) => {
+    const response = await page.goto("/reference");
+    expect(response?.status()).toBe(404);
+  });
 });

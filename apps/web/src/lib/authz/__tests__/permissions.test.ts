@@ -7,9 +7,27 @@ import {
   resetPermissionResolvers,
   resolveAllPermissions,
 } from "@/lib/authz/resolvers";
-import { referenceRolesToPermissions } from "@/lib/reference/auth/permissions";
 
 import type { OAuthUser } from "@/lib/auth/types";
+import type { Permission } from "@/lib/authz/permissions";
+
+function rolesToPermissions(roles: readonly string[]): readonly Permission[] {
+  const granted = new Set<Permission>();
+
+  for (const role of roles) {
+    if (role === "user") {
+      granted.add(permissions.users.read);
+    }
+    if (role === "admin") {
+      granted.add(permissions.users.read);
+      granted.add(permissions.users.create);
+      granted.add(permissions.users.update);
+      granted.add(permissions.users.delete);
+    }
+  }
+
+  return [...granted];
+}
 
 const REFERENCE_USER: OAuthUser = {
   provider: "reference",
@@ -38,7 +56,7 @@ function registerTestReferenceResolver(): void {
     const personaRoles =
       principal.id === "reference-admin" ? (["user", "admin"] as const) : (["user"] as const);
 
-    return referenceRolesToPermissions([...personaRoles]);
+    return rolesToPermissions([...personaRoles]);
   });
 }
 
