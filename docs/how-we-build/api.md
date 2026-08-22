@@ -46,15 +46,32 @@ See [architecture ownership](architecture-ownership.md) for the full classificat
 
 ## Using React Query Hooks
 
+Client feature hooks use `useTypedApiClient()` so requests keep the generated OpenAPI contract while
+using the runtime API base URL from `useConfig()`:
+
+```
+runtime config (useConfig)
+      ↓
+useTypedApiClient() → createApi(baseUrl)
+      ↓
+typed OpenAPI client (api.users.*)
+      ↓
+central apiRequest gateway
+      ↓
+React Query feature hooks
+```
+
 ### Queries
 
 ```typescript
 // src/features/reference/users/queries.ts
 import { useQuery } from "@tanstack/react-query";
-import { api, normalizeApiError } from "@/lib/api";
+import { normalizeApiError, useTypedApiClient } from "@/lib/api";
 import { userKeys } from "./keys";
 
 export function useUserList(params?: { page?: number }) {
+  const api = useTypedApiClient();
+
   return useQuery({
     queryKey: userKeys.list(params),
     queryFn: async () => {
@@ -68,6 +85,8 @@ export function useUserList(params?: { page?: number }) {
 }
 
 export function useUser(id: string) {
+  const api = useTypedApiClient();
+
   return useQuery({
     queryKey: userKeys.detail(id),
     queryFn: async () => {
@@ -86,11 +105,12 @@ export function useUser(id: string) {
 ```typescript
 // src/features/reference/users/mutations.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, normalizeApiError } from "@/lib/api";
+import { normalizeApiError, useTypedApiClient } from "@/lib/api";
 import { userKeys } from "./keys";
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
+  const api = useTypedApiClient();
 
   return useMutation({
     mutationFn: async (data: CreateUserRequest) => {

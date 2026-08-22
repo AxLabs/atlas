@@ -5,12 +5,12 @@ reference application.
 
 ## Hooks
 
-- `useUserList`, `useUser` — queries via `api.users.*` from `@/lib/api/contracts`
+- `useUserList`, `useUser` — queries via `useTypedApiClient()` → `api.users.*`
 - `useCreateUser`, `useUpdateUser`, `useDeleteUser` — mutations with cache invalidation
 
 ## UI
 
-- `UserListView` — table with loading, empty, error, and retry states
+- `UserListView` — table with loading, empty, error, and retry states; user names link to detail
 - `UserDetailView` — detail with permission-gated edit/delete
 - `UserForm` — create/edit with Zod, `useZodForm`, and `applyServerFieldErrors`
 

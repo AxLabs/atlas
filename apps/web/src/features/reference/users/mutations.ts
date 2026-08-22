@@ -2,7 +2,7 @@
  * User Mutations
  *
  * React Query mutation hooks for user data modifications.
- * Uses runtime-configured API base URL via useApiClient.
+ * Uses runtime-configured typed OpenAPI client via useTypedApiClient.
  */
 
 "use client";
@@ -10,7 +10,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { normalizeApiError } from "@/lib/api/errors";
-import { useApiClient } from "@/lib/api/hooks";
+import { useTypedApiClient } from "@/lib/api/hooks";
 
 import { userKeys } from "./keys";
 
@@ -24,12 +24,12 @@ type UpdateUserRequest =
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
-  const api = useApiClient();
+  const api = useTypedApiClient();
 
   return useMutation<User, ApiError, CreateUserRequest>({
     mutationFn: async (data) => {
       try {
-        return await api.post<User>("/users", data);
+        return await api.users.create(data);
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -44,12 +44,12 @@ export function useCreateUser() {
 
 export function useUpdateUser() {
   const queryClient = useQueryClient();
-  const api = useApiClient();
+  const api = useTypedApiClient();
 
   return useMutation<User, ApiError, { userId: string; data: UpdateUserRequest }>({
     mutationFn: async ({ userId, data }) => {
       try {
-        return await api.patch<User>(`/users/${userId}`, data);
+        return await api.users.update(userId, data);
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -67,12 +67,12 @@ export function useUpdateUser() {
 
 export function useDeleteUser() {
   const queryClient = useQueryClient();
-  const api = useApiClient();
+  const api = useTypedApiClient();
 
   return useMutation<void, ApiError, string>({
     mutationFn: async (userId) => {
       try {
-        return await api.delete<void>(`/users/${userId}`);
+        return await api.users.delete(userId);
       } catch (error) {
         throw normalizeApiError(error);
       }

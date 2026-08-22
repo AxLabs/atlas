@@ -100,14 +100,14 @@ these guards.
 
 ## Architecture boundaries
 
-| Layer                    | Location                                                          |
-| ------------------------ | ----------------------------------------------------------------- |
-| Application contract     | `useSession`, `api.users.*`, OpenAPI types                        |
-| Reference adapters       | `lib/reference/**`, `/api/reference/**`                           |
-| Developer UI             | `/reference/harness`, harness components in `features/reference/` |
-| Reference application    | `/reference`, `/reference/users`, `features/reference/users` UI   |
-| Authorization (#41)      | `lib/authz/`, reference role → permission adapter                 |
-| Future #39 reference app | Consumes this harness; not implemented here                       |
+| Layer                    | Location                                                           |
+| ------------------------ | ------------------------------------------------------------------ |
+| Application contract     | `useSession`, `useTypedApiClient()` → `api.users.*`, OpenAPI types |
+| Reference adapters       | `lib/reference/**`, `/api/reference/**`                            |
+| Developer UI             | `/reference/harness`, harness components in `features/reference/`  |
+| Reference application    | `/reference`, `/reference/users`, `features/reference/users` UI    |
+| Authorization (#41)      | `lib/authz/`, reference role → permission adapter                  |
+| Future #39 reference app | Consumes this harness; not implemented here                        |
 
 ## Real provider configuration
 

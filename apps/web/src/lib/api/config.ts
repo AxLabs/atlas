@@ -4,13 +4,13 @@
  * Centralized configuration for API client behavior.
  *
  * NOTE: getApiBaseUrl() is for SERVER-SIDE ONLY.
- * For client-side, use useApiClient() hook from './hooks'
+ * For client-side, use useTypedApiClient() for typed OpenAPI calls or useApiClient() for bespoke endpoints.
  */
 
 /**
  * Get the API base URL from configuration.
  *
- * SERVER-SIDE ONLY. For client-side usage, use the useApiClient() hook instead.
+ * SERVER-SIDE ONLY. For client-side usage, use the useTypedApiClient() or useApiClient() hook instead.
  *
  * @example Server-side usage
  * ```tsx
@@ -25,17 +25,19 @@
  *
  * @example Client-side usage
  * ```tsx
- * import { useApiClient } from '@/lib/api/hooks';
+ * import { useTypedApiClient } from '@/lib/api/hooks';
  *
  * function MyComponent() {
- *   const api = useApiClient();
- *   // api.get(), api.post(), etc. use runtime config
+ *   const api = useTypedApiClient();
+ *   // api.users.list(), api.users.create(), etc.
  * }
  * ```
  */
 export async function getApiBaseUrl(): Promise<string> {
   if (typeof window !== "undefined") {
-    throw new Error("getApiBaseUrl() is server-only. Use useApiClient() hook on the client.");
+    throw new Error(
+      "getApiBaseUrl() is server-only. Use useTypedApiClient() or useApiClient() on the client."
+    );
   }
   const { getServerConfig } = await import("@/config/server");
   return getServerConfig().api.baseUrl;

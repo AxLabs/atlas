@@ -45,10 +45,19 @@ All error responses follow the standard `ApiError` shape defined in components.
 Generated types are used by the typed API client:
 
 ```ts
-import { api } from "@/lib/api/contracts";
+import { useTypedApiClient } from "@/lib/api";
 
-// Type-safe API calls
-const users = await api.users.list({ page: 1, pageSize: 20 });
+// Client components — runtime base URL from useConfig()
+function UserList() {
+  const api = useTypedApiClient();
+  const users = await api.users.list({ page: 1, pageSize: 20 });
+}
+
+// Server-side — bind to configured base URL
+import { createApi } from "@/lib/api/contracts";
+import { getApiBaseUrl } from "@/lib/api/config";
+
+const api = createApi(await getApiBaseUrl());
 const user = await api.users.get("user-123");
 ```
 

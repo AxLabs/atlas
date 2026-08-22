@@ -46,13 +46,7 @@ import { notify } from "@/lib/notifications";
 
 import { ReferenceAuthRequired } from "../../components/ReferenceAuthRequired";
 
-import type {
-  Control,
-  FieldPath,
-  FieldValues,
-  SubmitHandler,
-  UseFormReturn,
-} from "react-hook-form";
+import type { Control, FieldValues, Path, SubmitHandler, UseFormReturn } from "react-hook-form";
 
 export interface UserFormProps {
   mode: "create" | "edit";
@@ -126,8 +120,8 @@ function CreateUserForm() {
       submitLabel="Create user"
       cancelHref="/reference/users"
       serverError={serverError}
-      form={form as unknown as UseFormReturn<FieldValues>}
-      onSubmit={onSubmit as unknown as SubmitHandler<FieldValues>}
+      form={form}
+      onSubmit={onSubmit}
     >
       <FormField
         control={form.control}
@@ -224,8 +218,8 @@ function EditUserForm({ userId }: { userId: string }) {
       submitLabel="Save changes"
       cancelHref={`/reference/users/${userId}`}
       serverError={serverError}
-      form={form as unknown as UseFormReturn<FieldValues>}
-      onSubmit={onSubmit as unknown as SubmitHandler<FieldValues>}
+      form={form}
+      onSubmit={onSubmit}
     >
       <FormField
         control={form.control}
@@ -245,11 +239,15 @@ function EditUserForm({ userId }: { userId: string }) {
   );
 }
 
-function RoleField<T extends FieldValues>({ control }: { control: Control<T> }) {
+function RoleField<T extends FieldValues & { role: "user" | "admin" }>({
+  control,
+}: {
+  control: Control<T>;
+}) {
   return (
     <FormField
       control={control}
-      name={"role" as FieldPath<T>}
+      name={"role" as Path<T>}
       render={({ field }) => (
         <FormItem>
           <FormLabel>Role</FormLabel>
@@ -271,7 +269,7 @@ function RoleField<T extends FieldValues>({ control }: { control: Control<T> }) 
   );
 }
 
-function UserFormShell({
+function UserFormShell<T extends FieldValues>({
   title,
   description,
   cardTitle,
@@ -296,8 +294,8 @@ function UserFormShell({
   submitLabel: string;
   cancelHref: string;
   serverError: string | null;
-  form: UseFormReturn<FieldValues>;
-  onSubmit: SubmitHandler<FieldValues>;
+  form: UseFormReturn<T>;
+  onSubmit: SubmitHandler<T>;
   children: React.ReactNode;
 }) {
   return (

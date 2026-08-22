@@ -24,7 +24,10 @@ export {
 } from "./client";
 
 // Runtime-aware hooks for client components
-export { useApiBaseUrl, useApiClient } from "./hooks";
+export { useApiBaseUrl, useApiClient, useTypedApiClient } from "./hooks";
+
+// Typed OpenAPI client factory
+export { type ApiTransport, createApi, createApiTransport, type TypedApiClient } from "./contracts";
 
 // Configuration (client-safe constants only)
 export { DEFAULT_TIMEOUT, RETRY_CONFIG } from "./config";

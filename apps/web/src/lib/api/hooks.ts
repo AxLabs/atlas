@@ -12,9 +12,12 @@
 
 "use client";
 
+import { useMemo } from "react";
+
 import { useConfig } from "@/config";
 
 import { apiRequest } from "./client";
+import { createApi } from "./contracts";
 
 import type { ApiRequestOptions } from "./client";
 
@@ -58,6 +61,33 @@ export function useApiBaseUrl(): string {
  * }
  * ```
  */
+/**
+ * Hook to create a runtime-configured typed OpenAPI client.
+ *
+ * Returns the generated `api.users.*` / `api.system.*` contract with requests
+ * routed through the central `apiRequest` gateway and the runtime API base URL.
+ *
+ * @returns Typed OpenAPI client (`api.users.list`, `api.users.create`, …)
+ *
+ * @example
+ * ```tsx
+ * function UserList() {
+ *   const api = useTypedApiClient();
+ *
+ *   const { data } = useQuery({
+ *     queryKey: userKeys.list(),
+ *     queryFn: () => api.users.list(),
+ *   });
+ * }
+ * ```
+ */
+export function useTypedApiClient() {
+  const config = useConfig();
+  const apiBaseUrl = config.api.baseUrl;
+
+  return useMemo(() => createApi(apiBaseUrl), [apiBaseUrl]);
+}
+
 export function useApiClient() {
   const config = useConfig();
   const apiBaseUrl = config.api.baseUrl;

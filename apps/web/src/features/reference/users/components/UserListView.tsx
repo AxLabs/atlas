@@ -2,7 +2,6 @@
 
 import { Download, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import {
   Alert,
@@ -39,7 +38,6 @@ function formatDate(iso: string): string {
 }
 
 export function UserListView() {
-  const router = useRouter();
   const session = useSession();
   const { status, permissions: sessionPermissions } = session;
   const { data, error, isLoading, isError, isFetching, refetch } = useUserList();
@@ -150,12 +148,12 @@ export function UserListView() {
           </TableHeader>
           <TableBody>
             {data.data.map((user) => (
-              <TableRow
-                key={user.id}
-                className="cursor-pointer"
-                onClick={() => router.push(`/reference/users/${user.id}`)}
-              >
-                <TableCell className="font-medium">{user.name}</TableCell>
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">
+                  <Link href={`/reference/users/${user.id}`} className="hover:underline">
+                    {user.name}
+                  </Link>
+                </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">{user.role ?? "user"}</Badge>

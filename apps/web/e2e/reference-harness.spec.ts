@@ -41,6 +41,8 @@ test.describe("Reference application", () => {
   });
 
   test("reference-admin can create a user", async ({ page }) => {
+    const uniqueEmail = `create-${Date.now()}@atlas.local`;
+
     await page.goto("/reference/harness");
     await page.getByRole("button", { name: "reference-admin" }).click();
     await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
@@ -48,12 +50,12 @@ test.describe("Reference application", () => {
     await expect(page.getByText(/Scenario set to success/)).toBeVisible();
 
     await page.goto("/reference/users/new");
-    await page.getByLabel("Email").fill("new.user@atlas.local");
+    await page.getByLabel("Email").fill(uniqueEmail);
     await page.getByLabel("Name").fill("New Reference User");
     await page.getByRole("button", { name: "Create user" }).click();
 
     await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
-    await expect(page.getByText("new.user@atlas.local")).toBeVisible();
+    await expect(page.getByRole("cell", { name: uniqueEmail, exact: true })).toBeVisible();
   });
 
   test("validation scenario surfaces server field errors on create", async ({ page }) => {
@@ -82,6 +84,23 @@ test.describe("Reference application", () => {
     await page.goto("/reference/users");
     await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
+  test("mobile navigation reaches users list", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await page.goto("/reference/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "success" }).click();
+    await expect(page.getByText(/Scenario set to success/)).toBeVisible();
+
+    await page.goto("/reference");
+    await page.getByRole("button", { name: "Open navigation menu" }).click();
+    await page.getByRole("dialog").getByRole("link", { name: "Users" }).click();
+
+    await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Reference User", exact: true })).toBeVisible();
   });
 });
 

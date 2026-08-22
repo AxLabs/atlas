@@ -6,12 +6,12 @@ product functionality**.
 
 ## Structure
 
-| Path                                  | Role                                           |
-| ------------------------------------- | ---------------------------------------------- |
-| `components/ReferenceShell.tsx`       | App-owned layout (nav, breadcrumbs, user area) |
-| `components/ReferenceHarnessPage.tsx` | Developer persona/scenario controls            |
-| `components/ReferenceOverview.tsx`    | Product-like landing page                      |
-| `users/`                              | Typed OpenAPI users resource (hooks + UI)      |
+| Path                                  | Role                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------- |
+| `components/ReferenceShell.tsx`       | App-owned layout (desktop sidebar + mobile sheet nav, breadcrumbs, user area) |
+| `components/ReferenceHarnessPage.tsx` | Developer persona/scenario controls                                           |
+| `components/ReferenceOverview.tsx`    | Product-like landing page                                                     |
+| `users/`                              | Typed OpenAPI users resource (hooks + UI)                                     |
 
 The harness (`/reference/harness`) is intentionally separate from the product journey (`/reference`,
 `/reference/users`, etc.).
