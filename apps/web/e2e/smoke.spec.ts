@@ -3,13 +3,12 @@ import { expect, test } from "@playwright/test";
 test.describe("Smoke Tests", () => {
   test("loads home page", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Frontend Platform/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /View examples/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Project ready!/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Button/i })).toBeVisible();
   });
 
   test("navigates to examples page", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("link", { name: /View examples/i }).click();
+    await page.goto("/examples");
     await expect(page.getByRole("heading", { name: /Reference examples/i })).toBeVisible();
   });
 

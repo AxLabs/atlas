@@ -94,6 +94,15 @@ import { ChartContainer } from "@atlas/ui/extended";
 
 Do not import from `packages/ui/src/**`.
 
+## Consuming primitives
+
+Use this package's Storybook stories (`pnpm storybook`) as the local canonical usage reference for
+`@atlas/ui` primitives. For shadcn/Base UI-backed primitives, preserve upstream behavior defaults
+unless the product deliberately requires an override.
+
+For Base UI `Select` where option values differ from visible labels, pass the `items` mapping on
+`Select` so `SelectValue` can resolve the selected label.
+
 ## Atlas-owned behavior (non-visual contracts)
 
 - `useTheme` / `ThemeProvider` / theme boot script — preference + `.dark` only
