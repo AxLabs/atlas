@@ -9,6 +9,7 @@ import {
   AlertTitle,
   Badge,
   Button,
+  buttonVariants,
   EmptyState,
   ErrorFallback,
   SkeletonList,
@@ -68,10 +69,10 @@ export function UserListView() {
             Retry
           </Button>
           <Can permission={permissions.users.create} grantedPermissions={sessionPermissions}>
-            <Button size="sm" render={<Link href="/reference/users/new" />}>
+            <Link href="/reference/users/new" className={buttonVariants({ size: "sm" })}>
               <Plus className="mr-2 h-4 w-4" />
               New user
-            </Button>
+            </Link>
           </Can>
           <FeatureGuard
             feature={FeatureFlags.EXAMPLE_FEATURE}
@@ -127,10 +128,10 @@ export function UserListView() {
           description="The current API scenario returned an empty list, or all users were removed."
           actions={
             <Can permission={permissions.users.create} grantedPermissions={sessionPermissions}>
-              <Button render={<Link href="/reference/users/new" />}>
+              <Link href="/reference/users/new" className={buttonVariants()}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create user
-              </Button>
+              </Link>
             </Can>
           }
         />

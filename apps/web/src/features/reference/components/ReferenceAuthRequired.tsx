@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Button, EmptyState } from "@atlas/ui";
+import { buttonVariants, EmptyState } from "@atlas/ui";
 
 export interface ReferenceAuthRequiredProps {
   title?: string;
@@ -17,7 +17,11 @@ export function ReferenceAuthRequired({
     <EmptyState
       title={title}
       description={description}
-      actions={<Button render={<Link href="/reference/harness" />}>Open harness</Button>}
+      actions={
+        <Link href="/reference/harness" className={buttonVariants()}>
+          Open harness
+        </Link>
+      }
     />
   );
 }

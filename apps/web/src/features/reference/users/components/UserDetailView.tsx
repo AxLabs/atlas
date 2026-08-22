@@ -19,6 +19,7 @@ import {
   AlertTitle,
   Badge,
   Button,
+  buttonVariants,
   Card,
   CardContent,
   CardHeader,
@@ -113,11 +114,13 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           <p className="text-muted-foreground">{user.email}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" render={<Link href="/reference/users" />}>
+          <Link href="/reference/users" className={buttonVariants({ variant: "outline" })}>
             Back to list
-          </Button>
+          </Link>
           <Can permission={permissions.users.update} grantedPermissions={sessionPermissions}>
-            <Button render={<Link href={`/reference/users/${userId}/edit`} />}>Edit</Button>
+            <Link href={`/reference/users/${userId}/edit`} className={buttonVariants()}>
+              Edit
+            </Link>
           </Can>
           <Can permission={permissions.users.delete} grantedPermissions={sessionPermissions}>
             <AlertDialog>

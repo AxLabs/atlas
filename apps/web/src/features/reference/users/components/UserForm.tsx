@@ -10,6 +10,7 @@ import {
   AlertTitle,
   applyServerFieldErrors,
   Button,
+  buttonVariants,
   Card,
   CardContent,
   CardDescription,
@@ -336,9 +337,9 @@ function UserFormShell<T extends FieldValues>({
                 <Button type="submit" disabled={!canSubmit || isPending}>
                   {isPending ? "Saving…" : submitLabel}
                 </Button>
-                <Button type="button" variant="outline" render={<Link href={cancelHref} />}>
+                <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
                   Cancel
-                </Button>
+                </Link>
               </div>
             </form>
           </Form>

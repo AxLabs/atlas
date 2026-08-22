@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Button, Skeleton } from "@atlas/ui";
+import { buttonVariants, Skeleton } from "@atlas/ui";
 
 import { useSession } from "@/lib/auth";
 
@@ -15,9 +15,15 @@ export function ReferenceUserArea() {
 
   if (status === "unauthenticated" || !user) {
     return (
-      <Button variant="outline" size="sm" render={<Link href="/reference/harness" />}>
+      <Link
+        href="/reference/harness"
+        className={buttonVariants({
+          variant: "outline",
+          size: "sm",
+        })}
+      >
         Sign in
-      </Button>
+      </Link>
     );
   }
 
@@ -26,9 +32,15 @@ export function ReferenceUserArea() {
       <span className="text-muted-foreground hidden max-w-[12rem] truncate sm:inline">
         {user.name ?? user.email}
       </span>
-      <Button variant="ghost" size="sm" render={<Link href="/reference/profile" />}>
+      <Link
+        href="/reference/profile"
+        className={buttonVariants({
+          variant: "ghost",
+          size: "sm",
+        })}
+      >
         Profile
-      </Button>
+      </Link>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 import {
   Badge,
-  Button,
+  buttonVariants,
   Card,
   CardContent,
   CardDescription,
@@ -90,7 +90,9 @@ export function ReferenceOverview() {
             <CapabilityRow label="Delete users" allowed={canDeleteUsers} />
           </ul>
           {canReadUsers ? (
-            <Button render={<Link href="/reference/users" />}>Go to users</Button>
+            <Link href="/reference/users" className={buttonVariants()}>
+              Go to users
+            </Link>
           ) : null}
         </CardContent>
       </Card>
