@@ -1,0 +1,92 @@
+"use client";
+
+import { FlaskConical, Home, Shield, UserCircle, Users } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { cn, ThemeToggle } from "@atlas/ui";
+
+import { AppBreadcrumbs } from "@/components/navigation/AppBreadcrumbs";
+
+import { ReferenceBanner } from "./ReferenceBanner";
+import { ReferenceUserArea } from "./ReferenceUserArea";
+
+const referenceRoutes = [
+  { href: "/reference", label: "Overview", icon: Home, exact: true },
+  { href: "/reference/users", label: "Users", icon: Users, exact: false },
+  { href: "/reference/profile", label: "Profile", icon: UserCircle, exact: false },
+  { href: "/reference/authorization", label: "Authorization", icon: Shield, exact: false },
+  { href: "/reference/harness", label: "Harness", icon: FlaskConical, exact: false },
+];
+
+export interface ReferenceShellProps {
+  children: React.ReactNode;
+}
+
+function isRouteActive(pathname: string, href: string, exact: boolean): boolean {
+  if (exact) {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function ReferenceShell({ children }: ReferenceShellProps) {
+  const pathname = usePathname();
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <ReferenceBanner />
+
+      <header className="bg-background border-border sticky top-0 z-50 flex items-center justify-between border-b px-4 py-3">
+        <div className="flex items-center gap-3">
+          <Link href="/reference" className="text-lg font-semibold">
+            Atlas
+          </Link>
+          <span className="text-muted-foreground hidden sm:inline">/</span>
+          <span className="text-muted-foreground hidden text-sm sm:inline">
+            Reference application
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <ReferenceUserArea />
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <div className="flex flex-1">
+        <aside className="bg-background border-border hidden w-56 shrink-0 border-r md:block">
+          <nav aria-label="Reference application" className="flex flex-col gap-1 p-4">
+            {referenceRoutes.map((route) => {
+              const Icon = route.icon;
+              const isActive = isRouteActive(pathname, route.href, route.exact);
+
+              return (
+                <Link
+                  key={route.href}
+                  href={route.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  <span>{route.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <main className="flex-1">
+          <div className="border-border bg-background/95 border-b px-4 py-2 md:px-6">
+            <AppBreadcrumbs />
+          </div>
+          <div className="p-4 md:p-6">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}

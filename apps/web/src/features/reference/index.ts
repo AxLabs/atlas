@@ -1,6 +1,11 @@
 export { AuthorizationDemoPanel } from "./components/AuthorizationDemoPanel";
+export { ReferenceAuthRequired } from "./components/ReferenceAuthRequired";
 export { ReferenceBanner } from "./components/ReferenceBanner";
+export { ReferenceHarnessPage } from "./components/ReferenceHarnessPage";
 export { ReferenceHarnessPanel } from "./components/ReferenceHarnessPanel";
-export { ReferencePageClient } from "./components/ReferencePageClient";
+export { ReferenceOverview } from "./components/ReferenceOverview";
+export { ReferenceProfileView } from "./components/ReferenceProfileView";
+export { ReferenceShell } from "./components/ReferenceShell";
+export { ReferenceUserArea } from "./components/ReferenceUserArea";
 export { referenceKeys } from "./keys";
 export { useReferenceStatus, useReferenceUserList } from "./queries";

@@ -1,37 +1,22 @@
 # Reference: OpenAPI-backed users feature
 
-**Classification:** reference implementation — safe to delete or replace.
+Canonical typed-resource pattern for Atlas — React Query hooks **and** consuming UI for the
+reference application.
 
-This module is the canonical typed-resource reference for Atlas feature architecture. It
-demonstrates how to wire OpenAPI-generated contracts into React Query hooks without UI scaffolding.
+## Hooks
 
-## What it demonstrates
+- `useUserList`, `useUser` — queries via `api.users.*` from `@/lib/api/contracts`
+- `useCreateUser`, `useUpdateUser`, `useDeleteUser` — mutations with cache invalidation
 
-- Query key factory via `createQueryKeys` (`keys.ts`)
-- Type-safe queries against `api.users.*` from `@/lib/api/contracts` (`queries.ts`)
-- Mutations with cache invalidation (`mutations.ts`)
-- Public barrel export (`index.ts`)
+## UI
 
-## What it does not demonstrate
+- `UserListView` — table with loading, empty, error, and retry states
+- `UserDetailView` — detail with permission-gated edit/delete
+- `UserForm` — create/edit with Zod, `useZodForm`, and `applyServerFieldErrors`
 
-- Page or component consumption (intentionally omitted — see #39 for the coherent reference app)
-- Authorization or permissions (#41)
-- Domain-specific validation schemas
+Routes under `app/reference/users/**` compose these components (thin pages).
 
-## When to keep vs remove
+## Scenarios
 
-| Situation                                             | Action                                             |
-| ----------------------------------------------------- | -------------------------------------------------- |
-| Forking Atlas and building your own OpenAPI consumers | Remove once you have your own feature modules      |
-| Learning Atlas data-fetching patterns                 | Keep and study; copy structure for new features    |
-| Running Atlas as-is                                   | Harmless — hooks are tree-shaken if never imported |
-
-## Regenerating types
-
-When the OpenAPI spec changes:
-
-```bash
-pnpm --filter @atlas/web api:gen
-```
-
-Generated types live in `src/lib/api/contracts/schema.ts` (machine-owned — do not edit).
+API behavior is controlled by the harness (`/reference/harness`) via the `atlas_reference_scenario`
+cookie — do not fake failure states inside components.

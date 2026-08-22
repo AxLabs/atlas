@@ -33,6 +33,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
   const { status, user, refresh } = session;
   const { data: referenceStatus, isLoading, isError, error, refetch } = useReferenceStatus();
   const [selectedScenario, setSelectedScenario] = useState<ReferenceUsersScenario>("success");
+  const [activePersona, setActivePersona] = useState<ReferenceAuthPersona>("anonymous");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const {
@@ -43,22 +44,60 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
     refetch: refetchUsers,
   } = useReferenceUserList(selectedScenario);
 
+  const currentPersona = useCallback((): ReferenceAuthPersona => {
+    if (activePersona !== "anonymous") {
+      return activePersona;
+    }
+
+    if (status !== "authenticated" || !user) {
+      return "anonymous";
+    }
+
+    if (user.email === "reference.admin@atlas.local") {
+      return "reference-admin";
+    }
+
+    return "reference-user";
+  }, [activePersona, status, user]);
+
+  const persistHarnessState = useCallback(
+    async (persona: ReferenceAuthPersona, scenario: ReferenceUsersScenario) => {
+      await apiPost("/api/reference/auth/session", {
+        persona,
+        scenario: { users: scenario },
+      });
+      await refresh();
+      await refetchUsers();
+    },
+    [refresh, refetchUsers]
+  );
+
   const setPersona = useCallback(
     async (persona: ReferenceAuthPersona) => {
       setActionMessage(null);
       try {
-        await apiPost("/api/reference/auth/session", {
-          persona,
-          scenario: { users: selectedScenario },
-        });
-        await refresh();
-        await refetchUsers();
+        await persistHarnessState(persona, selectedScenario);
+        setActivePersona(persona);
         setActionMessage(`Persona set to ${persona}`);
       } catch (error) {
         setActionMessage(error instanceof Error ? error.message : "Failed to set persona");
       }
     },
-    [refresh, refetchUsers, selectedScenario]
+    [persistHarnessState, selectedScenario]
+  );
+
+  const setScenario = useCallback(
+    async (scenario: ReferenceUsersScenario) => {
+      setActionMessage(null);
+      setSelectedScenario(scenario);
+      try {
+        await persistHarnessState(currentPersona(), scenario);
+        setActionMessage(`Scenario set to ${scenario}`);
+      } catch (error) {
+        setActionMessage(error instanceof Error ? error.message : "Failed to set scenario");
+      }
+    },
+    [currentPersona, persistHarnessState]
   );
 
   const resetReference = useCallback(async () => {
@@ -127,7 +166,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
                 key={scenario}
                 variant={selectedScenario === scenario ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedScenario(scenario as ReferenceUsersScenario)}
+                onClick={() => setScenario(scenario as ReferenceUsersScenario)}
               >
                 {scenario}
               </Button>

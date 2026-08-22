@@ -36,7 +36,7 @@ For runtime design (layers, data flow, auth sequence), see
 | `lib/auth/providers/google/session-refresh` | Google refresh orchestration for session cookies  | Reference                 | Demonstrate | Composes Google refresh with core session primitives                            |
 | `app/api/auth/google/*`                     | OAuth start/callback routes                       | Reference                 | Demonstrate | Replace with consumer's IdP routes                                              |
 | `components/reference/auth`                 | SignInButton, UserMenu, AuthGuard                 | Reference                 | Demonstrate | Not mounted; Google-specific UI for #39                                         |
-| `features/reference/users`                  | OpenAPI React Query hooks, no UI                  | Reference                 | Keep        | Canonical typed-resource pattern for future generators                          |
+| `features/reference/users`                  | OpenAPI React Query hooks + reference app UI      | Reference                 | Keep        | Canonical typed-resource pattern for future generators                          |
 | `features/examples`                         | Hooks for mock app routes                         | Reference                 | Keep        | Demonstrates app-route API pattern                                              |
 | `app/examples/**`                           | Data/form demo pages + ExamplesShell              | Reference                 | Keep        | Minimal live demos; delete when building product                                |
 | `app/api/examples/**`                       | In-memory mock APIs                               | Reference                 | Keep        | Supports examples only; delete with examples                                    |
@@ -53,7 +53,7 @@ For runtime design (layers, data flow, auth sequence), see
 | `lib/notifications`                         | Sonner wrapper + `notifyApiError`                 | Core platform             | Keep        | Toast convention integrated with i18n and ApiError                              |
 | `lib/breadcrumbs`                           | Tree builder + `useBreadcrumbs`                   | Core platform             | Keep        | Route-aware breadcrumb convention; tree is reference data                       |
 | `components/navigation/AppBreadcrumbs`      | Breadcrumb UI wired to lib                        | App-owned composition     | Keep        | Used by ExamplesShell; consumers relocate or replace                            |
-| `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; ExamplesShell owns layout                         |
+| `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; reference app owns its shell in #39               |
 | `components/errors/ErrorBoundary`           | Class error boundary                              | Removed                   | Remove      | Unused; Sentry + global-error handle failures                                   |
 | `providers/*`                               | MainProvider stack, DataProviderLayout            | App-owned composition     | Keep        | Wires platform modules; see `providers/README.md`                               |
 | `@atlas/ui`                                 | shadcn/Base UI preset + behavioral helpers        | Core platform package     | Keep        | Governed UI foundation; shadcn/Base UI visual baseline + Atlas helpers          |
@@ -77,7 +77,10 @@ Atlas is a **frontend platform template** — not a product. It owns:
    conventions without pretending to be a product.
 
 Atlas does **not** own: backend architecture, domain features, vendor choice (beyond reference
-adapters), authorization/permissions (#41), or a complete reference application (#39).
+adapters), or consumer deployment infrastructure.
+
+The coherent reference application lives under `/reference` (#39). `/examples` remains a minimal
+pattern showcase for isolated concerns (data states, forms).
 
 ---
 
@@ -85,20 +88,21 @@ adapters), authorization/permissions (#41), or a complete reference application 
 
 Reference code exists to **teach patterns**, not to ship as product functionality.
 
-| Location                                       | Demonstrates                             | Safe to delete?                |
-| ---------------------------------------------- | ---------------------------------------- | ------------------------------ |
-| `app/examples/**`                              | Data states, forms, ExamplesShell layout | Yes — when building product    |
-| `features/examples/`                           | React Query hooks against app routes     | Yes — with examples            |
-| `features/reference/users/`                    | OpenAPI typed-resource hooks             | Yes — once you have your own   |
-| `app/api/examples/**`                          | Mock in-memory APIs                      | Yes — with examples            |
-| `components/reference/auth/`                   | Google OAuth UI wiring                   | Yes — replace with your IdP UI |
-| `app/api/auth/google/**`                       | Google OAuth flow                        | Yes — replace with your IdP    |
-| `app/__flags`                                  | Feature flag dev panel                   | Yes — dev-only                 |
-| `lib/react-query/patterns.ts`                  | Mutation/query factory helpers           | Yes — optional pattern         |
-| `lib/feature-flags/adapters/posthogAdapter.ts` | PostHog flag adapter                     | Yes — if not using PostHog     |
+| Location                                       | Demonstrates                                    | Safe to delete?                |
+| ---------------------------------------------- | ----------------------------------------------- | ------------------------------ |
+| `app/examples/**`                              | Data states, forms, ExamplesShell layout        | Yes — when building product    |
+| `app/reference/**`                             | Coherent reference application + harness        | Yes — when building product    |
+| `features/examples/`                           | React Query hooks against app routes            | Yes — with examples            |
+| `features/reference/users/`                    | OpenAPI typed-resource hooks + reference app UI | Yes — once you have your own   |
+| `app/api/examples/**`                          | Mock in-memory APIs                             | Yes — with examples            |
+| `components/reference/auth/`                   | Google OAuth UI wiring                          | Yes — replace with your IdP UI |
+| `app/api/auth/google/**`                       | Google OAuth flow                               | Yes — replace with your IdP    |
+| `app/__flags`                                  | Feature flag dev panel                          | Yes — dev-only                 |
+| `lib/react-query/patterns.ts`                  | Mutation/query factory helpers                  | Yes — optional pattern         |
+| `lib/feature-flags/adapters/posthogAdapter.ts` | PostHog flag adapter                            | Yes — if not using PostHog     |
 
-A coherent end-to-end reference application will be built in #39. Until then, `/examples` and
-`features/reference/` are intentionally partial.
+The coherent reference application under `/reference` demonstrates end-to-end Atlas composition.
+`/examples` and `features/reference/` hooks remain available as isolated pattern references.
 
 ---
 
@@ -214,14 +218,13 @@ import, and UI-internal alias rules.
 
 The canonical shadcn/Base UI foundation (#42) is complete. Remaining roadmap ownership:
 
-| Issue   | Scope intentionally not in this document's implementation              |
-| ------- | ---------------------------------------------------------------------- |
-| #16     | Storybook, a11y, and visual-regression hardening                       |
-| #39     | Coherent reference application; proves reusable app-level compositions |
-| #43–#44 | Migration framework, agent workflow redesign                           |
+| Issue   | Scope intentionally not in this document's implementation |
+| ------- | --------------------------------------------------------- |
+| #16     | Storybook, a11y, and visual-regression hardening          |
+| #43–#44 | Migration framework, agent workflow redesign              |
 
-Extract reusable application compositions to shared packages only after #39 proves them in
-product-like reference surfaces — not as part of the UI foundation reset.
+Reusable application compositions should be extracted to shared packages only when proven across
+independent reference surfaces — see the #39 composition promotion audit.
 
 ---
 

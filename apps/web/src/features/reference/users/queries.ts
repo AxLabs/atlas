@@ -2,15 +2,15 @@
  * User Queries
  *
  * React Query hooks for fetching user data.
- * All queries use the typed API client and standardized error handling.
+ * Uses runtime-configured API base URL via useApiClient.
  */
 
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { api } from "@/lib/api/contracts";
 import { normalizeApiError } from "@/lib/api/errors";
+import { useApiClient } from "@/lib/api/hooks";
 
 import { userKeys } from "./keys";
 
@@ -20,39 +20,24 @@ import type { ApiError } from "@/lib/api/errors";
 type User = components["schemas"]["User"];
 type UserListResponse = components["schemas"]["UserListResponse"];
 
-/**
- * Query hook for fetching a list of users.
- *
- * Features:
- * - Pagination support
- * - Search filtering
- * - Automatic error normalization
- * - Type-safe response
- *
- * @example
- * ```tsx
- * function UserList() {
- *   const { data, error, isLoading } = useUserList({ page: 1, pageSize: 20 });
- *
- *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {getUserFacingMessage(error)}</div>;
- *
- *   return (
- *     <ul>
- *       {data.data.map(user => (
- *         <li key={user.id}>{user.name}</li>
- *       ))}
- *     </ul>
- *   );
- * }
- * ```
- */
+function buildUsersListEndpoint(params?: { page?: number; pageSize?: number; search?: string }) {
+  const searchParams = new URLSearchParams();
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  if (params?.search) searchParams.set("search", params.search);
+
+  const query = searchParams.toString();
+  return query ? `/users?${query}` : "/users";
+}
+
 export function useUserList(params?: { page?: number; pageSize?: number; search?: string }) {
+  const api = useApiClient();
+
   return useQuery<UserListResponse, ApiError>({
     queryKey: userKeys.list(params),
     queryFn: async () => {
       try {
-        return await api.users.list(params);
+        return await api.get<UserListResponse>(buildUsersListEndpoint(params));
       } catch (error) {
         throw normalizeApiError(error);
       }
@@ -60,37 +45,18 @@ export function useUserList(params?: { page?: number; pageSize?: number; search?
   });
 }
 
-/**
- * Query hook for fetching a single user by ID.
- *
- * @example
- * ```tsx
- * function UserProfile({ userId }: { userId: string }) {
- *   const { data: user, error, isLoading } = useUser(userId);
- *
- *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {getUserFacingMessage(error)}</div>;
- *   if (!user) return <div>User not found</div>;
- *
- *   return (
- *     <div>
- *       <h1>{user.name}</h1>
- *       <p>{user.email}</p>
- *     </div>
- *   );
- * }
- * ```
- */
 export function useUser(userId: string) {
+  const api = useApiClient();
+
   return useQuery<User, ApiError>({
     queryKey: userKeys.detail(userId),
     queryFn: async () => {
       try {
-        return await api.users.get(userId);
+        return await api.get<User>(`/users/${userId}`);
       } catch (error) {
         throw normalizeApiError(error);
       }
     },
-    enabled: Boolean(userId), // Only run query if userId is provided
+    enabled: Boolean(userId),
   });
 }

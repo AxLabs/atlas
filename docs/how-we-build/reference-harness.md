@@ -24,7 +24,8 @@ AUTH_SESSION_SECRET=local-reference-session-secret-32chars
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Restart the dev server, then open `/reference`.
+Restart the dev server, then open `/reference` for the application or `/reference/harness` for
+developer controls.
 
 ## Auth personas
 
@@ -43,7 +44,7 @@ without roles. The reference adapter maps profile roles to typed permissions —
 | `reference-user`  | `users.read`                                                 |
 | `reference-admin` | `users.read`, `users.create`, `users.update`, `users.delete` |
 
-Select personas via the `/reference` control panel or programmatically:
+Select personas via the `/reference/harness` control panel or programmatically:
 
 ```bash
 curl -X POST http://localhost:3000/api/reference/auth/session \
@@ -99,13 +100,14 @@ these guards.
 
 ## Architecture boundaries
 
-| Layer                    | Location                                          |
-| ------------------------ | ------------------------------------------------- |
-| Application contract     | `useSession`, `api.users.*`, OpenAPI types        |
-| Reference adapters       | `lib/reference/**`, `/api/reference/**`           |
-| Developer UI             | `/reference`, `features/reference/`               |
-| Authorization (#41)      | `lib/authz/`, reference role → permission adapter |
-| Future #39 reference app | Consumes this harness; not implemented here       |
+| Layer                    | Location                                                          |
+| ------------------------ | ----------------------------------------------------------------- |
+| Application contract     | `useSession`, `api.users.*`, OpenAPI types                        |
+| Reference adapters       | `lib/reference/**`, `/api/reference/**`                           |
+| Developer UI             | `/reference/harness`, harness components in `features/reference/` |
+| Reference application    | `/reference`, `/reference/users`, `features/reference/users` UI   |
+| Authorization (#41)      | `lib/authz/`, reference role → permission adapter                 |
+| Future #39 reference app | Consumes this harness; not implemented here                       |
 
 ## Real provider configuration
 

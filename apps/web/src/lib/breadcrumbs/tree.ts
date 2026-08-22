@@ -26,4 +26,32 @@ export const breadcrumbTree: BreadcrumbNode[] = [
       },
     ],
   },
+  {
+    segment: "reference",
+    resolver: staticResolver("Reference"),
+    children: [
+      {
+        segment: "users",
+        resolver: staticResolver("Users"),
+        children: [
+          {
+            segment: "new",
+            resolver: staticResolver("New user"),
+          },
+        ],
+      },
+      {
+        segment: "profile",
+        resolver: staticResolver("Profile"),
+      },
+      {
+        segment: "authorization",
+        resolver: staticResolver("Authorization"),
+      },
+      {
+        segment: "harness",
+        resolver: staticResolver("Harness"),
+      },
+    ],
+  },
 ];

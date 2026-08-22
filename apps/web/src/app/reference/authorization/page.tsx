@@ -35,11 +35,17 @@ export default async function ReferenceAuthorizationPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight">Authorization</h1>
+        <p className="text-muted-foreground text-sm">
+          Server-enforced permission check — direct navigation cannot bypass this gate.
+        </p>
+      </div>
       <h2 className="text-xl font-semibold">Server-protected content</h2>
       <p className="text-muted-foreground text-sm">
         You reached this page because the server verified <code>users.update</code> before
-        rendering. Direct navigation cannot bypass this check.
+        rendering.
       </p>
     </div>
   );
