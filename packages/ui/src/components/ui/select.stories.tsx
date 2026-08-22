@@ -71,11 +71,11 @@ export const MatchingValueLabels: Story = {
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectItem value="apple">Apple</SelectItem>
-          <SelectItem value="banana">Banana</SelectItem>
-          <SelectItem value="blueberry">Blueberry</SelectItem>
-          <SelectItem value="grapes">Grapes</SelectItem>
-          <SelectItem value="pineapple">Pineapple</SelectItem>
+          <SelectItem value="Apple">Apple</SelectItem>
+          <SelectItem value="Banana">Banana</SelectItem>
+          <SelectItem value="Blueberry">Blueberry</SelectItem>
+          <SelectItem value="Grapes">Grapes</SelectItem>
+          <SelectItem value="Pineapple">Pineapple</SelectItem>
         </SelectGroup>
       </SelectContent>
     </Select>
