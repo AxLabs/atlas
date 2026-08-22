@@ -1,5 +1,6 @@
 import { Button, Kbd } from "@atlas/ui";
 
+import { LandingSelect } from "@/components/LandingSelect";
 import { ThemeHotkey } from "@/components/ThemeHotkey";
 
 export default function HomePage() {
@@ -12,7 +13,10 @@ export default function HomePage() {
             <h1 className="font-medium">Project ready!</h1>
             <p>You may now add components and start building.</p>
             <p>We&apos;ve already added the button component for you.</p>
-            <Button className="mt-2">Button</Button>
+            <div className="mt-4 flex flex-col gap-4">
+              <LandingSelect />
+              <Button>Button</Button>
+            </div>
           </div>
           <div className="text-muted-foreground font-mono text-xs">
             (Press <Kbd>d</Kbd> to toggle dark mode)

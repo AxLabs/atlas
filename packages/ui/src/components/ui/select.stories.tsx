@@ -11,11 +11,24 @@ import {
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+const frameworks = [
+  { value: "next", label: "Next.js" },
+  { value: "react", label: "React" },
+  { value: "vue", label: "Vue" },
+  { value: "svelte", label: "Svelte" },
+] as const;
+
 const meta: Meta<typeof Select> = {
   title: "UI/Select",
   component: Select,
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Base UI Select primitive. Use these stories as the canonical `@atlas/ui` usage reference. Preserve upstream Base UI defaults unless the product deliberately requires an override. When option values differ from visible labels, pass `items` on `Select` so `SelectValue` can resolve the selected label.",
+      },
+    },
   },
   tags: ["autodocs"],
 };
@@ -24,6 +37,33 @@ export default meta;
 type Story = StoryObj<typeof Select>;
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Canonical composition: `items` maps values to labels, `SelectGroup` groups options, and trigger width is a layout choice—not required for positioning.",
+      },
+    },
+  },
+  render: () => (
+    <Select defaultValue="next" items={frameworks}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Select a framework" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {frameworks.map((framework) => (
+            <SelectItem key={framework.value} value={framework.value}>
+              {framework.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  ),
+};
+
+export const MatchingValueLabels: Story = {
   render: () => (
     <Select>
       <SelectTrigger className="w-45">
@@ -68,15 +108,18 @@ export const WithLabel: Story = {
   render: () => (
     <div className="grid w-full max-w-sm items-center gap-1.5">
       <Label htmlFor="framework">Framework</Label>
-      <Select>
+      <Select defaultValue="next" items={frameworks}>
         <SelectTrigger id="framework">
           <SelectValue placeholder="Select a framework" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="next">Next.js</SelectItem>
-          <SelectItem value="react">React</SelectItem>
-          <SelectItem value="vue">Vue</SelectItem>
-          <SelectItem value="svelte">Svelte</SelectItem>
+          <SelectGroup>
+            {frameworks.map((framework) => (
+              <SelectItem key={framework.value} value={framework.value}>
+                {framework.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </div>

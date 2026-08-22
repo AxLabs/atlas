@@ -165,6 +165,11 @@ CSS in `packages/ui/src/components/ui/**`; change the preset deliberately or com
 code. Canonical shadcn config is `packages/ui/components.json` — generate primitives into
 `packages/ui` only; apps consume `@atlas/ui` public exports. See `packages/ui/README.md`.
 
+- **Primitive usage** — Use `@atlas/ui` Storybook stories as the local canonical reference for
+  shadcn/Base UI primitives; preserve upstream defaults unless the product deliberately overrides.
+  See `packages/ui/README.md` for component-specific traps (e.g. `Select` `items` for value/label
+  resolution).
+
 - **Local UI state** — `useState` / `useReducer` for ephemeral UI (modals, tabs).
 - **URL-driven state** — `useSearchParams` + `useRouter` when state should be bookmarkable (see
   `/examples/data?mode=`).
