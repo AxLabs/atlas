@@ -60,7 +60,7 @@ function run(command, args, options = {}) {
 
 function resolvePlaywright() {
   const requireFromWeb = createRequire(path.join(repoRoot, "apps/web/package.json"));
-  return requireFromWeb("playwright");
+  return requireFromWeb("@playwright/test");
 }
 
 async function ensureStorybook() {
