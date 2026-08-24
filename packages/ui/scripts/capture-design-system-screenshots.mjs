@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 /**
- * Captures Design System/Atlas Storybook screenshots for PR review.
- * Usage: node scripts/capture-design-system-screenshots.mjs [outputDir]
+ * Captures Design System/Atlas Storybook screenshots for local PR review.
  *
- * Requires Storybook static build at packages/ui/storybook-static
- * or a running dev server at http://localhost:6006.
+ * Usage (from packages/ui):
+ *   pnpm build-storybook
+ *   node scripts/capture-design-system-screenshots.mjs [outputDir]
+ *
+ * Output defaults to design-system-screenshots/ (gitignored). Requires Playwright
+ * browsers from apps/web: pnpm --filter @atlas/web exec playwright install chromium
  */
 
 import { spawn } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { access, mkdir, readFile } from "node:fs/promises";
+import http from "node:http";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, "..");
+const repoRoot = path.resolve(packageRoot, "../..");
 const outputRoot = path.resolve(
   packageRoot,
   process.argv[2] ?? "design-system-screenshots"
@@ -34,7 +40,7 @@ const themes = [
 
 async function fileExists(filePath) {
   try {
-    await import("node:fs/promises").then((fs) => fs.access(filePath));
+    await access(filePath);
     return true;
   } catch {
     return false;
@@ -52,52 +58,56 @@ function run(command, args, options = {}) {
   });
 }
 
+function resolvePlaywright() {
+  const requireFromWeb = createRequire(path.join(repoRoot, "apps/web/package.json"));
+  return requireFromWeb("playwright");
+}
+
 async function ensureStorybook() {
   const staticDir = path.join(packageRoot, "storybook-static");
   if (!(await fileExists(path.join(staticDir, "index.html")))) {
-    throw new Error("Missing storybook-static build. Run pnpm build-storybook first.");
+    console.log("Building Storybook static site…");
+    await run("pnpm", ["build-storybook"], { cwd: packageRoot });
   }
 
   return { staticDir };
 }
 
+const contentTypes = {
+  ".css": "text/css",
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+};
+
 async function startStaticServer(staticDir) {
-  const port = 6011;
-  const server = await import("node:http").then((http) =>
-    http.createServer((request, response) => {
-      import("node:fs")
-        .then((fs) => fs.promises)
-        .then(async (fs) => {
-          const requestPath = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
-          const relativePath = requestPath === "/" ? "/index.html" : requestPath;
-          const filePath = path.join(staticDir, relativePath);
+  const server = http.createServer((request, response) => {
+    const requestPath = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
+    const relativePath = requestPath === "/" ? "/index.html" : requestPath;
+    const filePath = path.join(staticDir, relativePath);
 
-          try {
-            const data = await fs.readFile(filePath);
-            const ext = path.extname(filePath);
-            const contentType =
-              ext === ".html"
-                ? "text/html"
-                : ext === ".js"
-                  ? "application/javascript"
-                  : ext === ".css"
-                    ? "text/css"
-                    : ext === ".json"
-                      ? "application/json"
-                      : ext === ".svg"
-                        ? "image/svg+xml"
-                        : "application/octet-stream";
-            response.writeHead(200, { "Content-Type": contentType });
-            response.end(data);
-          } catch {
-            response.writeHead(404);
-            response.end("Not found");
-          }
-        });
-    })
-  );
+    readFile(filePath)
+      .then((data) => {
+        const ext = path.extname(filePath);
+        const contentType = contentTypes[ext] ?? "application/octet-stream";
+        response.writeHead(200, { "Content-Type": contentType });
+        response.end(data);
+      })
+      .catch(() => {
+        response.writeHead(404);
+        response.end("Not found");
+      });
+  });
 
-  await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve));
+  await new Promise((resolve, reject) => {
+    server.listen(0, "127.0.0.1", () => resolve());
+    server.on("error", reject);
+  });
+
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+
   return {
     url: `http://127.0.0.1:${port}/iframe.html`,
     close: () =>
@@ -107,66 +117,56 @@ async function startStaticServer(staticDir) {
   };
 }
 
-async function main() {
-  const playwrightCli = "pnpm";
-  const playwrightArgs = ["dlx", "playwright@1.61.0"];
-
-  const staticDir = path.join(packageRoot, "storybook-static");
-  if (!(await fileExists(path.join(staticDir, "index.html")))) {
-    console.log("Building Storybook static site…");
-    await run("pnpm", ["build-storybook"], { cwd: packageRoot });
-  }
-
-  const { staticDir: builtDir } = await ensureStorybook();
-  const server = await startStaticServer(builtDir);
-  await mkdir(outputRoot, { recursive: true });
-
-  const scriptBody = `
-const { chromium } = require('playwright');
-
-const stories = ${JSON.stringify(stories)};
-const themes = ${JSON.stringify(themes)};
-const baseUrl = ${JSON.stringify(server.url)};
-const outputRoot = ${JSON.stringify(outputRoot)};
-
-(async () => {
+async function captureScreenshots(server, playwright) {
+  const { chromium } = playwright;
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
-  for (const theme of themes) {
-    for (const story of stories) {
-      const target = \`\${baseUrl}?id=\${story.id}&viewMode=story\`;
-      await page.goto(target, { waitUntil: 'networkidle' });
-      await page.evaluate((className) => {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-        if (className) {
-          document.documentElement.classList.add(className);
-          document.body.classList.add(className);
-        }
-      }, theme.className);
-      await page.waitForSelector('[data-slot="button"], [data-slot="switch"], [data-slot="badge"], [data-slot="input"]', {
-        timeout: 10000,
-      });
-      await page.waitForTimeout(300);
-      const filePath = require('path').join(outputRoot, \`\${theme.name}-\${story.name}.png\`);
-      await page.screenshot({ path: filePath, fullPage: true });
-      console.log('Captured', filePath);
+  try {
+    for (const theme of themes) {
+      for (const story of stories) {
+        const target = `${server.url}?id=${story.id}&viewMode=story`;
+        await page.goto(target, { waitUntil: "networkidle" });
+        await page.evaluate((className) => {
+          document.documentElement.classList.remove("dark");
+          document.body.classList.remove("dark");
+          if (className) {
+            document.documentElement.classList.add(className);
+            document.body.classList.add(className);
+          }
+        }, theme.className);
+        await page.waitForSelector(
+          '[data-slot="button"], [data-slot="switch"], [data-slot="badge"], [data-slot="input"]',
+          { timeout: 10000 }
+        );
+        await page.waitForTimeout(300);
+        const filePath = path.join(outputRoot, `${theme.name}-${story.name}.png`);
+        await page.screenshot({ path: filePath, fullPage: true });
+        console.log("Captured", filePath);
+      }
     }
+  } finally {
+    await browser.close();
+  }
+}
+
+async function main() {
+  let playwright;
+  try {
+    playwright = resolvePlaywright();
+  } catch {
+    throw new Error(
+      "Playwright is not installed. Run: pnpm --filter @atlas/web exec playwright install chromium"
+    );
   }
 
-  await browser.close();
-})();
-`;
-
-  const runnerPath = path.join(packageRoot, ".tmp-capture-screenshots.cjs");
-  await import("node:fs/promises").then((fs) => fs.writeFile(runnerPath, scriptBody));
+  const { staticDir } = await ensureStorybook();
+  const server = await startStaticServer(staticDir);
+  await mkdir(outputRoot, { recursive: true });
 
   try {
-    await run(playwrightCli, [...playwrightArgs, "install", "chromium"], { cwd: packageRoot });
-    await run("node", [runnerPath], { cwd: packageRoot });
+    await captureScreenshots(server, playwright);
   } finally {
-    await import("node:fs/promises").then((fs) => fs.unlink(runnerPath).catch(() => {}));
     await server.close();
   }
 

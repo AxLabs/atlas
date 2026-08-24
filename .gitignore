@@ -30,6 +30,7 @@ apps/web/.next/analyze
 dist
 build
 storybook-static
+packages/ui/design-system-screenshots
 
 # Misc
 .DS_Store

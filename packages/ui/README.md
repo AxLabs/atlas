@@ -139,3 +139,16 @@ pnpm --filter @atlas/ui build-storybook
 
 Storybook uses the same Inter + Vega baseline as the app
 (`packages/ui/.storybook/preview-head.html`).
+
+### Design system screenshots (local review)
+
+Generated PNGs are not committed. To capture light/dark screenshots of the Atlas design-system
+stories for PR review:
+
+```bash
+pnpm --filter @atlas/ui build-storybook
+pnpm --filter @atlas/web exec playwright install chromium
+node packages/ui/scripts/capture-design-system-screenshots.mjs
+```
+
+Output is written to `packages/ui/design-system-screenshots/` (gitignored).
