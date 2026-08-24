@@ -191,7 +191,7 @@ than importing application internals directly from `apps/web`.
 **Risk:** Shared template conventions can drift between the starter and reference application.
 
 This PR does **not** extract a shared `@atlas/app-core` package. Synchronization strategy is tracked
-as follow-up work — see the repository issue tracker.
+in [#57](https://github.com/blitzcraftlabs/atlas/issues/57).
 
 ---
 
