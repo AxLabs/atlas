@@ -29,6 +29,12 @@ describe("Badge", () => {
   it("supports destructive variant", () => {
     const { container } = render(<Badge variant="destructive">Error</Badge>);
     const badge = container.querySelector('[data-slot="badge"]');
-    expect(badge).toHaveClass("text-destructive");
+    expect(badge).toHaveClass("text-control-destructive-foreground");
+  });
+
+  it("supports semantic success variant", () => {
+    const { container } = render(<Badge variant="success">Active</Badge>);
+    const badge = container.querySelector('[data-slot="badge"]');
+    expect(badge).toHaveClass("text-success-foreground");
   });
 });
