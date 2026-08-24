@@ -6,6 +6,8 @@
 
 "use client";
 
+import { Alert, AlertDescription, AlertTitle } from "@atlas/ui";
+
 import { useReferenceStatus } from "../queries";
 
 export function ReferenceBanner() {
@@ -16,15 +18,12 @@ export function ReferenceBanner() {
   }
 
   return (
-    <div
-      role="status"
-      className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-    >
-      <p className="font-medium">Reference mode active</p>
-      <p className="mt-1 text-amber-900">
+    <Alert role="status" className="rounded-none border-x-0 border-t-0">
+      <AlertTitle>Reference mode active</AlertTitle>
+      <AlertDescription>
         {data.disclosure ??
           "Deterministic local fixtures — not production OAuth or API security evidence."}
-      </p>
-    </div>
+      </AlertDescription>
+    </Alert>
   );
 }

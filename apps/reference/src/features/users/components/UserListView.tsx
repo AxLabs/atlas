@@ -29,6 +29,7 @@ import { FeatureFlags, FeatureGuard } from "@/lib/feature-flags";
 import { notify } from "@/lib/notifications";
 
 import { ReferenceAuthRequired } from "../../components/ReferenceAuthRequired";
+import { ReferenceLoadingState } from "../../components/ReferenceLoadingState";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -44,7 +45,7 @@ export function UserListView() {
   const { data, error, isLoading, isError, isFetching, refetch } = useUserList();
 
   if (status === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading session…</p>;
+    return <ReferenceLoadingState />;
   }
 
   if (status === "unauthenticated") {

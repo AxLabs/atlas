@@ -3,6 +3,7 @@ export { ReferenceAuthRequired } from "./components/ReferenceAuthRequired";
 export { ReferenceBanner } from "./components/ReferenceBanner";
 export { ReferenceHarnessPage } from "./components/ReferenceHarnessPage";
 export { ReferenceHarnessPanel } from "./components/ReferenceHarnessPanel";
+export { ReferenceLoadingState } from "./components/ReferenceLoadingState";
 export { ReferenceOverview } from "./components/ReferenceOverview";
 export { ReferenceProfileView } from "./components/ReferenceProfileView";
 export { ReferenceShell } from "./components/ReferenceShell";

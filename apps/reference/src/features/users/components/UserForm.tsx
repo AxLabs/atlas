@@ -46,6 +46,7 @@ import { hasClientPermission, permissions } from "@/lib/authz";
 import { notify } from "@/lib/notifications";
 
 import { ReferenceAuthRequired } from "../../components/ReferenceAuthRequired";
+import { ReferenceLoadingState } from "../../components/ReferenceLoadingState";
 
 import type { Control, FieldValues, Path, SubmitHandler, UseFormReturn } from "react-hook-form";
 
@@ -77,7 +78,7 @@ function CreateUserForm() {
   });
 
   if (session.status === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <ReferenceLoadingState label="Loading" />;
   }
 
   if (session.status === "unauthenticated") {
@@ -176,7 +177,7 @@ function EditUserForm({ userId }: { userId: string }) {
   }, [existingUser, form]);
 
   if (session.status === "loading" || userLoading) {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <ReferenceLoadingState label="Loading" />;
   }
 
   if (session.status === "unauthenticated") {

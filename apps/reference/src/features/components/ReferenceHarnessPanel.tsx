@@ -20,6 +20,8 @@ import { apiPost } from "@/lib/api";
 
 import { useReferenceStatus, useReferenceUserList } from "../queries";
 
+import { ReferenceLoadingState } from "./ReferenceLoadingState";
+
 import type { UseSessionReturn } from "@/lib/auth";
 import type { ReferenceAuthPersona, ReferenceUsersScenario } from "@/lib/reference/scenario-types";
 
@@ -112,7 +114,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
   }, [refetchUsers]);
 
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Loading reference status…</p>;
+    return <ReferenceLoadingState label="Loading reference status" />;
   }
 
   if (isError) {
@@ -173,7 +175,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
             ))}
           </div>
 
-          {usersLoading && <p className="text-muted-foreground text-sm">Loading users…</p>}
+          {usersLoading ? <ReferenceLoadingState label="Loading users" /> : null}
           {!usersLoading && usersError && (
             <ErrorFallback
               title="Users request failed"

@@ -19,6 +19,7 @@ import { hasClientPermission, permissions } from "@/lib/authz";
 
 import { ReferenceAuthRequired } from "./ReferenceAuthRequired";
 import { ReferenceFeatureFlagDemo } from "./ReferenceFeatureFlagDemo";
+import { ReferenceLoadingState } from "./ReferenceLoadingState";
 import { ReferenceObservabilityDemo } from "./ReferenceObservabilityDemo";
 
 export function ReferenceOverview() {
@@ -31,7 +32,7 @@ export function ReferenceOverview() {
   }, []);
 
   if (status === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading session…</p>;
+    return <ReferenceLoadingState />;
   }
 
   if (status === "unauthenticated" || !user) {

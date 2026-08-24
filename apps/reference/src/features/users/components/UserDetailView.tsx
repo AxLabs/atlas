@@ -37,6 +37,7 @@ import { notify, notifyApiError } from "@/lib/notifications";
 import { PROTECTED_REFERENCE_USER_ID } from "@/lib/reference/auth/personas";
 
 import { ReferenceAuthRequired } from "../../components/ReferenceAuthRequired";
+import { ReferenceLoadingState } from "../../components/ReferenceLoadingState";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
@@ -70,7 +71,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   }, [deleteUser, router, userId]);
 
   if (status === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading session…</p>;
+    return <ReferenceLoadingState />;
   }
 
   if (status === "unauthenticated") {

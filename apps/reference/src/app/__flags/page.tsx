@@ -18,6 +18,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  InlineLoader,
   Switch,
   Table,
   TableBody,
@@ -155,8 +156,8 @@ export default function FeatureFlagsDevPanel() {
 
   if (!mounted) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <InlineLoader label="Loading feature flags" />
       </div>
     );
   }

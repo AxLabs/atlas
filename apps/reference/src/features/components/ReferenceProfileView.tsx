@@ -3,6 +3,7 @@
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@atlas/ui";
 
 import { ReferenceAuthRequired } from "@/features/components/ReferenceAuthRequired";
+import { ReferenceLoadingState } from "@/features/components/ReferenceLoadingState";
 import { useSession } from "@/lib/auth";
 import { hasClientPermission, permissions } from "@/lib/authz";
 
@@ -10,7 +11,7 @@ export function ReferenceProfileView() {
   const { status, user, provider, principalId, permissions: sessionPermissions } = useSession();
 
   if (status === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading session…</p>;
+    return <ReferenceLoadingState />;
   }
 
   if (status === "unauthenticated" || !user) {
