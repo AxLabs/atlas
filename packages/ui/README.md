@@ -1,7 +1,8 @@
 # @atlas/ui
 
-Atlas UI foundation — a governed boundary around a reproducible stock shadcn Base UI preset. Atlas
-ships architecture and behavioral helpers; shadcn owns the visual baseline.
+Atlas UI foundation — a governed design system built on shadcn Base UI primitives with Atlas
+semantic tokens. Atlas ships architecture, behavioral helpers, and a refined visual identity;
+component APIs remain shadcn-compatible.
 
 ## Locked shadcn preset
 
@@ -39,7 +40,25 @@ Create URL: https://ui.shadcn.com/create?preset=bJzBPQGZc
 | Ergonomic compositions (`EmptyState`, `ErrorFallback`, `SkeletonList`, `Loader`) | Navigation wiring          |
 | Theme preference + FOUC boot script                                              | Reference examples         |
 
-Atlas differentiation lives in **architecture and conventions**, not in a competing design system.
+Atlas differentiation lives in **architecture, semantic tokens, and conventions** — not in forking
+component APIs.
+
+## Design system tokens
+
+Visual styling flows through semantic tokens defined in `packages/ui/src/styles/globals.css`:
+
+```text
+foundation tokens (:root / .dark)
+      ↓
+Atlas semantic tokens (--control-*, --surface-*, --border-*, --focus-ring, status colors)
+      ↓
+component variants (CVA + shared control-styles)
+      ↓
+application UI
+```
+
+Retheme Atlas primarily by changing semantic tokens. Shared control geometry and focus treatment
+live in `packages/ui/src/lib/control-styles.ts`.
 
 ## shadcn configuration
 
@@ -62,9 +81,9 @@ pnpm dlx shadcn@latest add dialog -c packages/ui --diff
 After regenerating primitives, convert any new `@/` package-internal imports to relative paths
 before committing. The app TypeScript config must not alias into `packages/ui/src`.
 
-**Rule:** For upstream-derived primitives, shadcn-generated styling wins. Do not casually patch
-padding, radii, colors, or focus rings in `packages/ui/src/components/ui/**`. Change the preset
-deliberately, or compose in application code.
+**Rule:** For upstream-derived primitives, preserve component semantics and APIs. Visual changes
+should flow through semantic tokens and shared control styles — not scattered per-component hex
+values. Change the preset or tokens deliberately, or compose in application code.
 
 ### Troubleshooting stale theme output
 
@@ -120,3 +139,16 @@ pnpm --filter @atlas/ui build-storybook
 
 Storybook uses the same Inter + Vega baseline as the app
 (`packages/ui/.storybook/preview-head.html`).
+
+### Design system screenshots (local review)
+
+Generated PNGs are not committed. To capture light/dark screenshots of the Atlas design-system
+stories for PR review:
+
+```bash
+pnpm --filter @atlas/ui build-storybook
+pnpm --filter @atlas/web exec playwright install chromium
+node packages/ui/scripts/capture-design-system-screenshots.mjs
+```
+
+Output is written to `packages/ui/design-system-screenshots/` (gitignored).

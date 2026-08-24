@@ -3,6 +3,11 @@
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 import { CheckIcon } from "lucide-react";
 
+import {
+  interactiveDisabledClasses,
+  interactiveFocusClasses,
+  interactiveInvalidClasses,
+} from "../../lib/control-styles";
 import { cn } from "../../lib/utils";
 
 function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
@@ -10,7 +15,10 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        "peer border-input group-has-[:focus-visible]/field-label:not-data-checked:border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-invalid:aria-checked:border-primary dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground group-has-[:focus-visible]/field-label:data-checked:border-primary dark:data-checked:bg-primary relative flex size-4 shrink-0 items-center justify-center rounded-[4px] border shadow-xs transition-shadow outline-none group-has-disabled/field:opacity-50 group-has-[:focus-visible]/field-label:ring-0 after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3",
+        "peer border-control-border bg-control-background shadow-control group-has-[:focus-visible]/field-label:not-data-checked:border-control-border group-has-[:focus-visible]/field-label:data-checked:border-control-primary-border data-checked:border-control-primary-border data-checked:bg-control-primary-background data-checked:text-control-primary-foreground relative flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-[color,box-shadow,background-color,border-color] group-has-disabled/field:opacity-50 group-has-[:focus-visible]/field-label:ring-0 after:absolute after:-inset-x-3 after:-inset-y-2",
+        interactiveFocusClasses,
+        interactiveDisabledClasses,
+        interactiveInvalidClasses,
         className
       )}
       {...props}

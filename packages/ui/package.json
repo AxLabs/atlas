@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Atlas UI foundation — governed shadcn Base UI preset boundary",
+  "description": "Atlas design system built on shadcn Base UI primitives",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "sideEffects": false,
