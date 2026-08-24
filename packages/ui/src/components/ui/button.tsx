@@ -10,7 +10,7 @@ import { cn } from "../../lib/utils";
 
 const buttonVariants = cva(
   cn(
-    "group/button inline-flex shrink-0 items-center justify-center rounded-md bg-clip-padding text-sm font-medium whitespace-nowrap shadow-control transition-[color,box-shadow,background-color,border-color] select-none active:not-aria-[haspopup]:translate-y-px",
+    "group/button inline-flex shrink-0 items-center justify-center rounded-control bg-clip-padding text-sm font-medium whitespace-nowrap shadow-control transition-[color,box-shadow,background-color,border-color] select-none active:not-aria-[haspopup]:translate-y-px",
     interactiveFocusClasses,
     interactiveDisabledClasses,
     interactiveInvalidClasses,
@@ -22,9 +22,9 @@ const buttonVariants = cva(
         default:
           "border border-control-primary-border bg-control-primary-background text-control-primary-foreground hover:bg-control-primary-background-hover active:bg-control-primary-background-active",
         secondary:
-          "border border-control-border bg-control-background text-control-foreground hover:border-control-border-hover hover:bg-control-background-hover active:bg-control-background-active aria-expanded:bg-control-background-hover",
+          "border border-control-secondary-border bg-control-secondary-background text-control-foreground hover:border-control-secondary-border hover:bg-control-secondary-background-hover active:bg-control-secondary-background-active aria-expanded:bg-control-secondary-background-hover",
         outline:
-          "border border-control-border bg-control-background text-control-foreground hover:border-control-border-hover hover:bg-control-background-hover active:bg-control-background-active aria-expanded:bg-control-background-hover",
+          "border border-control-border bg-control-outline-background text-control-foreground shadow-none hover:border-control-border-hover hover:bg-control-outline-background-hover active:bg-control-outline-background-active aria-expanded:bg-control-outline-background-hover",
         ghost:
           "border border-transparent text-control-foreground shadow-none hover:bg-control-background-hover active:bg-control-background-active aria-expanded:bg-control-background-hover",
         destructive:

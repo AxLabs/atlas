@@ -36,5 +36,17 @@ describe("Badge", () => {
     const { container } = render(<Badge variant="success">Active</Badge>);
     const badge = container.querySelector('[data-slot="badge"]');
     expect(badge).toHaveClass("text-success-foreground");
+    expect(badge).toHaveClass("border-transparent");
+  });
+
+  it("uses borderless semantic status variants", () => {
+    const variants = ["success", "warning", "info"] as const;
+
+    for (const variant of variants) {
+      const { container, unmount } = render(<Badge variant={variant}>Status</Badge>);
+      const badge = container.querySelector('[data-slot="badge"]');
+      expect(badge).toHaveClass("border-transparent");
+      unmount();
+    }
   });
 });

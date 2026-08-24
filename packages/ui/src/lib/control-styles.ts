@@ -4,7 +4,8 @@ import { cn } from "./utils";
  * Shared geometry and interaction classes for Atlas form controls.
  * Components reference semantic tokens — not arbitrary color values.
  */
-export const controlGeometryClasses = "h-9 w-full min-w-0 rounded-md px-2.5 text-sm md:text-sm";
+export const controlGeometryClasses =
+  "h-9 w-full min-w-0 rounded-control px-2.5 text-sm md:text-sm";
 
 export const controlSurfaceClasses =
   "border border-control-border bg-control-background text-control-foreground shadow-control transition-[color,box-shadow,background-color,border-color] outline-none hover:border-control-border-hover hover:bg-control-background-hover";

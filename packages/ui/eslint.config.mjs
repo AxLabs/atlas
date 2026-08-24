@@ -65,6 +65,20 @@ export default [
     },
   },
   {
+    files: ["scripts/**/*.mjs", "scripts/**/*.js"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+      },
+    },
+    rules: {
+      "no-console": "off",
+      "promise/no-nesting": "off",
+    },
+  },
+  {
     files: [".storybook/**/*.ts", ".storybook/**/*.js"],
     languageOptions: {
       parser: tseslint.parser,

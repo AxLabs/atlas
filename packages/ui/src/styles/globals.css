@@ -66,6 +66,17 @@
   --color-control-destructive-background-active: var(--control-destructive-background-active);
   --color-control-destructive-foreground: var(--control-destructive-foreground);
   --color-control-destructive-border: var(--control-destructive-border);
+  --color-control-secondary-background: var(--control-secondary-background);
+  --color-control-secondary-background-hover: var(--control-secondary-background-hover);
+  --color-control-secondary-background-active: var(--control-secondary-background-active);
+  --color-control-secondary-border: var(--control-secondary-border);
+  --color-control-outline-background: var(--control-outline-background);
+  --color-control-outline-background-hover: var(--control-outline-background-hover);
+  --color-control-outline-background-active: var(--control-outline-background-active);
+  --color-switch-track: var(--switch-track);
+  --color-switch-track-checked: var(--switch-track-checked);
+  --color-switch-thumb: var(--switch-thumb);
+  --color-switch-thumb-border: var(--switch-thumb-border);
   --color-surface-background: var(--surface-background);
   --color-surface-raised: var(--surface-raised);
   --color-surface-overlay: var(--surface-overlay);
@@ -83,6 +94,7 @@
   --color-info-foreground: var(--info-foreground);
   --color-info-subtle: var(--info-subtle);
   --shadow-control: var(--control-shadow);
+  --radius-control: var(--control-radius);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -117,7 +129,8 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.5rem;
+  --radius: 0.625rem;
+  --control-radius: calc(var(--radius) * 0.64);
   --sidebar: oklch(0.985 0.002 286);
   --sidebar-foreground: oklch(0.22 0.01 286);
   --sidebar-primary: oklch(0.46 0.17 264);
@@ -148,6 +161,20 @@
   --control-destructive-background-active: oklch(0.91 0.06 27);
   --control-destructive-foreground: oklch(0.48 0.18 27);
   --control-destructive-border: oklch(0.88 0.05 27);
+
+  --control-secondary-background: var(--muted);
+  --control-secondary-background-hover: oklch(0.955 0.005 286);
+  --control-secondary-background-active: oklch(0.945 0.006 286);
+  --control-secondary-border: oklch(0.885 0.008 286);
+
+  --control-outline-background: transparent;
+  --control-outline-background-hover: oklch(0.975 0.004 286);
+  --control-outline-background-active: oklch(0.965 0.005 286);
+
+  --switch-track: oklch(0.87 0.01 286);
+  --switch-track-checked: var(--control-primary-background);
+  --switch-thumb: oklch(1 0 0);
+  --switch-thumb-border: oklch(0.84 0.01 286);
 
   /* Atlas semantic — surfaces & borders */
   --surface-background: var(--background);
@@ -225,6 +252,20 @@
   --control-destructive-background-active: oklch(0.35 0.1 27);
   --control-destructive-foreground: oklch(0.72 0.16 27);
   --control-destructive-border: oklch(0.35 0.08 27);
+
+  --control-secondary-background: var(--muted);
+  --control-secondary-background-hover: oklch(0.28 0.01 286);
+  --control-secondary-background-active: oklch(0.32 0.012 286);
+  --control-secondary-border: oklch(1 0 0 / 12%);
+
+  --control-outline-background: transparent;
+  --control-outline-background-hover: oklch(0.22 0.008 286);
+  --control-outline-background-active: oklch(0.26 0.01 286);
+
+  --switch-track: oklch(0.34 0.012 286);
+  --switch-track-checked: var(--control-primary-background);
+  --switch-thumb: oklch(0.94 0.005 286);
+  --switch-thumb-border: oklch(1 0 0 / 14%);
 
   /* Atlas semantic — surfaces & borders */
   --surface-background: var(--background);

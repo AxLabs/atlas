@@ -34,7 +34,7 @@ export const PageHeaderActions: Story = {
             <ArrowLeft data-icon="inline-start" />
             Back to list
           </Button>
-          <Button variant="secondary">
+          <Button>
             <Pencil data-icon="inline-start" />
             Edit
           </Button>
@@ -184,6 +184,96 @@ export const BadgeVariants: Story = {
       <Badge variant="success">Success</Badge>
       <Badge variant="warning">Warning</Badge>
       <Badge variant="info">Info</Badge>
+    </div>
+  ),
+};
+
+export const SwitchStates: Story = {
+  render: () => (
+    <div className="flex flex-col gap-6 p-8">
+      <div className="flex items-center gap-6">
+        <div className="flex flex-col items-center gap-2">
+          <Switch aria-label="Unchecked switch" />
+          <span className="text-muted-foreground text-xs">Unchecked</span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Switch defaultChecked aria-label="Checked switch" />
+          <span className="text-muted-foreground text-xs">Checked</span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Switch disabled aria-label="Disabled switch" />
+          <span className="text-muted-foreground text-xs">Disabled</span>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const ControlStates: Story = {
+  render: () => (
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6 p-8">
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          Text inputs
+        </p>
+        <Input placeholder="Default input" />
+        <Input placeholder="Invalid input" aria-invalid defaultValue="bad@" />
+        <Input placeholder="Disabled input" disabled />
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Select</p>
+        <Select defaultValue="active">
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          Checkbox
+        </p>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Checkbox id="ds-unchecked" aria-label="Unchecked" />
+            <label className="text-sm" htmlFor="ds-unchecked">
+              Unchecked
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox id="ds-checked" defaultChecked aria-label="Checked" />
+            <label className="text-sm" htmlFor="ds-checked">
+              Checked
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Switch</p>
+        <div className="flex items-center gap-6">
+          <Switch aria-label="Switch unchecked" />
+          <Switch defaultChecked aria-label="Switch checked" />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Badges</p>
+        <div className="flex flex-wrap gap-2">
+          <Badge>Default</Badge>
+          <Badge variant="secondary">Secondary</Badge>
+          <Badge variant="outline">Outline</Badge>
+          <Badge variant="success">Success</Badge>
+          <Badge variant="warning">Warning</Badge>
+          <Badge variant="info">Info</Badge>
+          <Badge variant="destructive">Destructive</Badge>
+        </div>
+      </div>
     </div>
   ),
 };

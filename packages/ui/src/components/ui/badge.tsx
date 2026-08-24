@@ -7,7 +7,7 @@ import { cn } from "../../lib/utils";
 
 const badgeVariants = cva(
   cn(
-    "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow,background-color,border-color] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:pointer-events-none [&>svg]:size-3!",
+    "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-control border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow,background-color,border-color] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:pointer-events-none [&>svg]:size-3!",
     interactiveFocusClasses,
     "aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/30"
   ),
@@ -25,10 +25,10 @@ const badgeVariants = cva(
         ghost: "text-control-foreground [a]:hover:bg-control-background-hover",
         link: "text-primary underline-offset-4 [a]:hover:underline",
         success:
-          "border-success-subtle bg-success-subtle text-success-foreground [a]:hover:opacity-90",
+          "border-transparent bg-success-subtle text-success-foreground [a]:hover:opacity-90",
         warning:
-          "border-warning-subtle bg-warning-subtle text-warning-foreground [a]:hover:opacity-90",
-        info: "border-info-subtle bg-info-subtle text-info-foreground [a]:hover:opacity-90",
+          "border-transparent bg-warning-subtle text-warning-foreground [a]:hover:opacity-90",
+        info: "border-transparent bg-info-subtle text-info-foreground [a]:hover:opacity-90",
       },
     },
     defaultVariants: {
