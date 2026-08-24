@@ -11,8 +11,8 @@ Atlas is a complete frontend platform template. When you run it, you get:
 - A Next.js application with TypeScript strict mode
 - A shared UI component library (`packages/ui`)
 - Configured tooling (linting, testing, type checking)
-- Minimal reference examples under `/examples`
-- Optional zero-credential reference harness at `/reference` (see below)
+- A **starter application** (`apps/web`) with minimal `/examples` pattern pages
+- A separate **reference application** (`apps/reference`) that demonstrates a finished Atlas product
 
 ---
 
@@ -26,63 +26,59 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for access and setup expectations.
 
 ---
 
-## First Launch
+## Starter workflow
+
+`apps/web` is the clean consumer starting point. It contains only the removable `/examples` pattern
+pages — use it when you want to build your own product on Atlas.
 
 ```bash
-corepack enable
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
-pnpm validate:env
-pnpm dev
+pnpm --filter @atlas/web dev
 ```
 
-The application launches at `http://localhost:3000`.
+The starter launches at `http://localhost:3000`.
+
+The default `.env.local` copy runs `/examples` with same-origin mock APIs under `/api/examples/*` —
+no OAuth setup required.
 
 ---
 
-## Local evaluation paths
+## Reference application workflow
 
-Atlas supports two local workflows. Pick the one that matches your goal.
+The reference application provides the complete zero-credential evaluation journey:
 
-### Zero-credential reference harness (recommended for first evaluation)
+- `anonymous`
+- `reference-user`
+- `reference-admin`
 
-No Google OAuth credentials and no external backend are required. The harness uses deterministic
-reference fixtures for auth and API responses — development and reference only, **not** evidence of
-production OAuth or API security.
-
-Add to `apps/web/.env.local`:
+plus deterministic API scenarios.
 
 ```bash
-ATLAS_REFERENCE_MODE=true
-NEXT_PUBLIC_API_URL=/api/reference
-AUTH_SESSION_SECRET=local-reference-session-secret-32chars
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+cp apps/reference/.env.example apps/reference/.env.local
+pnpm --filter @atlas/reference dev
 ```
 
-Then:
+The reference application launches at `http://localhost:3001`.
 
-```text
-pnpm dev
-→ open /reference
-→ select anonymous / reference-user / reference-admin
-→ select deterministic API scenarios
-```
+Developer harness: `http://localhost:3001/harness`
+
+Use the harness to switch personas and API scenarios without Google OAuth or an external backend.
+Development and reference only — **not** evidence of production OAuth or API security.
 
 See [Reference harness](../how-we-build/reference-harness.md) for personas, scenarios, reset, and
 test helpers.
 
-### Real Google OAuth and external API
+---
 
-For production-like auth, configure Google OAuth credentials and point `NEXT_PUBLIC_API_URL` at your
-backend. This path is separate from the reference harness.
+## Real Google OAuth and external API
+
+For production-like auth in your product, configure Google OAuth credentials and point
+`NEXT_PUBLIC_API_URL` at your backend. OAuth routes live under `/api/auth/google/*` in the starter
+when wired in.
 
 See the canonical [environment variables](../how-we-build/env.md) guide (OAuth profile) and
 [ADR 0004: Google OAuth with PKCE](../adr/0004-oauth-google-pkce.md).
-
-### Examples-only template (default `.env.example`)
-
-The default `.env.local` copy runs `/examples` with in-memory mock APIs — no reference harness and
-no OAuth setup required.
 
 ---
 
@@ -94,7 +90,7 @@ Landing page with a link to **View examples** and platform overview copy.
 
 ### Examples (`/examples`)
 
-Small reference section included in the template:
+Small reference section included in the starter template:
 
 | Route            | What it demonstrates                      |
 | ---------------- | ----------------------------------------- |
@@ -125,8 +121,8 @@ Force UI states via query param on the data example:
 
 ## What comes next
 
-1. Enable the [reference harness](../how-we-build/reference-harness.md) or explore `/examples` to
-   see platform patterns in code
+1. Run `apps/web` if you want the starter, or `apps/reference` if you want to inspect a finished
+   Atlas application
 2. Read [Architecture](architecture.md) for the system mental model
 3. Delete `app/examples/`, `features/examples/`, and `api/examples/` when you start your product
 4. Add features under `apps/web/src/features/` following `apps/reference/src/features/users/` for

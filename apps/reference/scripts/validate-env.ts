@@ -126,14 +126,14 @@ function displayHelp(nodeEnv: string) {
     `\n${colors.bold}${colors.yellow}Missing or invalid environment variables detected.${colors.reset}`
   );
   console.log(`\n${colors.cyan}To fix this:${colors.reset}`);
-  console.log(`  1. Create a .env.local file in apps/web/ (copy from .env.example)`);
+  console.log(`  1. Create apps/reference/.env.local (copy from apps/reference/.env.example)`);
   console.log(`  2. Set required environment variables for your workflow`);
   console.log(`  3. Run this validation script again\n`);
 
   if (nodeEnv !== "production") {
-    console.log(`${colors.cyan}Frontend demo minimum:${colors.reset}`);
+    console.log(`${colors.cyan}Reference application minimum:${colors.reset}`);
     console.log(`  - NEXT_PUBLIC_API_URL (defaults to /api in schema)`);
-    console.log(`  - DATABASE_URL is optional for /examples and mocked API routes\n`);
+    console.log(`  - DATABASE_URL is optional for local reference development\n`);
   }
 
   if (process.env.CI) {
