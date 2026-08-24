@@ -170,11 +170,11 @@ await requireResourcePermission(permissions.users.update, {
 | Signed in, missing global permission       | 403  | `PermissionDeniedError`       |
 | Signed in, global OK, resource policy deny | 403  | `PermissionDeniedError`       |
 
-Protected surfaces in the reference harness:
+Protected surfaces in the reference application (`apps/reference`):
 
-- `/api/reference/users` — CRUD with permission checks
-- `/api/reference/users/[userId]` PATCH — resource-aware update guard
-- `/reference/authorization` — server component guarded by `users.update`
+- `/api/users` — CRUD with permission checks
+- `/api/users/[userId]` PATCH — resource-aware update guard
+- `/authorization` — server component guarded by `users.update`
 
 ## Resource policy seam
 

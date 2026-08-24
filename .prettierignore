@@ -16,6 +16,7 @@ playwright-report
 test-results
 .contentlayer
 apps/web/src/lib/api/contracts/schema.ts
+apps/reference/src/lib/api/contracts/schema.ts
 
 # Environment
 .env

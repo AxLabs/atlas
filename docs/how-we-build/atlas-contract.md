@@ -119,15 +119,15 @@ This installation supports contract schema version 1.
 | `schemaVersion`            | Contract compatibility                            | required                                   |
 | `application.root`         | Locate the Atlas app                              | `apps/web`                                 |
 | `features.product`         | Product feature generator target                  | `apps/web/src/features`                    |
-| `features.reference`       | Reference hook patterns                           | `apps/web/src/features/reference`          |
+| `features.reference`       | Reference application feature root                | `apps/reference/src/features`              |
 | `features.examples`        | Example hook patterns                             | `apps/web/src/features/examples`           |
-| `reference.components`     | Reference UI patterns                             | `apps/web/src/components/reference`        |
-| `reference.routes`         | Example App Router pages                          | `apps/web/src/app/examples`                |
+| `reference.components`     | Reference UI patterns                             | `apps/reference/src/features/components`   |
+| `reference.routes`         | Reference App Router pages                        | `apps/reference/src/app`                   |
 | `ui.package`               | Shared UI public import                           | `@atlas/ui`                                |
 | `ui.path`                  | Workspace package path                            | `packages/ui`                              |
 | `ui.sourceImports`         | App must not import package internals             | `false`                                    |
 | `generated.openApi.spec`   | OpenAPI source spec                               | `openapi/openapi.json`                     |
-| `generated.openApi.schema` | Machine-owned generated types                     | `apps/web/src/lib/api/contracts/schema.ts` |
+| `generated.openApi.schema` | Machine-owned generated types (starter canonical) | `apps/web/src/lib/api/contracts/schema.ts` |
 | `capabilities.*`           | Optional platform modules enabled in this project | see below                                  |
 | `boundaries.*`             | Architectural facts tooling should understand     | see below                                  |
 
@@ -147,6 +147,20 @@ architectural module exists in this project, not that future tooling (#36–#38)
 | `observability` | Sentry + web vitals telemetry conventions     |
 
 Authorization/permissions (#41) is intentionally **not** represented yet.
+
+### OpenAPI generated schema (schema v1)
+
+`generated.openApi.schema` points at the **starter** application's generated types
+(`apps/web/src/lib/api/contracts/schema.ts`). This is the canonical Atlas project-contract artifact
+for tooling that reads a single schema path.
+
+`apps/reference` owns a second generated copy at `apps/reference/src/lib/api/contracts/schema.ts`
+because it is an independent consumer application. Both copies are generated from the same
+`openapi/openapi.json` via root `pnpm api:gen`. CI runs `pnpm api:check` to ensure both stay
+synchronized with the spec.
+
+Generalizing the contract to multiple generated schema paths is deferred — see the repository issue
+tracker for follow-up work.
 
 ### Boundaries
 
@@ -184,7 +198,7 @@ Architectural facts for generators, Doctor, and agents — not ESLint rule imple
   "features": {
     "examples": "apps/web/src/features/examples",
     "product": "apps/web/src/features",
-    "reference": "apps/web/src/features/reference"
+    "reference": "apps/reference/src/features"
   },
   "generated": {
     "openApi": {
@@ -193,8 +207,8 @@ Architectural facts for generators, Doctor, and agents — not ESLint rule imple
     }
   },
   "reference": {
-    "components": "apps/web/src/components/reference",
-    "routes": "apps/web/src/app/examples"
+    "components": "apps/reference/src/features/components",
+    "routes": "apps/reference/src/app"
   },
   "schemaVersion": 1,
   "ui": {

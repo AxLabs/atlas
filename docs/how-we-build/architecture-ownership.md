@@ -13,35 +13,64 @@ For runtime design (layers, data flow, auth sequence), see
 
 ## Classification model
 
-| Classification         | Meaning                                                 | Consumer action                      |
-| ---------------------- | ------------------------------------------------------- | ------------------------------------ |
-| **Core platform**      | Reusable infrastructure Atlas establishes as convention | Keep; extend via adapters and config |
-| **App-owned**          | Reference app wiring and composition                    | Replace with your product shell      |
-| **Reference**          | Demonstrates a pattern; no product UI                   | Copy, adapt, or delete               |
-| **Generated**          | Machine-owned from OpenAPI or tooling                   | Regenerate; never hand-edit          |
-| **Documentation only** | Conventions without executable code                     | Follow when building                 |
-| **Removed**            | Dead or unjustified surface                             | Already deleted or not shipped       |
+Atlas uses four primary classifications for application code. Use these terms consistently across
+docs, tooling, and reviews.
+
+| Classification                | Meaning                                                                                | Consumer action                              |
+| ----------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
+| **Core platform**             | Conventions and infrastructure shipped in the starter (`lib/`, packages)               | Keep; extend via adapters and config         |
+| **Starter reference/example** | Small isolated teaching examples inside `apps/web` (`/examples`, `features/examples/`) | Copy, adapt, or delete when building product |
+| **Reference application**     | Complete executable example in `apps/reference`                                        | Keep, study, or remove the entire workspace  |
+| **App-owned**                 | Product composition consumers replace with their own shell and features                | Replace with your product                    |
+
+Additional cross-cutting classifications:
+
+| Classification         | Meaning                               | Consumer action                |
+| ---------------------- | ------------------------------------- | ------------------------------ |
+| **Generated**          | Machine-owned from OpenAPI or tooling | Regenerate; never hand-edit    |
+| **Documentation only** | Conventions without executable code   | Follow when building           |
+| **Removed**            | Dead or unjustified surface           | Already deleted or not shipped |
+
+---
+
+## Monorepo applications
+
+The monorepo contains two independent Next.js applications:
+
+| Application          | Classification         | Purpose                                                                   |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------- |
+| **`apps/web`**       | Clean consumer starter | Atlas platform starter — demonstrates conventions without a fake product  |
+| **`apps/reference`** | Reference application  | Executable reference product demonstrating Atlas architecture in practice |
+
+`apps/web` keeps minimal `/examples` routes for isolated pattern showcases (data states, forms). The
+coherent reference product (users CRUD, harness, authz demos) lives entirely in `apps/reference` at
+routes such as `/`, `/users`, `/profile`, `/authorization`, and `/harness`.
+
+Consumers can keep or remove the entire `apps/reference` workspace independently of `apps/web`.
 
 ---
 
 ## Classification table
 
-| Surface                                     | Current state                                     | Classification            | Decision    | Reason                                                                          |
+Paths below use `apps/web/src/` unless noted. The reference application mirrors many of the same
+`lib/` conventions under `apps/reference/src/`.
+
+| Location                                    | Current state                                     | Classification            | Decision    | Reason                                                                          |
 | ------------------------------------------- | ------------------------------------------------- | ------------------------- | ----------- | ------------------------------------------------------------------------------- |
 | `lib/api` (client, errors, correlation)     | Central HTTP gateway, ESLint-enforced             | Core platform             | Keep        | Establishes no-fetch-spaghetti, error normalization, correlation IDs            |
 | `lib/api/contracts`                         | OpenAPI-generated types + typed client            | Generated + core platform | Keep        | Contract-first data fetching (ADR-0003)                                         |
 | `lib/react-query`                           | Provider, `createQueryKeys`, patterns doc         | Core platform             | Keep        | Standard cache key factory; patterns.ts is reference documentation              |
 | `lib/auth` (session, PKCE, state, types)    | Encrypted httpOnly session storage                | Core platform             | Keep        | Provider-neutral session security machinery                                     |
-| `lib/auth/providers/google`                 | Google OAuth code exchange                        | Reference                 | Demonstrate | Google is one reference IdP, not the universal Atlas auth model                 |
-| `lib/auth/providers/google/session-refresh` | Google refresh orchestration for session cookies  | Reference                 | Demonstrate | Composes Google refresh with core session primitives                            |
-| `app/api/auth/google/*`                     | OAuth start/callback routes                       | Reference                 | Demonstrate | Replace with consumer's IdP routes                                              |
-| `components/reference/auth`                 | SignInButton, UserMenu, AuthGuard                 | Reference                 | Demonstrate | Not mounted; Google-specific UI for #39                                         |
-| `features/reference/users`                  | OpenAPI React Query hooks + reference app UI      | Reference                 | Keep        | Canonical typed-resource pattern for future generators                          |
-| `features/examples`                         | Hooks for mock app routes                         | Reference                 | Keep        | Demonstrates app-route API pattern                                              |
-| `app/examples/**`                           | Data/form demo pages + ExamplesShell              | Reference                 | Keep        | Minimal live demos; delete when building product                                |
-| `app/api/examples/**`                       | In-memory mock APIs                               | Reference                 | Keep        | Supports examples only; delete with examples                                    |
+| `lib/auth/providers/google`                 | Google OAuth code exchange                        | Starter reference         | Demonstrate | Google is one reference IdP, not the universal Atlas auth model                 |
+| `lib/auth/providers/google/session-refresh` | Google refresh orchestration for session cookies  | Starter reference         | Demonstrate | Composes Google refresh with core session primitives                            |
+| `app/api/auth/google/*`                     | OAuth start/callback routes                       | Starter reference         | Demonstrate | Replace with consumer's IdP routes                                              |
+| `features/examples`                         | Hooks for mock app routes                         | Starter reference/example | Keep        | Demonstrates app-route API pattern                                              |
+| `app/examples/**`                           | Data/form demo pages + ExamplesShell              | Starter reference/example | Keep        | Minimal live demos; delete when building product                                |
+| `app/api/examples/**`                       | In-memory mock APIs                               | Starter reference/example | Keep        | Supports examples only; delete with examples                                    |
+| `apps/reference/**`                         | Coherent reference application + harness          | Reference application     | Keep        | Separate workspace app; optional in forks                                       |
+| `apps/reference/src/features/users/`        | OpenAPI typed-resource hooks + reference app UI   | Reference application     | Keep        | Canonical product pattern in reference app                                      |
 | `lib/feature-flags`                         | Typed flags, provider, default adapter, guards    | Core platform             | Keep        | Runtime config + kill-switch convention; PostHog adapter is optional reference  |
-| `app/__flags`                               | Dev-only flag override panel                      | Reference                 | Keep        | Development tooling, not product                                                |
+| `app/__flags`                               | Dev-only flag override panel                      | Starter reference         | Keep        | Development tooling, not product                                                |
 | `lib/i18n`                                  | `t()` with English-only strings                   | Core platform (minimal)   | Simplify    | Typed key convention for shared strings; not a localization framework           |
 | `lib/analytics`                             | Typed event map, adapter interface, noop fallback | Core platform             | Keep        | Consent-gated analytics contract; adapters are swappable                        |
 | `lib/analytics/adapters/*`                  | PostHog, GA implementations                       | Reference integrations    | Keep        | Vendor-specific; replace or remove per consumer                                 |
@@ -53,13 +82,13 @@ For runtime design (layers, data flow, auth sequence), see
 | `lib/notifications`                         | Sonner wrapper + `notifyApiError`                 | Core platform             | Keep        | Toast convention integrated with i18n and ApiError                              |
 | `lib/breadcrumbs`                           | Tree builder + `useBreadcrumbs`                   | Core platform             | Keep        | Route-aware breadcrumb convention; tree is reference data                       |
 | `components/navigation/AppBreadcrumbs`      | Breadcrumb UI wired to lib                        | App-owned composition     | Keep        | Used by ExamplesShell; consumers relocate or replace                            |
-| `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; reference app owns its shell in #39               |
+| `components/layout/AppShell`                | Generic shell with slots                          | Removed                   | Remove      | Unused aspirational scaffold; reference app owns its shell                      |
 | `components/errors/ErrorBoundary`           | Class error boundary                              | Removed                   | Remove      | Unused; Sentry + global-error handle failures                                   |
 | `providers/*`                               | MainProvider stack, DataProviderLayout            | App-owned composition     | Keep        | Wires platform modules; see `providers/README.md`                               |
 | `@atlas/ui`                                 | shadcn/Base UI preset + behavioral helpers        | Core platform package     | Keep        | Governed UI foundation; shadcn/Base UI visual baseline + Atlas helpers          |
 | `@atlas/config`                             | ESLint, TS, Jest, Prettier configs                | Core platform package     | Keep        | Tooling boundary for monorepo consistency                                       |
 | `packages/ui` shadcn primitives             | Base UI/Vega preset-generated building blocks     | Upstream-derived          | Keep        | Regenerate from `packages/ui/components.json`; Atlas owns behavior, not styling |
-| OpenAPI `schema.ts`                         | Generated from `openapi/openapi.json`             | Generated                 | Keep        | Regenerate via `pnpm --filter @atlas/web api:gen`                               |
+| OpenAPI `schema.ts` (per app)               | Generated from `openapi/openapi.json`             | Generated                 | Keep        | Regenerate via root `pnpm api:gen`; CI enforces freshness via `pnpm api:check`  |
 
 ---
 
@@ -67,49 +96,42 @@ For runtime design (layers, data flow, auth sequence), see
 
 Atlas is a **frontend platform template** — not a product. It owns:
 
-1. **Infrastructure conventions** in `apps/web/src/lib/` — API client, auth session contract, React
-   Query patterns, feature flags, analytics/consent contracts, telemetry, notifications.
+1. **Infrastructure conventions** in each application's `src/lib/` — API client, auth session
+   contract, React Query patterns, feature flags, analytics/consent contracts, telemetry,
+   notifications.
 2. **Workspace packages** — `@atlas/ui` (visual foundation), `@atlas/consent` (consent UI),
    `@atlas/config` (tooling).
 3. **Architectural enforcement** — ESLint rules (no raw `fetch`, no `process.env` in app code, no
    vendor SDK bypass), typed config facade, OpenAPI contract generation.
-4. **Reference patterns** — minimal `/examples` routes and hook-level references that teach the
-   conventions without pretending to be a product.
+4. **Starter reference/examples** — minimal `/examples` routes and hook-level examples in `apps/web`
+   that teach conventions without pretending to be a product.
+5. **Reference application** — `apps/reference` as an optional, executable end-to-end product
+   journey for learning and evaluation.
 
 Atlas does **not** own: backend architecture, domain features, vendor choice (beyond reference
 adapters), or consumer deployment infrastructure.
-
-The monorepo contains two applications:
-
-| Application          | Purpose                                                                   |
-| -------------------- | ------------------------------------------------------------------------- |
-| **`apps/web`**       | Clean Atlas starter for consumer product development                      |
-| **`apps/reference`** | Executable reference product demonstrating Atlas architecture in practice |
-
-`apps/web` keeps minimal `/examples` routes for isolated pattern showcases (data states, forms). The
-coherent reference product (users CRUD, harness, authz demos) lives entirely in `apps/reference`.
 
 ---
 
 ## What is the reference implementation?
 
-Reference code exists to **teach patterns**, not to ship as product functionality.
+Reference code exists to **teach patterns** or **demonstrate a complete product journey** — not to
+ship as mandatory consumer product functionality.
 
-| Location                                       | Demonstrates                                    | Safe to delete?                |
-| ---------------------------------------------- | ----------------------------------------------- | ------------------------------ | ---- | ---------------------------------------------- |
-| `app/examples/**`                              | Data states, forms, ExamplesShell layout        | Reference                      | Keep | Starter app only; delete when building product |
-| `apps/reference/**`                            | Coherent reference application + harness        | Reference                      | Keep | Separate workspace app; optional in forks      |
-| `features/examples/`                           | React Query hooks against app routes            | Reference                      | Keep | Starter app only; with examples                |
-| `apps/reference/src/features/users/`           | OpenAPI typed-resource hooks + reference app UI | Reference                      | Keep | Canonical product pattern in reference app     |
-| `app/api/examples/**`                          | Mock in-memory APIs                             | Yes — with examples            |
-| `components/reference/auth/`                   | Google OAuth UI wiring                          | Yes — replace with your IdP UI |
-| `app/api/auth/google/**`                       | Google OAuth flow                               | Yes — replace with your IdP    |
-| `app/__flags`                                  | Feature flag dev panel                          | Yes — dev-only                 |
-| `lib/react-query/patterns.ts`                  | Mutation/query factory helpers                  | Yes — optional pattern         |
-| `lib/feature-flags/adapters/posthogAdapter.ts` | PostHog flag adapter                            | Yes — if not using PostHog     |
+| Location                                       | Demonstrates                                    | Classification              | Safe to delete?                 |
+| ---------------------------------------------- | ----------------------------------------------- | --------------------------- | ------------------------------- |
+| `app/examples/**` (starter)                    | Data states, forms, ExamplesShell layout        | Starter reference/example   | Yes — when building product     |
+| `features/examples/` (starter)                 | React Query hooks against app routes            | Starter reference/example   | Yes — with examples             |
+| `apps/reference/**`                            | Coherent reference application + harness        | Reference application       | Yes — entire workspace optional |
+| `apps/reference/src/features/users/`           | OpenAPI typed-resource hooks + reference app UI | Reference application       | Yes — with reference app        |
+| `app/api/examples/**` (starter)                | Mock in-memory APIs                             | Starter reference/example   | Yes — with examples             |
+| `app/api/auth/google/**` (starter)             | Google OAuth flow                               | Starter reference           | Yes — replace with your IdP     |
+| `app/__flags` (starter)                        | Feature flag dev panel                          | Starter reference           | Yes — dev-only                  |
+| `lib/react-query/patterns.ts`                  | Mutation/query factory helpers                  | Core platform documentation | Optional pattern                |
+| `lib/feature-flags/adapters/posthogAdapter.ts` | PostHog flag adapter                            | Reference integration       | Yes — if not using PostHog      |
 
-The coherent reference application under `/reference` demonstrates end-to-end Atlas composition.
-`/examples` and `features/reference/` hooks remain available as isolated pattern references.
+The reference application under `apps/reference` demonstrates end-to-end Atlas composition. Starter
+`/examples` remain available as isolated pattern references inside `apps/web`.
 
 ---
 
@@ -117,9 +139,10 @@ The coherent reference application under `/reference` demonstrates end-to-end At
 
 When forking Atlas, consumers own and replace:
 
-- **Product features** under `features/` (except `reference/` and `examples/`)
-- **Routes and pages** under `app/` (except examples and platform API routes they choose to keep)
-- **App shell and navigation** — `ExamplesShell` is reference; build your own layout
+- **Product features** under `apps/web/src/features/*` (excluding `examples/`)
+- **Routes and pages** under `apps/web/src/app/` (except examples and platform API routes they
+  choose to keep)
+- **App shell and navigation** — `ExamplesShell` is starter reference; build your own layout
 - **Provider composition** — rearrange `providers/` for your product
 - **Identity provider** — Google OAuth is reference; wire your IdP
 - **Analytics vendor** — swap or remove PostHog/GA adapters
@@ -127,18 +150,48 @@ When forking Atlas, consumers own and replace:
 - **Feature flag keys** — define your own in `lib/feature-flags/flags.ts`
 - **OpenAPI spec** — replace `openapi/openapi.json` with your API contract
 - **Environment and deployment** — your infrastructure, not Atlas's
+- **Reference application** — keep, study, or delete `apps/reference/` independently
+
+`apps/web/src/features/*` holds consumer product features plus optional isolated examples.
+`apps/reference/*` is an optional executable learning/evaluation application.
 
 ---
 
 ## What is generated?
 
-| Artifact                      | Source                                   | Regenerate                         | Do not edit                          |
-| ----------------------------- | ---------------------------------------- | ---------------------------------- | ------------------------------------ |
-| `lib/api/contracts/schema.ts` | `openapi/openapi.json`                   | `pnpm --filter @atlas/web api:gen` | Yes                                  |
-| `lib/api/contracts/index.ts`  | Hand-maintained typed client over schema | Update when adding API resources   | Partially — client layer is platform |
+| Artifact                      | Source                                   | Regenerate                       | Do not edit                          |
+| ----------------------------- | ---------------------------------------- | -------------------------------- | ------------------------------------ |
+| `lib/api/contracts/schema.ts` | `openapi/openapi.json`                   | Root `pnpm api:gen`              | Yes                                  |
+| `lib/api/contracts/index.ts`  | Hand-maintained typed client over schema | Update when adding API resources | Partially — client layer is platform |
+
+Both `apps/web` and `apps/reference` generate `src/lib/api/contracts/schema.ts` from the same
+`openapi/openapi.json`. Root `pnpm api:gen` regenerates both copies; `pnpm api:check` in CI verifies
+committed artifacts match the spec.
+
+The Atlas project contract (`atlas.config.json` schema v1) identifies the **starter** application's
+generated schema as the canonical contract artifact (`apps/web/src/lib/api/contracts/schema.ts`).
+The reference application owns a second generated copy because it is an independent consumer
+application. This is intentional — see [Atlas project contract](atlas-contract.md).
 
 Generated code is **machine-owned**. Platform code wraps it (`contracts/index.ts`, feature hooks).
 Consumer code imports types and the typed client — never duplicates schema shapes by hand.
+
+---
+
+## Duplicated starter/reference infrastructure
+
+`apps/web/src/lib/*` and `apps/reference/src/lib/*` deliberately duplicate platform template
+conventions (API client, auth, React Query, feature flags, telemetry, and related modules). Some
+directories are currently byte-for-byte identical.
+
+**Why:** `apps/reference` is intended to behave like an independent consumer application. It
+demonstrates how the conventions present in the starter are composed into a finished product, rather
+than importing application internals directly from `apps/web`.
+
+**Risk:** Shared template conventions can drift between the starter and reference application.
+
+This PR does **not** extract a shared `@atlas/app-core` package. Synchronization strategy is tracked
+as follow-up work — see the repository issue tracker.
 
 ---
 
@@ -160,9 +213,16 @@ boundaries, behavioral helpers, and conventions.
 **Preset:** `bJzBPQGZc` — Base UI + Vega + Neutral + Blue + Neutral charts + Inter + Lucide. See
 `packages/ui/README.md`.
 
-**Generation flow:** `packages/ui/components.json` → `packages/ui/src/components/ui` → `@atlas/ui`
-public exports → `apps/web`. `apps/web/components.json` does not exist and must not be recreated as
-an app-local primitive generation target. Run shadcn generation against `packages/ui` only.
+**Generation flow:**
+
+```text
+packages/ui/components.json → packages/ui/src/components/ui → @atlas/ui public exports
+                                                              ├── apps/web
+                                                              └── apps/reference
+```
+
+Run shadcn generation against `packages/ui` only. Neither application maintains a local primitive
+tree (`apps/web/components.json` must not be recreated).
 
 **Public API:** `import { Button } from "@atlas/ui"` and documented subpaths (`globals.css`,
 `theme-boot`, `extended`). Do not import from `packages/ui/src/**` — ESLint enforces this.
@@ -172,7 +232,7 @@ Heavy optional primitives with substantial runtime dependencies are exported fro
 
 **Styling rule:** upstream primitive appearance comes from current shadcn generation; Atlas owns
 behavioral wrappers and monorepo integration only. Reusable application compositions should be
-extracted only after #39 proves them in a coherent reference application.
+extracted only after they are proven across independent reference surfaces.
 
 ### `@atlas/consent`
 
@@ -193,31 +253,44 @@ extracted only after #39 proves them in a coherent reference application.
 
 ### `apps/web` (`@atlas/web`)
 
-The reference application. Owns route composition, provider wiring, and reference examples. Not
-published as a library — forked and replaced by consumers.
+The **clean Atlas consumer starter application**. Owns route composition, provider wiring, and
+starter examples. Not published as a library — forked and replaced by consumers.
+
+### `apps/reference` (`@atlas/reference`)
+
+The **executable reference application**. Owns the coherent product journey, harness, and reference
+feature modules. Optional in consumer forks. Not published as a library.
 
 ---
 
 ## Import boundaries
 
+Each application resolves `@/*` to its own `src/` tree. Applications do not import source code from
+each other — both consume workspace packages through public package APIs.
+
 ```text
-apps/web @/*           → apps/web/src/* only
-packages/ui internals  → package-local / relative imports
-apps/web consumption   → @atlas/ui public exports
+apps/web @/*              → apps/web/src/* only
+apps/reference @/*        → apps/reference/src/* only
+
+apps/web → apps/reference/src/**      forbidden
+apps/reference → apps/web/src/**      forbidden
+
+packages/ui internals   → package-local / relative imports only
 ```
 
 1. **App → package:** Use public exports only (`@atlas/ui`, `@atlas/consent`).
 2. **Package → app:** Never. Packages do not import consumer code.
 3. **Feature → feature:** Never. Extract shared logic to `lib/`.
-4. **Reference → product:** Never. Reference modules are not imported by product features.
-5. **No `@/*` bypass to package source:** The `@/*` alias resolves to `apps/web/src/*` only.
-6. **No app resolution of package internals:** `apps/web` must not resolve or import
+4. **Product → reference/example:** Never in the starter app. Reference modules are not imported by
+   product features.
+5. **App → other app:** Never. `apps/web` and `apps/reference` are independent consumers.
+6. **No `@/*` bypass to package source:** Each `@/*` alias resolves to that app's `src/*` only.
+7. **No app resolution of package internals:** Applications must not resolve or import
    `packages/ui/src/**` through TypeScript aliases. `@atlas/ui` is consumed through its public
-   package exports. Package-internal shadcn imports are relative/package-local so the UI package
-   resolves independently.
+   package exports.
 
-ESLint guards in `apps/web/eslint.config.mjs` enforce fetch, env, analytics SDK, package source
-import, and UI-internal alias rules.
+ESLint guards in each application's `eslint.config.mjs` enforce fetch, env, analytics SDK, package
+source import, and UI-internal alias rules.
 
 ---
 

@@ -8,23 +8,42 @@ This directory contains the OpenAPI specification for the Atlas API.
 
 ## Generating TypeScript Types
 
-From the monorepo root:
+From the monorepo root (regenerates **both** consumer applications):
 
 ```bash
-cd apps/web
 pnpm api:gen
 ```
 
-This generates TypeScript types from the OpenAPI spec:
+This generates TypeScript types from the OpenAPI spec into each application:
 
 - **Input**: `openapi/openapi.json`
-- **Output**: `apps/web/src/lib/api/contracts/schema.ts`
+- **Output**:
+  - `apps/web/src/lib/api/contracts/schema.ts`
+  - `apps/reference/src/lib/api/contracts/schema.ts`
+
+CI enforces freshness with:
+
+```bash
+pnpm api:check
+```
+
+Per-workspace commands exist for debugging one app only — do not use them as the normal maintainer
+workflow after changing the shared spec:
+
+```bash
+pnpm --filter @atlas/web api:gen
+pnpm --filter @atlas/reference api:gen
+```
+
+The Atlas project contract (`atlas.config.json`) identifies the starter application's generated
+schema as the canonical contract artifact. The reference application owns a second copy because it
+is an independent consumer application. Root `api:gen` and CI `api:check` keep both synchronized.
 
 ## Updating the API Contract
 
 1. **Edit the spec**: Update `openapi.json` to match backend changes
-2. **Regenerate types**: Run `pnpm api:gen`
-3. **Commit both files**: The spec AND generated types must be committed together
+2. **Regenerate types**: Run `pnpm api:gen` from the monorepo root
+3. **Commit both files**: The spec AND both generated schemas must be committed together
 4. **TypeScript will catch breaking changes**: Compile errors indicate contract changes
 
 ## Example API Spec
@@ -68,7 +87,7 @@ const user = await api.users.get("user-123");
 3. Define all request/response schemas
 4. Ensure error responses match the `ApiError` component schema
 5. Run `pnpm api:gen` to update types
-6. Commit both `openapi.json` and generated `schema.ts`
+6. Commit `openapi.json` and generated `schema.ts` files
 
 ## Tools
 

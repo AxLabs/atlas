@@ -14,9 +14,9 @@ reference application.
 - `UserDetailView` — detail with permission-gated edit/delete
 - `UserForm` — create/edit with Zod, `useZodForm`, and `applyServerFieldErrors`
 
-Routes under `app/reference/users/**` compose these components (thin pages).
+Routes under `app/users/**` compose these components (thin pages).
 
 ## Scenarios
 
-API behavior is controlled by the harness (`/reference/harness`) via the `atlas_reference_scenario`
-cookie — do not fake failure states inside components.
+API behavior is controlled by the harness (`/harness`) via the `atlas_reference_scenario` cookie —
+do not fake failure states inside components.

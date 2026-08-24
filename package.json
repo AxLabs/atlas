@@ -28,6 +28,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky",
     "api:gen": "pnpm --filter @atlas/web api:gen && pnpm --filter @atlas/reference api:gen",
+    "api:check": "pnpm api:gen && git diff --exit-code -- apps/web/src/lib/api/contracts/schema.ts apps/reference/src/lib/api/contracts/schema.ts",
     "atlas:resolve-contract": "pnpm --filter @atlas/project resolve",
     "atlas": "pnpm exec atlas",
     "validate:env": "pnpm --filter @atlas/web validate:env && pnpm --filter @atlas/reference validate:env",

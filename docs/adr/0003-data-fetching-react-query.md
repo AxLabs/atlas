@@ -44,7 +44,7 @@ types** for API contracts. A central **API client** handles all HTTP requests.
 2. **Generated TypeScript types** (`src/lib/api/contracts/schema.ts`):
 
 ```bash
-pnpm --filter @atlas/web api:gen
+pnpm api:gen
 ```
 
 3. **Central API client** (`src/lib/api/client.ts`):
@@ -61,7 +61,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 export const userKeys = createQueryKeys("users");
 ```
 
-5. **Feature-based hooks** (`src/features/reference/users/queries.ts`):
+5. **Feature-based hooks** (`apps/reference/src/features/users/queries.ts`):
 
 ```typescript
 export function useUserList() {

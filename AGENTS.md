@@ -106,7 +106,7 @@ Reference implementations: `apps/reference/` (executable reference application),
 - **Server components / route handlers** — Use `apiRequest` from `@/lib/api/server` for outbound
   calls. Route handlers (`src/app/api/**/route.ts`) are API boundaries where `fetch()` is permitted.
 - **Types** — Import from `@/lib/api/contracts` (`components`, `paths` schemas). Regenerate after
-  spec changes: `pnpm --filter @atlas/web api:gen`.
+  spec changes: `pnpm api:gen` (regenerates both `apps/web` and `apps/reference` schemas).
 - **Notifications** — Use `notify` / `notifyApiError` from `@/lib/notifications` for toasts.
 
 ## Authorization architecture

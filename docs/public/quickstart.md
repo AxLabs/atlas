@@ -129,7 +129,7 @@ Force UI states via query param on the data example:
    see platform patterns in code
 2. Read [Architecture](architecture.md) for the system mental model
 3. Delete `app/examples/`, `features/examples/`, and `api/examples/` when you start your product
-4. Add features under `apps/web/src/features/` following `features/reference/users/` for OpenAPI
-   APIs
+4. Add features under `apps/web/src/features/` following `apps/reference/src/features/users/` for
+   OpenAPI APIs
 
 See [Examples](examples.md) for more detail.

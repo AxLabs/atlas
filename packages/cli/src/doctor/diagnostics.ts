@@ -96,7 +96,7 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
   [DoctorDiagnosticCode.GENERATED_OPENAPI_STALE]: {
     severity: "error",
     suggestedFix:
-      "Run `pnpm --filter @atlas/web api:gen` and commit the updated OpenAPI client artifact.",
+      "Run `pnpm api:gen` and commit the updated OpenAPI client artifacts for both applications.",
     documentation: "docs/how-we-build/architecture-ownership.md",
   },
   [DoctorDiagnosticCode.GENERATED_OPENAPI_INVALID]: {

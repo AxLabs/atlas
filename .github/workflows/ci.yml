@@ -160,6 +160,10 @@ jobs:
           fi
           echo "✅ Lockfile is up-to-date"
 
+      - name: Check generated OpenAPI contracts
+        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+        run: pnpm api:check
+
       - name: Validate environment variables
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm validate:env
