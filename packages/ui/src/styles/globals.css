@@ -140,6 +140,11 @@
     @apply font-sans;
   }
 
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     [data-slot="skeleton"],
     [data-slot="skeleton-text"],
