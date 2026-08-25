@@ -16,6 +16,27 @@ import { getNavigationType, sanitizeRoute } from "./types";
 import type { MetricName, WebVitalMetric } from "./types";
 import type { Metric } from "web-vitals";
 
+const latestMetrics: Partial<
+  Record<MetricName, { value: number; rating: string; observedAt: number }>
+> = {};
+
+/**
+ * Latest locally observed Web Vitals measurements (reference diagnostics only).
+ */
+export function getLatestWebVitals(): Partial<
+  Record<MetricName, { value: number; rating: string; observedAt: number }>
+> {
+  return { ...latestMetrics };
+}
+
+function recordLatestMetric(metric: Metric): void {
+  latestMetrics[metric.name as MetricName] = {
+    value: metric.value,
+    rating: metric.rating,
+    observedAt: Date.now(),
+  };
+}
+
 /**
  * Web Vitals initialization options
  */
@@ -87,6 +108,8 @@ export function initWebVitalsReporting(options: WebVitalsOptions = {}): void {
 
   // Create metric handler
   const handleMetric = (metric: Metric) => {
+    recordLatestMetric(metric);
+
     const payload: WebVitalMetric = {
       name: metric.name as MetricName,
       value: metric.value,

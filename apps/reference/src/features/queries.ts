@@ -14,6 +14,7 @@ import { referenceKeys } from "./keys";
 
 import type { components } from "@/lib/api/contracts";
 import type { ApiError } from "@/lib/api/errors";
+import type { SafePlatformRuntime, SafeSecuritySummary } from "@/lib/reference/platform-runtime";
 
 interface ReferenceStatus {
   enabled: boolean;
@@ -25,12 +26,31 @@ interface ReferenceStatus {
 
 type UserListResponse = components["schemas"]["UserListResponse"];
 
+interface PlatformDiagnosticsResponse {
+  runtime: SafePlatformRuntime;
+  security: SafeSecuritySummary;
+}
+
 export function useReferenceStatus() {
   return useQuery<ReferenceStatus, ApiError>({
     queryKey: referenceKeys.custom("status"),
     queryFn: async () => {
       try {
         return await apiGet<ReferenceStatus>("/api/status", { skipAuth: true });
+      } catch (error) {
+        throw normalizeApiError(error);
+      }
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function usePlatformDiagnostics() {
+  return useQuery<PlatformDiagnosticsResponse, ApiError>({
+    queryKey: referenceKeys.custom("platform"),
+    queryFn: async () => {
+      try {
+        return await apiGet<PlatformDiagnosticsResponse>("/api/reference/platform");
       } catch (error) {
         throw normalizeApiError(error);
       }

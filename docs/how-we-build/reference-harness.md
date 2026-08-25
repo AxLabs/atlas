@@ -35,6 +35,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3001
 Open [http://localhost:3001](http://localhost:3001) for the reference application or `/harness` for
 developer controls.
 
+Product routes (`/`, `/users`, `/profile`, `/settings`, `/authorization`, `/platform`) demonstrate
+runtime capabilities. `/harness` remains the developer simulation layer — persona selection, API
+scenarios, reset, and deterministic failures. Platform diagnostics live on `/platform`, not in the
+harness.
+
 ## Auth personas
 
 | Persona           | Session                       | Reference profile metadata |

@@ -7,7 +7,7 @@ test.beforeEach(async ({ request }) => {
 test.describe("Reference harness", () => {
   test("exercises authenticated reference flow without external credentials", async ({ page }) => {
     await page.goto("/harness");
-    await expect(page.getByRole("status")).toContainText("Reference mode active");
+    await expect(page.getByText("Reference mode active")).toBeVisible();
 
     await page.getByRole("button", { name: "reference-user" }).click();
     await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
@@ -101,6 +101,84 @@ test.describe("Reference application", () => {
 
     await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
     await expect(page.getByRole("link", { name: "Reference User", exact: true })).toBeVisible();
+  });
+
+  test("authenticated evaluator discovers major capability links on overview", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Capability map", level: 2 })).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByRole("link", { name: "Authorization" })).toBeVisible();
+    await expect(main.getByRole("link", { name: "Feature flags" })).toHaveAttribute(
+      "href",
+      "/platform"
+    );
+    await expect(main.getByRole("link", { name: "Theming" })).toHaveAttribute("href", "/settings");
+  });
+
+  test("settings theme preference persists across navigation", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/settings");
+    await page.getByRole("button", { name: "Dark", exact: true }).click();
+    await expect(page.getByText("Current preference: dark")).toBeVisible();
+
+    await page.goto("/users");
+    await page.goto("/settings");
+    await expect(page.getByText("Current preference: dark")).toBeVisible();
+  });
+
+  test("platform runtime diagnostics render without obvious secrets", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/platform");
+    await expect(
+      page.getByRole("heading", { name: "Platform diagnostics", level: 1 })
+    ).toBeVisible();
+    await expect(page.getByText("@atlas/reference")).toBeVisible();
+    await expect(page.getByText("Feature flags")).toBeVisible();
+
+    const bodyText = await page.locator("main").innerText();
+    expect(bodyText).not.toMatch(
+      /AUTH_SESSION_SECRET|GOOGLE_CLIENT_SECRET|SENTRY_AUTH_TOKEN|DATABASE_URL/
+    );
+  });
+
+  test("platform controlled failure returns correlation ID", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "server-error" }).click();
+
+    await page.goto("/platform");
+    await page.getByRole("button", { name: "Trigger controlled failure" }).click();
+    await expect(page.getByText(/Correlation ID:/i)).toBeVisible({ timeout: 10000 });
+  });
+
+  test("mobile navigation reaches settings and platform", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Open navigation menu" }).click();
+    await page.getByRole("dialog").getByRole("link", { name: "Settings" }).click();
+    await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
+
+    await page.getByRole("button", { name: "Open navigation menu" }).click();
+    await page.getByRole("dialog").getByRole("link", { name: "Platform" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Platform diagnostics", level: 1 })
+    ).toBeVisible();
   });
 });
 

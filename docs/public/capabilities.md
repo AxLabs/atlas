@@ -350,6 +350,25 @@ decisions, not bolt-on additions.
 
 ---
 
+## Reference application runtime coverage
+
+The executable reference application (`apps/reference`) proves **runtime application capabilities**
+through one coherent Users CRUD journey plus platform routes:
+
+- **Overview (`/`)** — Capability map linked to real routes
+- **Settings (`/settings`)** — Theme, consent, and i18n conventions
+- **Platform (`/platform`)** — Safe diagnostics for config, flags, analytics, observability, Web
+  Vitals, Sentry state, and security headers
+
+Atlas CLI, Doctor, generators, CI, governance, Storybook, and performance budgets are validated
+**outside** the reference app — not as fake SaaS screens. Google OAuth, Sentry, and vendor analytics
+appear as configured/not-configured unless you supply credentials.
+
+See [Quickstart](quickstart.md) for routes and
+[Reference harness](../how-we-build/reference-harness.md) for persona/scenario controls.
+
+---
+
 ## Further Reading
 
 - [Architecture](architecture.md) — The system design that enables these capabilities

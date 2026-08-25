@@ -113,6 +113,17 @@ export function getServerConfig(): Config {
     reference: {
       enabled: isReferenceModeEnabled(),
     },
+
+    security: {
+      cspMode:
+        serverEnv.CSP_MODE === "off" ||
+        serverEnv.CSP_MODE === "report-only" ||
+        serverEnv.CSP_MODE === "enforce"
+          ? serverEnv.CSP_MODE
+          : "off",
+      hstsEnabled: Boolean(serverEnv.ENABLE_HSTS) && serverEnv.NODE_ENV === "production",
+      frameAncestors: serverEnv.CSP_FRAME_ANCESTORS ?? "none (default)",
+    },
   };
 
   // Validate config against schema

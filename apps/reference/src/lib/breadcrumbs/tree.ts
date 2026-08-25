@@ -24,8 +24,16 @@ export const breadcrumbTree: BreadcrumbNode[] = [
     resolver: staticResolver("Profile"),
   },
   {
+    segment: "settings",
+    resolver: staticResolver("Settings"),
+  },
+  {
     segment: "authorization",
     resolver: staticResolver("Authorization"),
+  },
+  {
+    segment: "platform",
+    resolver: staticResolver("Platform"),
   },
   {
     segment: "harness",

@@ -1,6 +1,15 @@
 "use client";
 
-import { FlaskConical, Home, Menu, Shield, UserCircle, Users } from "lucide-react";
+import {
+  Activity,
+  FlaskConical,
+  Home,
+  Menu,
+  Settings,
+  Shield,
+  UserCircle,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -16,7 +25,9 @@ const referenceRoutes = [
   { href: "/", label: "Overview", icon: Home, exact: true },
   { href: "/users", label: "Users", icon: Users, exact: false },
   { href: "/profile", label: "Profile", icon: UserCircle, exact: false },
+  { href: "/settings", label: "Settings", icon: Settings, exact: false },
   { href: "/authorization", label: "Authorization", icon: Shield, exact: false },
+  { href: "/platform", label: "Platform", icon: Activity, exact: false },
   { href: "/harness", label: "Harness", icon: FlaskConical, exact: false },
 ];
 

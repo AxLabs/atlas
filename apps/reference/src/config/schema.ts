@@ -190,6 +190,15 @@ const referenceConfigSchema = z.object({
 });
 
 /**
+ * Security configuration summary (server-only, no secrets).
+ */
+const securityConfigSchema = z.object({
+  cspMode: z.enum(["off", "report-only", "enforce"]),
+  hstsEnabled: z.boolean(),
+  frameAncestors: z.string(),
+});
+
+/**
  * Complete configuration schema for Atlas application.
  *
  * This is the single source of truth for what configuration looks like.
@@ -248,6 +257,11 @@ export const configSchema = z.object({
    * Reference harness configuration (server-only).
    */
   reference: referenceConfigSchema,
+
+  /**
+   * Interpreted security header configuration (server-only).
+   */
+  security: securityConfigSchema,
 });
 
 /**
@@ -264,6 +278,7 @@ export const clientConfigSchema = configSchema.omit({
   logging: true,
   auth: true,
   reference: true,
+  security: true,
 });
 
 /**

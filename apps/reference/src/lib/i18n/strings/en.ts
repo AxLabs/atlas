@@ -67,10 +67,36 @@ export const en = {
   /**
    * Navigation-related strings.
    */
+  settings: {
+    title: "Settings",
+    description:
+      "User-facing platform infrastructure — appearance, consent preferences, and locale convention.",
+    appearance: "Appearance",
+    appearanceDescription: "Theme preference persists via Atlas @atlas/ui theme storage.",
+    privacy: "Privacy & consent",
+    privacyDescription:
+      "Demonstrates Atlas technical consent integration — not legal-compliance certification.",
+    locale: "Locale",
+    localeDescription: "Current i18n convention (read-only in this reference app).",
+    localeValue: "English (en)",
+    consentEnabled: "Consent layer enabled",
+    consentDisabled: "Consent layer disabled",
+    analyticsConsent: "Analytics consent",
+    openPreferences: "Open consent preferences",
+    acceptAll: "Accept all",
+    rejectAll: "Reject all",
+  },
+
+  platform: {
+    title: "Platform diagnostics",
+    description: "Safe runtime state for Atlas cross-cutting capabilities.",
+  },
+
   nav: {
     home: "Home",
     dashboard: "Dashboard",
     settings: "Settings",
+    platform: "Platform",
     profile: "Profile",
     projects: "Projects",
     admin: "Admin",

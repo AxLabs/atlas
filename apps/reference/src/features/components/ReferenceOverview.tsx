@@ -3,28 +3,18 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
-import {
-  Badge,
-  buttonVariants,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@atlas/ui";
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@atlas/ui";
 
 import { analytics } from "@/lib/analytics";
 import { useSession } from "@/lib/auth";
-import { hasClientPermission, permissions } from "@/lib/authz";
 
 import { ReferenceAuthRequired } from "./ReferenceAuthRequired";
-import { ReferenceFeatureFlagDemo } from "./ReferenceFeatureFlagDemo";
+import { ReferenceCapabilityMap } from "./ReferenceCapabilityMap";
 import { ReferenceLoadingState } from "./ReferenceLoadingState";
-import { ReferenceObservabilityDemo } from "./ReferenceObservabilityDemo";
 
 export function ReferenceOverview() {
   const session = useSession();
-  const { status, user, permissions: sessionPermissions } = session;
+  const { status, user } = session;
 
   useEffect(() => {
     analytics.page("Reference overview", { path: "/" });
@@ -39,18 +29,17 @@ export function ReferenceOverview() {
     return <ReferenceAuthRequired />;
   }
 
-  const canReadUsers = hasClientPermission(sessionPermissions, permissions.users.read);
-  const canCreateUsers = hasClientPermission(sessionPermissions, permissions.users.create);
-  const canUpdateUsers = hasClientPermission(sessionPermissions, permissions.users.update);
-  const canDeleteUsers = hasClientPermission(sessionPermissions, permissions.users.delete);
+  const personaLabel =
+    user.email === "reference.admin@atlas.local" ? "reference-admin" : "reference-user";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Reference application</h1>
         <p className="text-muted-foreground">
-          A coherent Atlas consumer journey — typed API contracts, React Query, forms,
-          authorization, and deterministic failure states without external services.
+          Executable proof of Atlas runtime application capabilities. Users CRUD is the primary
+          domain example; platform routes expose cross-cutting infrastructure without fake SaaS
+          domains.
         </p>
       </div>
 
@@ -65,50 +54,31 @@ export function ReferenceOverview() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{user.name}</span>
             <Badge variant="secondary">{user.email}</Badge>
+            <Badge variant="outline">{personaLabel}</Badge>
           </div>
           <p className="text-muted-foreground text-sm">
             Switch personas in the{" "}
             <Link href="/harness" className="underline">
               harness
-            </Link>{" "}
-            to compare reference-user and reference-admin behavior.
+            </Link>
+            . Runtime diagnostics live on{" "}
+            <Link href="/platform" className="underline">
+              Platform
+            </Link>
+            .
           </p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Capabilities</CardTitle>
-          <CardDescription>
-            Resolved permissions for this session (presentation only).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ul className="space-y-2 text-sm">
-            <CapabilityRow label="View users" allowed={canReadUsers} />
-            <CapabilityRow label="Create users" allowed={canCreateUsers} />
-            <CapabilityRow label="Update users" allowed={canUpdateUsers} />
-            <CapabilityRow label="Delete users" allowed={canDeleteUsers} />
-          </ul>
-          {canReadUsers ? (
-            <Link href="/users" className={buttonVariants()}>
-              Go to users
-            </Link>
-          ) : null}
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight">Capability map</h2>
+        <p className="text-muted-foreground text-sm">
+          What this application demonstrates — each linked capability maps to a real route or
+          behavior. CLI, Doctor, generators, CI, and Storybook are validated outside this app.
+        </p>
+      </div>
 
-      <ReferenceFeatureFlagDemo />
-      <ReferenceObservabilityDemo />
+      <ReferenceCapabilityMap />
     </div>
-  );
-}
-
-function CapabilityRow({ label, allowed }: { label: string; allowed: boolean }) {
-  return (
-    <li className="flex items-center justify-between gap-4">
-      <span>{label}</span>
-      <Badge variant={allowed ? "default" : "outline"}>{allowed ? "Allowed" : "Denied"}</Badge>
-    </li>
   );
 }

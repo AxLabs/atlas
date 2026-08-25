@@ -88,6 +88,7 @@ export function AnalyticsProvider({
 
     async function initializeAnalytics() {
       const adapters: Analytics[] = [];
+      const adapterNames: string[] = [];
 
       if (config.posthog) {
         const { createPostHogAdapter } = await import("@/lib/analytics/adapters/posthog");
@@ -101,6 +102,7 @@ export function AnalyticsProvider({
             consentGranted: initialConsentGranted,
           })
         );
+        adapterNames.push("PostHog");
 
         if (config.debug) {
           // eslint-disable-next-line no-console
@@ -119,6 +121,7 @@ export function AnalyticsProvider({
             consentGranted: initialConsentGranted,
           })
         );
+        adapterNames.push("GA");
 
         setGaScript(
           <GAScript measurementId={config.ga.measurementId} debug={config.debug} nonce={nonce} />
@@ -136,6 +139,7 @@ export function AnalyticsProvider({
         debug: config.debug,
         environment: config.environment,
         consentGranted: initialConsentGranted,
+        adapterNames: adapterNames.length > 0 ? adapterNames : ["noop"],
       });
 
       if (config.debug) {

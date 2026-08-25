@@ -63,6 +63,22 @@ The reference application launches at `http://localhost:3001`.
 
 Developer harness: `http://localhost:3001/harness`
 
+### Reference routes
+
+| Route            | Demonstrates                                                |
+| ---------------- | ----------------------------------------------------------- |
+| `/`              | Capability map — truthful runtime coverage with links       |
+| `/users`         | Primary OpenAPI + React Query + forms domain example        |
+| `/profile`       | Session contract consumption                                |
+| `/settings`      | Theme preference, consent integration, i18n convention      |
+| `/authorization` | Permission checks and resource-policy enforcement           |
+| `/platform`      | Safe runtime diagnostics (config, analytics, observability) |
+| `/harness`       | Developer-only persona and API scenario simulation          |
+
+`apps/reference` demonstrates **runtime application capabilities**. Atlas CLI, Doctor, generators,
+CI workflows, governance, Storybook, and bundle budgets are validated separately — they are
+intentionally not represented as fake application screens.
+
 Use the harness to switch personas and API scenarios without Google OAuth or an external backend.
 Development and reference only — **not** evidence of production OAuth or API security.
 

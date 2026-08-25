@@ -58,6 +58,9 @@ let currentAnalytics: Analytics = new NoopAnalytics();
 let isInitialized = false;
 let currentEnvironment: CommonEventProps["env"] = "development";
 let currentCorrelationId: string | undefined;
+let configuredAdapterNames: string[] = [];
+let analyticsDebugEnabled = false;
+let analyticsConsentGranted = false;
 
 /**
  * Get the current environment from various sources.
@@ -239,7 +242,11 @@ class MultiAnalytics implements Analytics {
  */
 export function initAnalytics(
   adapters: Analytics[],
-  config: AnalyticsConfig & { environment?: CommonEventProps["env"]; correlationId?: string } = {}
+  config: AnalyticsConfig & {
+    environment?: CommonEventProps["env"];
+    correlationId?: string;
+    adapterNames?: string[];
+  } = {}
 ): void {
   // Idempotent - only initialize once
   if (isInitialized) {
@@ -256,13 +263,19 @@ export function initAnalytics(
     currentCorrelationId = config.correlationId;
   }
 
+  analyticsDebugEnabled = config.debug ?? false;
+  analyticsConsentGranted = config.consentGranted ?? false;
+
   // Create appropriate analytics instance
   if (adapters.length === 0) {
     currentAnalytics = new NoopAnalytics({ debug: config.debug });
+    configuredAdapterNames = ["noop"];
   } else if (adapters.length === 1 && adapters[0]) {
     currentAnalytics = adapters[0];
+    configuredAdapterNames = config.adapterNames ?? ["configured"];
   } else {
     currentAnalytics = new MultiAnalytics(adapters, config);
+    configuredAdapterNames = config.adapterNames ?? adapters.map((_, index) => `adapter-${index}`);
   }
 
   isInitialized = true;
@@ -280,6 +293,28 @@ export function resetAnalytics(): void {
   currentAnalytics = new NoopAnalytics();
   isInitialized = false;
   currentCorrelationId = undefined;
+  configuredAdapterNames = [];
+  analyticsDebugEnabled = false;
+  analyticsConsentGranted = false;
+}
+
+export interface AnalyticsStatus {
+  adapters: string[];
+  consentGranted: boolean;
+  debug: boolean;
+  enabled: boolean;
+}
+
+/**
+ * Safe client-side analytics adapter status for diagnostics surfaces.
+ */
+export function getAnalyticsStatus(): AnalyticsStatus {
+  return {
+    adapters: [...configuredAdapterNames],
+    consentGranted: analyticsConsentGranted,
+    debug: analyticsDebugEnabled,
+    enabled: currentAnalytics.isEnabled(),
+  };
 }
 
 /**
@@ -329,6 +364,7 @@ export const analytics: Analytics = {
 
   setConsent(granted: boolean): void {
     if (typeof window === "undefined") return;
+    analyticsConsentGranted = granted;
     currentAnalytics.setConsent(granted);
   },
 
