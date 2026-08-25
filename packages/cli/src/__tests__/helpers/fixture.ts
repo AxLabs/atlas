@@ -142,6 +142,14 @@ export function createGeneratorAtlasFixture(
           capabilities: {
             openApi,
           },
+          platform: {
+            baseline: {
+              atlasVersion: "0.1.0",
+              contractSchemaVersion: 1,
+              templateManifestSchemaVersion: 1,
+              syncedPathChecksums: {},
+            },
+          },
         },
         null,
         2

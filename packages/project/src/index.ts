@@ -1,4 +1,12 @@
 export {
+  BASELINE_CHECKSUM_PREFIX,
+  buildPlatformBaseline,
+  captureSyncedPathChecksums,
+  computeBaselineChecksum,
+  hasConsumerModifiedSyncedPath,
+  readPlatformBaseline,
+} from "./baseline";
+export {
   ATLAS_CONTRACT_FILENAME,
   LATEST_SCHEMA_VERSION,
   SUPPORTED_SCHEMA_VERSIONS,
@@ -22,6 +30,7 @@ export { joinRepoPath, normalizeRepoRelativePath } from "./paths";
 export {
   atlasProjectContractSchema,
   parseAtlasProjectContract,
+  type PlatformBaseline,
   type RawAtlasProjectContract,
   type ResolvedAtlasProject,
   resolvedAtlasProjectSchema,

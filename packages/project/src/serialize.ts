@@ -19,6 +19,18 @@ export function serializeResolvedAtlasProject(project: ResolvedAtlasProject): st
     },
     capabilities: sortRecord({ ...project.capabilities }),
     boundaries: sortRecord({ ...project.boundaries }),
+    ...(project.platform
+      ? {
+          platform: {
+            baseline: sortRecord({
+              ...project.platform.baseline,
+              syncedPathChecksums: sortRecord({
+                ...project.platform.baseline.syncedPathChecksums,
+              }),
+            }),
+          },
+        }
+      : {}),
   });
 
   return `${JSON.stringify(payload, null, 2)}\n`;

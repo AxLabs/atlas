@@ -529,7 +529,7 @@ describe("atlas doctor version diagnostics", () => {
 
     expect(exitCode).toBe(ExitCode.SUCCESS);
     expect(result.status).toBe("warning");
-    expect(result.summary.diagnosticWarnings).toBe(1);
+    expect(result.summary.diagnosticWarnings).toBeGreaterThanOrEqual(1);
     expect(result.summary.diagnosticErrors).toBe(0);
     expect(result.diagnostics.some((d) => d.code === DoctorDiagnosticCode.VERSION_MISMATCH)).toBe(
       true

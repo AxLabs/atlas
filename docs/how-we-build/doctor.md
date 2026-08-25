@@ -122,6 +122,7 @@ Warnings do **not** fail CI in v0.1.
 | `dependency-declarations`      | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                            | error           |
 | `generated-openapi`            | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                              | error / skip    |
 | `template-infrastructure-sync` | Manifest compare (read-only)           | `ATLAS_TEMPLATE_SYNC_*`                                                                  | error / skip    |
+| `upgrade-baseline`             | Contract `platform.baseline` metadata  | `ATLAS_UPGRADE_BASELINE_*`                                                               | warning / skip  |
 | `atlas-version`                | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                          | warning / error |
 
 ---
@@ -148,6 +149,8 @@ Warnings do **not** fail CI in v0.1.
 | `ATLAS_TEMPLATE_SYNC_CANONICAL_MISSING`      | error    | Restore missing canonical starter path or update manifest syncedPaths  |
 | `ATLAS_TEMPLATE_SYNC_STRUCTURE`              | error    | Restore required module or update manifest ownership entries           |
 | `ATLAS_TEMPLATE_SYNC_MANIFEST_INVALID`       | error    | Fix `templates/app-infrastructure.manifest.json`                       |
+| `ATLAS_UPGRADE_BASELINE_MISSING`             | warning  | Record `platform.baseline` via `atlas init` or upgrade helpers         |
+| `ATLAS_UPGRADE_BASELINE_STALE`               | warning  | Complete supported upgrade and refresh baseline metadata (#43)         |
 | `ATLAS_VERSION_MISMATCH`                     | warning  | Align CLI/checkout Atlas snapshot versions                             |
 | `ATLAS_ROOT_PACKAGE_METADATA_INVALID`        | error    | Restore valid root `package.json` version metadata                     |
 | `ATLAS_WORKSPACE_CONFIG_MISSING`             | error    | Restore `pnpm-workspace.yaml` with configured workspace roots          |

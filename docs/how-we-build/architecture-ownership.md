@@ -325,7 +325,11 @@ The canonical shadcn/Base UI foundation (#42) is complete. Remaining roadmap own
 | Issue   | Scope intentionally not in this document's implementation |
 | ------- | --------------------------------------------------------- |
 | #16     | Storybook, a11y, and visual-regression hardening          |
-| #43–#44 | Migration framework, agent workflow redesign              |
+| #43–#44 | Migration framework automation, agent workflow redesign   |
+
+Upgrade contract, baseline metadata, and rehearsal evidence are documented in
+[upgrades.md](upgrades.md) and [ADR-0010](../adr/0010-atlas-upgrades-downstream-propagation.md)
+(issue #17). #43 implements executable `atlas upgrade` / migration tooling on top of that contract.
 
 Reusable application compositions should be extracted to shared packages only when proven across
 independent reference surfaces — see the #39 composition promotion audit.
@@ -334,6 +338,7 @@ independent reference surfaces — see the #39 composition promotion audit.
 
 ## Related docs
 
+- [Upgrades and downstream propagation](upgrades.md) — upgrade contract and ownership matrix
 - [Folder structure](folder-structure.md) — where code lives
 - [Atlas project contract](atlas-contract.md) — machine-readable architecture for tooling
 - [API & data fetching](api.md) — client and contract usage

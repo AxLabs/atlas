@@ -81,6 +81,21 @@ const boundariesSchema = z
   })
   .strict();
 
+const platformBaselineSchema = z
+  .object({
+    atlasVersion: z.string().min(1),
+    contractSchemaVersion: z.number().int().positive(),
+    templateManifestSchemaVersion: z.number().int().positive(),
+    syncedPathChecksums: z.record(z.string().min(1), z.string().min(1)),
+  })
+  .strict();
+
+const platformSchema = z
+  .object({
+    baseline: platformBaselineSchema,
+  })
+  .strict();
+
 export const atlasProjectContractSchema = z
   .object({
     schemaVersion: z.number().int().positive(),
@@ -96,8 +111,11 @@ export const atlasProjectContractSchema = z
       .optional(),
     capabilities: capabilitiesSchema.partial().optional(),
     boundaries: boundariesSchema.partial().optional(),
+    platform: platformSchema.optional(),
   })
   .strict();
+
+export type PlatformBaseline = z.infer<typeof platformBaselineSchema>;
 
 export type RawAtlasProjectContract = z.infer<typeof atlasProjectContractSchema>;
 
@@ -108,6 +126,8 @@ export const resolvedUiSchema = uiSchema;
 export const resolvedGeneratedSchema = generatedSchema;
 export const resolvedCapabilitiesSchema = capabilitiesSchema;
 export const resolvedBoundariesSchema = boundariesSchema;
+export const resolvedPlatformBaselineSchema = platformBaselineSchema;
+export const resolvedPlatformSchema = platformSchema;
 
 export const resolvedAtlasProjectSchema = z
   .object({
@@ -119,6 +139,7 @@ export const resolvedAtlasProjectSchema = z
     generated: resolvedGeneratedSchema,
     capabilities: resolvedCapabilitiesSchema,
     boundaries: resolvedBoundariesSchema,
+    platform: resolvedPlatformSchema.optional(),
   })
   .strict();
 

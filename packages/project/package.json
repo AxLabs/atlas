@@ -22,6 +22,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "resolve": "tsx scripts/resolve-contract.ts",
+    "capture-baseline": "node scripts/capture-platform-baseline.mjs",
     "clean": "rm -rf .turbo node_modules coverage dist"
   },
   "dependencies": {

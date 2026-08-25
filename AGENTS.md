@@ -228,6 +228,7 @@ pnpm format:write                           # fix formatting
 | Topic                   | Location                                                                                     |
 | ----------------------- | -------------------------------------------------------------------------------------------- |
 | Architecture ownership  | [docs/how-we-build/architecture-ownership.md](docs/how-we-build/architecture-ownership.md)   |
+| Upgrades                | [docs/how-we-build/upgrades.md](docs/how-we-build/upgrades.md)                               |
 | Authorization           | [docs/how-we-build/authorization.md](docs/how-we-build/authorization.md)                     |
 | Atlas project contract  | [docs/how-we-build/atlas-contract.md](docs/how-we-build/atlas-contract.md)                   |
 | Platform conventions    | [docs/how-we-build/README.md](docs/how-we-build/README.md)                                   |

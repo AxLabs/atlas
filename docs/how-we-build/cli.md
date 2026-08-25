@@ -97,6 +97,8 @@ Initialize Atlas metadata in an **existing compatible checkout**. This command:
 - Validates a proposed contract through `@atlas/project` before writing any files on first init
 - Creates `atlas.config.json` when absent (minimal contract with `openApi: false` when OpenAPI
   artifacts are absent)
+- Records `platform.baseline` (Atlas version + synced-path checksums) when the infrastructure
+  manifest is present — see [upgrades](upgrades.md)
 - Never silently overwrites an existing contract
 - Plans all actions before writing files
 
@@ -321,11 +323,12 @@ Machine-readable `--json` output may include:
 
 ## Deferred capabilities
 
-| Issue | Capability         | Status in v0.1        |
-| ----- | ------------------ | --------------------- |
-| #37   | `atlas generate …` | Feature + page shells |
-| #38   | `atlas doctor`     | Initial diagnostics   |
-| #43   | `atlas migrate`    | Not implemented       |
+| Issue | Capability         | Status in v0.1                                    |
+| ----- | ------------------ | ------------------------------------------------- |
+| #37   | `atlas generate …` | Feature + page shells                             |
+| #38   | `atlas doctor`     | Initial diagnostics                               |
+| #43   | `atlas migrate`    | Not implemented                                   |
+| #17   | Upgrade contract   | Baseline + rehearsal; see [upgrades](upgrades.md) |
 
 The CLI exposes explicit command registration, shared context loading, exit codes, and output
 conventions so these commands can be added without redesigning the foundation.

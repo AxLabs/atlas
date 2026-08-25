@@ -25,6 +25,8 @@ export const DoctorDiagnosticCode = {
   TEMPLATE_SYNC_CANONICAL_MISSING: "ATLAS_TEMPLATE_SYNC_CANONICAL_MISSING",
   TEMPLATE_SYNC_STRUCTURE: "ATLAS_TEMPLATE_SYNC_STRUCTURE",
   TEMPLATE_SYNC_MANIFEST_INVALID: "ATLAS_TEMPLATE_SYNC_MANIFEST_INVALID",
+  UPGRADE_BASELINE_MISSING: "ATLAS_UPGRADE_BASELINE_MISSING",
+  UPGRADE_BASELINE_STALE: "ATLAS_UPGRADE_BASELINE_STALE",
 } as const;
 
 export type DoctorDiagnosticCodeType =
@@ -179,6 +181,18 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
     suggestedFix:
       "Fix templates/app-infrastructure.manifest.json so Atlas can validate starter/reference synchronization policy.",
     documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_MISSING]: {
+    severity: "warning",
+    suggestedFix:
+      "Record `platform.baseline` in atlas.config.json via `atlas init` on first bootstrap or the baseline capture helpers documented in docs/how-we-build/upgrades.md.",
+    documentation: "docs/how-we-build/upgrades.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_STALE]: {
+    severity: "warning",
+    suggestedFix:
+      "Complete the supported upgrade path for your recorded Atlas baseline version, then refresh platform.baseline metadata.",
+    documentation: "docs/how-we-build/upgrades.md",
   },
 };
 

@@ -130,6 +130,30 @@ This installation supports contract schema version 1.
 | `generated.openApi.schema` | Machine-owned generated types (starter canonical) | `apps/web/src/lib/api/contracts/schema.ts` |
 | `capabilities.*`           | Optional platform modules enabled in this project | see below                                  |
 | `boundaries.*`             | Architectural facts tooling should understand     | see below                                  |
+| `platform.baseline`        | Recorded Atlas snapshot + synced-path checksums   | optional; see [upgrades](upgrades.md)      |
+
+### Platform baseline (schema v1)
+
+Optional metadata for downstream upgrade planning (issue #17). Recorded by `atlas init` when the
+infrastructure manifest is present; refreshed after upgrades by #43.
+
+```json
+{
+  "platform": {
+    "baseline": {
+      "atlasVersion": "0.1.0",
+      "contractSchemaVersion": 1,
+      "templateManifestSchemaVersion": 1,
+      "syncedPathChecksums": {
+        "src/lib/api/client.ts": "sha256:…"
+      }
+    }
+  }
+}
+```
+
+Checksums cover manifest `syncedPaths` relative to `application.root`. They detect consumer
+modifications — not enforce byte identity with the latest Atlas main branch.
 
 ### Capabilities
 
@@ -271,7 +295,8 @@ Property order in real output is stable but sorted alphabetically by the seriali
 | #36 CLI / bootstrap | Discover repo, load one authoritative project definition           |
 | #37 generators      | Product feature destination, reference avoidance, capabilities     |
 | #38 Doctor          | Capabilities, boundaries, generated paths, structural expectations |
-| #43 migrations      | Contract schema version upgrades                                   |
+| #43 migrations      | Contract schema version upgrades; baseline refresh                 |
+| #17 upgrades        | Baseline metadata, conflict policy, rehearsal evidence             |
 | #44 agent workflows | Vendor-neutral resolved JSON architecture context                  |
 
 All future tooling should import `@atlas/project` rather than reimplementing config discovery.
