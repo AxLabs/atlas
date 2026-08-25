@@ -78,31 +78,33 @@ export function AppBreadcrumbs({ className, showHomeIcon = true, maxItems }: App
   });
 
   return (
-    <Breadcrumb className={className}>
-      <BreadcrumbList>
-        {renderItems.map((item, index) => {
-          const hasIcon = "icon" in item && item.icon;
-          const isHomeIcon = index === 0 && showHomeIcon && item.href === "/";
+    <div className="border-border bg-background/95 border-b px-4 py-2 md:px-6">
+      <Breadcrumb className={className}>
+        <BreadcrumbList>
+          {renderItems.map((item, index) => {
+            const hasIcon = "icon" in item && item.icon;
+            const isHomeIcon = index === 0 && showHomeIcon && item.href === "/";
 
-          return (
-            <React.Fragment key={item.href || item.label || index}>
-              <BreadcrumbItem>
-                {item.current || !item.href ? (
-                  <BreadcrumbPage>{hasIcon ? item.icon : item.label}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink
-                    render={<Link href={item.href} aria-label={isHomeIcon ? "Home" : undefined} />}
-                  >
-                    {hasIcon ? item.icon : item.label}
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-              {index < renderItems.length - 1 && <BreadcrumbSeparator />}
-            </React.Fragment>
-          );
-        })}
-      </BreadcrumbList>
-    </Breadcrumb>
+            return (
+              <React.Fragment key={item.href || item.label || index}>
+                <BreadcrumbItem>
+                  {item.current || !item.href ? (
+                    <BreadcrumbPage>{hasIcon ? item.icon : item.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink
+                      render={<Link href={item.href} aria-label={isHomeIcon ? "Home" : undefined} />}
+                    >
+                      {hasIcon ? item.icon : item.label}
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+                {index < renderItems.length - 1 && <BreadcrumbSeparator />}
+              </React.Fragment>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+    </div>
   );
 }
 
