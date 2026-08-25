@@ -114,14 +114,15 @@ Warnings do **not** fail CI in v0.1.
 
 ## Initial check registry
 
-| Check ID                  | Owns / delegates                       | Possible diagnostics                                                                     | Failure policy  |
-| ------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- | --------------- |
-| `project-contract`        | `@atlas/project`                       | `ATLAS_CONTRACT_*`                                                                       | error           |
-| `workspace-structure`     | Doctor + manifests                     | `ATLAS_WORKSPACE_*`                                                                      | error           |
-| `architecture-boundaries` | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`, `ATLAS_ARCHITECTURE_POLICY_*`, `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` | error           |
-| `dependency-declarations` | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                            | error           |
-| `generated-openapi`       | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                              | error / skip    |
-| `atlas-version`           | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                          | warning / error |
+| Check ID                       | Owns / delegates                       | Possible diagnostics                                                                     | Failure policy  |
+| ------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------- | --------------- |
+| `project-contract`             | `@atlas/project`                       | `ATLAS_CONTRACT_*`                                                                       | error           |
+| `workspace-structure`          | Doctor + manifests                     | `ATLAS_WORKSPACE_*`                                                                      | error           |
+| `architecture-boundaries`      | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`, `ATLAS_ARCHITECTURE_POLICY_*`, `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` | error           |
+| `dependency-declarations`      | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                            | error           |
+| `generated-openapi`            | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                              | error / skip    |
+| `template-infrastructure-sync` | Manifest compare (read-only)           | `ATLAS_TEMPLATE_SYNC_*`                                                                  | error / skip    |
+| `atlas-version`                | CLI vs checkout version metadata       | `ATLAS_VERSION_MISMATCH`, `ATLAS_ROOT_PACKAGE_METADATA_INVALID`                          | warning / error |
 
 ---
 
@@ -143,6 +144,10 @@ Warnings do **not** fail CI in v0.1.
 | `ATLAS_DEPENDENCY_UNDECLARED`                | error    | Declare imported packages in the owning workspace `package.json`       |
 | `ATLAS_GENERATED_OPENAPI_STALE`              | error    | Run `pnpm api:gen` and commit both generated schemas                   |
 | `ATLAS_GENERATED_OPENAPI_INVALID`            | error    | Fix the OpenAPI source or generator error, then rerun Doctor           |
+| `ATLAS_TEMPLATE_SYNC_DRIFT`                  | error    | Run `pnpm template:sync` or document divergence in the manifest        |
+| `ATLAS_TEMPLATE_SYNC_CANONICAL_MISSING`      | error    | Restore missing canonical starter path or update manifest syncedPaths  |
+| `ATLAS_TEMPLATE_SYNC_STRUCTURE`              | error    | Restore required module or update manifest ownership entries           |
+| `ATLAS_TEMPLATE_SYNC_MANIFEST_INVALID`       | error    | Fix `templates/app-infrastructure.manifest.json`                       |
 | `ATLAS_VERSION_MISMATCH`                     | warning  | Align CLI/checkout Atlas snapshot versions                             |
 | `ATLAS_ROOT_PACKAGE_METADATA_INVALID`        | error    | Restore valid root `package.json` version metadata                     |
 | `ATLAS_WORKSPACE_CONFIG_MISSING`             | error    | Restore `pnpm-workspace.yaml` with configured workspace roots          |

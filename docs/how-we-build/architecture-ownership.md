@@ -181,8 +181,8 @@ Consumer code imports types and the typed client — never duplicates schema sha
 ## Duplicated starter/reference infrastructure
 
 `apps/web/src/lib/*` and `apps/reference/src/lib/*` deliberately duplicate platform template
-conventions (API client, auth, React Query, feature flags, telemetry, and related modules). Some
-directories are currently byte-for-byte identical.
+conventions (API client, auth, React Query, feature flags, telemetry, and related modules). Many
+paths are byte-identical; others are application-owned wiring that intentionally diverges.
 
 **Why:** `apps/reference` is intended to behave like an independent consumer application. It
 demonstrates how the conventions present in the starter are composed into a finished product, rather
@@ -190,8 +190,32 @@ than importing application internals directly from `apps/web`.
 
 **Risk:** Shared template conventions can drift between the starter and reference application.
 
-This PR does **not** extract a shared `@atlas/app-core` package. Synchronization strategy is tracked
-in [#57](https://github.com/blitzcraftlabs/atlas/issues/57).
+**Synchronization model (ADR-0009):**
+
+| Classification                 | Examples                                                                        | Update mechanism                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Generated artifact             | `lib/api/contracts/schema.ts`                                                   | `pnpm api:gen`, `pnpm api:check`, Doctor `generated-openapi` (not template-synced)                 |
+| Synced template infrastructure | API client, auth session, React Query keys, security helpers                    | Canonical starter (`apps/web`); `atlas sync infrastructure`; Doctor `template-infrastructure-sync` |
+| Application-owned wiring       | `lib/application/authz.ts`, `lib/breadcrumbs/tree.ts`, `lib/analytics/index.ts` | Edit per application; listed in manifest `independentPaths` (divergence allowed, not required)     |
+| Reference harness              | `lib/reference/**`, reference auth providers                                    | Reference-only; manifest `referenceOnlyPaths`                                                      |
+| Starter examples UI            | `components/LandingSelect.tsx`                                                  | Starter-only; manifest `starterOnlyPaths`                                                          |
+| Shared workspace packages      | `@atlas/ui`, `@atlas/consent`, `@atlas/config`                                  | Package releases and semver                                                                        |
+
+The manifest `templates/app-infrastructure.manifest.json` is the machine-readable policy for which
+paths must stay aligned vs allowed to diverge. `generatedPaths` documents machine-generated
+artifacts for ownership clarity; template sync does not copy them. Run `pnpm template:check` in CI
+or locally to detect drift; run `pnpm template:sync` to copy canonical starter files into consumer
+applications. Mutating sync re-validates after writes and exits successfully when repairable drift
+is cleared.
+
+When fixing platform infrastructure, prefer:
+
+1. Shared package — only when external consumers would genuinely import it
+2. Synced template path — stable conventions copied from `apps/web`
+3. Generated artifact — OpenAPI and similar machine-owned outputs
+4. Manual per-app edit — documented in `independentPaths`
+
+Do not import `apps/web/src/**` from `apps/reference` or vice versa.
 
 ---
 

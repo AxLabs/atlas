@@ -9,6 +9,7 @@ import {
 } from "./checks";
 import { createCheckExecutionFailedDiagnostic } from "./diagnostics";
 import { sortDiagnostics } from "./map-eslint";
+import { runTemplateInfrastructureSyncCheck } from "./template-sync";
 import { DOCTOR_REPORT_SCHEMA_VERSION } from "./types";
 
 import type { DoctorContext } from "./context";
@@ -56,6 +57,13 @@ export const DOCTOR_CHECKS: DoctorCheckDefinition[] = [
     rationale:
       "When OpenAPI is enabled, generated client artifacts must match the canonical spec deterministically.",
     run: runGeneratedOpenApiCheck,
+  },
+  {
+    id: "template-infrastructure-sync",
+    title: "Template infrastructure sync",
+    rationale:
+      "Starter and reference applications duplicate Atlas template infrastructure deliberately; synced paths must stay aligned with the canonical starter unless documented as application-owned.",
+    run: runTemplateInfrastructureSyncCheck,
   },
   {
     id: "atlas-version",

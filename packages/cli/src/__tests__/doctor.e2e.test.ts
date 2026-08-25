@@ -53,6 +53,7 @@ describe("atlas doctor CLI", () => {
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
     expect(result.stdout).toContain("Atlas Doctor");
     expect(result.stdout).toContain("✓ Project contract");
+    expect(result.stdout).toContain("✓ Template infrastructure sync");
     expect(result.stdout).toContain("Summary:");
   });
 

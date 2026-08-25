@@ -199,7 +199,8 @@ Both generators:
 
 Diagnose Atlas-specific architecture and configuration drift. Doctor validates the project contract,
 workspace structure, architecture boundaries, high-confidence undeclared application dependencies,
-generated OpenAPI freshness (when enabled), and Atlas version consistency.
+generated OpenAPI freshness (when enabled), template infrastructure synchronization (when both
+starter and reference applications are present), and Atlas version consistency.
 
 Doctor does **not** replace `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, or security
 audits. See [Atlas Doctor](doctor.md).
@@ -212,6 +213,25 @@ pnpm atlas doctor --cwd apps/web
 
 Exit `0` for healthy or warning-only reports. Exit `8` when one or more error diagnostics are
 present.
+
+### `atlas sync infrastructure`
+
+Synchronize duplicated Atlas template infrastructure from the canonical starter (`apps/web`) into
+consumer applications (currently `apps/reference`) according to
+`templates/app-infrastructure.manifest.json`.
+
+```bash
+pnpm template:check   # atlas sync infrastructure --check
+pnpm template:sync    # atlas sync infrastructure
+atlas sync infrastructure --dry-run --json
+```
+
+Use `--check` in CI to detect drift without copying files. Application-owned paths listed in the
+manifest `independentPaths` are allowed to diverge (and may remain byte-identical to the starter).
+`--dry-run` reports planned copies without writing files; both `--check` and `--dry-run` exit
+non-zero when drift or unresolved structural issues exist. A mutating run re-validates after copies
+and exits `0` when repairable drift is cleared. See
+[architecture ownership](architecture-ownership.md#duplicated-starterreference-infrastructure).
 
 ---
 

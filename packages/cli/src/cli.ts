@@ -3,6 +3,11 @@
 import { runDoctorCommand, writeDoctorHelp } from "./commands/doctor";
 import { parseGenerateArgs, runGenerateCommand, writeGenerateHelp } from "./commands/generate";
 import { formatInitResult, runInit } from "./commands/init";
+import {
+  formatSyncInfrastructureResult,
+  runSyncInfrastructureCommand,
+  writeSyncHelp,
+} from "./commands/sync";
 import { CliError, CliErrorCode, isCliError } from "./errors/cli-error";
 import { cliErrorFromUnknown } from "./errors/from-contract";
 import {
@@ -48,6 +53,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return ExitCode.SUCCESS;
       }
 
+      if (parsed.command === "sync") {
+        writeSyncHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
       writeHelp(writer, parsed.json);
       return ExitCode.SUCCESS;
     }
@@ -73,6 +83,8 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
           json: parsed.json,
           writer,
         });
+      case "sync":
+        return runSyncCliCommand(parsed, writer);
       default:
         throw new CliError(
           CliErrorCode.USAGE_ERROR,
@@ -127,6 +139,35 @@ function runGenerateCliCommand(
     parsed: generateParsed,
     writer,
   });
+}
+
+function runSyncCliCommand(
+  parsed: ParsedCli,
+  writer: ReturnType<typeof createOutputWriter>
+): number {
+  if (parsed.syncArgs.length === 0 || parsed.syncArgs[0] !== "infrastructure") {
+    writeSyncHelp(writer, parsed.json);
+    return ExitCode.SUCCESS;
+  }
+
+  if (parsed.syncArgs.length > 1) {
+    throw new CliError(
+      CliErrorCode.USAGE_ERROR,
+      `Unexpected arguments: ${parsed.syncArgs.slice(1).join(" ")}`
+    );
+  }
+
+  const result = runSyncInfrastructureCommand({
+    cwd: parsed.cwd,
+    dryRun: parsed.dryRun,
+    check: parsed.check,
+  });
+
+  writeCommandSuccess(writer, "sync infrastructure", result, parsed.json, (value) =>
+    formatSyncInfrastructureResult(value, parsed.dryRun || parsed.check)
+  );
+
+  return result.ok ? ExitCode.SUCCESS : ExitCode.DOCTOR_FAILED;
 }
 
 if (require.main === module) {

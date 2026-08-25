@@ -5,14 +5,30 @@ export interface ParsedCli {
   cwd?: string;
   debug: boolean;
   dryRun: boolean;
+  check: boolean;
   env: "skip" | "copy";
   generateArgs: string[];
+  syncArgs: string[];
   help: boolean;
   json: boolean;
   reference: "keep" | "remove";
   version: boolean;
   positionals: string[];
 }
+
+const GLOBAL_FLAGS = new Set([
+  "--help",
+  "-h",
+  "--version",
+  "-v",
+  "--json",
+  "--debug",
+  "--dry-run",
+  "--check",
+  "--cwd",
+  "--reference",
+  "--env",
+]);
 
 function parseFlagValue(args: string[], index: number, flag: string): string {
   const value = args[index + 1];
@@ -45,18 +61,24 @@ function parseEnv(value: string): "skip" | "copy" {
   );
 }
 
-function parseGlobalArgs(argv: string[]): ParsedCli {
-  const parsed: ParsedCli = {
+function createEmptyParsedCli(): ParsedCli {
+  return {
     debug: false,
     dryRun: false,
+    check: false,
     env: "skip",
     generateArgs: [],
+    syncArgs: [],
     help: false,
     json: false,
     reference: "keep",
     version: false,
     positionals: [],
   };
+}
+
+function parseGlobalArgs(argv: string[]): ParsedCli {
+  const parsed = createEmptyParsedCli();
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -82,6 +104,9 @@ function parseGlobalArgs(argv: string[]): ParsedCli {
       case "--dry-run":
         parsed.dryRun = true;
         break;
+      case "--check":
+        parsed.check = true;
+        break;
       case "--cwd":
         parsed.cwd = parseFlagValue(argv, index, "--cwd");
         index += 1;
@@ -106,7 +131,86 @@ function parseGlobalArgs(argv: string[]): ParsedCli {
   return parsed;
 }
 
+function parseGlobalFlagsOnly(argv: string[]): { flags: ParsedCli; remainder: string[] } {
+  const flags = createEmptyParsedCli();
+  const remainder: string[] = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === undefined) {
+      continue;
+    }
+
+    if (!GLOBAL_FLAGS.has(arg)) {
+      remainder.push(arg);
+      continue;
+    }
+
+    switch (arg) {
+      case "--help":
+      case "-h":
+        flags.help = true;
+        break;
+      case "--version":
+      case "-v":
+        flags.version = true;
+        break;
+      case "--json":
+        flags.json = true;
+        break;
+      case "--debug":
+        flags.debug = true;
+        break;
+      case "--dry-run":
+        flags.dryRun = true;
+        break;
+      case "--check":
+        flags.check = true;
+        break;
+      case "--cwd":
+        flags.cwd = parseFlagValue(argv, index, "--cwd");
+        index += 1;
+        break;
+      case "--reference":
+        flags.reference = parseReference(parseFlagValue(argv, index, "--reference"));
+        index += 1;
+        break;
+      case "--env":
+        flags.env = parseEnv(parseFlagValue(argv, index, "--env"));
+        index += 1;
+        break;
+      default:
+        remainder.push(arg);
+        break;
+    }
+  }
+
+  return { flags, remainder };
+}
+
+function mergeParsedFlags(target: ParsedCli, source: ParsedCli): void {
+  target.debug = target.debug || source.debug;
+  target.dryRun = target.dryRun || source.dryRun;
+  target.check = target.check || source.check;
+  target.help = target.help || source.help;
+  target.json = target.json || source.json;
+  target.cwd = target.cwd ?? source.cwd;
+  target.reference = source.reference;
+  target.env = source.env;
+}
+
 export function parseCliArgs(argv: string[]): ParsedCli {
+  const syncIndex = argv.indexOf("sync");
+  if (syncIndex !== -1) {
+    const beforeSync = parseGlobalArgs(argv.slice(0, syncIndex));
+    const afterSync = parseGlobalFlagsOnly(argv.slice(syncIndex + 1));
+    mergeParsedFlags(beforeSync, afterSync.flags);
+    beforeSync.command = "sync";
+    beforeSync.syncArgs = afterSync.remainder;
+    beforeSync.positionals = [];
+    return beforeSync;
+  }
+
   const generateIndex = argv.indexOf("generate");
   if (generateIndex !== -1) {
     const parsed = parseGlobalArgs(argv.slice(0, generateIndex));

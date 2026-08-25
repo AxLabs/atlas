@@ -21,6 +21,10 @@ export const DoctorDiagnosticCode = {
   WORKSPACE_PACKAGE_MANIFEST_MISSING: "ATLAS_WORKSPACE_PACKAGE_MANIFEST_MISSING",
   WORKSPACE_NOT_INCLUDED: "ATLAS_WORKSPACE_NOT_INCLUDED",
   DOCTOR_CHECK_EXECUTION_FAILED: "ATLAS_DOCTOR_CHECK_EXECUTION_FAILED",
+  TEMPLATE_SYNC_DRIFT: "ATLAS_TEMPLATE_SYNC_DRIFT",
+  TEMPLATE_SYNC_CANONICAL_MISSING: "ATLAS_TEMPLATE_SYNC_CANONICAL_MISSING",
+  TEMPLATE_SYNC_STRUCTURE: "ATLAS_TEMPLATE_SYNC_STRUCTURE",
+  TEMPLATE_SYNC_MANIFEST_INVALID: "ATLAS_TEMPLATE_SYNC_MANIFEST_INVALID",
 } as const;
 
 export type DoctorDiagnosticCodeType =
@@ -151,6 +155,30 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
     suggestedFix:
       "Include the configured Atlas workspace root in pnpm-workspace.yaml so pnpm discovers the package.",
     documentation: "docs/how-we-build/folder-structure.md",
+  },
+  [DoctorDiagnosticCode.TEMPLATE_SYNC_DRIFT]: {
+    severity: "error",
+    suggestedFix:
+      "Run `atlas sync infrastructure` to copy canonical starter template files into consumer applications, or document intentional divergence in templates/app-infrastructure.manifest.json independentPaths.",
+    documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.TEMPLATE_SYNC_CANONICAL_MISSING]: {
+    severity: "error",
+    suggestedFix:
+      "Restore the missing path in the canonical starter application or remove it from templates/app-infrastructure.manifest.json syncedPaths.",
+    documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.TEMPLATE_SYNC_STRUCTURE]: {
+    severity: "error",
+    suggestedFix:
+      "Restore the required infrastructure module or update templates/app-infrastructure.manifest.json if ownership changed.",
+    documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.TEMPLATE_SYNC_MANIFEST_INVALID]: {
+    severity: "error",
+    suggestedFix:
+      "Fix templates/app-infrastructure.manifest.json so Atlas can validate starter/reference synchronization policy.",
+    documentation: "docs/how-we-build/architecture-ownership.md",
   },
 };
 
