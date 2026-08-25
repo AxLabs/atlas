@@ -286,7 +286,7 @@ describe("atlas init bootstrap", () => {
 
   it("removes reference paths only when explicitly requested", () => {
     const fixture = createMinimalAtlasFixture({ withReferencePaths: true });
-    const referencePath = path.join(fixture.root, "apps/web/src/features/reference");
+    const referencePath = path.join(fixture.root, "apps/reference/src/features");
 
     expect(existsSync(referencePath)).toBe(true);
 
@@ -301,7 +301,7 @@ describe("atlas init bootstrap", () => {
 
   it("does not remove reference paths during dry-run", () => {
     const fixture = createMinimalAtlasFixture({ withReferencePaths: true });
-    const referencePath = path.join(fixture.root, "apps/web/src/features/reference");
+    const referencePath = path.join(fixture.root, "apps/reference/src/features");
 
     const result = runAtlasCli(
       ["init", "--cwd", fixture.root, "--reference", "remove", "--dry-run"],

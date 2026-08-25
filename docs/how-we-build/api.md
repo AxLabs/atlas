@@ -34,27 +34,44 @@ src/lib/
 
 ## Generated vs platform vs consumer
 
-| Layer           | Location                                           | Ownership                                      |
-| --------------- | -------------------------------------------------- | ---------------------------------------------- |
-| OpenAPI spec    | `openapi/openapi.json`                             | Consumer replaces with their API contract      |
-| Generated types | `lib/api/contracts/schema.ts`                      | **Generated** — run `api:gen`; never hand-edit |
-| Typed client    | `lib/api/contracts/index.ts`                       | **Platform** — wraps generated types           |
-| HTTP client     | `lib/api/client.ts`                                | **Platform** — fetch gateway, retries, errors  |
-| Feature hooks   | `features/<name>/` or `features/reference/<name>/` | **Consumer** or **reference**                  |
+| Layer           | Location                                                                              | Ownership                                      |
+| --------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| OpenAPI spec    | `openapi/openapi.json`                                                                | Consumer replaces with their API contract      |
+| Generated types | `lib/api/contracts/schema.ts`                                                         | **Generated** — run `api:gen`; never hand-edit |
+| Typed client    | `lib/api/contracts/index.ts`                                                          | **Platform** — wraps generated types           |
+| HTTP client     | `lib/api/client.ts`                                                                   | **Platform** — fetch gateway, retries, errors  |
+| Feature hooks   | `features/<name>/` (product) or `apps/reference/src/features/<name>/` (reference app) | **Consumer** or **reference application**      |
 
 See [architecture ownership](architecture-ownership.md) for the full classification.
 
 ## Using React Query Hooks
 
+Client feature hooks use `useTypedApiClient()` so requests keep the generated OpenAPI contract while
+using the runtime API base URL from `useConfig()`:
+
+```
+runtime config (useConfig)
+      ↓
+useTypedApiClient() → createApi(baseUrl)
+      ↓
+typed OpenAPI client (api.users.*)
+      ↓
+central apiRequest gateway
+      ↓
+React Query feature hooks
+```
+
 ### Queries
 
 ```typescript
-// src/features/reference/users/queries.ts
+// apps/reference/src/features/users/queries.ts
 import { useQuery } from "@tanstack/react-query";
-import { api, normalizeApiError } from "@/lib/api";
+import { normalizeApiError, useTypedApiClient } from "@/lib/api";
 import { userKeys } from "./keys";
 
 export function useUserList(params?: { page?: number }) {
+  const api = useTypedApiClient();
+
   return useQuery({
     queryKey: userKeys.list(params),
     queryFn: async () => {
@@ -68,6 +85,8 @@ export function useUserList(params?: { page?: number }) {
 }
 
 export function useUser(id: string) {
+  const api = useTypedApiClient();
+
   return useQuery({
     queryKey: userKeys.detail(id),
     queryFn: async () => {
@@ -84,13 +103,14 @@ export function useUser(id: string) {
 ### Mutations
 
 ```typescript
-// src/features/reference/users/mutations.ts
+// apps/reference/src/features/users/mutations.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, normalizeApiError } from "@/lib/api";
+import { normalizeApiError, useTypedApiClient } from "@/lib/api";
 import { userKeys } from "./keys";
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
+  const api = useTypedApiClient();
 
   return useMutation({
     mutationFn: async (data: CreateUserRequest) => {
@@ -111,7 +131,7 @@ export function useCreateUser() {
 ### In Components
 
 ```tsx
-import { useUserList, useCreateUser } from "@/features/reference/users";
+import { useUserList, useCreateUser } from "@/features/users";
 import { getUserFacingMessage } from "@/lib/api";
 
 function UserList() {
@@ -136,7 +156,7 @@ function UserList() {
 Use the factory pattern for consistent keys:
 
 ```typescript
-// src/features/reference/users/keys.ts
+// apps/reference/src/features/users/keys.ts
 import { createQueryKeys } from "@/lib/react-query";
 
 export const userKeys = createQueryKeys("users");
@@ -195,12 +215,23 @@ try {
 
 ## OpenAPI Contract
 
-Types are generated from `openapi/openapi.json`:
+Types are generated from `openapi/openapi.json` into each application's
+`src/lib/api/contracts/schema.ts`:
 
 ```bash
-# Regenerate after spec changes
+# Regenerate both consumer copies after spec changes (Atlas maintainers)
+pnpm api:gen
+
+# Verify committed schemas match the spec (CI runs this)
+pnpm api:check
+
+# Per-workspace regeneration (only when debugging one app)
 pnpm --filter @atlas/web api:gen
+pnpm --filter @atlas/reference api:gen
 ```
+
+After changing `openapi/openapi.json`, always run root `pnpm api:gen` so both `apps/web` and
+`apps/reference` stay synchronized.
 
 ### Using Generated Types
 

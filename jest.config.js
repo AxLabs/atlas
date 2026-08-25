@@ -3,7 +3,7 @@
  * This enables VSCode Jest extension to discover tests in all packages
  */
 module.exports = {
-  projects: ["<rootDir>/apps/web", "<rootDir>/packages/ui"],
+  projects: ["<rootDir>/apps/web", "<rootDir>/apps/reference", "<rootDir>/packages/ui"],
   collectCoverageFrom: [
     "apps/*/src/**/*.{ts,tsx}",
     "packages/*/src/**/*.{ts,tsx}",

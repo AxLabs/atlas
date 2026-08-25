@@ -9,24 +9,66 @@
 
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
-import { getWebVitalsConfig, shouldReportVitals } from "./config";
+import { shouldReportVitals } from "./config";
 import { initTransport, sendMetric } from "./transport";
 import { getNavigationType, sanitizeRoute } from "./types";
 
 import type { MetricName, WebVitalMetric } from "./types";
 import type { Metric } from "web-vitals";
 
+export interface WebVitalsInitConfig {
+  enabled: boolean;
+  sampleRate: number;
+  endpoint: string;
+  environment: string;
+  appName: string;
+  buildId?: string;
+  debug: boolean;
+}
+
+interface ReportingSessionState {
+  initialized: boolean;
+  enabled: boolean;
+  sampled: boolean;
+}
+
+let reportingSession: ReportingSessionState = {
+  initialized: false,
+  enabled: false,
+  sampled: false,
+};
+
+/**
+ * Effective reporting session state after initialization.
+ *
+ * @internal Test helper
+ */
+export function getReportingSessionState(): ReportingSessionState {
+  return { ...reportingSession };
+}
+
+/**
+ * Reset reporting session state.
+ *
+ * @internal Test helper
+ */
+export function _resetReportingSessionState(): void {
+  reportingSession = {
+    initialized: false,
+    enabled: false,
+    sampled: false,
+  };
+  if (typeof sessionStorage !== "undefined") {
+    sessionStorage.removeItem("web-vitals-sampled");
+  }
+}
+
 /**
  * Web Vitals initialization options
  */
 export interface WebVitalsOptions {
-  /** Override default configuration */
-  config?: {
-    enabled?: boolean;
-    sampleRate?: number;
-    endpoint?: string;
-    debug?: boolean;
-  };
+  /** Canonical runtime configuration from validated Atlas config */
+  config: WebVitalsInitConfig;
   /** Callback for each metric (for custom handling) */
   onMetric?: (metric: WebVitalMetric) => void;
 }
@@ -35,27 +77,21 @@ export interface WebVitalsOptions {
  * Initialize Web Vitals reporting
  *
  * Call this once on app initialization (client-side only).
- * Automatically handles sampling, batching, and transport.
- *
- * @example
- * ```tsx
- * // In a client component or useEffect
- * initWebVitalsReporting({ debug: true });
- * ```
+ * Uses the validated Atlas config passed by WebVitalsReporter — it does not
+ * independently rediscover configuration from hostname fallbacks.
  */
-export function initWebVitalsReporting(options: WebVitalsOptions = {}): void {
-  // Only run in browser
+export function initWebVitalsReporting(options: WebVitalsOptions): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  // Get configuration
-  const config = {
-    ...getWebVitalsConfig(),
-    ...options.config,
+  const config = options.config;
+  reportingSession = {
+    initialized: true,
+    enabled: config.enabled,
+    sampled: false,
   };
 
-  // Check if enabled
   if (!config.enabled) {
     if (config.debug) {
       console.log("[Web Vitals] Reporting disabled via config");
@@ -63,8 +99,14 @@ export function initWebVitalsReporting(options: WebVitalsOptions = {}): void {
     return;
   }
 
-  // Check sampling
-  if (!shouldReportVitals(config.sampleRate)) {
+  const sampled = shouldReportVitals(config.sampleRate);
+  reportingSession = {
+    initialized: true,
+    enabled: true,
+    sampled,
+  };
+
+  if (!sampled) {
     if (config.debug) {
       console.log(`[Web Vitals] Session not sampled (rate: ${config.sampleRate})`);
     }
@@ -76,16 +118,16 @@ export function initWebVitalsReporting(options: WebVitalsOptions = {}): void {
       environment: config.environment,
       sampleRate: config.sampleRate,
       endpoint: config.endpoint,
+      appName: config.appName,
+      buildId: config.buildId,
     });
   }
 
-  // Initialize transport layer
   initTransport({
     endpoint: config.endpoint,
     debug: config.debug,
   });
 
-  // Create metric handler
   const handleMetric = (metric: Metric) => {
     const payload: WebVitalMetric = {
       name: metric.name as MetricName,
@@ -101,16 +143,13 @@ export function initWebVitalsReporting(options: WebVitalsOptions = {}): void {
       navigationType: getNavigationType(),
     };
 
-    // Custom callback if provided
     if (options.onMetric) {
       options.onMetric(payload);
     }
 
-    // Send to backend
     sendMetric(payload);
   };
 
-  // Register Core Web Vitals observers
   try {
     onLCP(handleMetric);
     onCLS(handleMetric);
@@ -129,11 +168,10 @@ export function initWebVitalsReporting(options: WebVitalsOptions = {}): void {
 }
 
 /**
- * Check if Web Vitals reporting is active in current session
+ * Check if Web Vitals reporting is active in the current initialized session.
  */
 export function isReportingActive(): boolean {
   if (typeof window === "undefined") return false;
 
-  const config = getWebVitalsConfig();
-  return config.enabled && shouldReportVitals(config.sampleRate);
+  return reportingSession.initialized && reportingSession.enabled && reportingSession.sampled;
 }

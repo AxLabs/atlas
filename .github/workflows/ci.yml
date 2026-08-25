@@ -160,6 +160,10 @@ jobs:
           fi
           echo "✅ Lockfile is up-to-date"
 
+      - name: Check generated OpenAPI contracts
+        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+        run: pnpm api:check
+
       - name: Validate environment variables
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm validate:env
@@ -219,9 +223,11 @@ jobs:
         if:
           (steps.detect.outputs.app == 'true' || github.event_name == 'push') &&
           env.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
-        run: pnpm --filter @atlas/web exec playwright install --with-deps chromium
+        run: |
+          pnpm --filter @atlas/web exec playwright install --with-deps chromium
+          pnpm --filter @atlas/reference exec playwright install --with-deps chromium
 
-      - name: Run E2E tests
+      - name: Run starter E2E tests
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         env:
           CI: true
@@ -247,6 +253,32 @@ jobs:
               bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e'
           else
             pnpm --filter @atlas/web test:e2e
+          fi
+
+      - name: Run reference E2E tests
+        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+        env:
+          CI: true
+          SKIP_ENV_VALIDATION: false
+        run: |
+          if [ "${ATLAS_CI_RUNNER_PROFILE}" = "self-hosted" ]; then
+            pw_version="$(pnpm --filter @atlas/reference exec playwright --version | awk '{print $2}')"
+            checkout_dir="${GITHUB_WORKSPACE}/${CI_CHECKOUT_DIR}"
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --ipc=host \
+              --network host \
+              -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+              -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
+              -w "${checkout_dir}" \
+              -e CI=true \
+              -e HOME=/tmp/pw-home \
+              -e SKIP_ENV_VALIDATION=false \
+              -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
+              "mcr.microsoft.com/playwright:v${pw_version}-noble" \
+              bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/reference test:e2e'
+          else
+            pnpm --filter @atlas/reference test:e2e
           fi
 
       - name: Upload Playwright report

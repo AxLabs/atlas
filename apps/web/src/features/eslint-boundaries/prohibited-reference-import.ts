@@ -1,3 +1,3 @@
-import { userKeys } from "@/features/reference/users";
+import { useExampleItems } from "@/features/examples/hooks";
 
-void userKeys;
+void useExampleItems;

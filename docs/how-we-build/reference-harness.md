@@ -15,16 +15,30 @@ Reference mode is **not** evidence that production OAuth or API security is corr
 
 ## Enable reference mode
 
-Add to `apps/web/.env.local`:
+The reference harness runs in the **`apps/reference`** workspace application — not in the starter
+app (`apps/web`).
 
 ```bash
-ATLAS_REFERENCE_MODE=true
-NEXT_PUBLIC_API_URL=/api/reference
-AUTH_SESSION_SECRET=local-reference-session-secret-32chars
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+pnpm install
+cp apps/reference/.env.example apps/reference/.env.local
+pnpm --filter @atlas/reference dev
 ```
 
-Restart the dev server, then open `/reference`.
+Default local configuration (`apps/reference/.env.local`):
+
+```bash
+NEXT_PUBLIC_API_URL=/api
+AUTH_SESSION_SECRET=local-reference-session-secret-32chars
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+```
+
+Open [http://localhost:3001](http://localhost:3001) for the reference application or `/harness` for
+developer controls.
+
+Product routes (`/`, `/users`, `/profile`, `/settings`, `/authorization`, `/platform`) demonstrate
+runtime capabilities. `/harness` remains the developer simulation layer — persona selection, API
+scenarios, reset, and deterministic failures. Platform diagnostics live on `/platform`, not in the
+harness.
 
 ## Auth personas
 
@@ -43,10 +57,10 @@ without roles. The reference adapter maps profile roles to typed permissions —
 | `reference-user`  | `users.read`                                                 |
 | `reference-admin` | `users.read`, `users.create`, `users.update`, `users.delete` |
 
-Select personas via the `/reference` control panel or programmatically:
+Select personas via the `/harness` control panel or programmatically:
 
 ```bash
-curl -X POST http://localhost:3000/api/reference/auth/session \
+curl -X POST http://localhost:3001/api/auth/session \
   -H 'Content-Type: application/json' \
   -d '{"persona":"reference-user","scenario":{"users":"success"}}' \
   --cookie-jar cookies.txt --cookie cookies.txt
@@ -81,31 +95,31 @@ const header = referenceScenarioHeader({ auth: "reference-user", users: "empty" 
 ## Reset
 
 ```bash
-curl -X POST http://localhost:3000/api/reference/reset --cookie cookies.txt
+curl -X POST http://localhost:3001/api/reset --cookie cookies.txt
 ```
 
 Resets the in-memory users store and clears the scenario cookie.
 
 ## Production safety
 
-Reference adapters **cannot** activate in production:
+Reference adapters **cannot** activate in production builds of `apps/reference`:
 
 1. `getServerEnvSchema("production")` rejects `ATLAS_REFERENCE_MODE=true`
 2. `isReferenceModeEnabled()` returns false when `NODE_ENV` or `NEXT_PUBLIC_APP_ENV` is `production`
-3. `/reference` routes return 404 when reference mode is off
 
-Automated tests in `validate-server-env.test.ts` and `lib/reference/__tests__/mode.test.ts` prove
-these guards.
+The starter app (`apps/web`) does not ship reference adapters or routes.
+
+Automated tests in `apps/reference` prove these guards.
 
 ## Architecture boundaries
 
-| Layer                    | Location                                          |
-| ------------------------ | ------------------------------------------------- |
-| Application contract     | `useSession`, `api.users.*`, OpenAPI types        |
-| Reference adapters       | `lib/reference/**`, `/api/reference/**`           |
-| Developer UI             | `/reference`, `features/reference/`               |
-| Authorization (#41)      | `lib/authz/`, reference role → permission adapter |
-| Future #39 reference app | Consumes this harness; not implemented here       |
+| Layer                 | Location (`apps/reference`)                                        |
+| --------------------- | ------------------------------------------------------------------ |
+| Application contract  | `useSession`, `useTypedApiClient()` → `api.users.*`, OpenAPI types |
+| Reference adapters    | `lib/reference/**`, `/api/**` harness routes                       |
+| Developer UI          | `/harness`, harness components in `features/components/`           |
+| Reference application | `/`, `/users`, `features/users` product UI                         |
+| Authorization         | `lib/authz/`, reference role → permission adapter                  |
 
 ## Real provider configuration
 

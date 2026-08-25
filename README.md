@@ -11,8 +11,17 @@ engagement or evaluation terms. It is not a general public open-source offering.
 The platform provides opinionated patterns for authentication, data fetching, validation, theming,
 accessibility, and observability—so teams can focus on shipping product.
 
-Authorized clients fork or branch the repository, explore the minimal `/examples` reference pages,
-delete them, and build on the platform primitives in `lib/`, `providers/`, and `packages/ui`.
+Authorized clients fork or branch the repository, start from the clean `apps/web` starter, and
+explore `apps/reference` to see a finished product built with Atlas. Minimal `/examples` pages in
+the starter demonstrate isolated patterns; delete them when building your product.
+
+```bash
+# Starter app (consumer starting point)
+pnpm --filter @atlas/web dev        # http://localhost:3000
+
+# Reference application (evaluation / learning)
+pnpm --filter @atlas/reference dev  # http://localhost:3001
+```
 
 ---
 
@@ -72,7 +81,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 atlas/
-├── apps/web/           # Next.js application
+├── apps/web/           # Clean Atlas starter application
+├── apps/reference/     # Executable reference application
 ├── packages/ui/        # Shared UI components
 ├── packages/config/    # Shared configuration
 ├── docs/

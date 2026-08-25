@@ -31,9 +31,11 @@ In-memory mock routes (reset on server restart):
 
 ## OpenAPI reference
 
-For typed external API consumers, see `features/reference/users/` — hooks that call the
-OpenAPI-generated client (`api.users.*`). Wire your own UI when you connect to a real backend. See
+For typed external API consumers, see `apps/reference/src/features/users/` — hooks that call the
+OpenAPI-generated client (`api.users.*`). The reference application wires these into full UI. See
 [architecture ownership](architecture-ownership.md).
+
+For the executable reference product journey, run `pnpm --filter @atlas/reference dev`.
 
 ## Related docs
 

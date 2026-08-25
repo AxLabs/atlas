@@ -15,8 +15,26 @@ The platform provides opinionated patterns so teams can ship production applicat
 reinventing infrastructure for authentication, data fetching, validation, theming, accessibility,
 and observability.
 
-Authorized recipients explore the minimal `/examples` reference pages, then delete them and build on
-the platform primitives in `lib/`, `providers/`, and `packages/ui`.
+Authorized recipients start from the clean starter (`apps/web`), explore the executable reference
+application (`apps/reference`), then delete `/examples` and build on the platform primitives in
+`lib/`, `providers/`, and `packages/ui`.
+
+### Two applications
+
+| Application      | Role                                                                 |
+| ---------------- | -------------------------------------------------------------------- |
+| `apps/web`       | Clean consumer starter — removable `/examples` pattern pages only    |
+| `apps/reference` | Executable finished reference product — full Atlas architecture demo |
+
+The `/examples` routes in the starter demonstrate isolated patterns (data states, forms). Run
+`apps/reference` to see how those patterns compose in a realistic application with auth, API
+integration, and product features.
+
+```bash
+pnpm --filter @atlas/reference dev
+```
+
+Reference application URL: `http://localhost:3001` (developer harness at `/harness`).
 
 ---
 

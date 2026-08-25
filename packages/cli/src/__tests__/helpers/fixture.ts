@@ -105,9 +105,10 @@ export function createGeneratorAtlasFixture(
   }
 
   if (options?.withReferencePaths) {
-    mkdirSync(path.join(root, "apps/web/src/features/reference"), { recursive: true });
+    mkdirSync(path.join(root, "apps/reference/src/features"), { recursive: true });
+    mkdirSync(path.join(root, "apps/reference/src/features/components"), { recursive: true });
+    mkdirSync(path.join(root, "apps/reference/src/app"), { recursive: true });
     mkdirSync(path.join(root, "apps/web/src/features/examples"), { recursive: true });
-    mkdirSync(path.join(root, "apps/web/src/components/reference"), { recursive: true });
     mkdirSync(path.join(root, "apps/web/src/app/examples"), { recursive: true });
   }
 
@@ -165,9 +166,10 @@ export function snapshotFixturePaths(fixtureRoot: string): {
   const contractPath = path.join(fixtureRoot, "atlas.config.json");
   const envLocalPath = path.join(fixtureRoot, "apps/web/.env.local");
   const referencePaths = [
-    "apps/web/src/features/reference",
+    "apps/reference/src/features",
+    "apps/reference/src/features/components",
+    "apps/reference/src/app",
     "apps/web/src/features/examples",
-    "apps/web/src/components/reference",
     "apps/web/src/app/examples",
   ].map((relativePath) => path.join(fixtureRoot, relativePath));
 

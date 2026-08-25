@@ -57,7 +57,6 @@ const STANDARD_APP_IMPORT_IGNORES = [
 const PRODUCT_FEATURE_IMPORT_FILES = ["src/features/**/*.{ts,tsx}"];
 
 const PRODUCT_FEATURE_IMPORT_IGNORES = [
-  "src/features/reference/**",
   "src/features/examples/**",
   ...TEST_FILE_IGNORES,
 ];

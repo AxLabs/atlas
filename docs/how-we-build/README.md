@@ -72,7 +72,7 @@ up authentication in your product.
 ### Add a new API endpoint consumer
 
 1. Add types to OpenAPI spec (`openapi/openapi.json`)
-2. Regenerate: `pnpm --filter @atlas/web api:gen`
+2. Regenerate: `pnpm api:gen` (both `apps/web` and `apps/reference` schemas)
 3. Create query/mutation hooks in `src/features/[feature]/`
 4. Use hooks in components — never call `fetch()` directly
 

@@ -60,9 +60,7 @@ export function ExamplesShell({ children }: ExamplesShellProps) {
         </aside>
 
         <main className="flex-1">
-          <div className="border-border bg-background/95 border-b px-4 py-2 md:px-6">
-            <AppBreadcrumbs />
-          </div>
+          <AppBreadcrumbs />
           <div className="p-4 md:p-6">{children}</div>
         </main>
       </div>

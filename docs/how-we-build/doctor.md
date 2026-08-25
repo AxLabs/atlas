@@ -141,7 +141,7 @@ Warnings do **not** fail CI in v0.1.
 | `ATLAS_ARCHITECTURE_POLICY_MISSING`          | error    | Restore application ESLint config and architecture policy files        |
 | `ATLAS_ARCHITECTURE_POLICY_UNSUPPORTED_ROOT` | error    | Move product features under `<application.root>/src` or extend tooling |
 | `ATLAS_DEPENDENCY_UNDECLARED`                | error    | Declare imported packages in the owning workspace `package.json`       |
-| `ATLAS_GENERATED_OPENAPI_STALE`              | error    | Run `pnpm --filter @atlas/web api:gen`                                 |
+| `ATLAS_GENERATED_OPENAPI_STALE`              | error    | Run `pnpm api:gen` and commit both generated schemas                   |
 | `ATLAS_GENERATED_OPENAPI_INVALID`            | error    | Fix the OpenAPI source or generator error, then rerun Doctor           |
 | `ATLAS_VERSION_MISMATCH`                     | warning  | Align CLI/checkout Atlas snapshot versions                             |
 | `ATLAS_ROOT_PACKAGE_METADATA_INVALID`        | error    | Restore valid root `package.json` version metadata                     |

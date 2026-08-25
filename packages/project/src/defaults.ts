@@ -8,12 +8,12 @@ export const DEFAULT_ATLAS_PROJECT_CONTRACT: Omit<ResolvedAtlasProject, "schemaV
   },
   features: {
     product: "apps/web/src/features",
-    reference: "apps/web/src/features/reference",
+    reference: "apps/reference/src/features",
     examples: "apps/web/src/features/examples",
   },
   reference: {
-    components: "apps/web/src/components/reference",
-    routes: "apps/web/src/app/examples",
+    components: "apps/reference/src/features/components",
+    routes: "apps/reference/src/app",
   },
   ui: {
     package: "@atlas/ui",

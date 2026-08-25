@@ -30,15 +30,17 @@ atlas/
 
 ## Ownership boundaries
 
-| Location                           | Owns                                                           | Does not own                              |
-| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
-| `apps/web/src/app/`                | Routes, layouts, page composition                              | Business logic, reusable components       |
-| `apps/web/src/features/`           | Domain logic, feature hooks, feature UI                        | Generic primitives, cross-feature imports |
-| `apps/web/src/features/reference/` | Reference hook patterns (no product UI)                        | Product features importing reference code |
-| `apps/web/src/components/`         | App-specific compositions                                      | Generic design-system components          |
-| `packages/ui/`                     | Reusable visual primitives, form helpers, app-state components | Product/domain logic, API calls           |
-| `packages/config/`                 | Tooling configuration                                          | Application or product code               |
-| `apps/web/src/lib/`                | Shared infrastructure                                          | UI components, domain logic               |
+| Location                       | Owns                                                           | Does not own                              |
+| ------------------------------ | -------------------------------------------------------------- | ----------------------------------------- |
+| `apps/web/src/app/`            | Routes, layouts, page composition                              | Business logic, reusable components       |
+| `apps/web/src/features/`       | Domain logic, feature hooks, feature UI                        | Generic primitives, cross-feature imports |
+| `apps/web/src/features/`       | Domain logic, feature hooks, feature UI (starter)              | Generic primitives, cross-feature imports |
+| `apps/reference/`              | Executable reference application                               | Product features importing reference code |
+| `apps/reference/src/features/` | Reference product features (users CRUD, harness UI)            | Starter app code                          |
+| `apps/web/src/components/`     | App-specific compositions                                      | Generic design-system components          |
+| `packages/ui/`                 | Reusable visual primitives, form helpers, app-state components | Product/domain logic, API calls           |
+| `packages/config/`             | Tooling configuration                                          | Application or product code               |
+| `apps/web/src/lib/`            | Shared infrastructure                                          | UI components, domain logic               |
 
 Do not move code into a shared package unless it is genuinely reusable across applications. Prefer
 existing Atlas components and patterns over new abstractions.
@@ -88,7 +90,7 @@ Repository-local invocation: `pnpm atlas --help`. See [Atlas CLI](docs/how-we-bu
    - `index.ts` — public exports only
 3. **No cross-feature imports** — extract shared logic to `lib/` if needed.
 
-Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI client hooks),
+Reference implementations: `apps/reference/` (executable reference application),
 `apps/web/src/features/examples/` (app-route mocks). See
 [architecture ownership](docs/how-we-build/architecture-ownership.md).
 
@@ -104,7 +106,7 @@ Reference implementations: `apps/web/src/features/reference/users/` (OpenAPI cli
 - **Server components / route handlers** — Use `apiRequest` from `@/lib/api/server` for outbound
   calls. Route handlers (`src/app/api/**/route.ts`) are API boundaries where `fetch()` is permitted.
 - **Types** — Import from `@/lib/api/contracts` (`components`, `paths` schemas). Regenerate after
-  spec changes: `pnpm --filter @atlas/web api:gen`.
+  spec changes: `pnpm api:gen` (regenerates both `apps/web` and `apps/reference` schemas).
 - **Notifications** — Use `notify` / `notifyApiError` from `@/lib/notifications` for toasts.
 
 ## Authorization architecture
@@ -243,4 +245,4 @@ pnpm format:write                           # fix formatting
 | Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                           |
 | Data states example     | `apps/web/src/app/examples/data/page.tsx`                                                    |
 | Form example            | `apps/web/src/app/examples/form/page.tsx`                                                    |
-| OpenAPI reference hooks | `apps/web/src/features/reference/users/`                                                     |
+| OpenAPI reference hooks | `apps/reference/src/features/users/`                                                         |

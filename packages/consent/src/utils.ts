@@ -56,20 +56,30 @@ export function hasConsentForService(service: ConsentService, category: ConsentC
 }
 
 /**
- * Opens the CookieConsent preferences modal.
- * No-op when CookieConsent is unavailable.
+ * Run an action against the initialized CookieConsent module when available.
+ * @internal
  */
-export function openConsentPreferences(): void {
+export function withCookieConsent(action: (cc: AtlasCookieConsentModule) => void): void {
   const cc = getCookieConsent();
   if (!cc) {
     return;
   }
 
-  try {
-    cc.showPreferences();
-  } catch {
-    // Swallow — caller may be in SSR or pre-init
-  }
+  action(cc);
+}
+
+/**
+ * Opens the CookieConsent preferences modal.
+ * No-op when CookieConsent is unavailable.
+ */
+export function openConsentPreferences(): void {
+  withCookieConsent((cc) => {
+    try {
+      cc.showPreferences();
+    } catch {
+      // Swallow — caller may be in SSR or pre-init
+    }
+  });
 }
 
 /**

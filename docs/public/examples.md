@@ -44,5 +44,5 @@ After forking Atlas for a new product:
 3. Remove `app/api/examples/`
 4. Update the homepage CTA in `app/page.tsx`
 
-Keep `features/reference/users/` as a hook-level reference for OpenAPI-backed APIs, or remove it
-once you have your own feature modules.
+Study `apps/reference/src/features/users/` for OpenAPI-backed APIs in the reference application, or
+remove `apps/reference/` once you have your own feature modules.

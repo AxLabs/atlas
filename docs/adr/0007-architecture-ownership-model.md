@@ -25,7 +25,8 @@ We adopt a six-class ownership model documented in
 
 1. **Core platform** — reusable infrastructure in `lib/` and workspace packages
 2. **App-owned** — reference app composition (providers, navigation wiring)
-3. **Reference** — pattern demonstrations safe to delete (`features/reference/`, `/examples`)
+3. **Reference** — pattern demonstrations and the executable reference application (`/examples` in
+   starter, `apps/reference/` for the full product journey)
 4. **Generated** — machine-owned OpenAPI types
 5. **Documentation only** — conventions without code
 6. **Removed** — dead abstractions deleted rather than preserved
@@ -34,7 +35,7 @@ We adopt a six-class ownership model documented in
 
 | Surface                                         | Decision                                                                                          |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `features/reference/users`                      | Retained as canonical OpenAPI hook reference (no UI)                                              |
+| `apps/reference/src/features/users`             | Retained as canonical OpenAPI hook + UI reference in the executable reference application         |
 | `components/layout/AppShell`                    | Removed — unused; ExamplesShell owns reference layout                                             |
 | `lib/telemetry/sentry.*`                        | Removed — duplicated root Sentry config                                                           |
 | `lib/i18n`                                      | Kept minimal — typed key convention, not a localization framework                                 |

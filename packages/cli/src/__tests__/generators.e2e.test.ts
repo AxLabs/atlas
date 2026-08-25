@@ -144,7 +144,7 @@ describe("atlas generate feature", () => {
   it("rejects reserved feature names", () => {
     const fixture = createGeneratorAtlasFixture({ withContract: true, withReferencePaths: true });
     const result = runAtlasCli(
-      ["generate", "feature", "reference", "--cwd", fixture.root],
+      ["generate", "feature", "examples", "--cwd", fixture.root],
       fixture.root
     );
 

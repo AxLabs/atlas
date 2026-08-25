@@ -2,7 +2,6 @@
  * Breadcrumb Tree Definition
  *
  * Route segment tree for breadcrumb resolution. Extend this when adding product routes.
- * Reference routes only — consumers replace with their own tree.
  *
  * @module breadcrumbs/tree
  */

@@ -25,12 +25,12 @@ These beliefs shape every architectural choice in the platform.
 
 Atlas is a **frontend platform template**, not a product. Before diving into layers:
 
-| Classification    | What it is                       | Examples                                                  |
-| ----------------- | -------------------------------- | --------------------------------------------------------- |
-| **Core platform** | Infrastructure Atlas establishes | `lib/api`, `lib/auth/session`, `@atlas/ui`, feature flags |
-| **Reference**     | Pattern demos — safe to delete   | `/examples`, `features/reference/users`, Google OAuth     |
-| **Consumer**      | Your product code                | Domain features, app shell, IdP choice, OpenAPI spec      |
-| **Generated**     | Machine-owned                    | `lib/api/contracts/schema.ts`                             |
+| Classification    | What it is                                 | Examples                                                                     |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| **Core platform** | Infrastructure Atlas establishes           | `lib/api`, `lib/auth/session`, `@atlas/ui`, feature flags                    |
+| **Reference**     | Pattern demos and executable reference app | `/examples` (starter), `apps/reference` (full product journey), Google OAuth |
+| **Consumer**      | Your product code                          | Domain features, app shell, IdP choice, OpenAPI spec                         |
+| **Generated**     | Machine-owned                              | `lib/api/contracts/schema.ts`                                                |
 
 Full classification: [architecture ownership](../how-we-build/architecture-ownership.md).
 
@@ -124,8 +124,9 @@ self-contained:
 - Query and mutation hooks for data operations
 - Query key factories for cache management
 
-**Reference** modules (`features/reference/`, `features/examples/`) demonstrate patterns without
-product UI. See [architecture ownership](../how-we-build/architecture-ownership.md).
+**Reference** modules in the starter (`features/examples/`) and the executable reference application
+(`apps/reference/`) demonstrate patterns. See
+[architecture ownership](../how-we-build/architecture-ownership.md).
 
 Features don't import from other features. Shared logic lives in infrastructure.
 
