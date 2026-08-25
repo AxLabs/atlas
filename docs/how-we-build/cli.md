@@ -227,7 +227,10 @@ atlas sync infrastructure --dry-run --json
 ```
 
 Use `--check` in CI to detect drift without copying files. Application-owned paths listed in the
-manifest `independentPaths` are allowed to diverge. See
+manifest `independentPaths` are allowed to diverge (and may remain byte-identical to the starter).
+`--dry-run` reports planned copies without writing files; both `--check` and `--dry-run` exit
+non-zero when drift or unresolved structural issues exist. A mutating run re-validates after copies
+and exits `0` when repairable drift is cleared. See
 [architecture ownership](architecture-ownership.md#duplicated-starterreference-infrastructure).
 
 ---

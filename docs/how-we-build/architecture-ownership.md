@@ -192,18 +192,21 @@ than importing application internals directly from `apps/web`.
 
 **Synchronization model (ADR-0009):**
 
-| Classification                 | Examples                                                                                  | Update mechanism                                                                                   |
-| ------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Generated artifact             | `lib/api/contracts/schema.ts`                                                             | `pnpm api:gen`, `pnpm api:check`, Doctor `generated-openapi`                                       |
-| Synced template infrastructure | API client, auth session, React Query keys, security helpers                              | Canonical starter (`apps/web`); `atlas sync infrastructure`; Doctor `template-infrastructure-sync` |
-| Application-owned wiring       | `lib/application/authz.ts`, `lib/breadcrumbs/tree.ts`, `providers/analytics-provider.tsx` | Edit per application; listed in manifest `independentPaths`                                        |
-| Reference harness              | `lib/reference/**`, reference auth providers                                              | Reference-only; manifest `referenceOnlyPaths`                                                      |
-| Starter examples UI            | `components/LandingSelect.tsx`                                                            | Starter-only; manifest `starterOnlyPaths`                                                          |
-| Shared workspace packages      | `@atlas/ui`, `@atlas/consent`, `@atlas/config`                                            | Package releases and semver                                                                        |
+| Classification                 | Examples                                                                        | Update mechanism                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Generated artifact             | `lib/api/contracts/schema.ts`                                                   | `pnpm api:gen`, `pnpm api:check`, Doctor `generated-openapi` (not template-synced)                 |
+| Synced template infrastructure | API client, auth session, React Query keys, security helpers                    | Canonical starter (`apps/web`); `atlas sync infrastructure`; Doctor `template-infrastructure-sync` |
+| Application-owned wiring       | `lib/application/authz.ts`, `lib/breadcrumbs/tree.ts`, `lib/analytics/index.ts` | Edit per application; listed in manifest `independentPaths` (divergence allowed, not required)     |
+| Reference harness              | `lib/reference/**`, reference auth providers                                    | Reference-only; manifest `referenceOnlyPaths`                                                      |
+| Starter examples UI            | `components/LandingSelect.tsx`                                                  | Starter-only; manifest `starterOnlyPaths`                                                          |
+| Shared workspace packages      | `@atlas/ui`, `@atlas/consent`, `@atlas/config`                                  | Package releases and semver                                                                        |
 
 The manifest `templates/app-infrastructure.manifest.json` is the machine-readable policy for which
-paths must stay aligned vs allowed to diverge. Run `pnpm template:check` in CI or locally to detect
-drift; run `pnpm template:sync` to copy canonical starter files into consumer applications.
+paths must stay aligned vs allowed to diverge. `generatedPaths` documents machine-generated
+artifacts for ownership clarity; template sync does not copy them. Run `pnpm template:check` in CI
+or locally to detect drift; run `pnpm template:sync` to copy canonical starter files into consumer
+applications. Mutating sync re-validates after writes and exits successfully when repairable drift
+is cleared.
 
 When fixing platform infrastructure, prefer:
 

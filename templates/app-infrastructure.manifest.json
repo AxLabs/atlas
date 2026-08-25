@@ -26,7 +26,6 @@
     "src/lib/api/client.ts",
     "src/lib/api/config.ts",
     "src/lib/api/contracts/index.ts",
-    "src/lib/api/contracts/schema.ts",
     "src/lib/api/correlation.ts",
     "src/lib/api/errors.ts",
     "src/lib/api/hooks.ts",
@@ -116,6 +115,7 @@
     "src/schemas/env/validate-server-env.test.ts",
     "src/schemas/env/validate-server-env.ts"
   ],
+  "generatedPaths": ["src/lib/api/contracts/schema.ts"],
   "independentPaths": {
     "apps/reference": {
       "architecture-policy.mjs": "Per-application ESLint architecture policy (reference product feature import rules differ)",

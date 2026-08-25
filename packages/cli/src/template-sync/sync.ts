@@ -1,6 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
+import { resolvePathUnderApplication } from "./manifest";
+
 import type { TemplateSyncDrift } from "./compare";
 import type { AppInfrastructureManifest } from "./manifest";
 
@@ -46,8 +48,16 @@ export function applyTemplateSyncActions(
   const applied: TemplateSyncAction[] = [];
 
   for (const action of actions) {
-    const sourcePath = path.join(repoRoot, action.fromApplication, action.relativePath);
-    const targetPath = path.join(repoRoot, action.toApplication, action.relativePath);
+    const sourcePath = resolvePathUnderApplication(
+      repoRoot,
+      action.fromApplication,
+      action.relativePath
+    );
+    const targetPath = resolvePathUnderApplication(
+      repoRoot,
+      action.toApplication,
+      action.relativePath
+    );
 
     if (!existsSync(sourcePath)) {
       continue;

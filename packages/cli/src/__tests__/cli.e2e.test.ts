@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -9,6 +9,48 @@ import { resolveAtlasProject } from "@atlas/project";
 import { createMinimalAtlasFixture, snapshotFixturePaths } from "./helpers/fixture";
 import { getRepoRoot, runAtlasCli } from "./helpers/run-cli";
 import { readCliAtlasVersion } from "../version";
+
+function writeMinimalAtlasRepo(tempRoot: string): void {
+  writeFileSync(
+    path.join(tempRoot, "package.json"),
+    `${JSON.stringify({ name: "@atlas/monorepo", version: "0.1.0", private: true }, null, 2)}\n`
+  );
+  writeFileSync(
+    path.join(tempRoot, "atlas.config.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        features: {
+          reference: "apps/reference/src/features",
+          examples: "apps/web/src/features/examples",
+        },
+        reference: {
+          components: "apps/reference/src/features/components",
+          routes: "apps/reference/src/app",
+        },
+        generated: {
+          openApi: {
+            schema: "apps/web/src/lib/api/contracts/schema.ts",
+          },
+        },
+        capabilities: {
+          openApi: false,
+        },
+      },
+      null,
+      2
+    )}\n`
+  );
+  mkdirSync(path.join(tempRoot, "packages/ui"), { recursive: true });
+  writeFileSync(
+    path.join(tempRoot, "packages/ui/package.json"),
+    `${JSON.stringify({ name: "@atlas/ui", version: "0.1.0", private: true }, null, 2)}\n`
+  );
+  mkdirSync(path.join(tempRoot, "apps/web/src/features"), { recursive: true });
+  mkdirSync(path.join(tempRoot, "apps/web/src/features/examples"), { recursive: true });
+  mkdirSync(path.join(tempRoot, "apps/reference/src/features/components"), { recursive: true });
+  mkdirSync(path.join(tempRoot, "apps/reference/src/app"), { recursive: true });
+}
 
 describe("atlas CLI executable", () => {
   const repoRoot = getRepoRoot();
@@ -329,6 +371,76 @@ describe("atlas sync infrastructure", () => {
   it("passes check on the healthy checkout", () => {
     const result = runAtlasCli(["sync", "infrastructure", "--check"], repoRoot);
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
-    expect(result.stdout).toContain("Drifted synced paths: 0");
+    expect(result.stdout).toContain("Initial drifted synced paths: 0");
+    expect(result.stdout).toContain("Final health: healthy");
+  });
+
+  it("repairs drift through the CLI executable", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-sync-cli-"));
+    const canonicalRoot = path.join(tempRoot, "apps/web");
+    const consumerRoot = path.join(tempRoot, "apps/reference");
+    mkdirSync(path.join(canonicalRoot, "src/lib/api"), { recursive: true });
+    mkdirSync(path.join(consumerRoot, "src/lib/api"), { recursive: true });
+    writeMinimalAtlasRepo(tempRoot);
+    mkdirSync(path.join(tempRoot, "templates"), { recursive: true });
+
+    writeFileSync(
+      path.join(canonicalRoot, "src/lib/api/client.ts"),
+      "export const canonical = true;\n"
+    );
+    writeFileSync(
+      path.join(consumerRoot, "src/lib/api/client.ts"),
+      "export const consumer = true;\n"
+    );
+    writeFileSync(
+      path.join(tempRoot, "templates/app-infrastructure.manifest.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          canonicalApplication: "apps/web",
+          consumerApplications: ["apps/reference"],
+          syncedPaths: ["src/lib/api/client.ts"],
+          generatedPaths: [],
+          independentPaths: {},
+          referenceOnlyPaths: [],
+          starterOnlyPaths: [],
+          structuralConformance: { requiredInfrastructureModules: [] },
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    const checkDrift = runAtlasCli(
+      ["sync", "infrastructure", "--check", "--cwd", tempRoot],
+      tempRoot
+    );
+    expect(checkDrift.exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(checkDrift.stdout).toContain("Initial drifted synced paths: 1");
+
+    const dryRun = runAtlasCli(
+      ["sync", "infrastructure", "--dry-run", "--cwd", tempRoot],
+      tempRoot
+    );
+    expect(dryRun.exitCode).toBe(ExitCode.DOCTOR_FAILED);
+    expect(readFileSync(path.join(consumerRoot, "src/lib/api/client.ts"), "utf8")).toContain(
+      "consumer"
+    );
+
+    const repair = runAtlasCli(["sync", "infrastructure", "--cwd", tempRoot], tempRoot);
+    expect(repair.exitCode).toBe(ExitCode.SUCCESS);
+    expect(repair.stdout).toContain("Applied actions: 1");
+    expect(repair.stdout).toContain("Final health: healthy");
+    expect(readFileSync(path.join(consumerRoot, "src/lib/api/client.ts"), "utf8")).toContain(
+      "canonical"
+    );
+
+    const checkClean = runAtlasCli(
+      ["sync", "infrastructure", "--check", "--cwd", tempRoot],
+      tempRoot
+    );
+    expect(checkClean.exitCode).toBe(ExitCode.SUCCESS);
+
+    rmSync(tempRoot, { recursive: true, force: true });
   });
 });

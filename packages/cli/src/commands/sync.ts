@@ -14,8 +14,12 @@ export interface SyncInfrastructureOptions {
 
 export interface SyncInfrastructureResult {
   ok: boolean;
-  drifts: number;
-  structuralIssues: number;
+  initialDrifts: number;
+  initialStructuralIssues: number;
+  plannedActions: number;
+  appliedActions: number;
+  remainingDrifts: number;
+  remainingStructuralIssues: number;
   actions: PlannedAction[];
 }
 
@@ -31,8 +35,8 @@ export function runSyncInfrastructureCommand(
   }
 
   const manifest = loadAppInfrastructureManifest(repoRoot);
-  const comparison = compareAppInfrastructureManifest(repoRoot, manifest);
-  const plannedSyncActions = planTemplateSyncActions(repoRoot, manifest, comparison.drifts);
+  const initialComparison = compareAppInfrastructureManifest(repoRoot, manifest);
+  const plannedSyncActions = planTemplateSyncActions(repoRoot, manifest, initialComparison.drifts);
 
   const actions: PlannedAction[] = plannedSyncActions.map((action) => ({
     kind: options.check || options.dryRun ? "skip" : "copy",
@@ -40,17 +44,29 @@ export function runSyncInfrastructureCommand(
     reason: action.reason,
   }));
 
-  const ok = comparison.drifts.length === 0 && comparison.structuralIssues.length === 0;
+  let appliedActions = 0;
 
   if (!options.check && !options.dryRun && plannedSyncActions.length > 0) {
-    applyTemplateSyncActions(repoRoot, plannedSyncActions, false);
+    const applied = applyTemplateSyncActions(repoRoot, plannedSyncActions, false);
+    appliedActions = applied.length;
   }
+
+  const finalComparison =
+    options.check || options.dryRun
+      ? initialComparison
+      : compareAppInfrastructureManifest(repoRoot, manifest);
+
+  const ok = finalComparison.drifts.length === 0 && finalComparison.structuralIssues.length === 0;
 
   return {
     ok,
+    initialDrifts: initialComparison.drifts.length,
+    initialStructuralIssues: initialComparison.structuralIssues.length,
+    plannedActions: plannedSyncActions.length,
+    appliedActions,
+    remainingDrifts: finalComparison.drifts.length,
+    remainingStructuralIssues: finalComparison.structuralIssues.length,
     actions,
-    drifts: comparison.drifts.length,
-    structuralIssues: comparison.structuralIssues.length,
   };
 }
 
@@ -60,16 +76,27 @@ export function formatSyncInfrastructureResult(
 ): string[] {
   const lines = [
     "Atlas infrastructure sync",
-    `Drifted synced paths: ${result.drifts}`,
-    `Structural issues: ${result.structuralIssues}`,
+    `Initial drifted synced paths: ${result.initialDrifts}`,
+    `Initial structural issues: ${result.initialStructuralIssues}`,
+    `Planned actions: ${result.plannedActions}`,
   ];
+
+  if (result.appliedActions > 0) {
+    lines.push(`Applied actions: ${result.appliedActions}`);
+  }
+
+  lines.push(
+    `Remaining drifted synced paths: ${result.remainingDrifts}`,
+    `Remaining structural issues: ${result.remainingStructuralIssues}`,
+    `Final health: ${result.ok ? "healthy" : "unhealthy"}`
+  );
 
   if (result.actions.length === 0) {
     lines.push("No template synchronization actions required.");
     return lines;
   }
 
-  const modeLabel = dryRun ? "Would update" : "Updated";
+  const modeLabel = dryRun ? "Would update" : result.appliedActions > 0 ? "Updated" : "Planned";
   lines.push(`${modeLabel} ${result.actions.length} path(s):`);
   for (const action of result.actions) {
     lines.push(`  - ${action.path}`);

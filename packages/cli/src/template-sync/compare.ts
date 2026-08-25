@@ -70,7 +70,6 @@ export function compareAppInfrastructureManifest(
 
     const independentForConsumer = manifest.independentPaths[consumerApplication] ?? {};
     for (const [relativePath, reason] of Object.entries(independentForConsumer)) {
-      const canonicalPath = path.join(canonicalRoot, relativePath);
       const consumerPath = path.join(repoRoot, consumerApplication, relativePath);
 
       if (!existsSync(consumerPath)) {
@@ -80,20 +79,6 @@ export function compareAppInfrastructureManifest(
           kind: "missing-required-module",
           message: `Independent path ${relativePath} is missing in ${consumerApplication}: ${reason}`,
         });
-        continue;
-      }
-
-      if (existsSync(canonicalPath)) {
-        const canonicalContent = readFileSync(canonicalPath);
-        const consumerContent = readFileSync(consumerPath);
-        if (canonicalContent.equals(consumerContent)) {
-          drifts.push({
-            relativePath,
-            consumerApplication,
-            kind: "content-drift",
-            message: `Independent path ${relativePath} is byte-identical to the starter but listed as application-owned. Move it to syncedPaths or introduce intentional divergence.`,
-          });
-        }
       }
     }
 
