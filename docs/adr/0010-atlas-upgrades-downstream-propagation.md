@@ -49,7 +49,8 @@ byte equality today.
 | `syncedPathChecksums`           | SHA-256 of each manifest `syncedPaths` file at baseline         |
 
 `atlas init` records this metadata on first initialization when the infrastructure manifest is
-present. #43 will refresh it after successful upgrades.
+present. When the manifest exists, baseline capture is strict — init fails rather than recording
+incomplete evidence. #43 will refresh it after successful upgrades.
 
 **Version concepts (minimal):**
 

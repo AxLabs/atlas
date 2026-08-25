@@ -102,6 +102,7 @@ typical fork behavior — not requirements.
 | Where stored?                  | `atlas.config.json` → `platform.baseline`                                                               |
 | CLI vs template vs contract?   | **Atlas release** is primary; contract `schemaVersion` and manifest `schemaVersion` recorded separately |
 | Enough metadata?               | Yes — version triple + per-synced-path checksums                                                        |
+| Strict when manifest present?  | Yes — missing synced paths or invalid manifest/version setup fail init rather than omitting baseline    |
 | Atlas-managed after bootstrap? | Manifest `syncedPaths`, generated paths, workspace packages                                             |
 | Immediately consumer-owned?    | Product features, routes, shell, env, deployment, independent paths                                     |
 

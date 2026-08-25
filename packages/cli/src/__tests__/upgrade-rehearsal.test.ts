@@ -5,7 +5,7 @@ import path from "node:path";
 import {
   buildPlatformBaseline,
   computeBaselineChecksum,
-  hasConsumerModifiedSyncedPath,
+  getSyncedPathBaselineStatus,
   LATEST_SCHEMA_VERSION,
 } from "@atlas/project";
 
@@ -221,12 +221,12 @@ describe("upgrade rehearsal", () => {
     });
 
     expect(
-      hasConsumerModifiedSyncedPath({
+      getSyncedPathBaselineStatus({
         relativePath: "src/lib/auth/session.ts",
         consumerApplicationRoot: applicationRoot,
         baselineChecksums: baseline.syncedPathChecksums,
       })
-    ).toBe(true);
+    ).toBe("modified");
 
     rmSync(tempRoot, { recursive: true, force: true });
   });

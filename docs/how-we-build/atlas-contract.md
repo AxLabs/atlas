@@ -135,7 +135,8 @@ This installation supports contract schema version 1.
 ### Platform baseline (schema v1)
 
 Optional metadata for downstream upgrade planning (issue #17). Recorded by `atlas init` when the
-infrastructure manifest is present; refreshed after upgrades by #43.
+infrastructure manifest is present; init fails explicitly when baseline capture cannot complete.
+Refreshed after upgrades by #43.
 
 ```json
 {

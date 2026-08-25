@@ -9,7 +9,6 @@ export {
   captureSyncedPathChecksumsStrict,
   computeBaselineChecksum,
   getSyncedPathBaselineStatus,
-  hasConsumerModifiedSyncedPath,
   isValidBaselineChecksum,
   normalizeBaselineChecksum,
   readPlatformBaseline,

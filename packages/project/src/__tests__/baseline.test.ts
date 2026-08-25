@@ -9,7 +9,6 @@ import {
   captureSyncedPathChecksumsStrict,
   computeBaselineChecksum,
   getSyncedPathBaselineStatus,
-  hasConsumerModifiedSyncedPath,
   isValidBaselineChecksum,
   normalizeBaselineChecksum,
   parseAtlasProjectContract,
@@ -156,25 +155,6 @@ describe("getSyncedPathBaselineStatus", () => {
     ).toBe("unknown");
 
     rmSync(tempRoot, { recursive: true, force: true });
-  });
-
-  it("does not treat missing baseline as unmodified via hasConsumerModifiedSyncedPath", () => {
-    expect(
-      hasConsumerModifiedSyncedPath({
-        relativePath: "src/lib/auth/session.ts",
-        consumerApplicationRoot: "/tmp",
-        baselineChecksums: {},
-      })
-    ).toBe(false);
-
-    expect(
-      getSyncedPathBaselineStatus({
-        relativePath: "src/lib/auth/session.ts",
-        consumerApplicationRoot: "/tmp",
-        baselineChecksums: {},
-        consumerContent: "atlas-session",
-      })
-    ).toBe("unknown");
   });
 });
 

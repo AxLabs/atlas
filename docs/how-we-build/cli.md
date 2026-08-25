@@ -98,7 +98,8 @@ Initialize Atlas metadata in an **existing compatible checkout**. This command:
 - Creates `atlas.config.json` when absent (minimal contract with `openApi: false` when OpenAPI
   artifacts are absent)
 - Records `platform.baseline` (Atlas version + synced-path checksums) when the infrastructure
-  manifest is present — see [upgrades](upgrades.md)
+  manifest is present — see [upgrades](upgrades.md). When the manifest is present, baseline capture
+  is **strict**: init fails rather than writing incomplete or silently absent upgrade evidence.
 - Never silently overwrites an existing contract
 - Plans all actions before writing files
 

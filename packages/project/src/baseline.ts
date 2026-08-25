@@ -183,15 +183,6 @@ export function getSyncedPathBaselineStatus(
   return consumerChecksum === normalizedBaseline ? "unchanged" : "modified";
 }
 
-/** Returns true only when consumer modification is proven (not when baseline evidence is missing). */
-export function hasConsumerModifiedSyncedPath(options: {
-  relativePath: string;
-  consumerApplicationRoot: string;
-  baselineChecksums: Record<string, string>;
-}): boolean {
-  return getSyncedPathBaselineStatus(options) === "modified";
-}
-
 export interface BaselineIntegrityIssue {
   kind:
     | "missing-synced-path"
