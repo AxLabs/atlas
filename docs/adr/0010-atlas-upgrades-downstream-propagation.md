@@ -70,10 +70,12 @@ for explicitly consumer-owned wiring.
 At upgrade time for each synced path:
 
 1. Compare consumer file checksum to **recorded baseline checksum**.
-2. If different → **merge-required** (consumer modified); never auto-replace.
-3. If equal and Atlas target changed → **patch-safe replace** (or **security-critical** when path is
-   security-relevant).
-4. If equal and Atlas target unchanged → skip.
+2. If baseline evidence is **missing or invalid** → **unknown** → manual review; never auto-replace.
+3. If consumer file is **missing** → manual review; never auto-replace.
+4. If baseline proves **modified** → **merge-required** (consumer modified); never auto-replace.
+5. If baseline proves **unchanged** and Atlas target changed → **patch-safe replace** (or
+   **security-critical** when path is security-relevant per #14/#43 metadata).
+6. If baseline proves unchanged and Atlas target unchanged → skip.
 
 **Rejected alternatives:**
 
@@ -129,13 +131,15 @@ Consumers do not become the source of truth — they contribute fixes through At
 ### 8. Upgrade rehearsal (evidence for #43)
 
 `packages/cli/src/upgrade/` provides an **internal** planner and safe-apply helper (test-only, not a
-public `atlas upgrade` command). `upgrade-rehearsal.test.ts` simulates:
+public `atlas upgrade` command). Rehearsal evidence includes:
 
-- unchanged synced infrastructure → safe replace
-- customized auth/session → merge conflict
-- generated OpenAPI → regenerate
-- independent wiring → manual review
-- product features → untouched
+- **Synthetic fixture** (`upgrade-rehearsal.test.ts`) — algorithm-focused miniature files.
+- **Historical fixture** (`upgrade-historical-rehearsal.test.ts`) — materialized files from Atlas
+  `8ce8fa3` → `#17` target with consumer billing/session customizations.
+
+Historical rehearsal confirmed patch-safe replaces on real `hooks.ts` / `config.ts`, merge-required
+on customized `useSession.ts`, manual review for newly introduced independent `authz.ts`, and no
+OpenAPI regeneration when the spec was unchanged across the snapshot window.
 
 ### 9. Supported upgrade promise (v0.1 — conservative)
 

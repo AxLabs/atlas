@@ -1,6 +1,6 @@
 import {
   buildPlatformBaseline,
-  captureSyncedPathChecksums,
+  captureSyncedPathChecksumsStrict,
   type PlatformBaseline,
   type RawAtlasProjectContract,
   readPlatformBaseline,
@@ -17,7 +17,7 @@ export function captureConsumerPlatformBaseline(options: {
   contractSchemaVersion: number;
   manifest: AppInfrastructureManifest;
 }): PlatformBaseline {
-  const syncedPathChecksums = captureSyncedPathChecksums({
+  const syncedPathChecksums = captureSyncedPathChecksumsStrict({
     repoRoot: options.repoRoot,
     applicationRoot: options.applicationRoot,
     syncedPaths: options.manifest.syncedPaths,

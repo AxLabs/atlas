@@ -131,7 +131,7 @@ describe("upgrade rehearsal", () => {
 
     const authItem = plan.items.find((item) => item.relativePath === "src/lib/auth/session.ts");
     expect(authItem?.action).toBe("manual-review");
-    expect(authItem?.category).toBe("merge-required");
+    expect(authItem?.category).toBe("security-critical");
     expect(authItem?.conflict).toBe(true);
 
     const schemaItem = plan.items.find(
@@ -150,7 +150,7 @@ describe("upgrade rehearsal", () => {
       false
     );
     expect(plan.hasBlockingConflicts).toBe(true);
-    expect(plan.summary.mergeRequired).toBeGreaterThanOrEqual(1);
+    expect(plan.summary.securityCritical).toBeGreaterThanOrEqual(1);
   });
 
   it("applies only safe synced-path replacements without touching customized auth", () => {

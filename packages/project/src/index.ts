@@ -1,10 +1,20 @@
 export {
+  AtlasBaselineCaptureError,
+  BASELINE_CHECKSUM_PATTERN,
   BASELINE_CHECKSUM_PREFIX,
+  type BaselineIntegrityIssue,
   buildPlatformBaseline,
   captureSyncedPathChecksums,
+  type CaptureSyncedPathChecksumsResult,
+  captureSyncedPathChecksumsStrict,
   computeBaselineChecksum,
+  getSyncedPathBaselineStatus,
   hasConsumerModifiedSyncedPath,
+  isValidBaselineChecksum,
+  normalizeBaselineChecksum,
   readPlatformBaseline,
+  type SyncedPathBaselineStatus,
+  validatePlatformBaselineIntegrity,
 } from "./baseline";
 export {
   ATLAS_CONTRACT_FILENAME,

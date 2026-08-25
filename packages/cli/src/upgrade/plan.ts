@@ -1,6 +1,16 @@
-import { computeBaselineChecksum } from "@atlas/project";
+import { getSyncedPathBaselineStatus } from "@atlas/project";
 
 import type { PlanUpgradeOptions, UpgradePlan, UpgradePlanItem, UpgradePlanSummary } from "./types";
+
+/**
+ * Test-only security relevance heuristic for upgrade rehearsal evidence (#17).
+ * Canonical security-critical classification belongs to #14 advisory metadata — not this planner.
+ */
+function isSecurityRelevantSyncedPath(relativePath: string): boolean {
+  return (
+    relativePath.includes("src/lib/security/") || relativePath.includes("src/lib/auth/session.ts")
+  );
+}
 
 function summarizePlan(items: UpgradePlanItem[]): UpgradePlanSummary {
   const summary: UpgradePlanSummary = {
@@ -41,24 +51,6 @@ function summarizePlan(items: UpgradePlanItem[]): UpgradePlanSummary {
   return summary;
 }
 
-function consumerModifiedSyncedPath(
-  relativePath: string,
-  baselineChecksums: Record<string, string>,
-  consumerFiles: Record<string, string>
-): boolean {
-  const baselineChecksum = baselineChecksums[relativePath];
-  if (!baselineChecksum) {
-    return false;
-  }
-
-  const consumerContent = consumerFiles[relativePath];
-  if (consumerContent === undefined) {
-    return true;
-  }
-
-  return computeBaselineChecksum(consumerContent) !== baselineChecksum;
-}
-
 export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
   const items: UpgradePlanItem[] = [];
 
@@ -79,11 +71,13 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
   )) {
     const sourceContent = options.sourceSnapshot.syncedPaths[relativePath];
     const targetContent = options.targetSnapshot.syncedPaths[relativePath];
-    const consumerModified = consumerModifiedSyncedPath(
+    const consumerContent = options.consumerFiles[relativePath];
+    const baselineStatus = getSyncedPathBaselineStatus({
       relativePath,
-      options.baselineChecksums,
-      options.consumerFiles
-    );
+      consumerApplicationRoot: options.applicationRoot,
+      baselineChecksums: options.baselineChecksums,
+      consumerContent,
+    });
 
     if (sourceContent === undefined || targetContent === undefined) {
       items.push({
@@ -109,21 +103,46 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
       continue;
     }
 
-    if (consumerModified) {
+    if (consumerContent === undefined) {
       items.push({
         relativePath,
         ownershipChannel: "atlas-managed-template",
-        category: "merge-required",
+        category: "manual",
         action: "manual-review",
-        message: `Consumer modified ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; manual merge is required.`,
+        message: `Consumer file ${relativePath} is missing while Atlas ${options.targetAtlasVersion} changed this synced path. Restore or recreate the file before upgrading.`,
         conflict: true,
       });
       continue;
     }
 
-    const isSecurityPath =
-      relativePath.includes("src/lib/security/") ||
-      relativePath.includes("src/lib/auth/session.ts");
+    if (baselineStatus === "unknown") {
+      items.push({
+        relativePath,
+        ownershipChannel: "atlas-managed-template",
+        category: "manual",
+        action: "manual-review",
+        message: `Insufficient baseline evidence for ${relativePath}. Atlas ${options.targetAtlasVersion} changed this synced path, but the recorded baseline does not prove the consumer copy is unchanged. Manual review is required before replacement.`,
+        conflict: true,
+      });
+      continue;
+    }
+
+    if (baselineStatus === "modified") {
+      const isSecurityPath = isSecurityRelevantSyncedPath(relativePath);
+      items.push({
+        relativePath,
+        ownershipChannel: "atlas-managed-template",
+        category: isSecurityPath ? "security-critical" : "merge-required",
+        action: "manual-review",
+        message: isSecurityPath
+          ? `Consumer modified security-relevant synced path ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; elevated manual remediation is required and automatic overwrite is forbidden.`
+          : `Consumer modified ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; manual merge is required.`,
+        conflict: true,
+      });
+      continue;
+    }
+
+    const isSecurityPath = isSecurityRelevantSyncedPath(relativePath);
 
     items.push({
       relativePath,
@@ -142,6 +161,18 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
   )) {
     const targetIndependentContent = options.targetSnapshot.syncedPaths[relativePath];
     const sourceIndependentContent = options.sourceSnapshot.syncedPaths[relativePath];
+
+    if (targetIndependentContent !== undefined && sourceIndependentContent === undefined) {
+      items.push({
+        relativePath,
+        ownershipChannel: "consumer-owned-source",
+        category: "manual",
+        action: "manual-review",
+        message: `Application-owned path ${relativePath} was introduced in Atlas ${options.targetAtlasVersion}. Review whether the consumer should adopt the new wiring pattern.`,
+        conflict: false,
+      });
+      continue;
+    }
 
     if (
       sourceIndependentContent !== undefined &&

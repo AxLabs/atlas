@@ -81,12 +81,20 @@ const boundariesSchema = z
   })
   .strict();
 
+const baselineChecksumValueSchema = z
+  .string()
+  .refine(
+    (value) => /^sha256:[a-fA-F0-9]{64}$/.test(value),
+    "Checksum must match sha256:<64 hexadecimal characters>"
+  )
+  .transform((value) => `sha256:${value.slice("sha256:".length).toLowerCase()}`);
+
 const platformBaselineSchema = z
   .object({
     atlasVersion: z.string().min(1),
     contractSchemaVersion: z.number().int().positive(),
     templateManifestSchemaVersion: z.number().int().positive(),
-    syncedPathChecksums: z.record(z.string().min(1), z.string().min(1)),
+    syncedPathChecksums: z.record(z.string().min(1), baselineChecksumValueSchema),
   })
   .strict();
 

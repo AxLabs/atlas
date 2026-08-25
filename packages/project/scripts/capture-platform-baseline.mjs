@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   buildPlatformBaseline,
-  captureSyncedPathChecksums,
+  captureSyncedPathChecksumsStrict,
   LATEST_SCHEMA_VERSION,
 } from "../dist/index.js";
 
@@ -19,7 +19,7 @@ const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 const contract = JSON.parse(readFileSync(contractPath, "utf8"));
 
-const syncedPathChecksums = captureSyncedPathChecksums({
+const syncedPathChecksums = captureSyncedPathChecksumsStrict({
   repoRoot,
   applicationRoot: "apps/web",
   syncedPaths: manifest.syncedPaths,

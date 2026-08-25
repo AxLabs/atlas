@@ -156,14 +156,19 @@ upgrade plan (patch-safe | merge-required | migration-required | manual)
 
 ## Conflict policy
 
-1. **Record** checksums at bootstrap / post-upgrade (#43).
+1. **Record** checksums at bootstrap / post-upgrade (#43). Capture must be **strict** — missing
+   manifest synced paths fail baseline recording rather than producing incomplete evidence.
 2. **Before any synced-path write**, compare consumer checksum to baseline checksum.
-3. **Equal** → consumer has not edited since baseline → safe replace allowed.
-4. **Unequal** → `merge-required` → emit deterministic conflict; do not write.
-5. **Independent paths** → never auto-written regardless of checksum.
-6. **Product paths** → out of scope for template upgrade planner.
+3. **Equal** (proven unchanged) → consumer has not edited since baseline → safe replace allowed.
+4. **Unequal** (proven modified) → `merge-required` → emit deterministic conflict; do not write.
+5. **Missing/invalid baseline checksum or missing consumer file** → `unknown` evidence → manual
+   review; do not write.
+6. **Independent paths** → never auto-written regardless of checksum.
+7. **Product paths** → out of scope for template upgrade planner.
 
-Internal planner: `packages/cli/src/upgrade/plan.ts` (test-only in v0.1).
+Internal planner: `packages/cli/src/upgrade/plan.ts` (test-only in v0.1). Security-relevant path
+detection in the planner is a **rehearsal heuristic** for #17; canonical security classification
+belongs to #14 advisory metadata (#43 must not treat the heuristic as policy).
 
 ---
 
@@ -195,11 +200,16 @@ local contracts only.
 | 5. Release       | New Atlas snapshot + changelog/migration notes                                     |
 | 6. Propagate     | Consumers upgrade via this contract                                                |
 
+Use the [downstream fix intake template](../governance/downstream-fix-intake.md) when filing
+upstream work from a consumer discovery.
+
 Cherry-picking client commits is **not** the supported model.
 
 ---
 
 ## Upgrade rehearsal
+
+### Synthetic fixture
 
 Fixture: `packages/cli/src/__tests__/fixtures/upgrade-rehearsal/`
 
@@ -212,6 +222,65 @@ Simulated consumer at Atlas `0.1.0`:
 - Generated `schema.ts` → regenerate action
 - Independent `lib/application/authz.ts` → manual review
 - Product `features/billing` → untouched
+
+### Historical upgrade rehearsal findings
+
+Materialized fixtures: `packages/cli/src/__tests__/fixtures/upgrade-rehearsal/historical/`
+
+Test suite: `packages/cli/src/__tests__/upgrade-historical-rehearsal.test.ts`
+
+| Field         | Value                                                                                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source commit | `8ce8fa39fd5c3ec497d7319e2f8ed046ddbfbaa4`                                                                                                                                                  |
+| Source date   | 2026-08-21 (reference harness era, PR #50)                                                                                                                                                  |
+| Target commit | `34400006d93f0e3d86de4f4e4cc5ec4b3cc62524` (#17 upgrade contract)                                                                                                                           |
+| Why chosen    | Predates reference app split (#55), UI foundation reset (#42), template manifest (#57), and baseline metadata — enough real infrastructure drift without being the immediately prior commit |
+
+**Files rehearsed (manifest subset):**
+
+| Path                              | Role in rehearsal                                                                                              |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/lib/api/hooks.ts`            | Unmodified synced path; Atlas added `useTypedApiClient()` → **patch-safe replace**                             |
+| `src/lib/api/config.ts`           | Unmodified synced path; documentation/comments evolved → **patch-safe replace**                                |
+| `src/lib/auth/useSession.ts`      | Consumer customized session hook docs/behavior; Atlas added `principalId` / `permissions` → **merge-required** |
+| `src/lib/api/contracts/schema.ts` | Generated artifact; OpenAPI **unchanged** between snapshots → **skip** (no regen)                              |
+| `src/lib/application/authz.ts`    | Independent wiring introduced after source baseline → **manual review**                                        |
+| `src/features/billing/index.tsx`  | Product-owned feature added by consumer → **never in plan**                                                    |
+
+**What the historical rehearsal taught (beyond the synthetic fixture):**
+
+1. **Real file size and import graphs matter** — rehearsing on actual `hooks.ts` / `useSession.ts`
+   surfaces merge complexity that miniature strings hide (client hook composition, session state
+   shape).
+2. **New independent paths need explicit planner handling** — `lib/application/authz.ts` did not
+   exist at the source snapshot; the planner now emits manual review when Atlas introduces
+   independent wiring rather than silently skipping.
+3. **OpenAPI stability is not guaranteed every release** — this window had no spec drift, so
+   regenerate actions did not fire; #43 must still treat spec changes as the primary regen trigger.
+4. **Fail-closed baseline is essential on real trees** — a partial baseline on a 100+ path manifest
+   would have looked “valid” while permitting unsafe replaces; completeness validation and
+   missing-checksum `unknown` status are required in production tooling.
+5. **Security classification remains heuristic in #17** — `session.ts` security relevance is still
+   path-substring based in the internal planner; canonical classification belongs to #14 advisory
+   metadata (#43 should not hardcode path lists as policy).
+
+**Manual work still required in this upgrade window:**
+
+- Merge Atlas `useSession` permission/principal fields with consumer billing-portal session
+  customization.
+- Review newly introduced `lib/application/authz.ts` wiring pattern before adopting Atlas
+  composition changes.
+- Run full validation (`atlas doctor`, `pnpm api:check`, `pnpm template:check`, tests) after any
+  manual merges.
+
+**Implications for #43:**
+
+- Planner must treat **new independent paths** as manual-review items.
+- Release snapshots must include **source-era content** for paths added after consumer baseline (not
+  only current manifest paths).
+- Baseline capture must remain **strict** on canonical checkouts; incomplete baselines must block
+  automated replace paths.
+- Do not assume every upgrade triggers OpenAPI regeneration — gate regen on spec diff.
 
 ---
 
@@ -236,8 +305,13 @@ Discovered during #17 rehearsal — #43 must implement:
 
 - [ ] `atlas upgrade` command with `--dry-run` and `--json`
 - [ ] Detect consumer modifications via `platform.baseline.syncedPathChecksums` before overwrite
+- [ ] Fail closed when baseline checksum evidence is missing or incomplete (never treat absence as
+      safe)
 - [ ] Preserve consumer-owned and independent paths
-- [ ] Regenerate generated surfaces (`pnpm api:gen`) instead of copying
+- [ ] Emit manual review when Atlas introduces new independent wiring paths absent from source
+      snapshot
+- [ ] Regenerate generated surfaces (`pnpm api:gen`) when OpenAPI spec changes — not on every
+      upgrade
 - [ ] Represent conflicts explicitly (`merge-required` items)
 - [ ] Support stepping through migration chain for non-adjacent versions
 - [ ] Refresh `platform.baseline` after successful upgrade

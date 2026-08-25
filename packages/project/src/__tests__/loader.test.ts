@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   AtlasContractError,
   AtlasContractErrorCode,
+  computeBaselineChecksum,
   DEFAULT_ATLAS_PROJECT_CONTRACT,
   loadAtlasProject,
   normalizeRepoRelativePath,
@@ -567,6 +568,7 @@ describe("normalizeRepoRelativePath", () => {
 
 describe("platform baseline", () => {
   it("accepts optional platform.baseline metadata", () => {
+    const checksum = computeBaselineChecksum("client");
     const parsed = parseAtlasProjectContract({
       schemaVersion: 1,
       platform: {
@@ -575,7 +577,7 @@ describe("platform baseline", () => {
           contractSchemaVersion: 1,
           templateManifestSchemaVersion: 1,
           syncedPathChecksums: {
-            "src/lib/api/client.ts": "sha256:abc",
+            "src/lib/api/client.ts": checksum,
           },
         },
       },
@@ -585,6 +587,8 @@ describe("platform baseline", () => {
   });
 
   it("resolves platform baseline into the resolved contract", () => {
+    const clientChecksum = computeBaselineChecksum("client");
+    const errorsChecksum = computeBaselineChecksum("errors");
     const resolved = resolveAtlasProjectContract({
       schemaVersion: 1,
       platform: {
@@ -593,16 +597,16 @@ describe("platform baseline", () => {
           contractSchemaVersion: 1,
           templateManifestSchemaVersion: 1,
           syncedPathChecksums: {
-            "src/lib/api/errors.ts": "sha256:def",
-            "src/lib/api/client.ts": "sha256:abc",
+            "src/lib/api/errors.ts": errorsChecksum,
+            "src/lib/api/client.ts": clientChecksum,
           },
         },
       },
     });
 
     expect(resolved.platform?.baseline.syncedPathChecksums).toEqual({
-      "src/lib/api/client.ts": "sha256:abc",
-      "src/lib/api/errors.ts": "sha256:def",
+      "src/lib/api/client.ts": clientChecksum,
+      "src/lib/api/errors.ts": errorsChecksum,
     });
   });
 });
