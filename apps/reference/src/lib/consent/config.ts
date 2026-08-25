@@ -15,10 +15,10 @@ export function getConsentConfig(): AtlasConsentConfig {
     contactUrl: config.consent.contactUrl,
     categories: {
       analytics: {
-        enabled: Boolean(config.analytics.posthogKey || config.analytics.gaMeasurementId),
+        enabled: config.consent.enabled,
         services: {
           googleAnalytics: Boolean(config.analytics.gaMeasurementId),
-          postHog: Boolean(config.analytics.posthogKey),
+          postHog: Boolean(config.analytics.posthogKey) || config.consent.enabled,
         },
       },
     },

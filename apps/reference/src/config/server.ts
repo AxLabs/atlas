@@ -131,6 +131,35 @@ export function getServerConfig(): Config {
   return configSchema.parse(config);
 }
 
+export interface SentryRuntimeSummary {
+  configured: boolean;
+  environment: string | null;
+  release: string | null;
+}
+
+/**
+ * Safe client/server Sentry configuration summary for diagnostics.
+ */
+export function getSentryRuntimeSummary(): {
+  client: SentryRuntimeSummary;
+  server: SentryRuntimeSummary;
+} {
+  const config = getServerConfig();
+
+  return {
+    client: {
+      configured: Boolean(clientEnv.NEXT_PUBLIC_SENTRY_DSN),
+      environment: clientEnv.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? config.app.env,
+      release: clientEnv.NEXT_PUBLIC_SENTRY_RELEASE ?? config.app.buildId ?? null,
+    },
+    server: {
+      configured: config.sentry.enabled,
+      environment: config.sentry.environment ?? config.app.env,
+      release: config.sentry.release ?? config.app.buildId ?? null,
+    },
+  };
+}
+
 /**
  * Cached server configuration.
  *

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
 import { useConsent } from "@atlas/consent";
 import {
@@ -16,7 +16,6 @@ import {
 
 import { useConfig } from "@/config";
 import { analytics, getAnalyticsStatus } from "@/lib/analytics";
-import { apiGet } from "@/lib/api";
 import { useSession } from "@/lib/auth";
 import { hasClientPermission, permissions } from "@/lib/authz";
 import { t } from "@/lib/i18n";
@@ -30,19 +29,6 @@ import { ReferenceFeatureFlagDemo } from "./ReferenceFeatureFlagDemo";
 import { ReferenceLoadingState } from "./ReferenceLoadingState";
 import { ReferenceObservabilityDemo } from "./ReferenceObservabilityDemo";
 
-interface SecurityHeadersResponse {
-  summary: {
-    cspMode: string;
-    hstsEnabled: boolean;
-    frameAncestors: string;
-    xFrameOptions: string;
-    baselineHeaderCount: number;
-  };
-  expectedCspHeader: string | null;
-  observedRequestHeaders: Record<string, string>;
-  note: string;
-}
-
 function StatusRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -52,29 +38,30 @@ function StatusRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
+function SentryStatusRows({
+  label,
+  status,
+}: {
+  label: string;
+  status: { configured: boolean; environment: string | null; release: string | null };
+}) {
+  return (
+    <>
+      <StatusRow
+        label={`${label} Sentry`}
+        value={status.configured ? "configured" : "not configured"}
+      />
+      <StatusRow label={`${label} environment`} value={status.environment ?? "—"} />
+      <StatusRow label={`${label} release`} value={status.release ?? "—"} />
+    </>
+  );
+}
+
 export function ReferencePlatformView() {
   const session = useSession();
   const clientConfig = useConfig();
   const consent = useConsent();
   const { data: platformData, isLoading, isError, error, refetch } = usePlatformDiagnostics();
-  const [securityHeaders, setSecurityHeaders] = useState<SecurityHeadersResponse | null>(null);
-  const [securityError, setSecurityError] = useState<string | null>(null);
-
-  const loadSecurityHeaders = useCallback(async () => {
-    setSecurityError(null);
-    try {
-      const response = await apiGet<SecurityHeadersResponse>("/api/reference/security-headers");
-      setSecurityHeaders(response);
-    } catch (loadError) {
-      setSecurityError(loadError instanceof Error ? loadError.message : "Failed to load");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (session.status === "authenticated") {
-      void loadSecurityHeaders();
-    }
-  }, [session.status, loadSecurityHeaders]);
 
   const emitAnalyticsEvent = useCallback(() => {
     analytics.track("feature.used", { feature: "reference-platform-analytics-demo" });
@@ -289,7 +276,7 @@ export function ReferencePlatformView() {
             label="Endpoint"
             value={<code className="break-all">{clientConfig.webVitals.endpoint}</code>}
           />
-          <StatusRow label="Session sampled" value={isReportingActive() ? "yes" : "no"} />
+          <StatusRow label="Session active" value={isReportingActive() ? "yes" : "no"} />
           {Object.keys(webVitalsLatest).length > 0 ? (
             <ul className="space-y-1 text-sm">
               {Object.entries(webVitalsLatest).map(([name, metric]) => (
@@ -301,7 +288,7 @@ export function ReferencePlatformView() {
           ) : (
             <p className="text-muted-foreground text-sm">
               No local measurements yet. Navigate the app to collect vitals when reporting is
-              enabled.
+              enabled and the session is sampled.
             </p>
           )}
         </CardContent>
@@ -311,22 +298,31 @@ export function ReferencePlatformView() {
         <CardHeader>
           <CardTitle>Sentry</CardTitle>
           <CardDescription>
-            Configuration state — no credentials required in reference mode.
+            Client and server configuration state — no credentials are shown.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <StatusRow
-            label="Sentry"
-            value={clientConfig.sentry.enabled ? "configured" : "not configured"}
-          />
-          <StatusRow
-            label="Environment"
-            value={clientConfig.sentry.environment ?? runtime?.environment ?? "—"}
-          />
-          <StatusRow
-            label="Release"
-            value={clientConfig.sentry.release ?? runtime?.sentry.release ?? "—"}
-          />
+          {runtime ? (
+            <>
+              <SentryStatusRows label="Client" status={runtime.sentry.client} />
+              <SentryStatusRows label="Server" status={runtime.sentry.server} />
+            </>
+          ) : (
+            <>
+              <StatusRow
+                label="Client Sentry"
+                value={clientConfig.sentry.enabled ? "configured" : "not configured"}
+              />
+              <StatusRow
+                label="Client environment"
+                value={clientConfig.sentry.environment ?? clientConfig.app.env}
+              />
+              <StatusRow
+                label="Client release"
+                value={clientConfig.sentry.release ?? clientConfig.app.buildId ?? "—"}
+              />
+            </>
+          )}
           <StatusRow
             label="Google OAuth"
             value={runtime?.authIntegration.googleOAuthConfigured ? "configured" : "not configured"}
@@ -336,8 +332,11 @@ export function ReferencePlatformView() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Security headers / CSP</CardTitle>
-          <CardDescription>Interpreted configuration and runtime header evidence.</CardDescription>
+          <CardTitle>Security policy</CardTitle>
+          <CardDescription>
+            Interpreted security configuration from validated runtime policy — not observed response
+            headers. Automated E2E verifies actual HTTP response headers.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {security ? (
@@ -346,31 +345,16 @@ export function ReferencePlatformView() {
               <StatusRow label="HSTS" value={security.hstsEnabled ? "enabled" : "disabled"} />
               <StatusRow label="Frame ancestors" value={security.frameAncestors} />
               <StatusRow label="X-Frame-Options" value={security.xFrameOptions} />
+              <StatusRow label="Referrer-Policy" value={security.referrerPolicy} />
+              <StatusRow label="Permissions-Policy" value={security.permissionsPolicy} />
+              <StatusRow
+                label="Baseline headers"
+                value={`${security.baselineHeaderCount} configured`}
+              />
             </>
-          ) : null}
-          {securityHeaders ? (
-            <div className="space-y-2 text-sm">
-              <p className="text-muted-foreground">
-                Expected CSP header: {securityHeaders.expectedCspHeader ?? "none (CSP off)"}
-              </p>
-              {Object.keys(securityHeaders.observedRequestHeaders).length > 0 ? (
-                <ul className="space-y-1">
-                  {Object.entries(securityHeaders.observedRequestHeaders).map(([key, value]) => (
-                    <li key={key}>
-                      <code>{key}</code>: <span className="break-all">{value}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted-foreground">No security headers on inbound API request.</p>
-              )}
-              <p className="text-muted-foreground text-xs">{securityHeaders.note}</p>
-            </div>
-          ) : null}
-          {securityError ? <p className="text-destructive text-sm">{securityError}</p> : null}
-          <Button type="button" variant="outline" size="sm" onClick={() => loadSecurityHeaders()}>
-            Refresh header evidence
-          </Button>
+          ) : (
+            <p className="text-muted-foreground text-sm">Security policy unavailable.</p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -191,7 +191,8 @@ export const REFERENCE_CAPABILITIES: ReferenceCapability[] = [
   {
     id: "consent",
     label: "Consent",
-    description: "@atlas/consent integration wires analytics consent state.",
+    description:
+      "@atlas/consent on /settings with opt-in mode enabled by default in the reference app.",
     group: "platform",
     route: "/settings",
     status: "demonstrated",
@@ -207,7 +208,8 @@ export const REFERENCE_CAPABILITIES: ReferenceCapability[] = [
   {
     id: "web-vitals",
     label: "Web Vitals",
-    description: "WebVitalsReporter configuration and optional local measurements.",
+    description:
+      "Validated config drives WebVitalsReporter; /platform shows effective session state.",
     group: "platform",
     route: "/platform",
     status: "demonstrated",
@@ -215,7 +217,8 @@ export const REFERENCE_CAPABILITIES: ReferenceCapability[] = [
   {
     id: "sentry",
     label: "Sentry",
-    description: "SDK initialization state without requiring credentials in reference mode.",
+    description:
+      "Client and server SDK configuration shown separately; credentials optional in reference mode.",
     group: "platform",
     route: "/platform",
     status: "infrastructure",
@@ -223,7 +226,7 @@ export const REFERENCE_CAPABILITIES: ReferenceCapability[] = [
   {
     id: "security-headers",
     label: "Security headers / CSP",
-    description: "Baseline headers and opt-in CSP mode from runtime configuration.",
+    description: "Interpreted policy on /platform; Playwright verifies actual response headers.",
     group: "platform",
     route: "/platform",
     status: "demonstrated",

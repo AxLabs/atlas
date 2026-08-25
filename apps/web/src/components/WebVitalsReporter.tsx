@@ -19,10 +19,20 @@ import { getClientConfig } from "@/config/client";
  */
 export function WebVitalsReporter() {
   useEffect(() => {
-    if (!getClientConfig().webVitals.enabled) return;
+    const clientConfig = getClientConfig();
 
     void import("@/lib/telemetry/webVitals").then(({ initWebVitalsReporting }) => {
-      initWebVitalsReporting();
+      initWebVitalsReporting({
+        config: {
+          enabled: clientConfig.webVitals.enabled,
+          sampleRate: clientConfig.webVitals.sampleRate,
+          endpoint: clientConfig.webVitals.endpoint,
+          debug: clientConfig.webVitals.debug,
+          environment: clientConfig.app.env,
+          appName: "@atlas/web",
+          buildId: clientConfig.app.buildId,
+        },
+      });
     });
   }, []);
 

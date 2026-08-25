@@ -356,9 +356,11 @@ The executable reference application (`apps/reference`) proves **runtime applica
 through one coherent Users CRUD journey plus platform routes:
 
 - **Overview (`/`)** — Capability map linked to real routes
-- **Settings (`/settings`)** — Theme, consent, and i18n conventions
+- **Settings (`/settings`)** — Theme, consent (enabled by default in reference), and i18n
+  conventions
 - **Platform (`/platform`)** — Safe diagnostics for config, flags, analytics, observability, Web
-  Vitals, Sentry state, and security headers
+  Vitals session state, separate client/server Sentry status, and interpreted security policy
+  (actual response headers verified in E2E)
 
 Atlas CLI, Doctor, generators, CI, governance, Storybook, and performance budgets are validated
 **outside** the reference app — not as fake SaaS screens. Google OAuth, Sentry, and vendor analytics

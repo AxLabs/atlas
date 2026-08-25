@@ -17,6 +17,7 @@ import {
   readMarketingConsent,
   readPreferencesConsent,
   setCookieConsentModule,
+  withCookieConsent,
 } from "./utils";
 
 import type { ConsentContextValue, ConsentProviderProps, ConsentStatus } from "./types";
@@ -155,54 +156,49 @@ export function ConsentProvider({
       return;
     }
 
-    void import("vanilla-cookieconsent")
-      .then((cc) => {
-        cc.showPreferences();
-      })
-      .catch(() => {
-        if (debug || isDevelopment()) {
-          // eslint-disable-next-line no-console
-          console.error("[@atlas/consent] Failed to open preferences");
-        }
-      });
-  }, [debug, isEnabled]);
+    withCookieConsent((cc) => {
+      cc.showPreferences();
+    });
+  }, [isEnabled]);
 
   const acceptAll = useCallback(() => {
     if (!isEnabled) {
       return;
     }
 
-    void import("vanilla-cookieconsent")
-      .then((cc) => {
-        cc.acceptCategory("all");
-      })
-      .catch(() => undefined);
-  }, [isEnabled]);
+    withCookieConsent((cc) => {
+      cc.acceptCategory("all");
+      queueMicrotask(() => {
+        syncConsentState(setStatus, true, true);
+        notifyAnalyticsConsent(readAnalyticsConsent());
+      });
+    });
+  }, [isEnabled, notifyAnalyticsConsent]);
 
   const rejectAll = useCallback(() => {
     if (!isEnabled) {
       return;
     }
 
-    void import("vanilla-cookieconsent")
-      .then((cc) => {
-        cc.acceptCategory([]);
-      })
-      .catch(() => undefined);
-  }, [isEnabled]);
+    withCookieConsent((cc) => {
+      cc.acceptCategory([]);
+      queueMicrotask(() => {
+        syncConsentState(setStatus, true, true);
+        notifyAnalyticsConsent(readAnalyticsConsent());
+      });
+    });
+  }, [isEnabled, notifyAnalyticsConsent]);
 
   const resetConsent = useCallback(() => {
     if (!isEnabled) {
       return;
     }
 
-    void import("vanilla-cookieconsent")
-      .then((cc) => {
-        cc.reset(true);
-        syncConsentState(setStatus, true, false);
-        notifyAnalyticsConsent(false);
-      })
-      .catch(() => undefined);
+    withCookieConsent((cc) => {
+      cc.reset(true);
+      syncConsentState(setStatus, true, false);
+      notifyAnalyticsConsent(false);
+    });
   }, [isEnabled, notifyAnalyticsConsent]);
 
   const value = useMemo<ConsentContextValue>(

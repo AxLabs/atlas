@@ -4,7 +4,7 @@
  * Explicitly picks public fields — never serializes full server config.
  */
 
-import { getServerConfig } from "@/config/server";
+import { getSentryRuntimeSummary, getServerConfig } from "@/config/server";
 import { getSecurityHeaders } from "@/lib/security/headers";
 
 export interface SafePlatformRuntime {
@@ -15,9 +15,16 @@ export interface SafePlatformRuntime {
   buildId: string | null;
   referenceMode: boolean;
   sentry: {
-    configured: boolean;
-    environment: string | null;
-    release: string | null;
+    client: {
+      configured: boolean;
+      environment: string | null;
+      release: string | null;
+    };
+    server: {
+      configured: boolean;
+      environment: string | null;
+      release: string | null;
+    };
   };
   webVitals: {
     enabled: boolean;
@@ -50,6 +57,8 @@ export interface SafeSecuritySummary {
   hstsEnabled: boolean;
   frameAncestors: string;
   xFrameOptions: string;
+  referrerPolicy: string;
+  permissionsPolicy: string;
   baselineHeaderCount: number;
 }
 
@@ -68,11 +77,7 @@ export function getSafePlatformRuntime(): SafePlatformRuntime {
     apiMode: isSameOrigin ? "same-origin" : "external",
     buildId: config.app.buildId ?? null,
     referenceMode: config.reference.enabled,
-    sentry: {
-      configured: config.sentry.enabled,
-      environment: config.sentry.environment ?? config.app.env,
-      release: config.sentry.release ?? config.app.buildId ?? null,
-    },
+    sentry: getSentryRuntimeSummary(),
     webVitals: {
       enabled: config.webVitals.enabled,
       sampleRate: config.webVitals.sampleRate,
@@ -113,6 +118,8 @@ export function getSafeSecuritySummary(): SafeSecuritySummary {
     hstsEnabled: config.security.hstsEnabled,
     frameAncestors: config.security.frameAncestors,
     xFrameOptions: baseline["X-Frame-Options"] ?? "not set",
+    referrerPolicy: baseline["Referrer-Policy"] ?? "not set",
+    permissionsPolicy: baseline["Permissions-Policy"] ?? "not set",
     baselineHeaderCount: Object.keys(baseline).length,
   };
 }

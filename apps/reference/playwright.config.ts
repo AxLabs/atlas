@@ -29,6 +29,8 @@ export default defineConfig({
       NEXT_PUBLIC_APP_URL: "http://localhost:3001",
       AUTH_SESSION_SECRET:
         process.env.AUTH_SESSION_SECRET ?? "local-reference-session-secret-32chars",
+      NEXT_PUBLIC_CONSENT_ENABLED: "true",
+      NEXT_PUBLIC_CONSENT_MODE: "opt-in",
     },
   },
 });

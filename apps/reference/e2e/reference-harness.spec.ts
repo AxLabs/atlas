@@ -133,6 +133,61 @@ test.describe("Reference application", () => {
     await expect(page.getByText("Current preference: dark")).toBeVisible();
   });
 
+  test("settings consent flow updates analytics consent state", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/settings");
+    await expect(page.getByRole("main").getByText("Consent layer enabled")).toBeVisible();
+
+    await page.getByRole("button", { name: "Reject all" }).first().click({ timeout: 15000 });
+
+    await page.goto("/platform");
+    await expect(
+      page.locator("div").filter({ hasText: "Analytics granted" }).first()
+    ).toContainText("no");
+
+    await page.goto("/settings");
+    await page.getByRole("button", { name: "Accept all" }).first().click({ timeout: 15000 });
+
+    await page.goto("/platform");
+    await expect(
+      page.locator("div").filter({ hasText: "Analytics granted" }).first()
+    ).toContainText("yes");
+  });
+
+  test("platform security policy section shows interpreted configuration", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+
+    await page.goto("/platform");
+    await expect(page.getByText("Security policy")).toBeVisible();
+    await expect(page.getByText("CSP mode")).toBeVisible();
+    await expect(page.getByText("Referrer-Policy")).toBeVisible();
+    await expect(page.getByText("Refresh header evidence")).toHaveCount(0);
+  });
+
+  test("reference responses include baseline security headers", async ({ request }) => {
+    const response = await request.get("/");
+    expect(response.ok()).toBeTruthy();
+
+    const headers = response.headers();
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["permissions-policy"]).toContain("camera=()");
+    expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
+    expect(headers["cross-origin-resource-policy"]).toBe("same-site");
+
+    if (process.env.ENABLE_HSTS === "true" && process.env.NODE_ENV === "production") {
+      expect(headers["strict-transport-security"]).toContain("max-age=");
+    } else {
+      expect(headers["strict-transport-security"]).toBeUndefined();
+    }
+  });
+
   test("platform runtime diagnostics render without obvious secrets", async ({ page }) => {
     await page.goto("/harness");
     await page.getByRole("button", { name: "reference-user" }).click();
@@ -144,6 +199,8 @@ test.describe("Reference application", () => {
     ).toBeVisible();
     await expect(page.getByText("@atlas/reference")).toBeVisible();
     await expect(page.getByText("Feature flags")).toBeVisible();
+    await expect(page.getByText("Client Sentry")).toBeVisible();
+    await expect(page.getByText("Server Sentry")).toBeVisible();
 
     const bodyText = await page.locator("main").innerText();
     expect(bodyText).not.toMatch(

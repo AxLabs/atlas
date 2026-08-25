@@ -118,8 +118,9 @@ export function ReferenceSettingsView() {
             </div>
           ) : (
             <p className="text-muted-foreground text-sm">
-              Enable <code>NEXT_PUBLIC_CONSENT_ENABLED=true</code> to exercise the full consent UI.
-              Reference personas work without it; analytics uses the noop adapter by default.
+              Consent is disabled in this environment. Set{" "}
+              <code>NEXT_PUBLIC_CONSENT_ENABLED=true</code> to exercise preferences on this page.
+              Analytics uses the noop adapter when no vendor credentials are configured.
             </p>
           )}
         </CardContent>

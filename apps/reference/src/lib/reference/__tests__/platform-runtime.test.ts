@@ -22,7 +22,24 @@ describe("platform-runtime", () => {
     const security = getSafeSecuritySummary();
     expect(security.cspMode).toMatch(/^(off|report-only|enforce)$/);
     expect(typeof security.hstsEnabled).toBe("boolean");
+    expect(security.referrerPolicy).toBeTruthy();
+    expect(security.permissionsPolicy).toBeTruthy();
     expect(security.baselineHeaderCount).toBeGreaterThan(0);
     expect(containsSensitiveData(security)).toBe(false);
+  });
+
+  it("reports client and server Sentry separately", () => {
+    const runtime = getSafePlatformRuntime();
+    expect(runtime.sentry.client).toEqual(
+      expect.objectContaining({
+        configured: expect.any(Boolean),
+      })
+    );
+    expect(runtime.sentry.server).toEqual(
+      expect.objectContaining({
+        configured: expect.any(Boolean),
+      })
+    );
+    expect(containsSensitiveData(runtime.sentry)).toBe(false);
   });
 });
