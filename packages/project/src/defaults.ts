@@ -77,7 +77,7 @@ export function resolveAtlasProjectContract(raw: RawAtlasProjectContract): Resol
     },
   };
 
-  return {
+  const resolved: ResolvedAtlasProject = {
     schemaVersion: merged.schemaVersion,
     application: {
       root: normalizeRepoRelativePath(merged.application.root),
@@ -105,4 +105,21 @@ export function resolveAtlasProjectContract(raw: RawAtlasProjectContract): Resol
     capabilities: { ...merged.capabilities },
     boundaries: { ...merged.boundaries },
   };
+
+  if (raw.platform?.baseline) {
+    resolved.platform = {
+      baseline: {
+        atlasVersion: raw.platform.baseline.atlasVersion,
+        contractSchemaVersion: raw.platform.baseline.contractSchemaVersion,
+        templateManifestSchemaVersion: raw.platform.baseline.templateManifestSchemaVersion,
+        syncedPathChecksums: Object.fromEntries(
+          Object.entries(raw.platform.baseline.syncedPathChecksums).sort(([left], [right]) =>
+            left.localeCompare(right)
+          )
+        ),
+      },
+    };
+  }
+
+  return resolved;
 }

@@ -235,12 +235,12 @@ products. All workspace packages share one version via a **fixed** changeset gro
 
 ## Related issues
 
-| Issue   | Topic                                       | #19 status  |
-| ------- | ------------------------------------------- | ----------- |
-| **#24** | Public cutover + GitHub Release publication | Deferred    |
-| **#14** | Security release artifacts                  | Not claimed |
-| **#17** | Upgrade rehearsal programme                 | Separate    |
-| **#27** | Third-party provenance                      | Separate    |
+| Issue   | Topic                                       | #19 status                     |
+| ------- | ------------------------------------------- | ------------------------------ |
+| **#24** | Public cutover + GitHub Release publication | Deferred                       |
+| **#14** | Security release artifacts                  | Not claimed                    |
+| **#17** | Upgrade rehearsal programme                 | See [upgrades.md](upgrades.md) |
+| **#27** | Third-party provenance                      | Separate                       |
 
 ---
 

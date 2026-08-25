@@ -11,6 +11,7 @@ import { createCheckExecutionFailedDiagnostic } from "./diagnostics";
 import { sortDiagnostics } from "./map-eslint";
 import { runTemplateInfrastructureSyncCheck } from "./template-sync";
 import { DOCTOR_REPORT_SCHEMA_VERSION } from "./types";
+import { runUpgradeBaselineCheck } from "./upgrade-baseline";
 
 import type { DoctorContext } from "./context";
 import type {
@@ -64,6 +65,13 @@ export const DOCTOR_CHECKS: DoctorCheckDefinition[] = [
     rationale:
       "Starter and reference applications duplicate Atlas template infrastructure deliberately; synced paths must stay aligned with the canonical starter unless documented as application-owned.",
     run: runTemplateInfrastructureSyncCheck,
+  },
+  {
+    id: "upgrade-baseline",
+    title: "Upgrade baseline",
+    rationale:
+      "Atlas records platform baseline metadata so future upgrades can distinguish unchanged template infrastructure from consumer modifications.",
+    run: runUpgradeBaselineCheck,
   },
   {
     id: "atlas-version",

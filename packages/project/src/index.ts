@@ -1,4 +1,21 @@
 export {
+  AtlasBaselineCaptureError,
+  BASELINE_CHECKSUM_PATTERN,
+  BASELINE_CHECKSUM_PREFIX,
+  type BaselineIntegrityIssue,
+  buildPlatformBaseline,
+  captureSyncedPathChecksums,
+  type CaptureSyncedPathChecksumsResult,
+  captureSyncedPathChecksumsStrict,
+  computeBaselineChecksum,
+  getSyncedPathBaselineStatus,
+  isValidBaselineChecksum,
+  normalizeBaselineChecksum,
+  readPlatformBaseline,
+  type SyncedPathBaselineStatus,
+  validatePlatformBaselineIntegrity,
+} from "./baseline";
+export {
   ATLAS_CONTRACT_FILENAME,
   LATEST_SCHEMA_VERSION,
   SUPPORTED_SCHEMA_VERSIONS,
@@ -22,6 +39,7 @@ export { joinRepoPath, normalizeRepoRelativePath } from "./paths";
 export {
   atlasProjectContractSchema,
   parseAtlasProjectContract,
+  type PlatformBaseline,
   type RawAtlasProjectContract,
   type ResolvedAtlasProject,
   resolvedAtlasProjectSchema,

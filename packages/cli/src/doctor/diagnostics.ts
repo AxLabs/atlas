@@ -25,6 +25,12 @@ export const DoctorDiagnosticCode = {
   TEMPLATE_SYNC_CANONICAL_MISSING: "ATLAS_TEMPLATE_SYNC_CANONICAL_MISSING",
   TEMPLATE_SYNC_STRUCTURE: "ATLAS_TEMPLATE_SYNC_STRUCTURE",
   TEMPLATE_SYNC_MANIFEST_INVALID: "ATLAS_TEMPLATE_SYNC_MANIFEST_INVALID",
+  UPGRADE_BASELINE_MISSING: "ATLAS_UPGRADE_BASELINE_MISSING",
+  UPGRADE_BASELINE_STALE: "ATLAS_UPGRADE_BASELINE_STALE",
+  UPGRADE_BASELINE_INCOMPLETE: "ATLAS_UPGRADE_BASELINE_INCOMPLETE",
+  UPGRADE_BASELINE_CHECKSUM_INVALID: "ATLAS_UPGRADE_BASELINE_CHECKSUM_INVALID",
+  UPGRADE_BASELINE_MANIFEST_INCOMPATIBLE: "ATLAS_UPGRADE_BASELINE_MANIFEST_INCOMPATIBLE",
+  UPGRADE_BASELINE_STALE_ENTRY: "ATLAS_UPGRADE_BASELINE_STALE_ENTRY",
 } as const;
 
 export type DoctorDiagnosticCodeType =
@@ -179,6 +185,42 @@ export const DOCTOR_DIAGNOSTIC_DEFINITIONS: Record<string, DiagnosticDefinition>
     suggestedFix:
       "Fix templates/app-infrastructure.manifest.json so Atlas can validate starter/reference synchronization policy.",
     documentation: "docs/how-we-build/architecture-ownership.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_MISSING]: {
+    severity: "warning",
+    suggestedFix:
+      "Record `platform.baseline` in atlas.config.json via `atlas init` on first bootstrap or the baseline capture helpers documented in docs/how-we-build/upgrades.md.",
+    documentation: "docs/how-we-build/upgrades.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_STALE]: {
+    severity: "warning",
+    suggestedFix:
+      "Complete the supported upgrade path for your recorded Atlas baseline version, then refresh platform.baseline metadata.",
+    documentation: "docs/how-we-build/upgrades.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_INCOMPLETE]: {
+    severity: "error",
+    suggestedFix:
+      "Re-capture platform.baseline after restoring all manifest syncedPaths in the canonical application, or complete the supported upgrade path before attempting automated template replacements.",
+    documentation: "docs/how-we-build/upgrades.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_CHECKSUM_INVALID]: {
+    severity: "error",
+    suggestedFix:
+      "Replace malformed checksum values with sha256:<64 hex characters> or re-run `pnpm --filter @atlas/project capture-baseline` on a healthy checkout.",
+    documentation: "docs/how-we-build/upgrades.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_MANIFEST_INCOMPATIBLE]: {
+    severity: "warning",
+    suggestedFix:
+      "Refresh platform.baseline after adopting the current template manifest schema version documented in upgrades.md.",
+    documentation: "docs/how-we-build/upgrades.md",
+  },
+  [DoctorDiagnosticCode.UPGRADE_BASELINE_STALE_ENTRY]: {
+    severity: "warning",
+    suggestedFix:
+      "Remove stale baseline checksum entries or re-capture platform.baseline so evidence matches current manifest syncedPaths.",
+    documentation: "docs/how-we-build/upgrades.md",
   },
 };
 

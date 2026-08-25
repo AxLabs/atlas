@@ -3,6 +3,7 @@ import path from "node:path";
 
 import {
   ATLAS_CONTRACT_FILENAME,
+  AtlasBaselineCaptureError,
   DEFAULT_ATLAS_PROJECT_CONTRACT,
   joinRepoPath,
   LATEST_SCHEMA_VERSION,
@@ -14,6 +15,11 @@ import { CliError, CliErrorCode } from "../errors/cli-error";
 import { cliErrorFromContract } from "../errors/from-contract";
 import { validatePrerequisites } from "../init/prerequisites";
 import { findAtlasRepoRoot, findStructuralAtlasRoot } from "../project/find-root";
+import { loadAppInfrastructureManifest, resolveManifestPath } from "../template-sync/manifest";
+import {
+  captureConsumerPlatformBaseline,
+  mergePlatformBaselineIntoContract,
+} from "../upgrade/baseline";
 import { readCheckoutAtlasVersion } from "../version";
 
 import type { CommandResult, PlannedAction } from "../types/result";
@@ -154,6 +160,16 @@ function resolveInitContext(cwd?: string): InitContext {
   );
 }
 
+function readCheckoutAtlasVersionForInit(repoRoot: string): string {
+  try {
+    return readCheckoutAtlasVersion(repoRoot);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to resolve checkout Atlas version.";
+    throw new CliError(CliErrorCode.PREREQUISITE_ERROR, message, { cause: error });
+  }
+}
+
 function buildInitialContract(repoRoot: string): RawAtlasProjectContract {
   const specPath = joinRepoPath(repoRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec);
   const schemaPath = joinRepoPath(
@@ -162,16 +178,40 @@ function buildInitialContract(repoRoot: string): RawAtlasProjectContract {
   );
   const hasOpenApi = existsSync(specPath) && existsSync(schemaPath);
 
-  if (hasOpenApi) {
-    return { schemaVersion: LATEST_SCHEMA_VERSION };
+  const baseContract: RawAtlasProjectContract = hasOpenApi
+    ? { schemaVersion: LATEST_SCHEMA_VERSION }
+    : {
+        schemaVersion: LATEST_SCHEMA_VERSION,
+        capabilities: {
+          openApi: false,
+        },
+      };
+
+  const manifestPath = resolveManifestPath(repoRoot);
+  if (!existsSync(manifestPath)) {
+    return baseContract;
   }
 
-  return {
-    schemaVersion: LATEST_SCHEMA_VERSION,
-    capabilities: {
-      openApi: false,
-    },
-  };
+  const manifest = loadAppInfrastructureManifest(repoRoot);
+  const atlasVersion = readCheckoutAtlasVersionForInit(repoRoot);
+
+  try {
+    const baseline = captureConsumerPlatformBaseline({
+      repoRoot,
+      applicationRoot: DEFAULT_ATLAS_PROJECT_CONTRACT.application.root,
+      atlasVersion,
+      contractSchemaVersion: LATEST_SCHEMA_VERSION,
+      manifest,
+    });
+
+    return mergePlatformBaselineIntoContract(baseContract, baseline);
+  } catch (error) {
+    if (error instanceof AtlasBaselineCaptureError) {
+      throw new CliError(CliErrorCode.PREREQUISITE_ERROR, error.message, { cause: error });
+    }
+
+    throw error;
+  }
 }
 
 function validateExistingContract(repoRoot: string): void {
@@ -196,7 +236,7 @@ function validateProposedContract(
 function planInit(context: InitContext, options: InitOptions): CommandResult {
   const { repoRoot, hasExistingContract } = context;
   const warnings = validatePrerequisites(repoRoot);
-  const atlasVersion = readCheckoutAtlasVersion(repoRoot);
+  const atlasVersion = readCheckoutAtlasVersionForInit(repoRoot);
 
   if (hasExistingContract) {
     validateExistingContract(repoRoot);

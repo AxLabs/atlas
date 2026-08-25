@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   AtlasContractError,
   AtlasContractErrorCode,
+  computeBaselineChecksum,
   DEFAULT_ATLAS_PROJECT_CONTRACT,
   loadAtlasProject,
   normalizeRepoRelativePath,
@@ -565,23 +566,67 @@ describe("normalizeRepoRelativePath", () => {
   });
 });
 
+describe("platform baseline", () => {
+  it("accepts optional platform.baseline metadata", () => {
+    const checksum = computeBaselineChecksum("client");
+    const parsed = parseAtlasProjectContract({
+      schemaVersion: 1,
+      platform: {
+        baseline: {
+          atlasVersion: "0.1.0",
+          contractSchemaVersion: 1,
+          templateManifestSchemaVersion: 1,
+          syncedPathChecksums: {
+            "src/lib/api/client.ts": checksum,
+          },
+        },
+      },
+    });
+
+    expect(parsed.platform?.baseline?.atlasVersion).toBe("0.1.0");
+  });
+
+  it("resolves platform baseline into the resolved contract", () => {
+    const clientChecksum = computeBaselineChecksum("client");
+    const errorsChecksum = computeBaselineChecksum("errors");
+    const resolved = resolveAtlasProjectContract({
+      schemaVersion: 1,
+      platform: {
+        baseline: {
+          atlasVersion: "0.1.0",
+          contractSchemaVersion: 1,
+          templateManifestSchemaVersion: 1,
+          syncedPathChecksums: {
+            "src/lib/api/errors.ts": errorsChecksum,
+            "src/lib/api/client.ts": clientChecksum,
+          },
+        },
+      },
+    });
+
+    expect(resolved.platform?.baseline.syncedPathChecksums).toEqual({
+      "src/lib/api/client.ts": clientChecksum,
+      "src/lib/api/errors.ts": errorsChecksum,
+    });
+  });
+});
+
 describe("repository atlas.config.json", () => {
   it("matches the checked-in contract file", () => {
     const raw = loadAtlasProject(REPO_ROOT);
-    expect(raw).toEqual({
-      schemaVersion: 1,
-      features: {
-        reference: "apps/reference/src/features",
-        examples: "apps/web/src/features/examples",
-      },
-      reference: {
-        components: "apps/reference/src/features/components",
-        routes: "apps/reference/src/app",
-      },
-      generated: {
-        openApi: {
-          schema: "apps/web/src/lib/api/contracts/schema.ts",
-        },
+    expect(raw.schemaVersion).toBe(1);
+    expect(raw.platform?.baseline?.atlasVersion).toBe("0.1.0");
+    expect(raw.features).toEqual({
+      reference: "apps/reference/src/features",
+      examples: "apps/web/src/features/examples",
+    });
+    expect(raw.reference).toEqual({
+      components: "apps/reference/src/features/components",
+      routes: "apps/reference/src/app",
+    });
+    expect(raw.generated).toEqual({
+      openApi: {
+        schema: "apps/web/src/lib/api/contracts/schema.ts",
       },
     });
   });

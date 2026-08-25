@@ -1,6 +1,8 @@
 import {
   AtlasContractError,
   AtlasContractErrorCode,
+  loadAtlasProject,
+  type RawAtlasProjectContract,
   resolveAtlasProject,
   type ResolvedAtlasProject,
 } from "@atlas/project";
@@ -18,6 +20,7 @@ export interface DoctorContext {
   checkoutAtlasVersion?: string;
   checkoutVersionError?: string;
   project?: ResolvedAtlasProject;
+  rawContract?: RawAtlasProjectContract;
   contractError?: AtlasContractError;
 }
 
@@ -51,7 +54,8 @@ export function createDoctorContext(options: CreateDoctorContextOptions = {}): D
   const context: DoctorContext = { ...contextBase };
 
   try {
-    context.project = resolveAtlasProject(repoRoot);
+    context.rawContract = loadAtlasProject(repoRoot);
+    context.project = resolveAtlasProject(repoRoot, context.rawContract);
   } catch (error) {
     if (error instanceof AtlasContractError) {
       context.contractError = error;
