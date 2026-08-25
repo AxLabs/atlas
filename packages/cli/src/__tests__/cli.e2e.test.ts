@@ -22,6 +22,7 @@ describe("atlas CLI executable", () => {
     expect(result.stdout).toContain("init");
     expect(result.stdout).toContain("generate");
     expect(result.stdout).toContain("doctor");
+    expect(result.stdout).toContain("sync");
   });
 
   it("prints version with exit 0", () => {
@@ -319,5 +320,15 @@ describe("atlas init bootstrap", () => {
 
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
     expect(result.stdout).toContain(`Atlas version: ${cliVersion}`);
+  });
+});
+
+describe("atlas sync infrastructure", () => {
+  const repoRoot = getRepoRoot();
+
+  it("passes check on the healthy checkout", () => {
+    const result = runAtlasCli(["sync", "infrastructure", "--check"], repoRoot);
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    expect(result.stdout).toContain("Drifted synced paths: 0");
   });
 });

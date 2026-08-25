@@ -112,6 +112,7 @@ export function writeHelp(writer: OutputWriter, json: boolean): void {
     "  init             Initialize Atlas metadata in an existing compatible checkout",
     "  generate         Generate Atlas feature modules and App Router pages",
     "  doctor           Diagnose Atlas architecture and configuration drift",
+    "  sync             Synchronize duplicated template infrastructure between applications",
     "",
     "Init options:",
     "  --env <mode>         Environment setup: skip (default) or copy (.env.example → .env.local)",

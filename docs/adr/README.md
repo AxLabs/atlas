@@ -25,17 +25,18 @@ Write an ADR when you:
 
 ## ADR Index
 
-| #                                             | Title                                    | Status   |
-| --------------------------------------------- | ---------------------------------------- | -------- |
-| [0000](0000-template.md)                      | ADR Template                             | Template |
-| [0001](0001-tailwind-v4-css-first-theming.md) | Tailwind v4 CSS-First Theming            | Accepted |
-| [0002](0002-env-validation-t3-env.md)         | Environment Validation with t3-env       | Accepted |
-| [0003](0003-data-fetching-react-query.md)     | Data Fetching with React Query + OpenAPI | Accepted |
-| [0004](0004-oauth-google-pkce.md)             | OAuth with Google PKCE                   | Accepted |
-| [0005](0005-observability-sentry.md)          | Observability with Sentry                | Accepted |
-| [0006](0006-consent-management.md)            | Optional Consent Management              | Accepted |
-| [0007](0007-architecture-ownership-model.md)  | Architecture Ownership Model             | Accepted |
-| [0008](0008-atlas-project-contract.md)        | Atlas Project Architecture Contract      | Accepted |
+| #                                               | Title                                    | Status   |
+| ----------------------------------------------- | ---------------------------------------- | -------- |
+| [0000](0000-template.md)                        | ADR Template                             | Template |
+| [0001](0001-tailwind-v4-css-first-theming.md)   | Tailwind v4 CSS-First Theming            | Accepted |
+| [0002](0002-env-validation-t3-env.md)           | Environment Validation with t3-env       | Accepted |
+| [0003](0003-data-fetching-react-query.md)       | Data Fetching with React Query + OpenAPI | Accepted |
+| [0004](0004-oauth-google-pkce.md)               | OAuth with Google PKCE                   | Accepted |
+| [0005](0005-observability-sentry.md)            | Observability with Sentry                | Accepted |
+| [0006](0006-consent-management.md)              | Optional Consent Management              | Accepted |
+| [0007](0007-architecture-ownership-model.md)    | Architecture Ownership Model             | Accepted |
+| [0008](0008-atlas-project-contract.md)          | Atlas Project Architecture Contract      | Accepted |
+| [0009](0009-starter-reference-template-sync.md) | Starter/Reference Template Sync          | Accepted |
 
 ## Status Lifecycle
 

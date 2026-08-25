@@ -29,6 +29,8 @@
     "prepare": "husky",
     "api:gen": "pnpm --filter @atlas/web api:gen && pnpm --filter @atlas/reference api:gen",
     "api:check": "pnpm api:gen && git diff --exit-code -- apps/web/src/lib/api/contracts/schema.ts apps/reference/src/lib/api/contracts/schema.ts",
+    "template:check": "pnpm exec atlas sync infrastructure --check",
+    "template:sync": "pnpm exec atlas sync infrastructure",
     "atlas:resolve-contract": "pnpm --filter @atlas/project resolve",
     "atlas": "pnpm exec atlas",
     "validate:env": "pnpm --filter @atlas/web validate:env && pnpm --filter @atlas/reference validate:env",
