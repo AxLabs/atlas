@@ -2,11 +2,8 @@ import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  hasMigrationRunner,
-  resolveMigrationChain,
-  runMigrationChain,
-} from "../upgrade/migrations/registry";
+import { FIXTURE_MIGRATION_REGISTRY } from "./fixtures/upgrade-migrations/registry";
+import type { AtlasMigrationDefinition } from "../upgrade/migrations/types";
 
 function copyFixtureToTemp(): string {
   const sourceRoot = path.resolve(__dirname, "fixtures/upgrade-e2e");
@@ -16,44 +13,48 @@ function copyFixtureToTemp(): string {
 }
 
 describe("upgrade migration chain", () => {
-  it("resolves ordered migrations for multi-step upgrades", () => {
-    const chain = resolveMigrationChain("0.1.0", "0.3.0");
+  it("resolves ordered migrations for multi-step fixture upgrades", () => {
+    const chain = FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.3.0");
     expect(chain.missingTarget).toBeUndefined();
-    expect(chain.migrations.map((entry) => entry.id)).toEqual([
-      "atlas-rehearsal-step-a",
-      "atlas-contract-v1-to-v2",
+    expect(chain.migrations.map((entry: AtlasMigrationDefinition) => entry.id)).toEqual([
+      "fixture-migration-a",
+      "fixture-migration-b",
     ]);
   });
 
-  it("executes migration A before migration B with real mutations", () => {
+  it("executes fixture migration A before migration B with real mutations", () => {
     const tempRoot = copyFixtureToTemp();
     const executionOrder: string[] = [];
 
-    const chain = resolveMigrationChain("0.1.0", "0.3.0").migrations;
-    expect(hasMigrationRunner("atlas-rehearsal-step-a")).toBe(true);
-    expect(hasMigrationRunner("atlas-contract-v1-to-v2")).toBe(true);
+    const chain = FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.3.0").migrations;
+    expect(FIXTURE_MIGRATION_REGISTRY.hasRunner("fixture-migration-a")).toBe(true);
+    expect(FIXTURE_MIGRATION_REGISTRY.hasRunner("fixture-migration-b")).toBe(true);
 
-    const results = runMigrationChain(chain, { repoRoot: tempRoot, dryRun: false });
+    const results = FIXTURE_MIGRATION_REGISTRY.runChain(chain, {
+      repoRoot: tempRoot,
+      dryRun: false,
+    });
     for (const result of results) {
       executionOrder.push(result.migrationId);
     }
 
-    expect(executionOrder).toEqual(["atlas-rehearsal-step-a", "atlas-contract-v1-to-v2"]);
+    expect(executionOrder).toEqual(["fixture-migration-a", "fixture-migration-b"]);
 
-    const contract = JSON.parse(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8"));
-    expect(contract.platform.migrationRehearsal.stepB).toBe(true);
-    expect(contract.platform.migrationRehearsal.newFlag).toBe(true);
-    expect(contract.platform.migrationRehearsal.legacyFlag).toBeUndefined();
+    const contract = JSON.parse(readFileSync(path.join(tempRoot, "fixture.contract.json"), "utf8"));
+    expect(contract.stepB).toBe(true);
+    expect(contract.newKey).toBe(true);
+    expect(contract.legacyKey).toBeUndefined();
+    expect(contract.schemaVersion).toBe(2);
 
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it("fails prerequisite when migration chain edge is missing", () => {
-    const chain = resolveMigrationChain("0.1.0", "0.4.0");
-    expect(chain.missingTarget).toBe("0.4.0");
-    expect(chain.migrations.map((entry) => entry.id)).toEqual([
-      "atlas-rehearsal-step-a",
-      "atlas-contract-v1-to-v2",
+  it("returns the registered fixture chain when target is beyond the last fixture migration", () => {
+    const chain = FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.4.0");
+    expect(chain.missingTarget).toBeUndefined();
+    expect(chain.migrations.map((entry: AtlasMigrationDefinition) => entry.id)).toEqual([
+      "fixture-migration-a",
+      "fixture-migration-b",
     ]);
   });
 });

@@ -17,9 +17,8 @@ import { SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION } from "../templat
 import {
   assertMigrationChainExecutable,
   type AtlasMigrationDefinition,
-  resolveMigrationChain,
-  runMigrationChain,
 } from "./migrations/registry";
+import { resolveUpgradeMigrationRegistry } from "./migrations/resolve-registry";
 import { applySafeUpgradeReplacements } from "./apply";
 import {
   captureConsumerPlatformBaseline,
@@ -27,6 +26,7 @@ import {
   readContractPlatformBaseline,
 } from "./baseline";
 import { validateUpgradeSourceBaseline } from "./baseline-validation";
+import { applyPackageUpdates, hasUnresolvedRequiredPackageWork } from "./package-apply";
 import { planPackageUpdates } from "./package-plan";
 import { planUpgrade } from "./plan";
 import {
@@ -39,6 +39,7 @@ import { compareAtlasVersions } from "./version-compare";
 import { writeRootPackageVersion } from "./version-identity";
 import { assertCleanWorktreeForMutation } from "./worktree";
 
+import type { AtlasMigrationRegistry } from "./migrations/types";
 import type {
   UpgradeMigrationReport,
   UpgradePlanItem,
@@ -55,6 +56,7 @@ export interface RunUpgradeOptions {
   allowDirty?: boolean;
   releasesDir?: string;
   skipValidation?: boolean;
+  migrationRegistry?: AtlasMigrationRegistry;
 }
 
 function readConsumerFile(
@@ -240,6 +242,7 @@ function assertUpgradePrerequisites(options: {
   sourceRelease: LoadedReleaseSnapshot;
   targetRelease: LoadedReleaseSnapshot;
   migrationChain: AtlasMigrationDefinition[];
+  migrationRegistry: AtlasMigrationRegistry;
 }): void {
   const sourceManifest = toReleasePathManifest(options.sourceRelease.manifest);
   const targetManifest = toReleasePathManifest(options.targetRelease.manifest);
@@ -262,7 +265,7 @@ function assertUpgradePrerequisites(options: {
   }
 
   try {
-    assertMigrationChainExecutable(options.migrationChain);
+    assertMigrationChainExecutable(options.migrationChain, options.migrationRegistry);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Migration chain is not executable.";
     throw new CliError(CliErrorCode.UPGRADE_PREREQUISITE, message);
@@ -271,6 +274,10 @@ function assertUpgradePrerequisites(options: {
 
 export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRunResult> {
   const mode = options.dryRun ? "dry-run" : "apply";
+  const migrationRegistry = resolveUpgradeMigrationRegistry({
+    repoRoot: options.repoRoot,
+    migrationRegistry: options.migrationRegistry,
+  });
   const contract = readAtlasProjectContractFile(options.repoRoot);
   const baseline = readContractPlatformBaseline(contract);
 
@@ -319,7 +326,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     releasesDir: options.releasesDir,
   });
 
-  const migrationChain = resolveMigrationChain(sourceVersion, targetVersion);
+  const migrationChain = migrationRegistry.resolveChain(sourceVersion, targetVersion);
   if (migrationChain.missingTarget) {
     throw new CliError(
       CliErrorCode.UPGRADE_PREREQUISITE,
@@ -337,6 +344,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     sourceRelease,
     targetRelease,
     migrationChain: migrationChain.migrations,
+    migrationRegistry,
   });
 
   const targetManifestSubset = buildManifestSubsetFromRelease(targetRelease.manifest);
@@ -382,6 +390,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
   const conflicts = items.filter((item) => item.conflict);
   const hasBlockingConflicts = conflicts.length > 0;
   const hasUnresolvedManualMigrations = templatePlan.hasIncompleteMigrations;
+  const hasUnresolvedPackageWork = hasUnresolvedRequiredPackageWork(items);
 
   const migrationReports = buildMigrationReports(migrationChain.migrations, mode, []);
 
@@ -391,17 +400,19 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
   let baselineUpdated = false;
   let validation: UpgradeValidationReport = { doctor: "skipped", apiGen: "skipped" };
 
-  if (hasBlockingConflicts || hasUnresolvedManualMigrations) {
+  if (hasBlockingConflicts || hasUnresolvedManualMigrations || hasUnresolvedPackageWork) {
     status = "blocked";
-    messages.push(
-      hasBlockingConflicts
-        ? "Upgrade plan contains blocking conflicts. No filesystem mutations were applied."
-        : "Upgrade plan requires manual migrations or ownership reconciliation before template updates can proceed."
-    );
-
-    if (summary.packageUpdates > 0) {
+    if (hasBlockingConflicts) {
       messages.push(
-        "Workspace @atlas/* package version bumps remain plan-only in v0.1. Atlas release identity will advance separately from package updates."
+        "Upgrade plan contains blocking conflicts. No filesystem mutations were applied."
+      );
+    } else if (hasUnresolvedPackageWork) {
+      messages.push(
+        "Upgrade plan contains unresolved required package updates. No filesystem mutations were applied."
+      );
+    } else {
+      messages.push(
+        "Upgrade plan requires manual migrations or ownership reconciliation before template updates can proceed."
       );
     }
 
@@ -423,11 +434,6 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 
   if (mode === "dry-run") {
     messages.push("Dry-run completed. No filesystem mutations were applied.");
-    if (summary.packageUpdates > 0) {
-      messages.push(
-        "Workspace @atlas/* package version bumps remain plan-only in v0.1. Atlas release identity will advance separately from package updates."
-      );
-    }
 
     return {
       sourceVersion,
@@ -452,7 +458,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 
   let migrationResults: UpgradeMigrationReport[] = [];
   try {
-    const appliedMigrations = runMigrationChain(migrationChain.migrations, {
+    const appliedMigrations = migrationRegistry.runChain(migrationChain.migrations, {
       repoRoot: options.repoRoot,
       dryRun: false,
     });
@@ -507,6 +513,45 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 
   for (const appliedItem of applyResult.applied) {
     appliedPaths.push(appliedItem.relativePath);
+  }
+
+  const packageApplyResult = applyPackageUpdates({
+    repoRoot: options.repoRoot,
+    items,
+    dryRun: false,
+  });
+
+  if (packageApplyResult.blocked.length > 0) {
+    status = "blocked";
+    messages.push(
+      "Required workspace package version updates could not be applied automatically. Baseline was not advanced."
+    );
+    return {
+      sourceVersion,
+      targetVersion,
+      mode,
+      status,
+      summary,
+      items: [
+        ...items.filter(
+          (item) =>
+            !packageApplyResult.blocked.some(
+              (blocked) => blocked.relativePath === item.relativePath
+            )
+        ),
+        ...packageApplyResult.blocked,
+      ],
+      conflicts: [...conflicts, ...packageApplyResult.blocked],
+      migrations: buildMigrationReports(migrationChain.migrations, mode, migrationResults),
+      validation,
+      baselineUpdated: false,
+      appliedPaths,
+      messages,
+    };
+  }
+
+  for (const appliedPackagePath of packageApplyResult.applied) {
+    appliedPaths.push(appliedPackagePath);
   }
 
   const regenerateItems = items.filter((item) => item.action === "regenerate");
@@ -585,9 +630,9 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
   baselineUpdated = true;
   status = "success";
   messages.push(`Upgrade completed. platform.baseline advanced to Atlas ${targetVersion}.`);
-  if (summary.packageUpdates > 0) {
+  if (packageApplyResult.applied.length > 0) {
     messages.push(
-      "Workspace @atlas/* package version bumps remain plan-only in v0.1. Review planned package updates separately."
+      `Aligned ${packageApplyResult.applied.length} workspace @atlas/* package version field(s).`
     );
   }
 

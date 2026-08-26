@@ -75,7 +75,7 @@ describe("upgrade e2e", () => {
     expect(payload.ok).toBe(true);
     expect(payload.result?.status).toBe("planned");
     expect(payload.result?.migrations).toEqual([
-      expect.objectContaining({ id: "atlas-rehearsal-step-a", status: "planned" }),
+      expect.objectContaining({ id: "fixture-migration-a", status: "planned" }),
     ]);
     expect(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8")).toBe(contractBefore);
     expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/api/errors.ts"), "utf8")).toBe(
@@ -111,7 +111,7 @@ describe("upgrade e2e", () => {
     expect(payload.result?.status).toBe("success");
     expect(payload.result?.baselineUpdated).toBe(true);
     expect(payload.result?.migrations).toEqual([
-      expect.objectContaining({ id: "atlas-rehearsal-step-a", status: "applied" }),
+      expect.objectContaining({ id: "fixture-migration-a", status: "applied" }),
     ]);
     expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/api/errors.ts"), "utf8")).toContain(
       "fixed"
@@ -125,7 +125,10 @@ describe("upgrade e2e", () => {
 
     const contract = JSON.parse(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8"));
     expect(contract.platform.baseline.atlasVersion).toBe("0.2.0");
-    expect(contract.platform.migrationRehearsal.stepA).toBe(true);
+    const fixtureContract = JSON.parse(
+      readFileSync(path.join(tempRoot, "fixture.contract.json"), "utf8")
+    );
+    expect(fixtureContract.stepA).toBe(true);
     expect(JSON.parse(readFileSync(path.join(tempRoot, "package.json"), "utf8")).version).toBe(
       "0.2.0"
     );
@@ -172,7 +175,7 @@ describe("upgrade e2e", () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it("upgrades through 0.3.0 with ordered migrations", () => {
+  it("upgrades through 0.3.0 with ordered fixture migrations", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
 
     const result = runAtlasCli(
@@ -183,8 +186,8 @@ describe("upgrade e2e", () => {
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
     const payload = parseUpgradeJson(result.stdout);
     expect(payload.result?.migrations?.map((entry) => entry.id)).toEqual([
-      "atlas-rehearsal-step-a",
-      "atlas-contract-v1-to-v2",
+      "fixture-migration-a",
+      "fixture-migration-b",
     ]);
 
     rmSync(tempRoot, { recursive: true, force: true });

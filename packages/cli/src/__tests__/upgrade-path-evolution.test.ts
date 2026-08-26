@@ -2,7 +2,8 @@ import { computeBaselineChecksum } from "@atlas/project";
 
 import { validateUpgradeSourceBaseline } from "../upgrade/baseline-validation";
 import { planUpgrade } from "../upgrade/plan";
-import { listRegisteredMigrations, resolveMigrationChain } from "../upgrade/migrations/registry";
+import { FIXTURE_MIGRATION_REGISTRY } from "../upgrade/migrations/fixture-registry";
+import { listRegisteredMigrations } from "../upgrade/migrations/registry";
 import { classifyOwnershipTransitions } from "../upgrade/path-transitions";
 
 const SOURCE_SNAPSHOT = {
@@ -71,7 +72,7 @@ describe("upgrade path evolution", () => {
         },
       },
       consumerFiles: { ...SOURCE_SNAPSHOT },
-      migrationChain: resolveMigrationChain("0.1.0", "0.2.0").migrations,
+      migrationChain: FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.2.0").migrations,
     });
 
     const marker = plan.items.find(
@@ -104,7 +105,7 @@ describe("upgrade path evolution", () => {
         ...SOURCE_SNAPSHOT,
         "src/lib/api/platform-marker.ts": "export const platformMarker = () => 'consumer';\n",
       },
-      migrationChain: resolveMigrationChain("0.1.0", "0.2.0").migrations,
+      migrationChain: FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.2.0").migrations,
     });
 
     const marker = plan.items.find(
@@ -134,7 +135,7 @@ describe("upgrade path evolution", () => {
         },
       },
       consumerFiles: { ...SOURCE_SNAPSHOT },
-      migrationChain: resolveMigrationChain("0.1.0", "0.2.0").migrations,
+      migrationChain: FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.2.0").migrations,
     });
 
     const removed = plan.items.find((item) => item.relativePath === "src/lib/api/legacy-stub.ts");
@@ -165,7 +166,7 @@ describe("upgrade path evolution", () => {
         ...SOURCE_SNAPSHOT,
         "src/lib/api/legacy-stub.ts": "export const legacyStub = () => 'consumer-edit';\n",
       },
-      migrationChain: resolveMigrationChain("0.1.0", "0.2.0").migrations,
+      migrationChain: FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.2.0").migrations,
     });
 
     const removed = plan.items.find((item) => item.relativePath === "src/lib/api/legacy-stub.ts");
@@ -216,14 +217,15 @@ describe("upgrade path evolution", () => {
         },
       },
       consumerFiles: { ...SOURCE_SNAPSHOT },
-      migrationChain: resolveMigrationChain("0.1.0", "0.2.0").migrations,
+      migrationChain: FIXTURE_MIGRATION_REGISTRY.resolveChain("0.1.0", "0.2.0").migrations,
     });
 
     expect(plan.hasIncompleteMigrations).toBe(false);
-    expect(plan.items.some((item) => item.migrationId === "atlas-rehearsal-step-a")).toBe(true);
-    expect(listRegisteredMigrations().map((entry) => entry.id)).toEqual([
-      "atlas-rehearsal-step-a",
-      "atlas-contract-v1-to-v2",
+    expect(plan.items.some((item) => item.migrationId === "fixture-migration-a")).toBe(true);
+    expect(listRegisteredMigrations().map((entry) => entry.id)).toEqual([]);
+    expect(FIXTURE_MIGRATION_REGISTRY.listMigrations().map((entry) => entry.id)).toEqual([
+      "fixture-migration-a",
+      "fixture-migration-b",
     ]);
   });
 });

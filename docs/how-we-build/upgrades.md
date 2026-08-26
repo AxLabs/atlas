@@ -321,27 +321,24 @@ Discovered during #17 rehearsal — #43 implements:
 - [x] Security-critical metadata support via planner categories (canonical advisories remain #14)
 - [x] Final validation hook (`atlas doctor`) in upgrade workflow
 - [x] Contract schema migrations flagged as `migration-required` (automatic chain when registered)
-- [x] Executable migrations with registered IDs (`atlas-rehearsal-step-a`,
-      `atlas-contract-v1-to-v2`)
+- [x] Executable migrations with registered IDs (production registry; fixture evidence in CLI tests)
 - [x] Source-release baseline validation (target-only path additions do not invalidate baseline)
 - [x] Explicit synced-path transitions (new / removed / ownership change)
 - [x] Advance root `package.json` version with `platform.baseline.atlasVersion` on success
 - [x] Machine-readable upgrade plan output for agents/CI
 
-Registered migrations are documented under `docs/migrations/`:
-
-- [atlas-rehearsal-step-a](../migrations/atlas-rehearsal-step-a.md) (`0.1.0 → 0.2.0`)
-- [atlas-contract-v1-to-v2](../migrations/atlas-contract-v1-to-v2.md) (`0.2.0 → 0.3.0`)
+Registered production migrations are documented under `docs/migrations/`. When no structural
+migration is required for a release pair, the production registry remains empty and template sync
+handles the upgrade.
 
 **Partial / deferred within #43:**
 
 - Three-way automatic merge engine (merge-required + conflict context only)
-- Automatic `package.json` version editing for workspace `@atlas/*` packages (planned as
-  `package-upgrade` actions; Atlas release identity still advances on success)
 - Full production manifest release snapshots beyond the rehearsal chain (`0.1.0 → 0.2.0 → 0.3.0`)
 
-**Expert flag:** `--skip-validation` skips post-upgrade `atlas doctor` but never skips strict
-baseline capture. Use for fixture/CI isolation only.
+**Expert flag:** `--skip-validation` skips post-upgrade `atlas doctor` only. It never skips
+migration completion checks, required package update checks, strict target baseline capture, or
+release identity consistency. Use for fixture/CI isolation only.
 
 **Release identity:** After a successful upgrade, root `package.json` `version` and
 `platform.baseline.atlasVersion` advance together so Doctor's upgrade-baseline check stays coherent.

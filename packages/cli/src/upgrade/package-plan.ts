@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import type { ReleaseSnapshotManifest } from "./release-snapshot";
@@ -12,13 +12,24 @@ const ATLAS_WORKSPACE_PACKAGES = [
   "@atlas/ui",
 ] as const;
 
+const ATLAS_PACKAGE_DIR: Record<(typeof ATLAS_WORKSPACE_PACKAGES)[number], string> = {
+  "@atlas/cli": "packages/cli/package.json",
+  "@atlas/config": "packages/config/package.json",
+  "@atlas/consent": "packages/consent/package.json",
+  "@atlas/project": "packages/project/package.json",
+  "@atlas/ui": "packages/ui/package.json",
+};
+
 export function readWorkspacePackageVersion(repoRoot: string, packageName: string): string | null {
-  const packageJsonPath = path.join(
-    repoRoot,
-    "packages",
-    packageName.replace("@atlas/", ""),
-    "package.json"
-  );
+  const relativePath = ATLAS_PACKAGE_DIR[packageName as keyof typeof ATLAS_PACKAGE_DIR];
+  if (!relativePath) {
+    return null;
+  }
+
+  const packageJsonPath = path.join(repoRoot, relativePath);
+  if (!existsSync(packageJsonPath)) {
+    return null;
+  }
 
   try {
     const parsed = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
@@ -26,6 +37,11 @@ export function readWorkspacePackageVersion(repoRoot: string, packageName: strin
   } catch {
     return null;
   }
+}
+
+export function packageExistsInConsumer(repoRoot: string, packageName: string): boolean {
+  const relativePath = ATLAS_PACKAGE_DIR[packageName as keyof typeof ATLAS_PACKAGE_DIR];
+  return relativePath ? existsSync(path.join(repoRoot, relativePath)) : false;
 }
 
 export function planPackageUpdates(options: {
@@ -38,7 +54,14 @@ export function planPackageUpdates(options: {
   for (const packageName of ATLAS_WORKSPACE_PACKAGES) {
     const sourceVersion = options.sourceManifest.packageVersions[packageName];
     const targetVersion = options.targetManifest.packageVersions[packageName];
-    const currentVersion = readWorkspacePackageVersion(options.repoRoot, packageName);
+    const packagePresent = packageExistsInConsumer(options.repoRoot, packageName);
+    const currentVersion = packagePresent
+      ? readWorkspacePackageVersion(options.repoRoot, packageName)
+      : null;
+
+    if (!packagePresent) {
+      continue;
+    }
 
     if (!targetVersion) {
       continue;
@@ -59,12 +82,27 @@ export function planPackageUpdates(options: {
       continue;
     }
 
+    if (currentVersion !== null && sourceVersion && currentVersion !== sourceVersion) {
+      items.push({
+        relativePath: packageName,
+        ownershipChannel: "versioned-package",
+        category: "manual",
+        action: "manual-review",
+        message: `${packageName} version ${currentVersion} differs from the source Atlas release (${sourceVersion}). Atlas will not overwrite consumer-modified package identity.`,
+        conflict: true,
+        securityCritical: false,
+        sourceVersion,
+        targetVersion,
+      });
+      continue;
+    }
+
     items.push({
       relativePath: packageName,
       ownershipChannel: "versioned-package",
       category: "patch-safe",
       action: "package-upgrade",
-      message: `${packageName} ${sourceVersion ?? currentVersion ?? "unknown"} → ${targetVersion}. Workspace monorepos typically align package versions with the Atlas release; review changelogs for breaking API changes.`,
+      message: `${packageName} ${sourceVersion ?? currentVersion ?? "unknown"} → ${targetVersion}. Atlas will align the workspace package version field during upgrade.`,
       conflict: false,
       securityCritical: false,
       sourceVersion: sourceVersion ?? currentVersion ?? undefined,
