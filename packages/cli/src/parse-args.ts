@@ -9,11 +9,15 @@ export interface ParsedCli {
   env: "skip" | "copy";
   generateArgs: string[];
   syncArgs: string[];
+  upgradeArgs: string[];
   help: boolean;
   json: boolean;
   reference: "keep" | "remove";
   version: boolean;
   positionals: string[];
+  targetVersion?: string;
+  allowDirty: boolean;
+  skipValidation: boolean;
 }
 
 const GLOBAL_FLAGS = new Set([
@@ -28,6 +32,9 @@ const GLOBAL_FLAGS = new Set([
   "--cwd",
   "--reference",
   "--env",
+  "--to",
+  "--allow-dirty",
+  "--skip-validation",
 ]);
 
 function parseFlagValue(args: string[], index: number, flag: string): string {
@@ -69,11 +76,14 @@ function createEmptyParsedCli(): ParsedCli {
     env: "skip",
     generateArgs: [],
     syncArgs: [],
+    upgradeArgs: [],
     help: false,
     json: false,
     reference: "keep",
     version: false,
     positionals: [],
+    allowDirty: false,
+    skipValidation: false,
   };
 }
 
@@ -118,6 +128,16 @@ function parseGlobalArgs(argv: string[]): ParsedCli {
       case "--env":
         parsed.env = parseEnv(parseFlagValue(argv, index, "--env"));
         index += 1;
+        break;
+      case "--to":
+        parsed.targetVersion = parseFlagValue(argv, index, "--to");
+        index += 1;
+        break;
+      case "--allow-dirty":
+        parsed.allowDirty = true;
+        break;
+      case "--skip-validation":
+        parsed.skipValidation = true;
         break;
       default:
         if (arg.startsWith("-")) {
@@ -179,6 +199,16 @@ function parseGlobalFlagsOnly(argv: string[]): { flags: ParsedCli; remainder: st
         flags.env = parseEnv(parseFlagValue(argv, index, "--env"));
         index += 1;
         break;
+      case "--to":
+        flags.targetVersion = parseFlagValue(argv, index, "--to");
+        index += 1;
+        break;
+      case "--allow-dirty":
+        flags.allowDirty = true;
+        break;
+      case "--skip-validation":
+        flags.skipValidation = true;
+        break;
       default:
         remainder.push(arg);
         break;
@@ -197,9 +227,23 @@ function mergeParsedFlags(target: ParsedCli, source: ParsedCli): void {
   target.cwd = target.cwd ?? source.cwd;
   target.reference = source.reference;
   target.env = source.env;
+  target.targetVersion = target.targetVersion ?? source.targetVersion;
+  target.allowDirty = target.allowDirty || source.allowDirty;
+  target.skipValidation = target.skipValidation || source.skipValidation;
 }
 
 export function parseCliArgs(argv: string[]): ParsedCli {
+  const upgradeIndex = argv.indexOf("upgrade");
+  if (upgradeIndex !== -1) {
+    const beforeUpgrade = parseGlobalArgs(argv.slice(0, upgradeIndex));
+    const afterUpgrade = parseGlobalFlagsOnly(argv.slice(upgradeIndex + 1));
+    mergeParsedFlags(beforeUpgrade, afterUpgrade.flags);
+    beforeUpgrade.command = "upgrade";
+    beforeUpgrade.upgradeArgs = afterUpgrade.remainder;
+    beforeUpgrade.positionals = [];
+    return beforeUpgrade;
+  }
+
   const syncIndex = argv.indexOf("sync");
   if (syncIndex !== -1) {
     const beforeSync = parseGlobalArgs(argv.slice(0, syncIndex));

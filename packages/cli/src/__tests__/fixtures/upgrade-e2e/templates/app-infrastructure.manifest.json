@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "canonicalApplication": "apps/web",
+  "consumerApplications": [],
+  "syncedPaths": ["src/lib/api/client.ts", "src/lib/api/errors.ts", "src/lib/auth/session.ts"],
+  "generatedPaths": ["src/lib/api/contracts/schema.ts"],
+  "independentPaths": {},
+  "referenceOnlyPaths": [],
+  "starterOnlyPaths": []
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "platform": {
+    "baseline": {
+      "atlasVersion": "0.1.0",
+      "contractSchemaVersion": 1,
+      "templateManifestSchemaVersion": 1,
+      "syncedPathChecksums": {
+        "src/lib/api/client.ts": "sha256:1942850ac4b9faefc7610bcbaac492f95aa7cfa8c5c217f4870c42eb4bab75a8",
+        "src/lib/api/errors.ts": "sha256:d477fa8f333a8441d86dfe89b0fc518b1a2e40f80074f3c24ecc72b698468805",
+        "src/lib/auth/session.ts": "sha256:750a736a8c60fae6203a514d3ad2a0d653c1884c1d4c2569b6c76dbcafaae092"
+      }
+    }
+  }
+}

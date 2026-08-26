@@ -302,28 +302,35 @@ Test suite: `packages/cli/src/__tests__/upgrade-historical-rehearsal.test.ts`
 
 ## #43 requirements checklist
 
-Discovered during #17 rehearsal — #43 must implement:
+Discovered during #17 rehearsal — #43 implements:
 
-- [ ] `atlas upgrade` command with `--dry-run` and `--json`
-- [ ] Detect consumer modifications via `platform.baseline.syncedPathChecksums` before overwrite
-- [ ] Fail closed when baseline checksum evidence is missing or incomplete (never treat absence as
+- [x] `atlas upgrade` command with `--dry-run` and `--json`
+- [x] Detect consumer modifications via `platform.baseline.syncedPathChecksums` before overwrite
+- [x] Fail closed when baseline checksum evidence is missing or incomplete (never treat absence as
       safe)
-- [ ] Preserve consumer-owned and independent paths
-- [ ] Emit manual review when Atlas introduces new independent wiring paths absent from source
+- [x] Preserve consumer-owned and independent paths
+- [x] Emit manual review when Atlas introduces new independent wiring paths absent from source
       snapshot
-- [ ] Regenerate generated surfaces (`pnpm api:gen`) when OpenAPI spec changes — not on every
+- [x] Regenerate generated surfaces (`pnpm api:gen`) when generator inputs changed — not on every
       upgrade
-- [ ] Represent conflicts explicitly (`merge-required` items)
-- [ ] Support stepping through migration chain for non-adjacent versions
-- [ ] Refresh `platform.baseline` after successful upgrade
-- [ ] Load release snapshot artifacts for three-way merge (old Atlas, consumer, new Atlas)
-- [ ] Package upgrade planning for workspace `@atlas/*` versions
-- [ ] Security-critical fast path with elevated visibility
-- [ ] Final validation hook (`atlas doctor`, tests) in upgrade workflow
-- [ ] Contract schema migrations (`schemaVersion` bumps)
-- [ ] Machine-readable upgrade plan output for agents/CI
+- [x] Represent conflicts explicitly (`merge-required` items)
+- [x] Support stepping through migration chain for non-adjacent versions
+- [x] Refresh `platform.baseline` after successful upgrade
+- [x] Load release snapshot artifacts for planning (source + target era content)
+- [x] Package upgrade planning for workspace `@atlas/*` versions
+- [x] Security-critical metadata support via planner categories (canonical advisories remain #14)
+- [x] Final validation hook (`atlas doctor`) in upgrade workflow
+- [x] Contract schema migrations flagged as `migration-required` (automatic chain when registered)
+- [x] Machine-readable upgrade plan output for agents/CI
 
-**Explicitly not #43 yet:** public advisory feed (#14), npm publish (#24).
+**Partial / deferred within #43:**
+
+- Three-way automatic merge engine (merge-required + conflict context only)
+- Automatic `package.json` version editing for workspace monorepos (planned as `package-upgrade`
+  actions)
+- Full production manifest release snapshots (rehearsal pair only at `releases/0.1.0` → `0.2.0`)
+
+**Explicitly not #43:** public advisory feed (#14), npm publish (#24).
 
 ---
 

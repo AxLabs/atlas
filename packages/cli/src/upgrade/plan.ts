@@ -20,6 +20,9 @@ function summarizePlan(items: UpgradePlanItem[]): UpgradePlanSummary {
     manual: 0,
     securityCritical: 0,
     skipped: 0,
+    packageUpdates: 0,
+    regenerations: 0,
+    replacements: 0,
   };
 
   for (const item of items) {
@@ -45,6 +48,18 @@ function summarizePlan(items: UpgradePlanItem[]): UpgradePlanSummary {
 
     if (item.action === "skip") {
       summary.skipped += 1;
+    }
+
+    if (item.action === "package-upgrade") {
+      summary.packageUpdates += 1;
+    }
+
+    if (item.action === "regenerate") {
+      summary.regenerations += 1;
+    }
+
+    if (item.action === "replace") {
+      summary.replacements += 1;
     }
   }
 
@@ -123,6 +138,7 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
         action: "manual-review",
         message: `Insufficient baseline evidence for ${relativePath}. Atlas ${options.targetAtlasVersion} changed this synced path, but the recorded baseline does not prove the consumer copy is unchanged. Manual review is required before replacement.`,
         conflict: true,
+        baselineStatus,
       });
       continue;
     }
@@ -138,6 +154,8 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
           ? `Consumer modified security-relevant synced path ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; elevated manual remediation is required and automatic overwrite is forbidden.`
           : `Consumer modified ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; manual merge is required.`,
         conflict: true,
+        securityCritical: isSecurityPath,
+        baselineStatus,
       });
       continue;
     }
@@ -153,6 +171,8 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
         ? `Security-relevant synced path ${relativePath} can be replaced because the consumer copy still matches the recorded Atlas baseline.`
         : `Synced path ${relativePath} can be replaced from Atlas ${options.targetAtlasVersion}.`,
       conflict: false,
+      securityCritical: isSecurityPath,
+      baselineStatus,
     });
   }
 
@@ -234,11 +254,11 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
   ) {
     items.push({
       relativePath: "openapi/openapi.json",
-      ownershipChannel: "generated-artifact",
-      category: "patch-safe",
-      action: "regenerate",
+      ownershipChannel: "consumer-owned-source",
+      category: "manual",
+      action: "manual-review",
       message:
-        "OpenAPI spec changed between Atlas versions. Regenerate machine-owned client artifacts after merging the spec.",
+        "OpenAPI spec changed in the target Atlas release. The consumer-owned spec is never overwritten automatically. Review Atlas changes, merge the spec manually, then run api:gen to regenerate client artifacts.",
       conflict: false,
     });
   }
