@@ -30,6 +30,9 @@ jobs:
       - name: Validate licensing, versioning, and release governance
         run: node scripts/validate-governance.mjs
 
+      - name: Validate dependency ownership
+        run: node scripts/validate-dependencies.mjs
+
   ci:
     name: CI
     runs-on:

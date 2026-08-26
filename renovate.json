@@ -51,9 +51,15 @@
       "matchPackageNames": ["@playwright/test", "identity-obj-proxy"]
     },
     {
-      "description": "Group Radix UI components",
-      "groupName": "Radix UI components",
-      "matchPackagePatterns": ["^@radix-ui/"]
+      "description": "Group Base UI and shadcn tooling",
+      "groupName": "Base UI / shadcn",
+      "matchPackageNames": ["@base-ui/react", "shadcn", "cmdk"],
+      "matchPackagePatterns": ["^@base-ui/"]
+    },
+    {
+      "description": "Group MSW test tooling",
+      "groupName": "MSW",
+      "matchPackageNames": ["msw"]
     },
     {
       "description": "Group Tailwind CSS ecosystem",
@@ -61,7 +67,7 @@
       "matchPackageNames": [
         "tailwindcss",
         "tailwind-merge",
-        "tailwindcss-animate",
+        "tw-animate-css",
         "prettier-plugin-tailwindcss",
         "class-variance-authority"
       ],
@@ -70,7 +76,7 @@
     {
       "description": "Group tooling and build tools",
       "groupName": "Tooling and build",
-      "matchPackageNames": ["turbo", "postcss", "autoprefixer"],
+      "matchPackageNames": ["turbo", "postcss"],
       "matchPackagePatterns": ["^@turbo/"]
     },
     {
