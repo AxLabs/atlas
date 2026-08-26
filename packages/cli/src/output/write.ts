@@ -114,6 +114,7 @@ export function writeHelp(writer: OutputWriter, json: boolean): void {
     "  doctor           Diagnose Atlas architecture and configuration drift",
     "  sync             Synchronize duplicated template infrastructure between applications",
     "  upgrade          Plan and apply supported Atlas release upgrades",
+    "  context          Emit resolved Atlas project context for humans and agents",
     "",
     "Init options:",
     "  --env <mode>         Environment setup: skip (default) or copy (.env.example → .env.local)",
@@ -128,6 +129,7 @@ export function writeHelp(writer: OutputWriter, json: boolean): void {
     "  atlas generate page settings/profile --json",
     "  atlas doctor",
     "  atlas doctor --json",
+    "  atlas context --json",
     "  pnpm atlas -- init --json",
   ];
 

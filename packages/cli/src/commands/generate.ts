@@ -1,6 +1,7 @@
 import { createAtlasContext, loadProjectContext } from "../context/atlas-context";
 import { CliError, CliErrorCode } from "../errors/cli-error";
 import { ExitCode } from "../exit-codes";
+import { listGeneratorDefinitions } from "../generators/registry";
 import {
   planFeatureGenerationForRepo,
   planPageGenerationForRepo,
@@ -11,7 +12,7 @@ import { writeCommandSuccess } from "../output/write";
 import type { GenerationResult } from "../generators/types";
 import type { OutputWriter } from "../output/write";
 
-export type GenerateKind = "feature" | "page";
+export type GenerateKind = "feature" | "page" | "list";
 
 export interface ParsedGenerateArgs {
   kind: GenerateKind;
@@ -93,14 +94,24 @@ export function parseGenerateArgs(argv: string[]): ParsedGenerateArgs {
   }
 
   const kind = positional[0];
-  if (kind !== "feature" && kind !== "page") {
+  if (kind !== "feature" && kind !== "page" && kind !== "list") {
     throw new CliError(
       CliErrorCode.USAGE_ERROR,
-      `Unknown generator type: ${kind}. Expected feature or page.`
+      `Unknown generator type: ${kind}. Expected feature, page, or list.`
     );
   }
 
   parsed.kind = kind;
+
+  if (kind === "list") {
+    if (positional.length > 1) {
+      throw new CliError(
+        CliErrorCode.USAGE_ERROR,
+        `Unexpected arguments: ${positional.slice(1).join(" ")}`
+      );
+    }
+    return parsed;
+  }
 
   if (positional.length < 2) {
     throw new CliError(
@@ -132,6 +143,24 @@ function parseFlagValue(args: string[], index: number, flag: string): string {
 }
 
 export function runGenerateCommand(options: GenerateCommandOptions): number {
+  if (options.parsed.kind === "list") {
+    writeCommandSuccess(
+      options.writer,
+      "generate list",
+      { generators: listGeneratorDefinitions() },
+      options.parsed.json,
+      () => [
+        "Atlas generators",
+        "",
+        ...listGeneratorDefinitions().flatMap((generator) => [
+          `${generator.id}: ${generator.description}`,
+          `  ${generator.usage}`,
+        ]),
+      ]
+    );
+    return ExitCode.SUCCESS;
+  }
+
   if (
     options.parsed.kind === "page" &&
     (options.parsed.query || options.parsed.mutation || options.parsed.form || options.parsed.tests)
@@ -222,6 +251,7 @@ export function writeGenerateHelp(writer: OutputWriter, json: boolean): void {
     "Usage:",
     "  atlas generate feature <name> [options]",
     "  atlas generate page <route> [options]",
+    "  atlas generate list [options]",
     "",
     "Feature names must use kebab-case (example: billing-history).",
     "Routes are relative to the configured App Router root (example: settings/profile).",

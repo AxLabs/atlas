@@ -8,7 +8,7 @@ is not, reports deterministic drift with remediation guidance.
 Doctor is **not** a replacement for lint, typecheck, tests, build, or security tooling.
 
 See also: [Atlas CLI](cli.md), [Atlas project contract](atlas-contract.md),
-[Architecture ownership](architecture-ownership.md).
+[Agent workflow](agents.md), [Architecture ownership](architecture-ownership.md).
 
 ---
 
@@ -206,8 +206,30 @@ Error diagnostics fail the step. Warnings remain non-fatal in v0.1.
 
 ---
 
+## Coding agent workflow
+
+Coding agents should run Doctor rather than duplicating architecture checks in prompts:
+
+```bash
+pnpm atlas doctor --json
+```
+
+Classify diagnostics before auto-fixing:
+
+| Class              | Example                                          | Agent behavior                              |
+| ------------------ | ------------------------------------------------ | ------------------------------------------- |
+| Mechanical         | `ATLAS_GENERATED_OPENAPI_STALE`                  | Run `pnpm api:gen`; rerun Doctor            |
+| Ownership conflict | Boundary or template sync error on consumer path | Do not overwrite; inspect contract/manifest |
+| Consumer decision  | Independent wiring differs from baseline         | Do not normalize automatically              |
+| Ambiguous          | Unclear ownership                                | Stop and ask                                |
+
+Full workflow: [Agent workflow](agents.md). Machine context inventory: `pnpm atlas context --json`.
+
+---
+
 ## Related docs
 
+- [Agent workflow](agents.md)
 - [Atlas CLI](cli.md)
 - [Atlas project contract](atlas-contract.md)
 - [Architecture ownership](architecture-ownership.md)

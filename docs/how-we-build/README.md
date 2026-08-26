@@ -33,6 +33,7 @@ These rules apply to all code in Atlas:
 | Document                                            | What It Covers                                   |
 | --------------------------------------------------- | ------------------------------------------------ |
 | [Architecture ownership](architecture-ownership.md) | Platform vs reference vs consumer vs generated   |
+| [Agent workflow](agents.md)                         | Coding agent discover → validate workflow        |
 | [Upgrades](upgrades.md)                             | Downstream upgrade contract and ownership matrix |
 | [Atlas project contract](atlas-contract.md)         | Machine-readable architecture for tooling        |
 | [Atlas CLI](cli.md)                                 | Atlas-specific CLI workflows and boundaries      |

@@ -5,21 +5,22 @@
 The Atlas CLI exists only for workflows where Atlas owns meaningful semantics. It does **not**
 replace pnpm, Next.js, Turborepo, Git, Changesets, shadcn, ESLint, TypeScript, or Playwright.
 
-See also: [Atlas project contract](atlas-contract.md),
+See also: [Atlas project contract](atlas-contract.md), [Agent workflow](agents.md),
 [Releases and Governance](releases-and-governance.md).
 
 ---
 
 ## What the Atlas CLI owns
 
-| Concern                 | Example                                                                |
-| ----------------------- | ---------------------------------------------------------------------- |
-| Atlas project contract  | Load `atlas.config.json` through `@atlas/project`                      |
-| Platform version        | `atlas --version` reports the installed `@atlas/cli` platform snapshot |
-| Project bootstrap       | `atlas init` initializes Atlas metadata in a compatible checkout       |
-| Atlas generators        | `atlas generate feature …`, `atlas generate page …`                    |
-| Architecture Doctor     | `atlas doctor` reports contract, boundary, and workspace drift         |
-| Future migrations (#43) | Upgrade contract schema versions                                       |
+| Concern                | Example                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| Atlas project contract | Load `atlas.config.json` through `@atlas/project`                                 |
+| Platform version       | `atlas --version` reports the installed `@atlas/cli` platform snapshot            |
+| Project bootstrap      | `atlas init` initializes Atlas metadata in a compatible checkout                  |
+| Atlas generators       | `atlas generate feature …`, `atlas generate page …`, `atlas generate list --json` |
+| Agent project context  | `atlas context` / `atlas context --json`                                          |
+| Architecture Doctor    | `atlas doctor` reports contract, boundary, and workspace drift                    |
+| Upgrade workflows      | `atlas upgrade --to <version>` plans and applies supported release upgrades       |
 
 ---
 
@@ -197,6 +198,47 @@ Both generators:
 - Plan all files before writing; abort without mutation on conflict
 - Support `--dry-run` and `--json` using the shared CLI output model
 - Emit repository-relative paths and `followUpActions` for automation
+
+### `atlas generate list`
+
+List supported generators with machine-readable metadata for humans and coding agents.
+
+```bash
+atlas generate list
+atlas generate list --json
+```
+
+JSON output includes generator `id`, `description`, `usage`, `targetOwnership`, `conflictBehavior`,
+required/optional arguments, and supported flags. The same inventory is also available via
+`atlas context --json` → `commands.generators`.
+
+### `atlas context`
+
+Emit resolved Atlas project state for humans and coding agents. This command composes the project
+contract, ownership manifest, generator inventory, Doctor capabilities, upgrade semantics,
+validation commands, and documentation references. It does not introduce a separate agent
+architecture schema.
+
+```bash
+pnpm atlas context
+pnpm atlas context --json
+```
+
+See [Agent workflow](agents.md) for how coding agents should use this output.
+
+Machine output includes:
+
+| Field                      | Purpose                                                   |
+| -------------------------- | --------------------------------------------------------- |
+| `contract`                 | Resolved `atlas.config.json` via `@atlas/project`         |
+| `ownership`                | Manifest synced/generated/independent path classification |
+| `commands.generators`      | Supported structural generators                           |
+| `commands.doctor.checkIds` | Registered Doctor checks                                  |
+| `commands.upgrade`         | Upgrade command capabilities and dry-run decision source  |
+| `validation.recommended`   | Standard engineering validation commands                  |
+| `documentation`            | Workflow doc, ADR references, canonical doc links         |
+
+Reports are deterministic: stable `schemaVersion`, sorted paths, no timestamps.
 
 ### `atlas doctor`
 

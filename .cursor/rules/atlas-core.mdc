@@ -5,12 +5,26 @@ alwaysApply: true
 
 # Atlas core constraints
 
-Read [AGENTS.md](../../AGENTS.md), [architecture ownership](../../docs/how-we-build/architecture-ownership.md), and resolve [atlas.config.json](../../atlas.config.json) via `@atlas/project` before architectural changes. Inspect the closest example page (`apps/web/src/app/examples/`) or reference feature (`apps/reference/src/features/`) before writing code.
+**Canonical sources:** [AGENTS.md](../../AGENTS.md), [agent workflow](../../docs/how-we-build/agents.md), resolved contract via `pnpm atlas context --json`.
 
-- **Ownership** — Product code stays in `apps/web`. Starter examples live in `features/examples/` and `/examples`. The executable reference application lives in `apps/reference/`. Reusable visual primitives go in `@atlas/ui`. Do not promote code to shared packages speculatively.
-- **API** — Use `@/lib/api` / `@/lib/api/contracts` and React Query hooks in feature modules. No raw `fetch()` in pages, components, features, or providers.
-- **Config** — Use `useConfig()` or `getServerConfig()` from `@/config`. No direct `process.env` or `@/env` in application code.
-- **States** — Every data-driven UI handles loading, empty, error, and success. Use `SkeletonList`, `EmptyState`, `ErrorFallback` from `@atlas/ui`.
-- **Forms** — Use `useZodForm`, `FormField`, and `applyServerFieldErrors` from `@atlas/ui`.
-- **Quality** — Preserve accessibility (semantic HTML, labels, keyboard, focus-visible) and responsive layout. No unnecessary dependencies or unrelated refactors.
-- **Done means verified** — Run relevant checks before completion: `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` when appropriate.
+Vendor guidance never overrides the executable contract or Doctor. If this rule contradicts Doctor or `atlas context`, this rule is wrong.
+
+## Before architectural changes
+
+1. Read root `AGENTS.md` and run `pnpm atlas context --json`.
+2. For structural scaffolding, use `pnpm atlas generate …` when a generator exists.
+3. Inspect the closest example (`apps/web/src/app/examples/`) or reference feature (`apps/reference/src/features/`).
+
+## Workflow
+
+- **Validate** — `pnpm atlas doctor --json`, then `pnpm lint`, `pnpm typecheck`, `pnpm test` (and broader checks when required).
+- **Upgrades** — `pnpm atlas upgrade --to <version> --dry-run --json`; do not silently resolve merge-required conflicts.
+- **Doctor failures** — Auto-fix only deterministic mechanical issues (for example stale generated artifacts). Surface ownership conflicts; do not overwrite consumer-owned files.
+
+## Judgment (not duplicated in tooling)
+
+- Prefer existing abstractions; no speculative package extraction.
+- Product code stays in the configured application feature roots; reusable primitives in `@atlas/ui`.
+- Every data-driven UI handles loading, empty, error, and success (`@atlas/ui` app-state components).
+- Forms: `useZodForm`, `FormField`, `applyServerFieldErrors`.
+- Preserve accessibility and responsive layout.
