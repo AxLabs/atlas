@@ -6,6 +6,16 @@ import { computeBaselineChecksum } from "@atlas/project";
 import { CliError, CliErrorCode } from "../errors/cli-error";
 import { SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION } from "../template-sync/manifest";
 
+import {
+  assertNoPathListDuplicates,
+  assertNoReleasePathOverlap,
+  resolvePathUnderApplicationRoot,
+  resolvePathUnderReleaseRoot,
+  validateReleaseApplicationPath,
+  validateReleaseOpenApiPath,
+  validateReleaseRelativePath,
+} from "./path-safety";
+
 import type { UpgradeSnapshot } from "./types";
 
 export const RELEASE_SNAPSHOT_FILENAME = "release.snapshot.json";
@@ -78,17 +88,23 @@ function validateReleaseSnapshotManifest(raw: unknown): ReleaseSnapshotManifest 
     record.canonicalApplication,
     "canonicalApplication"
   );
+  validateReleaseApplicationPath(canonicalApplication, "canonicalApplication");
 
-  const syncedPaths = readStringArray(record.syncedPaths, "syncedPaths");
-  const generatedPaths = readStringArray(record.generatedPaths, "generatedPaths");
-  const independentPaths = readStringArray(record.independentPaths, "independentPaths");
+  const syncedPaths = readValidatedPathArray(record.syncedPaths, "syncedPaths");
+  const generatedPaths = readValidatedPathArray(record.generatedPaths, "generatedPaths");
+  const independentPaths = readValidatedPathArray(record.independentPaths, "independentPaths");
+
+  assertNoPathListDuplicates(syncedPaths, "syncedPaths");
+  assertNoPathListDuplicates(generatedPaths, "generatedPaths");
+  assertNoPathListDuplicates(independentPaths, "independentPaths");
+  assertNoReleasePathOverlap({ syncedPaths, generatedPaths, independentPaths });
 
   const packageVersions = readPackageVersions(record.packageVersions);
 
   const openApiSpecRelativePath =
     record.openApiSpecRelativePath === undefined
       ? undefined
-      : readNonEmptyString(record.openApiSpecRelativePath, "openApiSpecRelativePath");
+      : readOpenApiPath(record.openApiSpecRelativePath);
 
   return {
     schemaVersion: RELEASE_SNAPSHOT_SCHEMA_VERSION,
@@ -126,7 +142,7 @@ function readPositiveInteger(value: unknown, field: string): number {
   return value;
 }
 
-function readStringArray(value: unknown, field: string): string[] {
+function readValidatedPathArray(value: unknown, field: string): string[] {
   if (!Array.isArray(value)) {
     throw new CliError(
       CliErrorCode.UPGRADE_PREREQUISITE,
@@ -142,10 +158,17 @@ function readStringArray(value: unknown, field: string): string[] {
         `Release snapshot ${field}[${index}] must be a non-empty string.`
       );
     }
+    validateReleaseRelativePath(entry, `${field}[${index}]`);
     entries.push(entry);
   }
 
   return entries;
+}
+
+function readOpenApiPath(value: unknown): string {
+  const relativePath = readNonEmptyString(value, "openApiSpecRelativePath");
+  validateReleaseOpenApiPath(relativePath, "openApiSpecRelativePath");
+  return relativePath;
 }
 
 function readPackageVersions(value: unknown): Record<string, string> {
@@ -175,7 +198,13 @@ function readReleaseFile(
   canonicalApplication: string,
   relativePath: string
 ): string {
-  const absolutePath = path.join(releaseRoot, canonicalApplication, relativePath);
+  const applicationRoot = path.join(releaseRoot, canonicalApplication);
+  const absolutePath = resolvePathUnderApplicationRoot(
+    applicationRoot,
+    relativePath,
+    `release snapshot file ${relativePath}`
+  );
+
   if (!existsSync(absolutePath)) {
     throw new CliError(
       CliErrorCode.UPGRADE_PREREQUISITE,
@@ -214,7 +243,11 @@ function buildUpgradeSnapshotFromRelease(
 
   let openApiSpec: string | undefined;
   if (manifest.openApiSpecRelativePath) {
-    const openApiPath = path.join(releaseRoot, manifest.openApiSpecRelativePath);
+    const openApiPath = resolvePathUnderReleaseRoot(
+      releaseRoot,
+      manifest.openApiSpecRelativePath,
+      "openApiSpecRelativePath"
+    );
     if (!existsSync(openApiPath)) {
       throw new CliError(
         CliErrorCode.UPGRADE_PREREQUISITE,
@@ -305,5 +338,13 @@ export function buildManifestSubsetFromRelease(manifest: ReleaseSnapshotManifest
     independentPaths: {},
     referenceOnlyPaths: [],
     starterOnlyPaths: [],
+  };
+}
+
+export function toReleasePathManifest(manifest: ReleaseSnapshotManifest) {
+  return {
+    syncedPaths: manifest.syncedPaths,
+    generatedPaths: manifest.generatedPaths,
+    independentPaths: manifest.independentPaths,
   };
 }

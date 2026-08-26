@@ -101,6 +101,7 @@ const platformBaselineSchema = z
 const platformSchema = z
   .object({
     baseline: platformBaselineSchema,
+    migrationRehearsal: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 

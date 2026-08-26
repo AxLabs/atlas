@@ -1,5 +1,7 @@
 import { compareAtlasVersions } from "../version-compare";
 
+import { runAtlasContractV1ToV2, runAtlasRehearsalStepA } from "./atlas-contract-migrations";
+
 export interface AtlasMigrationDefinition {
   id: string;
   sourceVersion: string;
@@ -28,28 +30,36 @@ export interface MigrationChainResult {
 /** Versioned migration registry. Migrations apply structural/breaking transformations only. */
 const MIGRATION_DEFINITIONS: AtlasMigrationDefinition[] = [
   {
-    id: "noop-0.1.0-to-0.2.0",
+    id: "atlas-rehearsal-step-a",
     sourceVersion: "0.1.0",
     targetVersion: "0.2.0",
     description:
-      "No structural contract transformation required between Atlas 0.1.0 and 0.2.0 in this rehearsal chain.",
+      "Record Atlas upgrade rehearsal step A in atlas.config.json before template updates apply.",
+    automatic: true,
+    reversible: false,
+  },
+  {
+    id: "atlas-contract-v1-to-v2",
+    sourceVersion: "0.2.0",
+    targetVersion: "0.3.0",
+    description:
+      "Transform platform.migrationRehearsal legacyFlag into newFlag for contract schema version 2.",
     automatic: true,
     reversible: false,
   },
 ];
 
 const MIGRATION_RUNNERS: Record<string, (context: MigrationContext) => MigrationRunResult> = {
-  "noop-0.1.0-to-0.2.0": (context) => ({
-    migrationId: "noop-0.1.0-to-0.2.0",
-    changedPaths: [],
-    message: context.dryRun
-      ? "Migration noop-0.1.0-to-0.2.0 would run (no file changes)."
-      : "Migration noop-0.1.0-to-0.2.0 completed (no file changes).",
-  }),
+  "atlas-rehearsal-step-a": runAtlasRehearsalStepA,
+  "atlas-contract-v1-to-v2": runAtlasContractV1ToV2,
 };
 
 export function listRegisteredMigrations(): AtlasMigrationDefinition[] {
   return [...MIGRATION_DEFINITIONS];
+}
+
+export function hasMigrationRunner(migrationId: string): boolean {
+  return MIGRATION_RUNNERS[migrationId] !== undefined;
 }
 
 export function resolveMigrationChain(
@@ -126,4 +136,16 @@ export function runMigrationChain(
   }
 
   return results;
+}
+
+export function assertMigrationChainExecutable(migrations: AtlasMigrationDefinition[]): void {
+  for (const migration of migrations) {
+    if (!migration.automatic) {
+      throw new Error(`Migration ${migration.id} requires manual review.`);
+    }
+
+    if (!hasMigrationRunner(migration.id)) {
+      throw new Error(`No implementation registered for migration ${migration.id}.`);
+    }
+  }
 }

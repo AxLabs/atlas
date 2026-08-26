@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import type { UpgradePlan, UpgradePlanItem } from "./types";
@@ -15,6 +15,14 @@ export interface ApplySafeUpgradeResult {
   skipped: UpgradePlanItem[];
 }
 
+function shouldApplyItem(item: UpgradePlanItem): boolean {
+  if (item.conflict || item.category === "merge-required") {
+    return false;
+  }
+
+  return item.action === "replace" || item.action === "create" || item.action === "remove";
+}
+
 /** Internal/test helper: apply only patch-safe template replacements with no conflicts. */
 export function applySafeUpgradeReplacements(
   options: ApplySafeUpgradeOptions
@@ -23,8 +31,23 @@ export function applySafeUpgradeReplacements(
   const skipped: UpgradePlanItem[] = [];
 
   for (const item of options.plan.items) {
-    if (item.action !== "replace" || item.conflict || item.category === "merge-required") {
+    if (!shouldApplyItem(item)) {
       skipped.push(item);
+      continue;
+    }
+
+    const absolutePath = path.join(options.applicationRoot, item.relativePath);
+
+    if (item.action === "remove") {
+      if (!options.dryRun) {
+        try {
+          unlinkSync(absolutePath);
+        } catch {
+          skipped.push(item);
+          continue;
+        }
+      }
+      applied.push(item);
       continue;
     }
 
@@ -34,7 +57,6 @@ export function applySafeUpgradeReplacements(
       continue;
     }
 
-    const absolutePath = path.join(options.applicationRoot, item.relativePath);
     if (!options.dryRun) {
       mkdirSync(path.dirname(absolutePath), { recursive: true });
       writeFileSync(absolutePath, targetContent, "utf8");

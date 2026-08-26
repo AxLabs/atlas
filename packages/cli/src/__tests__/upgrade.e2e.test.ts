@@ -37,6 +37,7 @@ function parseUpgradeJson(stdout: string): {
     baselineUpdated?: boolean;
     appliedPaths?: string[];
     conflicts?: unknown[];
+    migrations?: { id: string; status: string }[];
   };
 } {
   return JSON.parse(stdout) as {
@@ -46,6 +47,7 @@ function parseUpgradeJson(stdout: string): {
       baselineUpdated?: boolean;
       appliedPaths?: string[];
       conflicts?: unknown[];
+      migrations?: { id: string; status: string }[];
     };
   };
 }
@@ -58,6 +60,10 @@ describe("upgrade e2e", () => {
       path.join(tempRoot, "apps/web/src/lib/api/errors.ts"),
       "utf8"
     );
+    const consumerOwnedBefore = readFileSync(
+      path.join(tempRoot, "apps/web/src/features/billing/custom-work.ts"),
+      "utf8"
+    );
 
     const result = runAtlasCli(
       ["upgrade", "--to", "0.2.0", "--dry-run", "--json", "--skip-validation"],
@@ -68,16 +74,26 @@ describe("upgrade e2e", () => {
     const payload = parseUpgradeJson(result.stdout);
     expect(payload.ok).toBe(true);
     expect(payload.result?.status).toBe("planned");
+    expect(payload.result?.migrations).toEqual([
+      expect.objectContaining({ id: "atlas-rehearsal-step-a", status: "planned" }),
+    ]);
     expect(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8")).toBe(contractBefore);
     expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/api/errors.ts"), "utf8")).toBe(
       errorsBefore
     );
+    expect(
+      readFileSync(path.join(tempRoot, "apps/web/src/features/billing/custom-work.ts"), "utf8")
+    ).toBe(consumerOwnedBefore);
 
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it("applies safe synced-path replacements and advances baseline on success", () => {
+  it("applies safe synced-path replacements, migrations, and advances baseline on success", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
+    const consumerOwnedBefore = readFileSync(
+      path.join(tempRoot, "apps/web/src/features/billing/custom-work.ts"),
+      "utf8"
+    );
 
     const dryRun = runAtlasCli(
       ["upgrade", "--to", "0.2.0", "--dry-run", "--json", "--skip-validation"],
@@ -94,15 +110,25 @@ describe("upgrade e2e", () => {
     const payload = parseUpgradeJson(apply.stdout);
     expect(payload.result?.status).toBe("success");
     expect(payload.result?.baselineUpdated).toBe(true);
+    expect(payload.result?.migrations).toEqual([
+      expect.objectContaining({ id: "atlas-rehearsal-step-a", status: "applied" }),
+    ]);
     expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/api/errors.ts"), "utf8")).toContain(
       "fixed"
     );
-    expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/auth/session.ts"), "utf8")).toContain(
-      "secure-baseline"
-    );
+    expect(
+      readFileSync(path.join(tempRoot, "apps/web/src/lib/api/platform-marker.ts"), "utf8")
+    ).toContain("atlas-0.2.0");
+    expect(
+      readFileSync(path.join(tempRoot, "apps/web/src/features/billing/custom-work.ts"), "utf8")
+    ).toBe(consumerOwnedBefore);
 
     const contract = JSON.parse(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8"));
     expect(contract.platform.baseline.atlasVersion).toBe("0.2.0");
+    expect(contract.platform.migrationRehearsal.stepA).toBe(true);
+    expect(JSON.parse(readFileSync(path.join(tempRoot, "package.json"), "utf8")).version).toBe(
+      "0.2.0"
+    );
 
     const secondDryRun = runAtlasCli(
       ["upgrade", "--to", "0.2.0", "--dry-run", "--json", "--skip-validation"],
@@ -137,11 +163,29 @@ describe("upgrade e2e", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
 
     const result = runAtlasCli(
-      ["upgrade", "--to", "0.3.0", "--dry-run", "--json", "--skip-validation"],
+      ["upgrade", "--to", "0.4.0", "--dry-run", "--json", "--skip-validation"],
       tempRoot
     );
 
     expect(result.exitCode).toBe(ExitCode.UPGRADE_PREREQUISITE);
+
+    rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  it("upgrades through 0.3.0 with ordered migrations", () => {
+    const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
+
+    const result = runAtlasCli(
+      ["upgrade", "--to", "0.3.0", "--json", "--skip-validation", "--allow-dirty"],
+      tempRoot
+    );
+
+    expect(result.exitCode).toBe(ExitCode.SUCCESS);
+    const payload = parseUpgradeJson(result.stdout);
+    expect(payload.result?.migrations?.map((entry) => entry.id)).toEqual([
+      "atlas-rehearsal-step-a",
+      "atlas-contract-v1-to-v2",
+    ]);
 
     rmSync(tempRoot, { recursive: true, force: true });
   });

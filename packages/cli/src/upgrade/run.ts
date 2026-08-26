@@ -8,7 +8,6 @@ import {
   type PlatformBaseline,
   type RawAtlasProjectContract,
   readAtlasProjectContractFile,
-  validatePlatformBaselineIntegrity,
 } from "@atlas/project";
 
 import { doctorExitCodeIndicatesFailure, runDoctor } from "../doctor";
@@ -16,6 +15,7 @@ import { CliError, CliErrorCode } from "../errors/cli-error";
 import { SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION } from "../template-sync/manifest";
 
 import {
+  assertMigrationChainExecutable,
   type AtlasMigrationDefinition,
   resolveMigrationChain,
   runMigrationChain,
@@ -26,14 +26,17 @@ import {
   mergePlatformBaselineIntoContract,
   readContractPlatformBaseline,
 } from "./baseline";
+import { validateUpgradeSourceBaseline } from "./baseline-validation";
 import { planPackageUpdates } from "./package-plan";
 import { planUpgrade } from "./plan";
 import {
   buildManifestSubsetFromRelease,
   type LoadedReleaseSnapshot,
   loadReleaseSnapshot,
+  toReleasePathManifest,
 } from "./release-snapshot";
 import { compareAtlasVersions } from "./version-compare";
+import { writeRootPackageVersion } from "./version-identity";
 import { assertCleanWorktreeForMutation } from "./worktree";
 
 import type {
@@ -137,7 +140,7 @@ function summarizeMergedItems(items: UpgradePlanItem[]): UpgradePlanSummary {
       summary.regenerations += 1;
     }
 
-    if (item.action === "replace") {
+    if (item.action === "replace" || item.action === "create") {
       summary.replacements += 1;
     }
   }
@@ -150,23 +153,42 @@ function buildMigrationReports(
   mode: "dry-run" | "apply",
   applied: UpgradeMigrationReport[]
 ): UpgradeMigrationReport[] {
-  if (applied.length > 0) {
-    return applied;
-  }
+  const appliedById = new Map(applied.map((entry) => [entry.id, entry]));
 
-  return migrations.map((migration) => ({
-    id: migration.id,
-    sourceVersion: migration.sourceVersion,
-    targetVersion: migration.targetVersion,
-    description: migration.description,
-    automatic: migration.automatic,
-    status: mode === "dry-run" ? "planned" : "skipped",
-    changedPaths: [],
-    message:
-      mode === "dry-run"
-        ? `Migration ${migration.id} is planned between Atlas ${migration.sourceVersion} and ${migration.targetVersion}.`
-        : `Migration ${migration.id} was not executed.`,
-  }));
+  return migrations.map((migration) => {
+    const existing = appliedById.get(migration.id);
+    if (existing) {
+      return existing;
+    }
+
+    if (mode === "dry-run") {
+      return {
+        id: migration.id,
+        sourceVersion: migration.sourceVersion,
+        targetVersion: migration.targetVersion,
+        description: migration.description,
+        automatic: migration.automatic,
+        status: migration.automatic ? "planned" : "manual",
+        changedPaths: [],
+        message: migration.automatic
+          ? `Migration ${migration.id} is planned between Atlas ${migration.sourceVersion} and ${migration.targetVersion}.`
+          : `Migration ${migration.id} requires manual review.`,
+      };
+    }
+
+    return {
+      id: migration.id,
+      sourceVersion: migration.sourceVersion,
+      targetVersion: migration.targetVersion,
+      description: migration.description,
+      automatic: migration.automatic,
+      status: migration.automatic ? "skipped" : "manual",
+      changedPaths: [],
+      message: migration.automatic
+        ? `Migration ${migration.id} was not executed.`
+        : `Migration ${migration.id} requires manual review.`,
+    };
+  });
 }
 
 function runApiGen(repoRoot: string): { ok: boolean; message: string } {
@@ -192,6 +214,59 @@ function writePlatformBaseline(
   const updatedContract = mergePlatformBaselineIntoContract(contract, baseline);
   const contractPath = joinRepoPath(repoRoot, ATLAS_CONTRACT_FILENAME);
   writeFileSync(contractPath, `${JSON.stringify(updatedContract, null, 2)}\n`, "utf8");
+}
+
+function collectConsumerRelativePaths(
+  sourceRelease: LoadedReleaseSnapshot,
+  targetRelease: LoadedReleaseSnapshot
+): string[] {
+  const sourcePaths = toReleasePathManifest(sourceRelease.manifest);
+  const targetPaths = toReleasePathManifest(targetRelease.manifest);
+
+  return [
+    ...new Set([
+      ...sourcePaths.syncedPaths,
+      ...targetPaths.syncedPaths,
+      ...sourcePaths.generatedPaths,
+      ...targetPaths.generatedPaths,
+      ...sourcePaths.independentPaths,
+      ...targetPaths.independentPaths,
+    ]),
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+function assertUpgradePrerequisites(options: {
+  baseline: PlatformBaseline;
+  sourceRelease: LoadedReleaseSnapshot;
+  targetRelease: LoadedReleaseSnapshot;
+  migrationChain: AtlasMigrationDefinition[];
+}): void {
+  const sourceManifest = toReleasePathManifest(options.sourceRelease.manifest);
+  const targetManifest = toReleasePathManifest(options.targetRelease.manifest);
+
+  const baselineIntegrityIssues = validateUpgradeSourceBaseline({
+    baseline: options.baseline,
+    sourceSyncedPaths: sourceManifest.syncedPaths,
+    targetSyncedPaths: targetManifest.syncedPaths,
+    currentManifestSchemaVersion: SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION,
+  });
+
+  if (baselineIntegrityIssues.length > 0) {
+    throw new CliError(
+      CliErrorCode.UPGRADE_PREREQUISITE,
+      "platform.baseline is incomplete or inconsistent with the source Atlas release manifest.",
+      {
+        details: baselineIntegrityIssues.map((issue) => issue.message),
+      }
+    );
+  }
+
+  try {
+    assertMigrationChainExecutable(options.migrationChain);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Migration chain is not executable.";
+    throw new CliError(CliErrorCode.UPGRADE_PREREQUISITE, message);
+  }
 }
 
 export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRunResult> {
@@ -257,31 +332,23 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     );
   }
 
-  const manifestSubset = buildManifestSubsetFromRelease(targetRelease.manifest);
-  const baselineIntegrityIssues = validatePlatformBaselineIntegrity({
+  assertUpgradePrerequisites({
     baseline,
-    expectedSyncedPaths: manifestSubset.syncedPaths,
-    currentManifestSchemaVersion: SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION,
+    sourceRelease,
+    targetRelease,
+    migrationChain: migrationChain.migrations,
   });
 
-  if (baselineIntegrityIssues.length > 0) {
-    throw new CliError(
-      CliErrorCode.UPGRADE_PREREQUISITE,
-      "platform.baseline is incomplete or inconsistent with the current infrastructure manifest.",
-      {
-        details: baselineIntegrityIssues.map((issue) => issue.message),
-      }
-    );
-  }
+  const targetManifestSubset = buildManifestSubsetFromRelease(targetRelease.manifest);
+  const sourceManifest = toReleasePathManifest(sourceRelease.manifest);
+  const targetManifest = toReleasePathManifest(targetRelease.manifest);
 
   const applicationRoot = targetRelease.manifest.canonicalApplication;
   const applicationAbsoluteRoot = joinRepoPath(options.repoRoot, applicationRoot);
-  const allRelativePaths = [
-    ...manifestSubset.syncedPaths,
-    ...manifestSubset.generatedPaths,
-    ...targetRelease.manifest.independentPaths,
-  ];
-  const consumerFiles = loadConsumerFiles(applicationAbsoluteRoot, allRelativePaths);
+  const consumerFiles = loadConsumerFiles(
+    applicationAbsoluteRoot,
+    collectConsumerRelativePaths(sourceRelease, targetRelease)
+  );
 
   const contractSchemaChanged =
     sourceRelease.manifest.contractSchemaVersion !== targetRelease.manifest.contractSchemaVersion;
@@ -291,13 +358,17 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     baselineAtlasVersion: sourceVersion,
     targetAtlasVersion: targetVersion,
     baselineChecksums: baseline.syncedPathChecksums,
-    syncedPaths: manifestSubset.syncedPaths,
-    generatedPaths: manifestSubset.generatedPaths,
-    independentPaths: targetRelease.manifest.independentPaths,
+    sourceSyncedPaths: sourceManifest.syncedPaths,
+    sourceGeneratedPaths: sourceManifest.generatedPaths,
+    sourceIndependentPaths: sourceManifest.independentPaths,
+    syncedPaths: targetManifest.syncedPaths,
+    generatedPaths: targetManifest.generatedPaths,
+    independentPaths: targetManifest.independentPaths,
     sourceSnapshot: sourceRelease.snapshot,
     targetSnapshot: targetRelease.snapshot,
     consumerFiles,
     contractSchemaChanged,
+    migrationChain: migrationChain.migrations,
   });
 
   const packageItems = planPackageUpdates({
@@ -310,13 +381,9 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
   const summary = summarizeMergedItems(items);
   const conflicts = items.filter((item) => item.conflict);
   const hasBlockingConflicts = conflicts.length > 0;
-  const hasIncompleteMigrations = items.some((item) => item.action === "migration");
+  const hasUnresolvedManualMigrations = templatePlan.hasIncompleteMigrations;
 
-  const migrationReports: UpgradeMigrationReport[] = buildMigrationReports(
-    migrationChain.migrations,
-    mode,
-    []
-  );
+  const migrationReports = buildMigrationReports(migrationChain.migrations, mode, []);
 
   let status: UpgradeRunStatus = "planned";
   const appliedPaths: string[] = [];
@@ -324,13 +391,19 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
   let baselineUpdated = false;
   let validation: UpgradeValidationReport = { doctor: "skipped", apiGen: "skipped" };
 
-  if (hasBlockingConflicts || hasIncompleteMigrations) {
+  if (hasBlockingConflicts || hasUnresolvedManualMigrations) {
     status = "blocked";
     messages.push(
       hasBlockingConflicts
         ? "Upgrade plan contains blocking conflicts. No filesystem mutations were applied."
-        : "Upgrade plan requires structural migrations before template updates can proceed."
+        : "Upgrade plan requires manual migrations or ownership reconciliation before template updates can proceed."
     );
+
+    if (summary.packageUpdates > 0) {
+      messages.push(
+        "Workspace @atlas/* package version bumps remain plan-only in v0.1. Atlas release identity will advance separately from package updates."
+      );
+    }
 
     return {
       sourceVersion,
@@ -350,6 +423,12 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 
   if (mode === "dry-run") {
     messages.push("Dry-run completed. No filesystem mutations were applied.");
+    if (summary.packageUpdates > 0) {
+      messages.push(
+        "Workspace @atlas/* package version bumps remain plan-only in v0.1. Atlas release identity will advance separately from package updates."
+      );
+    }
+
     return {
       sourceVersion,
       targetVersion,
@@ -371,28 +450,49 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     allowDirty: options.allowDirty ?? false,
   });
 
-  const migrationResults = runMigrationChain(migrationChain.migrations, {
-    repoRoot: options.repoRoot,
-    dryRun: false,
-  });
-
-  for (const migrationResult of migrationResults) {
-    migrationReports.push({
-      id: migrationResult.migrationId,
-      sourceVersion:
-        migrationChain.migrations.find((entry) => entry.id === migrationResult.migrationId)
-          ?.sourceVersion ?? sourceVersion,
-      targetVersion:
-        migrationChain.migrations.find((entry) => entry.id === migrationResult.migrationId)
-          ?.targetVersion ?? targetVersion,
-      description:
-        migrationChain.migrations.find((entry) => entry.id === migrationResult.migrationId)
-          ?.description ?? "",
-      automatic: true,
-      status: "applied",
-      changedPaths: migrationResult.changedPaths,
-      message: migrationResult.message,
+  let migrationResults: UpgradeMigrationReport[] = [];
+  try {
+    const appliedMigrations = runMigrationChain(migrationChain.migrations, {
+      repoRoot: options.repoRoot,
+      dryRun: false,
     });
+
+    migrationResults = appliedMigrations.map((migrationResult) => {
+      const definition = migrationChain.migrations.find(
+        (entry) => entry.id === migrationResult.migrationId
+      );
+
+      return {
+        id: migrationResult.migrationId,
+        sourceVersion: definition?.sourceVersion ?? sourceVersion,
+        targetVersion: definition?.targetVersion ?? targetVersion,
+        description: definition?.description ?? "",
+        automatic: definition?.automatic ?? true,
+        status: "applied" as const,
+        changedPaths: migrationResult.changedPaths,
+        message: migrationResult.message,
+      };
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Migration execution failed.";
+    status = "migration-failed";
+    messages.push(message);
+    messages.push("Upgrade aborted. platform.baseline was not advanced.");
+
+    return {
+      sourceVersion,
+      targetVersion,
+      mode,
+      status,
+      summary,
+      items,
+      conflicts,
+      migrations: buildMigrationReports(migrationChain.migrations, mode, migrationResults),
+      validation,
+      baselineUpdated: false,
+      appliedPaths,
+      messages,
+    };
   }
 
   const applyResult = applySafeUpgradeReplacements({
@@ -429,7 +529,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
         summary,
         items,
         conflicts,
-        migrations: migrationReports,
+        migrations: buildMigrationReports(migrationChain.migrations, mode, migrationResults),
         validation,
         baselineUpdated,
         appliedPaths,
@@ -462,7 +562,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
         summary,
         items,
         conflicts,
-        migrations: migrationReports,
+        migrations: buildMigrationReports(migrationChain.migrations, mode, migrationResults),
         validation,
         baselineUpdated,
         appliedPaths,
@@ -476,13 +576,20 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     applicationRoot,
     atlasVersion: targetVersion,
     contractSchemaVersion: targetRelease.manifest.contractSchemaVersion,
-    manifest: manifestSubset,
+    manifest: targetManifestSubset,
   });
 
-  writePlatformBaseline(options.repoRoot, contract, refreshedBaseline);
+  const refreshedContract = readAtlasProjectContractFile(options.repoRoot);
+  writePlatformBaseline(options.repoRoot, refreshedContract, refreshedBaseline);
+  writeRootPackageVersion(options.repoRoot, targetVersion);
   baselineUpdated = true;
   status = "success";
   messages.push(`Upgrade completed. platform.baseline advanced to Atlas ${targetVersion}.`);
+  if (summary.packageUpdates > 0) {
+    messages.push(
+      "Workspace @atlas/* package version bumps remain plan-only in v0.1. Review planned package updates separately."
+    );
+  }
 
   return {
     sourceVersion,
@@ -492,7 +599,7 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     summary,
     items,
     conflicts,
-    migrations: migrationReports,
+    migrations: buildMigrationReports(migrationChain.migrations, mode, migrationResults),
     validation,
     baselineUpdated,
     appliedPaths,

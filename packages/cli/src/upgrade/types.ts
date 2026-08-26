@@ -17,6 +17,8 @@ export type UpgradeChangeCategory =
 
 export type UpgradeActionKind =
   | "replace"
+  | "create"
+  | "remove"
   | "regenerate"
   | "package-upgrade"
   | "skip"
@@ -33,6 +35,7 @@ export type UpgradeRunStatus =
   | "blocked"
   | "success"
   | "failed"
+  | "migration-failed"
   | "validation-failed";
 
 export interface UpgradePlanItem {
@@ -82,6 +85,9 @@ export interface PlanUpgradeOptions {
   baselineAtlasVersion: string;
   targetAtlasVersion: string;
   baselineChecksums: Record<string, string>;
+  sourceSyncedPaths: string[];
+  sourceGeneratedPaths: string[];
+  sourceIndependentPaths: string[];
   syncedPaths: string[];
   generatedPaths: string[];
   independentPaths: string[];
@@ -97,7 +103,7 @@ export interface UpgradeMigrationReport {
   targetVersion: string;
   description: string;
   automatic: boolean;
-  status: "planned" | "applied" | "skipped";
+  status: "planned" | "applied" | "skipped" | "manual" | "failed" | "conflicted";
   changedPaths: string[];
   message: string;
 }

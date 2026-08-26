@@ -79,6 +79,7 @@ export function upgradeExitCodeFromResult(result: UpgradeRunResult): number {
     case "blocked":
       return 9;
     case "validation-failed":
+    case "migration-failed":
       return 8;
     case "failed":
       return 1;
@@ -102,6 +103,8 @@ export function writeUpgradeHelp(writer: OutputWriter, json: boolean): void {
     "  --dry-run            Plan without filesystem mutations",
     "  --json               Emit machine-readable JSON on stdout",
     "  --allow-dirty        Allow mutations on a dirty Git worktree (use with caution)",
+    "  --skip-validation    Expert/test escape hatch: skip post-upgrade atlas doctor (baseline capture still runs)",
+    "  --releases-dir <dir> Load release snapshots from a custom directory (fixture/CI use)",
     "  --cwd <path>         Resolve the Atlas repository from a starting directory",
     "",
     "Exit behavior:",
