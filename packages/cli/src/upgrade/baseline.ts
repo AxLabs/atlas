@@ -38,6 +38,7 @@ export function mergePlatformBaselineIntoContract(
   return {
     ...contract,
     platform: {
+      ...contract.platform,
       baseline,
     },
   };

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "atlasVersion": "0.2.0",
+  "contractSchemaVersion": 1,
+  "templateManifestSchemaVersion": 1,
+  "canonicalApplication": "apps/web",
+  "syncedPaths": [
+    "src/lib/api/client.ts",
+    "src/lib/api/errors.ts",
+    "src/lib/api/platform-marker.ts",
+    "src/lib/auth/session.ts"
+  ],
+  "generatedPaths": ["src/lib/api/contracts/schema.ts"],
+  "independentPaths": ["src/lib/application/authz.ts"],
+  "packageVersions": {
+    "@atlas/cli": "0.2.0",
+    "@atlas/config": "0.2.0",
+    "@atlas/consent": "0.2.0",
+    "@atlas/project": "0.2.0",
+    "@atlas/ui": "0.2.0"
+  },
+  "openApiSpecRelativePath": "openapi/openapi.json"
+}

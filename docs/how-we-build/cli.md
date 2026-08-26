@@ -236,21 +236,46 @@ non-zero when drift or unresolved structural issues exist. A mutating run re-val
 and exits `0` when repairable drift is cleared. See
 [architecture ownership](architecture-ownership.md#duplicated-starterreference-infrastructure).
 
+### `atlas upgrade`
+
+Plan and apply supported Atlas release upgrades using `platform.baseline` checksum evidence and
+versioned release snapshots under `releases/<version>/`.
+
+```bash
+atlas upgrade --to 0.2.0 --dry-run
+atlas upgrade --to 0.2.0
+atlas upgrade --to 0.2.0 --json
+```
+
+| Option              | Description                                                   |
+| ------------------- | ------------------------------------------------------------- |
+| `--to <version>`    | Target Atlas release version (required)                       |
+| `--dry-run`         | Full planning path without filesystem mutations               |
+| `--json`            | Machine-readable plan and result on stdout                    |
+| `--allow-dirty`     | Allow mutations when the Git worktree has uncommitted changes |
+| `--skip-validation` | Skip post-upgrade `atlas doctor` (fixture/CI only)            |
+
+Blocking conflicts refuse all mutations. `platform.baseline` advances only after a fully successful
+apply and `atlas doctor` validation. See [upgrades](upgrades.md) and
+[release snapshots](../../releases/README.md).
+
 ---
 
 ## Exit codes
 
-| Code | Meaning                                      |
-| ---- | -------------------------------------------- |
-| `0`  | Success                                      |
-| `1`  | Unexpected internal error                    |
-| `2`  | Invalid CLI usage                            |
-| `3`  | Atlas project / contract not found           |
-| `4`  | Invalid Atlas contract or project            |
-| `5`  | Bootstrap conflict / incompatible checkout   |
-| `6`  | Missing prerequisite (Node, pnpm)            |
-| `7`  | Generator conflict (destination exists)      |
-| `8`  | Doctor found architectural error diagnostics |
+| Code | Meaning                                                  |
+| ---- | -------------------------------------------------------- |
+| `0`  | Success                                                  |
+| `1`  | Unexpected internal error                                |
+| `2`  | Invalid CLI usage                                        |
+| `3`  | Atlas project / contract not found                       |
+| `4`  | Invalid Atlas contract or project                        |
+| `5`  | Bootstrap conflict / incompatible checkout               |
+| `6`  | Missing prerequisite (Node, pnpm)                        |
+| `7`  | Generator conflict (destination exists)                  |
+| `8`  | Doctor found architectural error diagnostics             |
+| `9`  | Upgrade blocked (conflicts or dirty worktree)            |
+| `10` | Upgrade prerequisite failure (baseline, snapshot, chain) |
 
 ---
 
@@ -328,7 +353,7 @@ Machine-readable `--json` output may include:
 | ----- | ------------------ | ------------------------------------------------- |
 | #37   | `atlas generate …` | Feature + page shells                             |
 | #38   | `atlas doctor`     | Initial diagnostics                               |
-| #43   | `atlas migrate`    | Not implemented                                   |
+| #43   | `atlas upgrade`    | Planning, dry-run, apply, JSON output             |
 | #17   | Upgrade contract   | Baseline + rehearsal; see [upgrades](upgrades.md) |
 
 The CLI exposes explicit command registration, shared context loading, exit codes, and output

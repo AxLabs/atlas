@@ -8,6 +8,7 @@ import {
   runSyncInfrastructureCommand,
   writeSyncHelp,
 } from "./commands/sync";
+import { runUpgradeCommand, writeUpgradeHelp } from "./commands/upgrade";
 import { CliError, CliErrorCode, isCliError } from "./errors/cli-error";
 import { cliErrorFromUnknown } from "./errors/from-contract";
 import {
@@ -58,6 +59,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return ExitCode.SUCCESS;
       }
 
+      if (parsed.command === "upgrade") {
+        writeUpgradeHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
       writeHelp(writer, parsed.json);
       return ExitCode.SUCCESS;
     }
@@ -85,6 +91,8 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         });
       case "sync":
         return runSyncCliCommand(parsed, writer);
+      case "upgrade":
+        return runUpgradeCliCommand(parsed, writer);
       default:
         throw new CliError(
           CliErrorCode.USAGE_ERROR,
@@ -168,6 +176,28 @@ function runSyncCliCommand(
   );
 
   return result.ok ? ExitCode.SUCCESS : ExitCode.DOCTOR_FAILED;
+}
+
+async function runUpgradeCliCommand(
+  parsed: ParsedCli,
+  writer: ReturnType<typeof createOutputWriter>
+): Promise<number> {
+  if (parsed.upgradeArgs.length > 0) {
+    throw new CliError(
+      CliErrorCode.USAGE_ERROR,
+      `Unexpected arguments: ${parsed.upgradeArgs.join(" ")}`
+    );
+  }
+
+  return runUpgradeCommand({
+    cwd: parsed.cwd,
+    targetVersion: parsed.targetVersion,
+    dryRun: parsed.dryRun,
+    allowDirty: parsed.allowDirty,
+    skipValidation: parsed.skipValidation,
+    json: parsed.json,
+    writer,
+  });
 }
 
 if (require.main === module) {

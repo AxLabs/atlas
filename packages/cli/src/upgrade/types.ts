@@ -17,11 +17,26 @@ export type UpgradeChangeCategory =
 
 export type UpgradeActionKind =
   | "replace"
+  | "create"
+  | "remove"
   | "regenerate"
   | "package-upgrade"
   | "skip"
   | "manual-review"
   | "migration";
+
+export type UpgradeBaselineStatus = "unchanged" | "modified" | "unknown";
+
+export type UpgradeRunMode = "dry-run" | "apply";
+
+export type UpgradeRunStatus =
+  | "already-current"
+  | "planned"
+  | "blocked"
+  | "success"
+  | "failed"
+  | "migration-failed"
+  | "validation-failed";
 
 export interface UpgradePlanItem {
   relativePath: string;
@@ -30,6 +45,11 @@ export interface UpgradePlanItem {
   action: UpgradeActionKind;
   message: string;
   conflict: boolean;
+  securityCritical?: boolean;
+  migrationId?: string;
+  sourceVersion?: string;
+  targetVersion?: string;
+  baselineStatus?: UpgradeBaselineStatus;
 }
 
 export interface UpgradePlanSummary {
@@ -39,6 +59,9 @@ export interface UpgradePlanSummary {
   manual: number;
   securityCritical: number;
   skipped: number;
+  packageUpdates: number;
+  regenerations: number;
+  replacements: number;
 }
 
 export interface UpgradePlan {
@@ -62,6 +85,9 @@ export interface PlanUpgradeOptions {
   baselineAtlasVersion: string;
   targetAtlasVersion: string;
   baselineChecksums: Record<string, string>;
+  sourceSyncedPaths: string[];
+  sourceGeneratedPaths: string[];
+  sourceIndependentPaths: string[];
   syncedPaths: string[];
   generatedPaths: string[];
   independentPaths: string[];
@@ -69,4 +95,36 @@ export interface PlanUpgradeOptions {
   targetSnapshot: UpgradeSnapshot;
   consumerFiles: Record<string, string>;
   contractSchemaChanged?: boolean;
+}
+
+export interface UpgradeMigrationReport {
+  id: string;
+  sourceVersion: string;
+  targetVersion: string;
+  description: string;
+  automatic: boolean;
+  status: "planned" | "applied" | "skipped" | "manual" | "failed" | "conflicted";
+  changedPaths: string[];
+  message: string;
+}
+
+export interface UpgradeValidationReport {
+  doctor: "skipped" | "passed" | "failed" | "not-run";
+  apiGen: "skipped" | "passed" | "failed" | "not-run";
+  message?: string;
+}
+
+export interface UpgradeRunResult {
+  sourceVersion: string;
+  targetVersion: string;
+  mode: UpgradeRunMode;
+  status: UpgradeRunStatus;
+  summary: UpgradePlanSummary;
+  items: UpgradePlanItem[];
+  conflicts: UpgradePlanItem[];
+  migrations: UpgradeMigrationReport[];
+  validation: UpgradeValidationReport;
+  baselineUpdated: boolean;
+  appliedPaths: string[];
+  messages: string[];
 }

@@ -9,6 +9,8 @@ export const ExitCode = {
   PREREQUISITE_ERROR: 6,
   GENERATOR_CONFLICT: 7,
   DOCTOR_FAILED: 8,
+  UPGRADE_BLOCKED: 9,
+  UPGRADE_PREREQUISITE: 10,
 } as const;
 
 export type ExitCode = (typeof ExitCode)[keyof typeof ExitCode];

@@ -1,5 +1,12 @@
 import { getSyncedPathBaselineStatus } from "@atlas/project";
 
+import {
+  classifyOwnershipTransitions,
+  classifySyncedPathTransitions,
+  type OwnershipTransition,
+} from "./path-transitions";
+
+import type { AtlasMigrationDefinition } from "./migrations/registry";
 import type { PlanUpgradeOptions, UpgradePlan, UpgradePlanItem, UpgradePlanSummary } from "./types";
 
 /**
@@ -20,6 +27,9 @@ function summarizePlan(items: UpgradePlanItem[]): UpgradePlanSummary {
     manual: 0,
     securityCritical: 0,
     skipped: 0,
+    packageUpdates: 0,
+    regenerations: 0,
+    replacements: 0,
   };
 
   for (const item of items) {
@@ -46,114 +56,320 @@ function summarizePlan(items: UpgradePlanItem[]): UpgradePlanSummary {
     if (item.action === "skip") {
       summary.skipped += 1;
     }
+
+    if (item.action === "package-upgrade") {
+      summary.packageUpdates += 1;
+    }
+
+    if (item.action === "regenerate") {
+      summary.regenerations += 1;
+    }
+
+    if (item.action === "replace" || item.action === "create") {
+      summary.replacements += 1;
+    }
   }
 
   return summary;
 }
 
-export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
+function planOwnershipTransitionItem(transition: OwnershipTransition): UpgradePlanItem {
+  return {
+    relativePath: transition.relativePath,
+    ownershipChannel: "migration-managed",
+    category: "migration-required",
+    action: "manual-review",
+    message: `${transition.message} Manual review is required before Atlas can reconcile ownership.`,
+    conflict: true,
+  };
+}
+
+function planExistingSyncedPath(options: {
+  relativePath: string;
+  applicationRoot: string;
+  baselineAtlasVersion: string;
+  targetAtlasVersion: string;
+  baselineChecksums: Record<string, string>;
+  consumerContent?: string;
+  sourceContent?: string;
+  targetContent?: string;
+}): UpgradePlanItem {
+  const baselineStatus = getSyncedPathBaselineStatus({
+    relativePath: options.relativePath,
+    consumerApplicationRoot: options.applicationRoot,
+    baselineChecksums: options.baselineChecksums,
+    consumerContent: options.consumerContent,
+  });
+
+  if (options.sourceContent === undefined || options.targetContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Missing source or target snapshot for synced path ${options.relativePath}.`,
+      conflict: true,
+    };
+  }
+
+  if (options.sourceContent === options.targetContent) {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "skip",
+      message: `Synced path ${options.relativePath} is unchanged in Atlas ${options.targetAtlasVersion}.`,
+      conflict: false,
+    };
+  }
+
+  if (options.consumerContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Consumer file ${options.relativePath} is missing while Atlas ${options.targetAtlasVersion} changed this synced path. Restore or recreate the file before upgrading.`,
+      conflict: true,
+    };
+  }
+
+  if (baselineStatus === "unknown") {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Insufficient baseline evidence for ${options.relativePath}. Atlas ${options.targetAtlasVersion} changed this synced path, but the recorded baseline does not prove the consumer copy is unchanged. Manual review is required before replacement.`,
+      conflict: true,
+      baselineStatus,
+    };
+  }
+
+  if (baselineStatus === "modified") {
+    const isSecurityPath = isSecurityRelevantSyncedPath(options.relativePath);
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: isSecurityPath ? "security-critical" : "merge-required",
+      action: "manual-review",
+      message: isSecurityPath
+        ? `Consumer modified security-relevant synced path ${options.relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; elevated manual remediation is required and automatic overwrite is forbidden.`
+        : `Consumer modified ${options.relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; manual merge is required.`,
+      conflict: true,
+      securityCritical: isSecurityPath,
+      baselineStatus,
+    };
+  }
+
+  const isSecurityPath = isSecurityRelevantSyncedPath(options.relativePath);
+
+  return {
+    relativePath: options.relativePath,
+    ownershipChannel: "atlas-managed-template",
+    category: isSecurityPath ? "security-critical" : "patch-safe",
+    action: "replace",
+    message: isSecurityPath
+      ? `Security-relevant synced path ${options.relativePath} can be replaced because the consumer copy still matches the recorded Atlas baseline.`
+      : `Synced path ${options.relativePath} can be replaced from Atlas ${options.targetAtlasVersion}.`,
+    conflict: false,
+    securityCritical: isSecurityPath,
+    baselineStatus,
+  };
+}
+
+function planNewSyncedPath(options: {
+  relativePath: string;
+  targetAtlasVersion: string;
+  consumerContent?: string;
+  targetContent?: string;
+}): UpgradePlanItem {
+  if (options.targetContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Missing target snapshot for newly introduced synced path ${options.relativePath}.`,
+      conflict: true,
+    };
+  }
+
+  if (options.consumerContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "create",
+      message: `Atlas ${options.targetAtlasVersion} introduced synced path ${options.relativePath}. The consumer copy is absent and can be created from the target release.`,
+      conflict: false,
+    };
+  }
+
+  return {
+    relativePath: options.relativePath,
+    ownershipChannel: "atlas-managed-template",
+    category: "merge-required",
+    action: "manual-review",
+    message: `Atlas ${options.targetAtlasVersion} introduced synced path ${options.relativePath}, but the consumer already has a file at that location. Manual review is required before Atlas can reconcile ownership.`,
+    conflict: true,
+  };
+}
+
+function planRemovedSyncedPath(options: {
+  relativePath: string;
+  baselineAtlasVersion: string;
+  targetAtlasVersion: string;
+  applicationRoot: string;
+  baselineChecksums: Record<string, string>;
+  consumerContent?: string;
+  sourceContent?: string;
+}): UpgradePlanItem {
+  const baselineStatus = getSyncedPathBaselineStatus({
+    relativePath: options.relativePath,
+    consumerApplicationRoot: options.applicationRoot,
+    baselineChecksums: options.baselineChecksums,
+    consumerContent: options.consumerContent,
+  });
+
+  if (options.consumerContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "skip",
+      message: `Atlas ${options.targetAtlasVersion} removed synced path ${options.relativePath} and the consumer copy is already absent.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (baselineStatus === "modified" || baselineStatus === "unknown") {
+    return {
+      relativePath: options.relativePath,
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Atlas ${options.targetAtlasVersion} removed synced path ${options.relativePath}, but the consumer copy no longer matches the Atlas ${options.baselineAtlasVersion} baseline. Preserve the file and review whether it should be deleted manually.`,
+      conflict: true,
+      baselineStatus,
+    };
+  }
+
+  return {
+    relativePath: options.relativePath,
+    ownershipChannel: "atlas-managed-template",
+    category: "patch-safe",
+    action: "remove",
+    message: `Atlas ${options.targetAtlasVersion} removed synced path ${options.relativePath}. The consumer copy still matches the Atlas ${options.baselineAtlasVersion} baseline and can be removed.`,
+    conflict: false,
+    baselineStatus,
+  };
+}
+
+function planMigrationChainItems(migrationChain: AtlasMigrationDefinition[]): UpgradePlanItem[] {
+  return migrationChain.map((migration) => ({
+    relativePath: "atlas.config.json",
+    ownershipChannel: "structural-contract" as const,
+    category: migration.automatic ? "migration-required" : "manual",
+    action: migration.automatic ? "migration" : "manual-review",
+    migrationId: migration.id,
+    sourceVersion: migration.sourceVersion,
+    targetVersion: migration.targetVersion,
+    message: migration.automatic
+      ? `Registered migration ${migration.id} will run between Atlas ${migration.sourceVersion} and ${migration.targetVersion}.`
+      : `Migration ${migration.id} between ${migration.sourceVersion} and ${migration.targetVersion} requires manual review.`,
+    conflict: !migration.automatic,
+  }));
+}
+
+export function planUpgrade(
+  options: PlanUpgradeOptions & { migrationChain?: AtlasMigrationDefinition[] }
+): UpgradePlan {
   const items: UpgradePlanItem[] = [];
 
-  if (options.contractSchemaChanged) {
+  const sourceManifest = {
+    syncedPaths: options.sourceSyncedPaths,
+    generatedPaths: options.sourceGeneratedPaths,
+    independentPaths: options.sourceIndependentPaths,
+  };
+  const targetManifest = {
+    syncedPaths: options.syncedPaths,
+    generatedPaths: options.generatedPaths,
+    independentPaths: options.independentPaths,
+  };
+
+  const syncedTransitions = classifySyncedPathTransitions({
+    sourceManifest,
+    targetManifest,
+  });
+  const ownershipTransitions = classifyOwnershipTransitions({
+    sourceManifest,
+    targetManifest,
+  });
+
+  for (const transition of ownershipTransitions) {
+    items.push(planOwnershipTransitionItem(transition));
+  }
+
+  if (options.migrationChain && options.migrationChain.length > 0) {
+    items.push(...planMigrationChainItems(options.migrationChain));
+  } else if (options.contractSchemaChanged) {
     items.push({
       relativePath: "atlas.config.json",
       ownershipChannel: "structural-contract",
       category: "migration-required",
-      action: "migration",
+      action: "manual-review",
       message:
-        "Atlas contract schema changed between baseline and target. Run the documented contract migration before applying template updates.",
-      conflict: false,
+        "Atlas contract schema changed between baseline and target, but no registered migration covers the required chain. Complete the documented migration manually before upgrading.",
+      conflict: true,
     });
   }
 
-  for (const relativePath of [...options.syncedPaths].sort((left, right) =>
-    left.localeCompare(right)
-  )) {
-    const sourceContent = options.sourceSnapshot.syncedPaths[relativePath];
-    const targetContent = options.targetSnapshot.syncedPaths[relativePath];
-    const consumerContent = options.consumerFiles[relativePath];
-    const baselineStatus = getSyncedPathBaselineStatus({
-      relativePath,
-      consumerApplicationRoot: options.applicationRoot,
-      baselineChecksums: options.baselineChecksums,
-      consumerContent,
-    });
+  for (const transition of syncedTransitions) {
+    const consumerContent = options.consumerFiles[transition.relativePath];
+    const sourceContent = options.sourceSnapshot.syncedPaths[transition.relativePath];
+    const targetContent = options.targetSnapshot.syncedPaths[transition.relativePath];
 
-    if (sourceContent === undefined || targetContent === undefined) {
-      items.push({
-        relativePath,
-        ownershipChannel: "atlas-managed-template",
-        category: "manual",
-        action: "manual-review",
-        message: `Missing source or target snapshot for synced path ${relativePath}.`,
-        conflict: true,
-      });
+    if (transition.kind === "existing") {
+      items.push(
+        planExistingSyncedPath({
+          relativePath: transition.relativePath,
+          applicationRoot: options.applicationRoot,
+          baselineAtlasVersion: options.baselineAtlasVersion,
+          targetAtlasVersion: options.targetAtlasVersion,
+          baselineChecksums: options.baselineChecksums,
+          consumerContent,
+          sourceContent,
+          targetContent,
+        })
+      );
       continue;
     }
 
-    if (sourceContent === targetContent) {
-      items.push({
-        relativePath,
-        ownershipChannel: "atlas-managed-template",
-        category: "patch-safe",
-        action: "skip",
-        message: `Synced path ${relativePath} is unchanged in Atlas ${options.targetAtlasVersion}.`,
-        conflict: false,
-      });
+    if (transition.kind === "new") {
+      items.push(
+        planNewSyncedPath({
+          relativePath: transition.relativePath,
+          targetAtlasVersion: options.targetAtlasVersion,
+          consumerContent,
+          targetContent,
+        })
+      );
       continue;
     }
 
-    if (consumerContent === undefined) {
-      items.push({
-        relativePath,
-        ownershipChannel: "atlas-managed-template",
-        category: "manual",
-        action: "manual-review",
-        message: `Consumer file ${relativePath} is missing while Atlas ${options.targetAtlasVersion} changed this synced path. Restore or recreate the file before upgrading.`,
-        conflict: true,
-      });
-      continue;
-    }
-
-    if (baselineStatus === "unknown") {
-      items.push({
-        relativePath,
-        ownershipChannel: "atlas-managed-template",
-        category: "manual",
-        action: "manual-review",
-        message: `Insufficient baseline evidence for ${relativePath}. Atlas ${options.targetAtlasVersion} changed this synced path, but the recorded baseline does not prove the consumer copy is unchanged. Manual review is required before replacement.`,
-        conflict: true,
-      });
-      continue;
-    }
-
-    if (baselineStatus === "modified") {
-      const isSecurityPath = isSecurityRelevantSyncedPath(relativePath);
-      items.push({
-        relativePath,
-        ownershipChannel: "atlas-managed-template",
-        category: isSecurityPath ? "security-critical" : "merge-required",
-        action: "manual-review",
-        message: isSecurityPath
-          ? `Consumer modified security-relevant synced path ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; elevated manual remediation is required and automatic overwrite is forbidden.`
-          : `Consumer modified ${relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} also changed this file; manual merge is required.`,
-        conflict: true,
-      });
-      continue;
-    }
-
-    const isSecurityPath = isSecurityRelevantSyncedPath(relativePath);
-
-    items.push({
-      relativePath,
-      ownershipChannel: "atlas-managed-template",
-      category: isSecurityPath ? "security-critical" : "patch-safe",
-      action: "replace",
-      message: isSecurityPath
-        ? `Security-relevant synced path ${relativePath} can be replaced because the consumer copy still matches the recorded Atlas baseline.`
-        : `Synced path ${relativePath} can be replaced from Atlas ${options.targetAtlasVersion}.`,
-      conflict: false,
-    });
+    items.push(
+      planRemovedSyncedPath({
+        relativePath: transition.relativePath,
+        baselineAtlasVersion: options.baselineAtlasVersion,
+        targetAtlasVersion: options.targetAtlasVersion,
+        applicationRoot: options.applicationRoot,
+        baselineChecksums: options.baselineChecksums,
+        consumerContent,
+        sourceContent,
+      })
+    );
   }
 
   for (const relativePath of [...options.independentPaths].sort((left, right) =>
@@ -234,11 +450,11 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
   ) {
     items.push({
       relativePath: "openapi/openapi.json",
-      ownershipChannel: "generated-artifact",
-      category: "patch-safe",
-      action: "regenerate",
+      ownershipChannel: "consumer-owned-source",
+      category: "manual",
+      action: "manual-review",
       message:
-        "OpenAPI spec changed between Atlas versions. Regenerate machine-owned client artifacts after merging the spec.",
+        "OpenAPI spec changed in the target Atlas release. The consumer-owned spec is never overwritten automatically. Review Atlas changes, merge the spec manually, then run api:gen to regenerate client artifacts.",
       conflict: false,
     });
   }
@@ -248,6 +464,12 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
   );
   const summary = summarizePlan(sortedItems);
 
+  const hasUnresolvedManualMigrations = sortedItems.some(
+    (item) =>
+      item.category === "migration-required" &&
+      (item.action === "manual-review" || (item.action === "migration" && item.conflict))
+  );
+
   return {
     sourceAtlasVersion: options.baselineAtlasVersion,
     targetAtlasVersion: options.targetAtlasVersion,
@@ -255,7 +477,7 @@ export function planUpgrade(options: PlanUpgradeOptions): UpgradePlan {
     items: sortedItems,
     summary,
     hasBlockingConflicts: sortedItems.some((item) => item.conflict),
-    hasIncompleteMigrations: sortedItems.some((item) => item.action === "migration"),
+    hasIncompleteMigrations: hasUnresolvedManualMigrations,
   };
 }
 
