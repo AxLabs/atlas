@@ -2,7 +2,7 @@ import { computeBaselineChecksum } from "@atlas/project";
 
 import { validateUpgradeSourceBaseline } from "../upgrade/baseline-validation";
 import { planUpgrade } from "../upgrade/plan";
-import { FIXTURE_MIGRATION_REGISTRY } from "../upgrade/migrations/fixture-registry";
+import { FIXTURE_MIGRATION_REGISTRY } from "./fixtures/upgrade-migrations/registry";
 import { listRegisteredMigrations } from "../upgrade/migrations/registry";
 import { classifyOwnershipTransitions } from "../upgrade/path-transitions";
 

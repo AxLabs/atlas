@@ -74,9 +74,7 @@ describe("upgrade e2e", () => {
     const payload = parseUpgradeJson(result.stdout);
     expect(payload.ok).toBe(true);
     expect(payload.result?.status).toBe("planned");
-    expect(payload.result?.migrations).toEqual([
-      expect.objectContaining({ id: "fixture-migration-a", status: "planned" }),
-    ]);
+    expect(payload.result?.migrations).toEqual([]);
     expect(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8")).toBe(contractBefore);
     expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/api/errors.ts"), "utf8")).toBe(
       errorsBefore
@@ -88,10 +86,14 @@ describe("upgrade e2e", () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it("applies safe synced-path replacements, migrations, and advances baseline on success", () => {
+  it("applies safe synced-path replacements, package updates, and advances baseline on success", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
     const consumerOwnedBefore = readFileSync(
       path.join(tempRoot, "apps/web/src/features/billing/custom-work.ts"),
+      "utf8"
+    );
+    const fixtureContractBefore = readFileSync(
+      path.join(tempRoot, "fixture.contract.json"),
       "utf8"
     );
 
@@ -110,9 +112,10 @@ describe("upgrade e2e", () => {
     const payload = parseUpgradeJson(apply.stdout);
     expect(payload.result?.status).toBe("success");
     expect(payload.result?.baselineUpdated).toBe(true);
-    expect(payload.result?.migrations).toEqual([
-      expect.objectContaining({ id: "fixture-migration-a", status: "applied" }),
-    ]);
+    expect(payload.result?.migrations).toEqual([]);
+    expect(
+      payload.result?.migrations?.some((entry) => entry.id.includes("fixture-migration"))
+    ).toBe(false);
     expect(readFileSync(path.join(tempRoot, "apps/web/src/lib/api/errors.ts"), "utf8")).toContain(
       "fixed"
     );
@@ -122,13 +125,12 @@ describe("upgrade e2e", () => {
     expect(
       readFileSync(path.join(tempRoot, "apps/web/src/features/billing/custom-work.ts"), "utf8")
     ).toBe(consumerOwnedBefore);
+    expect(readFileSync(path.join(tempRoot, "fixture.contract.json"), "utf8")).toBe(
+      fixtureContractBefore
+    );
 
     const contract = JSON.parse(readFileSync(path.join(tempRoot, "atlas.config.json"), "utf8"));
     expect(contract.platform.baseline.atlasVersion).toBe("0.2.0");
-    const fixtureContract = JSON.parse(
-      readFileSync(path.join(tempRoot, "fixture.contract.json"), "utf8")
-    );
-    expect(fixtureContract.stepA).toBe(true);
     expect(JSON.parse(readFileSync(path.join(tempRoot, "package.json"), "utf8")).version).toBe(
       "0.2.0"
     );
@@ -162,7 +164,7 @@ describe("upgrade e2e", () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it("fails when migration chain is missing for non-adjacent target", () => {
+  it("fails when target release snapshot is missing", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
 
     const result = runAtlasCli(
@@ -175,20 +177,21 @@ describe("upgrade e2e", () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it("upgrades through 0.3.0 with ordered fixture migrations", () => {
+  it("succeeds without fixture marker and reports no fixture migration IDs", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
 
     const result = runAtlasCli(
-      ["upgrade", "--to", "0.3.0", "--json", "--skip-validation", "--allow-dirty"],
+      ["upgrade", "--to", "0.2.0", "--json", "--skip-validation", "--allow-dirty"],
       tempRoot
     );
 
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
     const payload = parseUpgradeJson(result.stdout);
-    expect(payload.result?.migrations?.map((entry) => entry.id)).toEqual([
-      "fixture-migration-a",
-      "fixture-migration-b",
-    ]);
+    expect(payload.result?.status).toBe("success");
+    expect(payload.result?.migrations ?? []).toEqual([]);
+    expect(
+      payload.result?.migrations?.some((entry) => entry.id.includes("fixture-migration"))
+    ).toBe(false);
 
     rmSync(tempRoot, { recursive: true, force: true });
   });

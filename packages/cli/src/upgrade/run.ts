@@ -17,8 +17,8 @@ import { SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION } from "../templat
 import {
   assertMigrationChainExecutable,
   type AtlasMigrationDefinition,
+  PRODUCTION_MIGRATION_REGISTRY,
 } from "./migrations/registry";
-import { resolveUpgradeMigrationRegistry } from "./migrations/resolve-registry";
 import { applySafeUpgradeReplacements } from "./apply";
 import {
   captureConsumerPlatformBaseline,
@@ -274,10 +274,7 @@ function assertUpgradePrerequisites(options: {
 
 export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRunResult> {
   const mode = options.dryRun ? "dry-run" : "apply";
-  const migrationRegistry = resolveUpgradeMigrationRegistry({
-    repoRoot: options.repoRoot,
-    migrationRegistry: options.migrationRegistry,
-  });
+  const migrationRegistry = options.migrationRegistry ?? PRODUCTION_MIGRATION_REGISTRY;
   const contract = readAtlasProjectContractFile(options.repoRoot);
   const baseline = readContractPlatformBaseline(contract);
 

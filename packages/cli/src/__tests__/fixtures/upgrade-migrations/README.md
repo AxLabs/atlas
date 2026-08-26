@@ -1,10 +1,7 @@
 # Fixture upgrade migrations
 
-These migrations exist **only** to exercise the production migration engine in CLI tests. They are
-registered in `FIXTURE_MIGRATION_REGISTRY` and activated when a checkout contains
-`.atlas-upgrade-fixture`.
-
-They must never ship as production Atlas migrations.
+These migrations exist **only** to exercise the production migration engine in CLI tests. They must
+never ship as production Atlas migrations.
 
 ## Chain
 
@@ -16,7 +13,7 @@ They must never ship as production Atlas migrations.
 ## Usage
 
 - Integration tests call `runUpgrade({ migrationRegistry: FIXTURE_MIGRATION_REGISTRY, ... })`.
-- E2E fixture checkouts include `.atlas-upgrade-fixture` so `atlas upgrade` resolves the fixture
-  registry automatically.
+- CLI subprocess E2E tests use the production registry (no structural migrations for fixture release
+  pairs).
 - Production consumers use `PRODUCTION_MIGRATION_REGISTRY`, which contains only genuine Atlas
   migrations.

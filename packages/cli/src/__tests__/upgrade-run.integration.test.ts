@@ -8,12 +8,16 @@ import { createDoctorContext } from "../doctor/context";
 import { DoctorDiagnosticCode } from "../doctor/diagnostics";
 import { runUpgradeBaselineCheck } from "../doctor/upgrade-baseline";
 import * as doctorModule from "../doctor";
+import { FIXTURE_MIGRATION_REGISTRY } from "./fixtures/upgrade-migrations/registry";
 import { listRegisteredMigrations } from "../upgrade/migrations/registry";
-import { FIXTURE_MIGRATION_REGISTRY } from "../upgrade/migrations/fixture-registry";
 import type { AtlasMigrationDefinition } from "../upgrade/migrations/types";
 import { runUpgrade } from "../upgrade/run";
 
 const FIXTURE_ROOT = path.resolve(__dirname, "fixtures/upgrade-e2e");
+
+const fixtureUpgradeOptions = {
+  migrationRegistry: FIXTURE_MIGRATION_REGISTRY,
+} as const;
 
 function copyFixtureToTemp(): string {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-upgrade-run-"));
@@ -50,6 +54,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: false,
+      ...fixtureUpgradeOptions,
     });
 
     expect(doctorSpy).toHaveBeenCalled();
@@ -90,6 +95,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: false,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("success");
@@ -123,6 +129,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     const ids = result.migrations.map((entry) => entry.id);
@@ -159,6 +166,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.3.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("success");
@@ -222,6 +230,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("success");
@@ -246,6 +255,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("success");
@@ -309,6 +319,7 @@ describe("upgrade package semantics", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("success");
@@ -331,6 +342,7 @@ describe("upgrade package semantics", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("blocked");
@@ -351,6 +363,7 @@ describe("upgrade package semantics", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureUpgradeOptions,
     });
 
     expect(result.status).toBe("success");
