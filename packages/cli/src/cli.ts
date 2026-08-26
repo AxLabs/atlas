@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { runContextCommand, writeContextHelp } from "./commands/context";
 import { runDoctorCommand, writeDoctorHelp } from "./commands/doctor";
 import { parseGenerateArgs, runGenerateCommand, writeGenerateHelp } from "./commands/generate";
 import { formatInitResult, runInit } from "./commands/init";
@@ -64,6 +65,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return ExitCode.SUCCESS;
       }
 
+      if (parsed.command === "context") {
+        writeContextHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
       writeHelp(writer, parsed.json);
       return ExitCode.SUCCESS;
     }
@@ -93,6 +99,12 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return runSyncCliCommand(parsed, writer);
       case "upgrade":
         return runUpgradeCliCommand(parsed, writer);
+      case "context":
+        return runContextCommand({
+          cwd: parsed.cwd,
+          json: parsed.json,
+          writer,
+        });
       default:
         throw new CliError(
           CliErrorCode.USAGE_ERROR,

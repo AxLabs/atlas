@@ -8,7 +8,7 @@ This document defines the v0.1 upgrade contract established by issue #17. It bui
 Executable migration commands belong to [#43](https://github.com/blitzcraftlabs/atlas/issues/43).
 
 See also: [releases and governance](releases-and-governance.md),
-[Atlas project contract](atlas-contract.md), [Atlas Doctor](doctor.md),
+[Atlas project contract](atlas-contract.md), [Atlas Doctor](doctor.md), [Agent workflow](agents.md),
 [ADR-0010](../adr/0010-atlas-upgrades-downstream-propagation.md).
 
 ---
