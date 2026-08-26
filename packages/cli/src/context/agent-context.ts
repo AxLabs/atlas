@@ -66,8 +66,11 @@ export interface AgentContextReport {
       dryRunJsonSupported: boolean;
       applyJsonSupported: boolean;
       requiresTargetVersion: boolean;
-      blockingCategories: string[];
-      deterministicActions: string[];
+      decisionSource: string;
+      resultStatusField: string;
+      planItemConflictField: string;
+      planItemActionField: string;
+      planItemCategoryField: string;
     };
   };
   validation: {
@@ -259,15 +262,11 @@ export function buildAgentContextReport(context: AtlasCliContext): AgentContextR
         dryRunJsonSupported: true,
         applyJsonSupported: true,
         requiresTargetVersion: true,
-        blockingCategories: ["merge-required", "manual", "security-critical"],
-        deterministicActions: [
-          "replace",
-          "create",
-          "remove",
-          "regenerate",
-          "package-upgrade",
-          "migration",
-        ],
+        decisionSource: "atlas upgrade --to <version> --dry-run --json",
+        resultStatusField: "status",
+        planItemConflictField: "conflict",
+        planItemActionField: "action",
+        planItemCategoryField: "category",
       },
     },
     validation: {

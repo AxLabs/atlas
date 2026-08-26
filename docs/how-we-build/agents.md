@@ -140,22 +140,27 @@ Doctor JSON includes `code`, `severity`, `message`, `suggestedFix`, optional `do
 
 ## Upgrade and migration workflow
 
-Upgrade state comes from the CLI, not from guessing from Git diffs:
+Upgrade state comes from the CLI, not from guessing from Git diffs. Treat the dry-run plan and
+result as authoritative:
 
 ```bash
 pnpm atlas upgrade --to <version> --dry-run --json
 ```
 
-Interpret plan items using CLI semantics:
+Do not infer blocking from `category` alone. The upgrade command decides whether an upgrade is safe,
+blocked, manual, or actionable from plan items (`conflict`), result `status`, and unresolved
+migration or package work.
 
-| Action / category                                      | Agent behavior                                           |
-| ------------------------------------------------------ | -------------------------------------------------------- |
-| `replace`, `create`, `package-upgrade`                 | Atlas-owned deterministic actions when applying upgrades |
-| `regenerate`, `migration`                              | Follow registered migration or regeneration command      |
-| `merge-required`, `manual-review`, `security-critical` | Do not overwrite consumer work silently                  |
-| Unknown baseline evidence                              | Stop; do not apply                                       |
+| Signal                                 | Agent behavior                                                                   |
+| -------------------------------------- | -------------------------------------------------------------------------------- |
+| `manual-review`                        | Do not silently overwrite; may or may not block the whole upgrade                |
+| `security-critical`                    | Elevated importance — inspect `conflict` and result `status`, not category alone |
+| `conflict: true`                       | Unresolved conflict requiring attention; dry-run `status` is typically `blocked` |
+| `replace`, `create`, `package-upgrade` | Atlas-owned deterministic actions when the plan allows applying                  |
+| `regenerate`, `migration`              | Follow registered migration or regeneration command                              |
+| Unknown baseline evidence              | Stop; do not apply                                                               |
 
-When conflicts block the plan, inspect source/baseline/target context, propose a merge, and
+When the dry-run result blocks, inspect source/baseline/target context, propose a merge, and
 implement only when intent is clear — otherwise surface the decision.
 
 See [upgrades.md](upgrades.md) and [ADR-0010](../adr/0010-atlas-upgrades-downstream-propagation.md).

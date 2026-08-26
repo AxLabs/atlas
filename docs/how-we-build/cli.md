@@ -234,7 +234,7 @@ Machine output includes:
 | `ownership`                | Manifest synced/generated/independent path classification |
 | `commands.generators`      | Supported structural generators                           |
 | `commands.doctor.checkIds` | Registered Doctor checks                                  |
-| `commands.upgrade`         | Upgrade CLI semantics and blocking categories             |
+| `commands.upgrade`         | Upgrade command capabilities and dry-run decision source  |
 | `validation.recommended`   | Standard engineering validation commands                  |
 | `documentation`            | Workflow doc, ADR references, canonical doc links         |
 

@@ -24,7 +24,12 @@ interface AgentContextJsonResult {
   commands: {
     generators: { id: string }[];
     doctor: { checkIds: string[] };
-    upgrade: { dryRunJsonSupported: boolean };
+    upgrade: {
+      dryRunJsonSupported: boolean;
+      decisionSource: string;
+      resultStatusField: string;
+      planItemConflictField: string;
+    };
   };
   validation: { recommended: { id: string; command: string }[] };
   documentation: {
@@ -80,6 +85,11 @@ describe("atlas context CLI", () => {
     ]);
     expect(context.commands.doctor.checkIds).toContain("project-contract");
     expect(context.commands.upgrade.dryRunJsonSupported).toBe(true);
+    expect(context.commands.upgrade.decisionSource).toBe(
+      "atlas upgrade --to <version> --dry-run --json"
+    );
+    expect(context.commands.upgrade.resultStatusField).toBe("status");
+    expect(context.commands.upgrade.planItemConflictField).toBe("conflict");
     expect(context.validation.recommended.some((entry) => entry.id === "lint")).toBe(true);
     expect(context.documentation.workflow).toBe("docs/how-we-build/agents.md");
     expect(context.documentation.agentEntryPoint).toBe("AGENTS.md");
@@ -127,6 +137,16 @@ describe("atlas context CLI", () => {
     expect(context.ownership.manifestPresent).toBe(false);
     expect(context.ownership.syncedPaths).toEqual([]);
     expect(context.ownership.generatedPaths).toEqual([]);
+  });
+
+  it("does not encode upgrade blocking policy in agent context JSON", () => {
+    const result = runAtlasCli(["context", "--json"], repoRoot);
+    const context = parseContextJson(result.stdout) as AgentContextJsonResult & {
+      commands: { upgrade: Record<string, unknown> };
+    };
+
+    expect(context.commands.upgrade).not.toHaveProperty("blockingCategories");
+    expect(context.commands.upgrade).not.toHaveProperty("deterministicActions");
   });
 });
 
