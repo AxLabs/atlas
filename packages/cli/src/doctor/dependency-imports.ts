@@ -4,6 +4,7 @@ import path from "node:path";
 import { createDiagnostic, DoctorDiagnosticCode } from "./diagnostics";
 import { joinRepoAbsolutePath, toPosixRepoRelativePath } from "./paths";
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "./static-imports";
+import { discoverWorkspaceRoots } from "./workspace-membership";
 
 import type { DoctorContext } from "./context";
 import type { DoctorDiagnostic } from "./types";
@@ -19,9 +20,19 @@ const IGNORED_DIRS = new Set([
   "storybook-static",
   "playwright-report",
   "test-results",
-  "test",
-  "scripts",
 ]);
+
+const APPLICATION_ONLY_IGNORED_DIRS = new Set(["test", "scripts"]);
+
+export type DependencyScanMode = "application" | "repository";
+
+export interface UndeclaredDependencyFinding {
+  workspaceRoot: string;
+  packageName: string;
+  filePath: string;
+  line: number;
+  column: number;
+}
 
 interface WorkspacePackage {
   relativeRoot: string;
@@ -30,24 +41,53 @@ interface WorkspacePackage {
   dependencies: Set<string>;
 }
 
+interface WorkspaceScanOptions {
+  scanMode?: DependencyScanMode;
+}
+
 export function findUndeclaredDependencyDiagnostics(context: DoctorContext): DoctorDiagnostic[] {
   if (!context.project) {
     return [];
   }
 
-  const applicationRoot = context.project.application.root;
-  const workspace = readWorkspacePackage(context.repoRoot, applicationRoot);
+  const findings = findUndeclaredDependenciesForWorkspace(
+    context.repoRoot,
+    context.project.application.root,
+    { scanMode: "application" }
+  );
+
+  return findings.map((finding) =>
+    createDiagnostic(
+      DoctorDiagnosticCode.DEPENDENCY_UNDECLARED,
+      `Workspace ${finding.workspaceRoot} imports "${finding.packageName}" but does not declare it in package.json.`,
+      {
+        path: finding.filePath,
+        line: finding.line,
+        column: finding.column,
+        suggestedFix: `Declare "${finding.packageName}" in ${path.posix.join(finding.workspaceRoot, "package.json")} because this workspace imports it directly.`,
+      }
+    )
+  );
+}
+
+export function findUndeclaredDependenciesForWorkspace(
+  repoRoot: string,
+  workspaceRoot: string,
+  options?: WorkspaceScanOptions
+): UndeclaredDependencyFinding[] {
+  const scanMode = options?.scanMode ?? "repository";
+  const workspace = readWorkspacePackage(repoRoot, workspaceRoot);
   if (!workspace) {
     return [];
   }
 
-  const diagnostics: DoctorDiagnostic[] = [];
-  const sourceRoot = joinRepoAbsolutePath(context.repoRoot, workspace.relativeRoot);
+  const findings: UndeclaredDependencyFinding[] = [];
+  const sourceRoot = joinRepoAbsolutePath(repoRoot, workspace.relativeRoot);
   if (!existsSync(sourceRoot)) {
     return [];
   }
 
-  for (const sourceFile of walkSourceFiles(sourceRoot)) {
+  for (const sourceFile of walkSourceFiles(sourceRoot, scanMode)) {
     const imports = extractStaticModuleSpecifiers(sourceFile);
 
     for (const entry of imports) {
@@ -56,24 +96,32 @@ export function findUndeclaredDependencyDiagnostics(context: DoctorContext): Doc
         continue;
       }
 
-      diagnostics.push(
-        createDiagnostic(
-          DoctorDiagnosticCode.DEPENDENCY_UNDECLARED,
-          `Workspace ${workspace.relativeRoot} imports "${packageName}" but does not declare it in package.json.`,
-          {
-            path: toPosixRepoRelativePath(context.repoRoot, sourceFile),
-            line: entry.line,
-            column: entry.column,
-            suggestedFix: `Declare "${packageName}" in ${path.posix.join(workspace.relativeRoot, "package.json")} because this workspace imports it directly.`,
-          }
-        )
-      );
+      findings.push({
+        workspaceRoot: workspace.relativeRoot,
+        packageName,
+        filePath: toPosixRepoRelativePath(repoRoot, sourceFile),
+        line: entry.line,
+        column: entry.column,
+      });
     }
   }
 
-  return dedupeByKey(diagnostics, (diagnostic) =>
-    [diagnostic.code, diagnostic.path ?? "", diagnostic.message].join("|")
-  );
+  return dedupeFindings(findings);
+}
+
+export function findUndeclaredDependenciesForAllWorkspaces(
+  repoRoot: string,
+  options?: WorkspaceScanOptions
+): UndeclaredDependencyFinding[] {
+  const scanMode = options?.scanMode ?? "repository";
+  const workspaceRoots = discoverWorkspaceRoots(repoRoot);
+  const findings: UndeclaredDependencyFinding[] = [];
+
+  for (const workspaceRoot of workspaceRoots) {
+    findings.push(...findUndeclaredDependenciesForWorkspace(repoRoot, workspaceRoot, { scanMode }));
+  }
+
+  return dedupeFindings(findings);
 }
 
 function readWorkspacePackage(repoRoot: string, relativeRoot: string): WorkspacePackage | null {
@@ -106,19 +154,21 @@ function readWorkspacePackage(repoRoot: string, relativeRoot: string): Workspace
   };
 }
 
-function walkSourceFiles(root: string): string[] {
+function walkSourceFiles(root: string, scanMode: DependencyScanMode): string[] {
   const files: string[] = [];
 
   function walk(current: string): void {
     for (const entry of readdirSync(current)) {
-      if (
-        entry === "__tests__" ||
-        entry.endsWith(".test.ts") ||
-        entry.endsWith(".test.tsx") ||
-        entry.endsWith(".spec.ts") ||
-        entry.endsWith(".spec.tsx")
-      ) {
-        continue;
+      if (scanMode === "application") {
+        if (
+          entry === "__tests__" ||
+          entry.endsWith(".test.ts") ||
+          entry.endsWith(".test.tsx") ||
+          entry.endsWith(".spec.ts") ||
+          entry.endsWith(".spec.tsx")
+        ) {
+          continue;
+        }
       }
 
       const absolutePath = path.join(current, entry);
@@ -128,11 +178,20 @@ function walkSourceFiles(root: string): string[] {
         if (IGNORED_DIRS.has(entry)) {
           continue;
         }
+
+        if (scanMode === "application" && APPLICATION_ONLY_IGNORED_DIRS.has(entry)) {
+          continue;
+        }
+
+        if (entry === "fixtures" && path.basename(current) === "__tests__") {
+          continue;
+        }
+
         walk(absolutePath);
         continue;
       }
 
-      if (SOURCE_EXTENSIONS.has(path.extname(entry))) {
+      if (isScannableFile(entry, scanMode)) {
         files.push(absolutePath);
       }
     }
@@ -142,20 +201,46 @@ function walkSourceFiles(root: string): string[] {
   return files.sort();
 }
 
-function dedupeByKey<T>(items: T[], keyFn: (item: T) => string): T[] {
-  const seen = new Set<string>();
-  const unique: T[] = [];
+function isScannableFile(entry: string, scanMode: DependencyScanMode): boolean {
+  if (SOURCE_EXTENSIONS.has(path.extname(entry))) {
+    return true;
+  }
 
-  for (const item of items) {
-    const key = keyFn(item);
+  if (scanMode !== "repository") {
+    return false;
+  }
+
+  if (
+    entry.endsWith(".config.js") ||
+    entry.endsWith(".config.mjs") ||
+    entry.endsWith(".config.ts")
+  ) {
+    return true;
+  }
+
+  return entry.endsWith(".stories.ts") || entry.endsWith(".stories.tsx");
+}
+
+function dedupeFindings(findings: UndeclaredDependencyFinding[]): UndeclaredDependencyFinding[] {
+  const seen = new Set<string>();
+  const unique: UndeclaredDependencyFinding[] = [];
+
+  for (const finding of findings) {
+    const key = [
+      finding.workspaceRoot,
+      finding.packageName,
+      finding.filePath,
+      finding.line,
+      finding.column,
+    ].join("|");
     if (seen.has(key)) {
       continue;
     }
     seen.add(key);
-    unique.push(item);
+    unique.push(finding);
   }
 
   return unique;
 }
 
-export { packageRootFromSpecifier };
+export { discoverWorkspaceRoots, packageRootFromSpecifier };

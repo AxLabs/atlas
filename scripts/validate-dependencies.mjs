@@ -1,26 +1,38 @@
+import { createRequire } from "node:module";
+import { execSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { readJson } from "./atlas-workspaces.mjs";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const require = createRequire(import.meta.url);
+
+function loadDependencyValidation() {
+  const modulePath = path.join(repoRoot, "packages/cli/dist/doctor/dependency-imports.js");
+  try {
+    return require(modulePath);
+  } catch {
+    execSync("pnpm --filter @atlas/cli build", {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+    return require(modulePath);
+  }
+}
+
+const {
+  discoverWorkspaceRoots,
+  findUndeclaredDependenciesForAllWorkspaces,
+} = loadDependencyValidation();
 
 const errors = [];
 
 function fail(message) {
   errors.push(message);
 }
-
-const repoRoot = process.cwd();
-
-/** Workspaces from pnpm-workspace.yaml layout */
-const WORKSPACE_ROOTS = [
-  "apps/web",
-  "apps/reference",
-  "packages/ui",
-  "packages/project",
-  "packages/cli",
-  "packages/config",
-  "packages/consent",
-];
 
 /** Packages that must resolve to one version when declared in multiple workspaces */
 const ALIGNED_PACKAGES = [
@@ -63,10 +75,28 @@ function collectDeclaredVersions(workspaceRelativePath) {
   return versions;
 }
 
-function checkAlignedVersions() {
+function checkGenericWorkspaceOwnership() {
+  const workspaceRoots = discoverWorkspaceRoots(repoRoot);
+  if (workspaceRoots.length === 0) {
+    fail("No workspace roots discovered from pnpm-workspace.yaml.");
+    return;
+  }
+
+  const findings = findUndeclaredDependenciesForAllWorkspaces(repoRoot, {
+    scanMode: "repository",
+  });
+
+  for (const finding of findings) {
+    fail(
+      `workspace: ${finding.workspaceRoot}; package: ${finding.packageName}; file: ${finding.filePath}:${finding.line}`,
+    );
+  }
+}
+
+function checkAlignedVersions(workspaceRoots) {
   const byPackage = new Map();
 
-  for (const workspaceRoot of WORKSPACE_ROOTS) {
+  for (const workspaceRoot of workspaceRoots) {
     const versions = collectDeclaredVersions(workspaceRoot);
     for (const [name, entries] of Object.entries(versions)) {
       if (!ALIGNED_PACKAGES.includes(name)) {
@@ -160,7 +190,10 @@ function checkHookformResolverOwnership() {
   }
 }
 
-checkAlignedVersions();
+const workspaceRoots = discoverWorkspaceRoots(repoRoot);
+
+checkGenericWorkspaceOwnership();
+checkAlignedVersions(workspaceRoots);
 checkLockfileSources();
 checkStaleUiPackages();
 checkAppStylingDuplicates();

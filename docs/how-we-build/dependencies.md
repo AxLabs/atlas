@@ -54,8 +54,26 @@ third-party primitive (@base-ui/react, cmdk, sonner, …)
 | `@hookform/resolvers` | `@atlas/ui` only                                                           | Used by `useZodForm`; apps use the hook, not the resolver   |
 | `zod`                 | Every workspace that defines or validates schemas                          | Apps and `@atlas/project` both use Zod 3.24.1               |
 
-`@hookform/resolvers` is aligned on **v4** in `@atlas/ui` (sole owner). v5 targets Zod 4
-(`zod/v4/core`); Atlas standardizes on Zod **3.24.1** until a deliberate Zod major upgrade.
+Atlas keeps `@hookform/resolvers` v4 because Atlas currently standardizes on Zod 3.24.1. Resolver
+v5.2.x expects the `zod/v4/core` compatibility subpath introduced in Zod 3.25+, so upgrading the
+resolver independently would break the current Zod baseline. A resolver/Zod major-line upgrade
+should be handled deliberately together.
+
+---
+
+## Validation scope
+
+| Command                                         | Scope                                                                                                |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm atlas doctor` (`dependency-declarations`) | Configured consumer application workspace — runtime-oriented source scan                             |
+| `pnpm dependencies:check`                       | Every workspace discovered from `pnpm-workspace.yaml` — source, tests, config, and Storybook imports |
+
+Both share the same static-import scanner and package-root resolution in `@atlas/cli`. Doctor
+intentionally skips test/config-only paths for the application architecture scan; repository
+dependency validation includes them.
+
+Section-specific rules (for example runtime source must not rely only on `devDependencies`) are
+deferred; the current invariant is **direct import → declared in that workspace manifest**.
 
 ---
 
@@ -100,7 +118,8 @@ migrating handlers.
 1. List manifests: root, `apps/*/package.json`, `packages/*/package.json`.
 2. For each external import in source/tests/config, confirm the owning workspace declares it.
 3. Run `pnpm why <package>` and `pnpm --filter <workspace> why <package>` for suspected hoisting.
-4. Run `pnpm dependencies:check` (see `scripts/validate-dependencies.mjs`).
+4. Run `pnpm dependencies:check` (generic workspace ownership + Atlas policy checks; see
+   `scripts/validate-dependencies.mjs` and `@atlas/cli` dependency validation).
 5. After manifest edits: `pnpm install`, `pnpm install --frozen-lockfile`, then standard validation.
 
 ---
