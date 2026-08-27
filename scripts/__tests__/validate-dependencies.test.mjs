@@ -13,7 +13,7 @@ function loadDependencyValidation() {
   try {
     return require("@atlas/cli/dependency-validation");
   } catch {
-    execSync("pnpm --filter @atlas/cli build", {
+    execSync("pnpm turbo build --filter=@atlas/cli", {
       cwd: repoRoot,
       stdio: "pipe",
     });
@@ -22,7 +22,7 @@ function loadDependencyValidation() {
 }
 
 test("@atlas/cli/dependency-validation subpath resolves after build", () => {
-  execSync("pnpm --filter @atlas/cli build", {
+  execSync("pnpm turbo build --filter=@atlas/cli", {
     cwd: repoRoot,
     stdio: "pipe",
   });
