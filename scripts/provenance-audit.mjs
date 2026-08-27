@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 
-const BINARY_EXTENSIONS = [
+export const BINARY_EXTENSIONS = [
   ".png",
   ".jpg",
   ".jpeg",
@@ -24,32 +24,218 @@ const BINARY_EXTENSIONS = [
 
 const REQUIRED_NOTICE_FILES = ["THIRD_PARTY_NOTICES.md", "docs/how-we-build/provenance.md"];
 
+const DELETED_BINARY_GIT_ARGS = [
+  "log",
+  "--all",
+  "--diff-filter=D",
+  "--name-only",
+  "--pretty=format:",
+];
+
+const RADIX_HISTORY_GIT_ARGS = [
+  "log",
+  "--all",
+  "-S",
+  "@radix-ui/react-dialog",
+  "--oneline",
+  "--",
+  "packages/ui",
+];
+
+const REV_LIST_GIT_ARGS = ["rev-list", "--objects", "--all"];
+
+const CAT_FILE_BATCH_CHECK_ARGS = [
+  "cat-file",
+  "--batch-check=%(objecttype) %(objectname) %(objectsize) %(rest)",
+];
+
 const HISTORY_CHECKS = [
   {
     label: "Deleted binary assets by extension",
-    command:
-      "git log --all --diff-filter=D --name-only --pretty=format: | sort -u | grep -E '\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$'",
-    allowedExitCodes: [0, 1],
+    commands: [DELETED_BINARY_GIT_ARGS],
+    run: findDeletedBinaryAssets,
   },
   {
     label: "Radix-era UI migration",
-    command: "git log --all -S '@radix-ui/react-dialog' --oneline -- packages/ui",
-    allowedExitCodes: [0],
+    commands: [RADIX_HISTORY_GIT_ARGS],
+    run: findRadixHistory,
   },
   {
     label: "Largest historical binary blobs",
-    command:
-      "git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '/^blob/ && $4 ~ /\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$/ {print $3, $4}' | sort -rn | head -20",
-    allowedExitCodes: [0],
+    commands: [REV_LIST_GIT_ARGS, CAT_FILE_BATCH_CHECK_ARGS],
+    run: findHistoricalBinaryBlobs,
   },
 ];
+
+export class GitCommandError extends Error {
+  constructor(args, exitCode, stderr) {
+    super(`git ${args.join(" ")} failed with exit ${exitCode}`);
+    this.name = "GitCommandError";
+    this.args = args;
+    this.exitCode = exitCode;
+    this.stderr = stderr;
+  }
+}
+
+export function isBinaryPath(filePath) {
+  const lower = filePath.toLowerCase();
+  return BINARY_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+export function filterDeletedBinaryAssets(lines) {
+  return [...new Set(lines.filter(Boolean).filter(isBinaryPath))].sort();
+}
+
+export function parseRevListBinaryCandidates(revListOutput) {
+  const candidates = [];
+
+  for (const line of revListOutput.split("\n")) {
+    if (!line) {
+      continue;
+    }
+
+    const spaceIndex = line.indexOf(" ");
+    if (spaceIndex === -1) {
+      continue;
+    }
+
+    const objectPath = line.slice(spaceIndex + 1);
+    if (!isBinaryPath(objectPath)) {
+      continue;
+    }
+
+    candidates.push({
+      sha: line.slice(0, spaceIndex),
+      path: objectPath,
+    });
+  }
+
+  return candidates;
+}
+
+export function rankHistoricalBinaryBlobs(candidates, batchCheckOutput, limit = 20) {
+  const pathBySha = new Map(candidates.map((candidate) => [candidate.sha, candidate.path]));
+  const ranked = [];
+
+  for (const line of batchCheckOutput.split("\n")) {
+    if (!line.startsWith("blob ")) {
+      continue;
+    }
+
+    const parts = line.split(" ");
+    const sha = parts[1];
+    const size = Number(parts[2]);
+    const objectPath = pathBySha.get(sha);
+
+    if (!objectPath || Number.isNaN(size)) {
+      continue;
+    }
+
+    ranked.push({ size, path: objectPath });
+  }
+
+  return ranked
+    .sort((left, right) => right.size - left.size || left.path.localeCompare(right.path))
+    .slice(0, limit)
+    .map(({ size, path: objectPath }) => `${size} ${objectPath}`);
+}
+
+export function formatGitCommand(args) {
+  return `git ${args.map((arg) => (/\s/.test(arg) ? `'${arg}'` : arg)).join(" ")}`;
+}
+
+export function createRunGitOrThrow(execFileSyncImpl) {
+  return function runGitOrThrow(args, options = {}) {
+    const cwd = options.cwd ?? repoRoot;
+
+    try {
+      return execFileSyncImpl("git", args, {
+        cwd,
+        encoding: "utf8",
+        input: options.input,
+        stdio: ["pipe", "pipe", "pipe"],
+      }).replace(/\n$/, "");
+    } catch (error) {
+      throw new GitCommandError(
+        args,
+        typeof error.status === "number" ? error.status : 1,
+        (error.stderr ?? "").toString(),
+      );
+    }
+  };
+}
+
+const defaultRunGitOrThrow = createRunGitOrThrow(execFileSync);
+
+function resolveRunGit(options) {
+  return options.runGit ?? defaultRunGitOrThrow;
+}
+
+export function findDeletedBinaryAssets(options = {}) {
+  const runGit = resolveRunGit(options);
+  const output = runGit(DELETED_BINARY_GIT_ARGS, options);
+  return filterDeletedBinaryAssets(output.split("\n"));
+}
+
+export function findRadixHistory(options = {}) {
+  const runGit = resolveRunGit(options);
+  const output = runGit(RADIX_HISTORY_GIT_ARGS, options);
+  return output.split("\n").filter(Boolean);
+}
+
+export function findHistoricalBinaryBlobs(options = {}) {
+  const runGit = resolveRunGit(options);
+  const revListOutput = runGit(REV_LIST_GIT_ARGS, options);
+  const candidates = parseRevListBinaryCandidates(revListOutput);
+
+  if (candidates.length === 0) {
+    return [];
+  }
+
+  const batchInput = `${candidates.map((candidate) => candidate.sha).join("\n")}\n`;
+  const batchOutput = runGit(CAT_FILE_BATCH_CHECK_ARGS, {
+    ...options,
+    input: batchInput,
+  });
+
+  return rankHistoricalBinaryBlobs(candidates, batchOutput);
+}
+
+export function formatHistoryOutput(items) {
+  return items.length > 0 ? items.join("\n") : "(no matches)";
+}
+
+export function runHistoryEvidence(checks = HISTORY_CHECKS, options = {}) {
+  const failures = [];
+
+  for (const check of checks) {
+    try {
+      const items = check.run(options);
+
+      for (const args of check.commands) {
+        console.log(`$ ${formatGitCommand(args)}`);
+      }
+
+      console.log(formatHistoryOutput(items));
+      console.log("");
+    } catch (error) {
+      failures.push({
+        commands: check.commands.map(formatGitCommand),
+        stderr: error.stderr ?? error.message,
+        exitCode: error.exitCode ?? 1,
+      });
+    }
+  }
+
+  return failures;
+}
 
 function fail(errors, message) {
   errors.push(message);
 }
 
 function gitTrackedFiles() {
-  return execSync("git ls-files", { cwd: repoRoot, encoding: "utf8" })
+  return execFileSync("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8" })
     .split("\n")
     .filter(Boolean);
 }
@@ -64,9 +250,7 @@ function checkRequiredDocumentation(errors) {
 
 function checkCommittedBinaryAssets(errors) {
   const tracked = gitTrackedFiles();
-  const matches = tracked.filter((file) =>
-    BINARY_EXTENSIONS.some((ext) => file.toLowerCase().endsWith(ext)),
-  );
+  const matches = tracked.filter((file) => isBinaryPath(file));
 
   if (matches.length > 0) {
     fail(
@@ -125,78 +309,6 @@ function checkLicenseConsistency(errors) {
   }
 }
 
-/**
- * Execute a historical audit command and distinguish expected empty results from failures.
- *
- * @param {object} check
- * @param {string} check.command
- * @param {number[]} [check.allowedExitCodes=[0]]
- * @param {import("node:child_process").ExecSyncOptionsWithStringEncoding} [options]
- */
-export function runHistoryCommand(check, options = {}) {
-  const cwd = options.cwd ?? repoRoot;
-  const exec = options.execSync ?? execSync;
-
-  try {
-    const output = exec(check.command, {
-      cwd,
-      encoding: "utf8",
-      shell: options.shell ?? "/bin/bash",
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
-
-    return {
-      ok: true,
-      output,
-      exitCode: 0,
-    };
-  } catch (error) {
-    const exitCode = typeof error.status === "number" ? error.status : 1;
-    const stdout = (error.stdout ?? "").toString().trim();
-    const stderr = (error.stderr ?? "").toString().trim();
-    const allowedExitCodes = check.allowedExitCodes ?? [0];
-
-    if (allowedExitCodes.includes(exitCode)) {
-      return {
-        ok: true,
-        output: stdout,
-        exitCode,
-      };
-    }
-
-    return {
-      ok: false,
-      output: stdout,
-      stderr,
-      exitCode,
-      command: check.command,
-    };
-  }
-}
-
-export function formatHistoryOutput(result) {
-  return result.output || "(no matches)";
-}
-
-export function runHistoryEvidence(checks = HISTORY_CHECKS, options = {}) {
-  const failures = [];
-
-  for (const check of checks) {
-    const result = runHistoryCommand(check, options);
-
-    if (!result.ok) {
-      failures.push(result);
-      continue;
-    }
-
-    console.log(`$ ${check.command}`);
-    console.log(formatHistoryOutput(result));
-    console.log("");
-  }
-
-  return failures;
-}
-
 function printHistoryEvidence() {
   console.log("\nHistorical audit evidence (read-only):\n");
 
@@ -205,7 +317,9 @@ function printHistoryEvidence() {
   if (failures.length > 0) {
     console.error("Historical audit command failed:\n");
     for (const failure of failures) {
-      console.error(`$ ${failure.command}`);
+      for (const command of failure.commands) {
+        console.error(`$ ${command}`);
+      }
       if (failure.stderr) {
         console.error(failure.stderr);
       }

@@ -215,8 +215,9 @@ git grep -iE 'sk_live_|Bearer [a-zA-Z0-9]{20,}' $(git rev-list --all --max-count
 Automated wrapper: `pnpm provenance:history` → `node scripts/provenance-audit.mjs --history`
 
 **Reliability:** `pnpm provenance:history` exits non-zero if an audit command itself fails (invalid
-revision, missing tooling, unexpected non-zero status). Expected empty search results and grep-style
-“no match” exits (exit code `1` on the deleted-binary path) print `(no matches)` — they are **not**
+revision, missing tooling, unexpected non-zero status). Each Git invocation is checked
+independently; filtering, deduplication, sorting, and ranking happen in JavaScript only after
+successful Git output. Expected empty filtered results print `(no matches)` — they are **not**
 treated as command failures.
 
 ### Sampling strategy
