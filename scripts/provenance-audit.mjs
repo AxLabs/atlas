@@ -1,0 +1,163 @@
+import { execSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+
+const BINARY_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".svg",
+  ".ico",
+  ".pdf",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".otf",
+  ".eot",
+];
+
+const REQUIRED_NOTICE_FILES = ["THIRD_PARTY_NOTICES.md", "docs/how-we-build/provenance.md"];
+
+function fail(errors, message) {
+  errors.push(message);
+}
+
+function gitTrackedFiles() {
+  return execSync("git ls-files", { cwd: repoRoot, encoding: "utf8" })
+    .split("\n")
+    .filter(Boolean);
+}
+
+function checkRequiredDocumentation(errors) {
+  for (const relativePath of REQUIRED_NOTICE_FILES) {
+    if (!existsSync(path.join(repoRoot, relativePath))) {
+      fail(errors, `Missing provenance documentation: ${relativePath}`);
+    }
+  }
+}
+
+function checkCommittedBinaryAssets(errors) {
+  const tracked = gitTrackedFiles();
+  const matches = tracked.filter((file) =>
+    BINARY_EXTENSIONS.some((ext) => file.toLowerCase().endsWith(ext)),
+  );
+
+  if (matches.length > 0) {
+    fail(
+      errors,
+      `Committed binary assets are not allowed at HEAD without provenance review: ${matches.join(", ")}`,
+    );
+  }
+}
+
+function checkVendoredDirectories(errors) {
+  const tracked = gitTrackedFiles();
+  const suspicious = tracked.filter((file) =>
+    /(^|\/)(vendor|vendored|third_party|third-party)(\/|$)/i.test(file),
+  );
+
+  if (suspicious.length > 0) {
+    fail(errors, `Possible vendored source paths require provenance review: ${suspicious.join(", ")}`);
+  }
+}
+
+function checkStaleRadixDeclarations(errors) {
+  const uiManifest = path.join(repoRoot, "packages/ui/package.json");
+  if (!existsSync(uiManifest)) {
+    return;
+  }
+
+  const pkg = JSON.parse(readFileSync(uiManifest, "utf8"));
+  const sections = [pkg.dependencies, pkg.devDependencies, pkg.peerDependencies];
+
+  for (const section of sections) {
+    if (!section) {
+      continue;
+    }
+
+    for (const name of Object.keys(section)) {
+      if (name.startsWith("@radix-ui/") || name === "vaul") {
+        fail(
+          errors,
+          `${name} is declared in @atlas/ui but Atlas UI uses Base UI primitives; remove stale declaration`,
+        );
+      }
+    }
+  }
+}
+
+function checkLicenseConsistency(errors) {
+  const licensePath = path.join(repoRoot, "LICENSE");
+  if (!existsSync(licensePath)) {
+    fail(errors, "Missing root LICENSE file");
+    return;
+  }
+
+  const license = readFileSync(licensePath, "utf8");
+  if (!license.includes("Apache License") || !license.includes("Version 2.0")) {
+    fail(errors, "Root LICENSE is not Apache-2.0");
+  }
+}
+
+function printHistoryEvidence() {
+  console.log("\nHistorical audit evidence (read-only):\n");
+
+  const commands = [
+    "git log --all --diff-filter=D --name-only --pretty=format: | sort -u | grep -E '\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$'",
+    "git log --all -S '@radix-ui/react-dialog' --oneline -- packages/ui",
+    "git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '/^blob/ && $4 ~ /\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$/ {print $3, $4}' | sort -rn | head -20",
+  ];
+
+  for (const command of commands) {
+    console.log(`$ ${command}`);
+    try {
+      const output = execSync(command, {
+        cwd: repoRoot,
+        encoding: "utf8",
+        shell: "/bin/bash",
+        stdio: ["ignore", "pipe", "pipe"],
+      }).trim();
+      console.log(output || "(no matches)");
+    } catch {
+      console.log("(no matches)");
+    }
+    console.log("");
+  }
+}
+
+function main() {
+  const historyOnly = process.argv.includes("--history");
+
+  if (historyOnly) {
+    printHistoryEvidence();
+    return;
+  }
+
+  const errors = [];
+
+  checkRequiredDocumentation(errors);
+  checkCommittedBinaryAssets(errors);
+  checkVendoredDirectories(errors);
+  checkStaleRadixDeclarations(errors);
+  checkLicenseConsistency(errors);
+
+  if (errors.length > 0) {
+    console.error("Provenance audit failed:\n");
+    for (const error of errors) {
+      console.error(`  - ${error}`);
+    }
+    process.exit(1);
+  }
+
+  console.log("✓ Current-tree provenance checks passed");
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

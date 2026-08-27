@@ -48,6 +48,7 @@ These rules apply to all code in Atlas:
 | [Local Dev Composition](local-dev-composition.md)   | Docker Compose patterns (opt-in)                 |
 | [Documentation Policy](documentation-policy.md)     | How we maintain docs                             |
 | [Releases & Governance](releases-and-governance.md) | Licensing, versioning, releases, support         |
+| [Provenance & redistribution](provenance.md)        | Third-party source, assets, dependency licenses  |
 | [Claims register](../audit/claims-register.md)      | Material claims and evidence                     |
 
 ## Quick Reference
