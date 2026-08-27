@@ -9,8 +9,7 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./dependency-validation": "./dist/doctor/dependency-imports.js",
-    "./workspace-membership": "./dist/doctor/workspace-membership.js"
+    "./dependency-validation": "./dist/dependency-validation.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && chmod +x dist/cli.js",

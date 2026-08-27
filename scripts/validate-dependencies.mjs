@@ -11,15 +11,14 @@ const repoRoot = path.resolve(scriptDir, "..");
 const require = createRequire(import.meta.url);
 
 function loadDependencyValidation() {
-  const modulePath = path.join(repoRoot, "packages/cli/dist/doctor/dependency-imports.js");
   try {
-    return require(modulePath);
+    return require("@atlas/cli/dependency-validation");
   } catch {
     execSync("pnpm --filter @atlas/cli build", {
       cwd: repoRoot,
       stdio: "inherit",
     });
-    return require(modulePath);
+    return require("@atlas/cli/dependency-validation");
   }
 }
 

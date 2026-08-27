@@ -10,9 +10,35 @@ const repoRoot = process.cwd();
 const require = createRequire(import.meta.url);
 
 function loadDependencyValidation() {
-  const modulePath = path.join(repoRoot, "packages/cli/dist/doctor/dependency-imports.js");
-  return require(modulePath);
+  try {
+    return require("@atlas/cli/dependency-validation");
+  } catch {
+    execSync("pnpm --filter @atlas/cli build", {
+      cwd: repoRoot,
+      stdio: "pipe",
+    });
+    return require("@atlas/cli/dependency-validation");
+  }
 }
+
+test("@atlas/cli/dependency-validation subpath resolves after build", () => {
+  execSync("pnpm --filter @atlas/cli build", {
+    cwd: repoRoot,
+    stdio: "pipe",
+  });
+
+  const module = loadDependencyValidation();
+  assert.equal(typeof module.discoverWorkspaceRoots, "function");
+  assert.equal(typeof module.findUndeclaredDependenciesForWorkspace, "function");
+  assert.equal(typeof module.findUndeclaredDependenciesForAllWorkspaces, "function");
+});
+
+test("@atlas/cli/workspace-membership is not exported", () => {
+  assert.throws(
+    () => require("@atlas/cli/workspace-membership"),
+    (error) => error.code === "MODULE_NOT_FOUND" || error.code === "ERR_PACKAGE_PATH_NOT_EXPORTED",
+  );
+});
 
 function createTempFixture(workspaces) {
   const root = mkdtempSync(path.join(os.tmpdir(), "atlas-deps-script-"));
