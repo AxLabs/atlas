@@ -1,8 +1,9 @@
-import { execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { assertLicenseAuditArchitectures } from "./license-audit-config.mjs";
+import { validateExceptions } from "./license-exceptions.mjs";
 import {
   classifyLicenseExpression,
   isAtlasWorkspacePackage,
@@ -22,12 +23,13 @@ const FORBIDDEN_SOURCE_PATTERNS = [
   /^workspace:/i,
 ];
 
-function loadExceptions() {
-  if (!existsSync(exceptionsPath)) {
+export function loadExceptionsFile(root = repoRoot) {
+  const filePath = path.join(root, "license-exceptions.json");
+  if (!existsSync(filePath)) {
     return {};
   }
 
-  const raw = JSON.parse(readFileSync(exceptionsPath, "utf8"));
+  const raw = JSON.parse(readFileSync(filePath, "utf8"));
   return raw.exceptions ?? {};
 }
 
@@ -138,7 +140,7 @@ function checkPrivatePackageSources(packages) {
   return findings;
 }
 
-function summarizePackages(packages, exceptions) {
+export function summarizePackages(packages, exceptions) {
   const summary = {
     allowed: [],
     "review-required": [],
@@ -150,14 +152,21 @@ function summarizePackages(packages, exceptions) {
   for (const pkg of packages) {
     const key = `${pkg.name}@${pkg.version}`;
     const exception = exceptions[key];
+    const declaredStatus = classifyLicenseExpression(pkg.license);
 
     if (exception) {
-      summary.reviewed.push({ ...pkg, disposition: exception });
+      summary.reviewed.push({
+        ...pkg,
+        declaredStatus,
+        disposition: exception.status,
+        effectiveLicense: exception.effectiveLicense,
+        reason: exception.reason,
+        reviewedOn: exception.reviewedOn,
+      });
       continue;
     }
 
-    const status = classifyLicenseExpression(pkg.license);
-    summary[status].push(pkg);
+    summary[declaredStatus].push(pkg);
   }
 
   return summary;
@@ -174,52 +183,76 @@ function printReport(summary) {
   const blockers = [
     ...summary.disallowed,
     ...summary.unknown,
-    ...summary["review-required"].filter(
-      (pkg) => !summary.reviewed.some((entry) => entry.name === pkg.name),
-    ),
+    ...summary["review-required"],
   ];
 
   if (blockers.length > 0) {
     console.error("\nPackages requiring disposition:\n");
-    for (const pkg of [...summary.disallowed, ...summary.unknown, ...summary["review-required"]]) {
+    for (const pkg of blockers) {
       console.error(
         `  - ${pkg.name}@${pkg.version} license=${pkg.license ?? "none"} status=${classifyLicenseExpression(pkg.license)}`,
       );
     }
   }
+
+  if (summary.reviewed.length > 0) {
+    console.log("\nReviewed exceptions:\n");
+    for (const pkg of summary.reviewed) {
+      const effective = pkg.effectiveLicense ? ` effective=${pkg.effectiveLicense}` : "";
+      console.log(
+        `  - ${pkg.name}@${pkg.version} declared=${pkg.license ?? "none"} status=${pkg.declaredStatus} reviewed=${pkg.disposition}${effective}`,
+      );
+    }
+  }
+}
+
+export function runLicenseAudit({ root = repoRoot, reportOnly = false } = {}) {
+  assertLicenseAuditArchitectures(root);
+
+  if (!existsSync(path.join(root, "node_modules"))) {
+    throw new Error("Run pnpm install --frozen-lockfile before pnpm licenses:check");
+  }
+
+  const packages = enumerateInstalledPackages(root);
+  const packagesByKey = new Map(packages.map((pkg) => [`${pkg.name}@${pkg.version}`, pkg]));
+  const exceptions = loadExceptionsFile(root);
+  const exceptionErrors = validateExceptions(exceptions, packagesByKey);
+  const summary = summarizePackages(packages, exceptions);
+  const privateSourceFindings = checkPrivatePackageSources(packages);
+
+  return {
+    packages,
+    packagesByKey,
+    exceptions,
+    exceptionErrors,
+    summary,
+    privateSourceFindings,
+    reportOnly,
+  };
 }
 
 function main() {
   const reportOnly = process.argv.includes("--report");
+  const audit = runLicenseAudit({ reportOnly });
 
-  if (!existsSync(path.join(repoRoot, "node_modules"))) {
-    console.error("Run pnpm install --frozen-lockfile before pnpm licenses:check");
-    process.exit(1);
-  }
-
-  const packages = enumerateInstalledPackages();
-  const exceptions = loadExceptions();
-  const summary = summarizePackages(packages, exceptions);
-  const privateSourceFindings = checkPrivatePackageSources(packages);
-
-  printReport(summary);
+  printReport(audit.summary);
 
   if (reportOnly) {
     return;
   }
 
-  const errors = [...privateSourceFindings];
+  const errors = [...audit.privateSourceFindings, ...audit.exceptionErrors];
 
-  if (summary.disallowed.length > 0) {
-    errors.push(`${summary.disallowed.length} dependency license(s) are disallowed by policy`);
+  if (audit.summary.disallowed.length > 0) {
+    errors.push(`${audit.summary.disallowed.length} dependency license(s) are disallowed by policy`);
   }
 
-  if (summary.unknown.length > 0) {
-    errors.push(`${summary.unknown.length} dependency license(s) are unknown to policy`);
+  if (audit.summary.unknown.length > 0) {
+    errors.push(`${audit.summary.unknown.length} dependency license(s) are unknown to policy`);
   }
 
-  const unresolvedReview = summary["review-required"].filter(
-    (pkg) => !exceptions[`${pkg.name}@${pkg.version}`],
+  const unresolvedReview = audit.summary["review-required"].filter(
+    (pkg) => !audit.exceptions[`${pkg.name}@${pkg.version}`],
   );
   if (unresolvedReview.length > 0) {
     errors.push(

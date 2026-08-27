@@ -260,6 +260,11 @@ stripped. No bogus per-file attribution added to Atlas-authored helpers.
 **Data source:** installed package `package.json` manifests under `node_modules/` (hoisted layout
 per `.npmrc` `node-linker=hoisted`). Not lockfile metadata alone.
 
+**Audit universe:** `pnpm-workspace.yaml` → `supportedArchitectures` materializes optional
+platform-specific dependencies for Atlas-supported dev/build architectures (`linux` + `darwin`,
+`x64` + `arm64`). A frozen install on any host therefore enumerates the same cross-platform
+dependency set; CI on Ubuntu is not limited to Linux-only optional packages.
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm licenses:check     # CI gate — fails on unknown/disallowed/unreviewed
@@ -270,14 +275,20 @@ pnpm licenses:report    # Summary counts
 `disallowed`, `unknown`. Atlas currently evaluates multi-license expressions conservatively for
 gating; reviewed exceptions may document acceptable selectable-license cases.
 
+**Reviewed exceptions:** [`license-exceptions.json`](../../license-exceptions.json) entries must
+include `status: "reviewed"`, non-empty `reason`, and valid `reviewedOn` (`YYYY-MM-DD`). When
+manifest license metadata is missing or nonstandard, exceptions must also include `effectiveLicense`
+and `source`. Stale exceptions for packages no longer in the audit universe fail
+`pnpm licenses:check`.
+
 **Workspace packages:** `@atlas/*` excluded from third-party enumeration.
 
 Representative HEAD results (2026-08-27 audit):
 
 | Status                                    | Count |
 | ----------------------------------------- | ----- |
-| allowed                                   | 1246  |
-| review-required (reviewed via exceptions) | 13    |
+| allowed                                   | 1272  |
+| review-required (reviewed via exceptions) | 23    |
 | unknown                                   | 0     |
 | disallowed                                | 0     |
 
@@ -286,9 +297,9 @@ Representative HEAD results (2026-08-27 audit):
 ## 10. Unknown / review-required licenses
 
 All review-required packages at HEAD have explicit entries in
-[`license-exceptions.json`](../../license-exceptions.json) (13 packages):
+[`license-exceptions.json`](../../license-exceptions.json) (23 packages):
 
-| Package                | Declared license        | Disposition                               |
+| Package family         | Declared license        | Disposition                               |
 | ---------------------- | ----------------------- | ----------------------------------------- |
 | `harmony-reflect`      | (Apache-2.0 OR MPL-1.1) | Reviewed — transitive dual-license        |
 | `@img/sharp-libvips-*` | LGPL-3.0-or-later       | Reviewed — optional native transitive dep |
@@ -296,8 +307,8 @@ All review-required packages at HEAD have explicit entries in
 | `axe-core`             | MPL-2.0                 | Reviewed — Storybook a11y transitive      |
 | `caniuse-lite`         | CC-BY-4.0               | Reviewed — build-time data                |
 | `lightningcss*`        | MPL-2.0                 | Reviewed — Tailwind build chain           |
-| `posthog-js`           | SEE LICENSE IN LICENSE  | Reviewed — optional adapter               |
-| `spawndamnit`          | SEE LICENSE IN LICENSE  | Reviewed — Changesets dev dep             |
+| `posthog-js`           | SEE LICENSE IN LICENSE  | Reviewed — Apache-2.0 per LICENSE file    |
+| `spawndamnit`          | SEE LICENSE IN LICENSE  | Reviewed — MIT per LICENSE file           |
 | `browser-assert`       | (missing)               | Reviewed — MIT per package LICENSE file   |
 
 ---

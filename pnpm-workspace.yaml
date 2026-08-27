@@ -1,3 +1,13 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Materialize optional platform-specific dependencies for all Atlas-supported dev/build
+# architectures so dependency license auditing is deterministic across CI and developer OSes.
+supportedArchitectures:
+  os:
+    - linux
+    - darwin
+  cpu:
+    - x64
+    - arm64

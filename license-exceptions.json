@@ -12,7 +12,27 @@
       "source": "node_modules/browser-assert/LICENSE",
       "reviewedOn": "2026-08-27"
     },
+    "@img/sharp-libvips-darwin-arm64@1.3.2": {
+      "status": "reviewed",
+      "reason": "Optional native transitive dependency of sharp (Next.js image tooling). LGPL-3.0-or-later; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "@img/sharp-libvips-darwin-x64@1.3.2": {
+      "status": "reviewed",
+      "reason": "Optional native transitive dependency of sharp (Next.js image tooling). LGPL-3.0-or-later; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "@img/sharp-libvips-linux-arm64@1.3.2": {
+      "status": "reviewed",
+      "reason": "Optional native transitive dependency of sharp (Next.js image tooling). LGPL-3.0-or-later; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
     "@img/sharp-libvips-linux-x64@1.3.2": {
+      "status": "reviewed",
+      "reason": "Optional native transitive dependency of sharp (Next.js image tooling). LGPL-3.0-or-later; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "@img/sharp-libvips-linuxmusl-arm64@1.3.2": {
       "status": "reviewed",
       "reason": "Optional native transitive dependency of sharp (Next.js image tooling). LGPL-3.0-or-later; not vendored in Atlas source.",
       "reviewedOn": "2026-08-27"
@@ -25,6 +45,16 @@
     "@sentry/cli@2.58.6": {
       "status": "reviewed",
       "reason": "Dev/build tool for optional sourcemap upload; FSL-1.1-MIT. Not redistributed as Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "@sentry/cli-darwin@2.58.6": {
+      "status": "reviewed",
+      "reason": "Platform binary for @sentry/cli; FSL-1.1-MIT. Not redistributed as Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "@sentry/cli-linux-arm64@2.58.6": {
+      "status": "reviewed",
+      "reason": "Platform binary for @sentry/cli; FSL-1.1-MIT. Not redistributed as Atlas source.",
       "reviewedOn": "2026-08-27"
     },
     "@sentry/cli-linux-x64@2.58.6": {
@@ -47,6 +77,26 @@
       "reason": "Tailwind/PostCSS build dependency. MPL-2.0; consumed as npm package only.",
       "reviewedOn": "2026-08-27"
     },
+    "lightningcss-darwin-arm64@1.30.2": {
+      "status": "reviewed",
+      "reason": "Platform binary for lightningcss. MPL-2.0; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "lightningcss-darwin-x64@1.30.2": {
+      "status": "reviewed",
+      "reason": "Platform binary for lightningcss. MPL-2.0; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "lightningcss-linux-arm64-gnu@1.30.2": {
+      "status": "reviewed",
+      "reason": "Platform binary for lightningcss. MPL-2.0; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
+    "lightningcss-linux-arm64-musl@1.30.2": {
+      "status": "reviewed",
+      "reason": "Platform binary for lightningcss. MPL-2.0; not vendored in Atlas source.",
+      "reviewedOn": "2026-08-27"
+    },
     "lightningcss-linux-x64-gnu@1.30.2": {
       "status": "reviewed",
       "reason": "Platform binary for lightningcss. MPL-2.0; not vendored in Atlas source.",
@@ -59,12 +109,16 @@
     },
     "posthog-js@1.310.1": {
       "status": "reviewed",
-      "reason": "Optional analytics adapter dependency in reference app; license text in package LICENSE file.",
+      "effectiveLicense": "Apache-2.0",
+      "source": "node_modules/posthog-js/LICENSE",
+      "reason": "Optional analytics adapter dependency in reference app; Apache-2.0 per package LICENSE file.",
       "reviewedOn": "2026-08-27"
     },
     "spawndamnit@3.0.1": {
       "status": "reviewed",
-      "reason": "Changesets dev dependency; license text in package LICENSE file.",
+      "effectiveLicense": "MIT",
+      "source": "node_modules/spawndamnit/LICENSE",
+      "reason": "Changesets dev dependency; MIT per package LICENSE file.",
       "reviewedOn": "2026-08-27"
     }
   }
