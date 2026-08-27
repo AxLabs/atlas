@@ -1,7 +1,20 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
 
 import { minimatch } from "minimatch";
 import { parse as parseYaml } from "yaml";
+
+const WORKSPACE_DISCOVERY_IGNORED_DIRS = new Set([
+  "node_modules",
+  ".next",
+  "dist",
+  "coverage",
+  ".turbo",
+  ".git",
+  "storybook-static",
+  "playwright-report",
+  "test-results",
+]);
 
 export interface ParsedWorkspaceConfig {
   patterns: string[];
@@ -55,4 +68,43 @@ export function isWorkspaceRootIncluded(patterns: string[], relativeRoot: string
   }
 
   return true;
+}
+
+export function discoverWorkspaceRoots(repoRoot: string): string[] {
+  const workspaceFile = path.join(repoRoot, "pnpm-workspace.yaml");
+  if (!existsSync(workspaceFile)) {
+    return [];
+  }
+
+  const { patterns } = readPnpmWorkspacePatterns(workspaceFile);
+  const roots: string[] = [];
+
+  function walk(currentAbsolute: string, relativePath: string): void {
+    for (const entry of readdirSync(currentAbsolute)) {
+      if (WORKSPACE_DISCOVERY_IGNORED_DIRS.has(entry)) {
+        continue;
+      }
+
+      const absolutePath = path.join(currentAbsolute, entry);
+      const stats = statSync(absolutePath);
+      if (!stats.isDirectory()) {
+        continue;
+      }
+
+      const posixRelative = relativePath ? `${relativePath}/${entry}` : entry;
+      const manifestPath = path.join(absolutePath, "package.json");
+
+      if (existsSync(manifestPath)) {
+        if (isWorkspaceRootIncluded(patterns, posixRelative)) {
+          roots.push(posixRelative);
+        }
+        continue;
+      }
+
+      walk(absolutePath, posixRelative);
+    }
+  }
+
+  walk(repoRoot, "");
+  return [...new Set(roots)].sort();
 }

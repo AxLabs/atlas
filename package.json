@@ -48,6 +48,7 @@
     "changeset:version": "changeset version && node scripts/consolidate-atlas-release.mjs",
     "changeset:status": "changeset status",
     "governance:check": "node scripts/validate-governance.mjs",
+    "dependencies:check": "pnpm turbo build --filter=@atlas/cli && node scripts/validate-dependencies.mjs",
     "agents:check": "node --test scripts/__tests__/agent-discoverability.test.mjs",
     "docs:validate": "pnpm docs:check && pnpm governance:check",
     "release:rehearse": "node scripts/release-rehearse.mjs"

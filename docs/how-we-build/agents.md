@@ -101,6 +101,7 @@ Do not overwrite independent or consumer-owned files based on assumptions.
 ```bash
 pnpm atlas doctor --json
 pnpm lint && pnpm typecheck && pnpm test
+pnpm dependencies:check
 ```
 
 Run additional checks from `atlas context --json` → `validation.recommended` when your change

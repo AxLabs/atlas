@@ -119,7 +119,7 @@ Warnings do **not** fail CI in v0.1.
 | `project-contract`             | `@atlas/project`                       | `ATLAS_CONTRACT_*`                                                                       | error                 |
 | `workspace-structure`          | Doctor + manifests                     | `ATLAS_WORKSPACE_*`                                                                      | error                 |
 | `architecture-boundaries`      | ESLint policy + Doctor ownership scan  | `ATLAS_BOUNDARY_*`, `ATLAS_ARCHITECTURE_POLICY_*`, `ATLAS_DOCTOR_CHECK_EXECUTION_FAILED` | error                 |
-| `dependency-declarations`      | Doctor (application workspace only)    | `ATLAS_DEPENDENCY_UNDECLARED`                                                            | error                 |
+| `dependency-declarations`      | Doctor (configured application only)   | `ATLAS_DEPENDENCY_UNDECLARED`                                                            | error                 |
 | `generated-openapi`            | openapi-typescript compare (read-only) | `ATLAS_GENERATED_OPENAPI_*`                                                              | error / skip          |
 | `template-infrastructure-sync` | Manifest compare (read-only)           | `ATLAS_TEMPLATE_SYNC_*`                                                                  | error / skip          |
 | `upgrade-baseline`             | Contract `platform.baseline` metadata  | `ATLAS_UPGRADE_BASELINE_*`                                                               | warning / fail / skip |
