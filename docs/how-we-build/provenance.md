@@ -35,18 +35,17 @@ performed for trivial Atlas-authored files.
 
 ## 2. Current third-party provenance
 
-| Surface                                                                                            | Upstream                     | Classification                                           | License                              | Action                                                             |
-| -------------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------ |
-| `packages/ui/src/components/ui/*` (40+ primitives)                                                 | shadcn/ui → `@base-ui/react` | adapted from upstream (shadcn-generated, Atlas-modified) | shadcn MIT; Base UI MIT (dependency) | Attribution in `THIRD_PARTY_NOTICES.md`; regenerate via shadcn CLI |
-| `packages/ui` extended primitives (`command`, `chart`, `calendar`, …)                              | shadcn + cmdk/recharts/etc.  | adapted from upstream + dependency-only libs             | MIT / per dependency                 | Dependency inventory; shadcn MIT notice                            |
-| `@base-ui/react` imports                                                                           | MUI Base UI                  | dependency-only                                          | MIT                                  | `pnpm licenses:check`                                              |
-| `packages/ui` Atlas helpers (`empty-state`, `error-fallback`, `loader`, `form`, `theme-toggle`, …) | Atlas                        | Atlas-authored                                           | Apache-2.0                           | None                                                               |
-| `apps/*/src/lib/api/contracts/schema.ts`                                                           | openapi-typescript           | generated                                                | MIT (tool)                           | Header preserved                                                   |
-| `apps/*/src/lib/**` (API, auth, CSP, telemetry)                                                    | Atlas (+ framework idioms)   | Atlas-authored                                           | Apache-2.0                           | None                                                               |
-| `packages/cli` generators                                                                          | Atlas                        | Atlas-authored templates                                 | Apache-2.0                           | None                                                               |
-| Docs archived Radix references                                                                     | shadcn/Radix era docs        | historical-only prose                                    | N/A                                  | Update stale claims (see §3)                                       |
-| Fonts (Inter)                                                                                      | Google Fonts via `next/font` | runtime download                                         | OFL (Inter)                          | No bundled font files committed                                    |
-| npm dependencies (1246+ packages)                                                                  | npm registry                 | dependency-only                                          | See `pnpm licenses:report`           | Policy in `scripts/license-policy.mjs`                             |
+| Surface                                                                                      | Upstream                   | Classification                                | License                              | Action                                      |
+| -------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------- | ------------------------------------ | ------------------------------------------- |
+| `packages/ui/src/components/ui/*` (50+ files)                                                | shadcn/ui Vega preset      | shadcn-generated → Atlas-modified (see §3)    | shadcn MIT; Base UI MIT (dependency) | `THIRD_PARTY_NOTICES.md` shadcn MIT notice  |
+| `@base-ui/react` imports                                                                     | MUI Base UI                | dependency-only                               | MIT                                  | `pnpm licenses:check`                       |
+| `packages/ui` Atlas compositions (`empty-state`, `error-fallback`, `loader`, `theme-toggle`) | Atlas                      | Atlas-authored composition on shadcn surfaces | Apache-2.0                           | None                                        |
+| `apps/*/src/lib/api/contracts/schema.ts`                                                     | openapi-typescript         | generated                                     | MIT (tool)                           | Header preserved                            |
+| `apps/*/src/lib/**` (API, auth, CSP, telemetry)                                              | Atlas (+ framework idioms) | Atlas-authored                                | Apache-2.0                           | None                                        |
+| `packages/cli` generators                                                                    | Atlas                      | Atlas-authored templates                      | Apache-2.0                           | None                                        |
+| Docs archived Radix references                                                               | shadcn/Radix era docs      | historical-only prose                         | N/A                                  | Update stale claims (see §3)                |
+| Fonts (Inter)                                                                                | `next/font/google`         | build-time fetch; self-hosted in build output | SIL OFL-1.1 (Inter)                  | No font binaries in Git; see §4 and notices |
+| npm dependencies (1246+ packages)                                                            | npm registry               | dependency-only                               | See `pnpm licenses:report`           | Policy in `scripts/license-policy.mjs`      |
 
 **Distinction:** dependency licenses (`pnpm licenses:check`) ≠ copied-source provenance (this doc +
 `THIRD_PARTY_NOTICES.md`).
@@ -55,36 +54,47 @@ performed for trivial Atlas-authored files.
 
 ## 3. shadcn / Radix / Base UI
 
-### Current HEAD — shadcn-derived components
+### Method
 
-Generated/refreshed from shadcn using `packages/ui/components.json` (`style: base-vega`, preset
-`bJzBPQGZc`). Evidence: `components.json` schema URL, commit `3099c4b`, `packages/ui/README.md`.
+Provenance for `packages/ui/src/components/ui/**` was determined from **Git file origin and
+history**, not from whether a component imports `@base-ui/react`. A native-DOM shadcn template is
+still shadcn-derived.
 
-**Base UI primitive wrappers (import `@base-ui/react`, shadcn-generated styling):**
+Primary evidence:
 
-`accordion`, `alert-dialog`, `avatar`, `badge`, `breadcrumb`, `button`, `button-group`, `checkbox`,
-`collapsible`, `combobox`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`, `hover-card`,
-`input`, `item`, `menubar`, `navigation-menu`, `popover`, `progress`, `radio-group`, `scroll-area`,
-`select`, `separator`, `sheet`, `slider`, `switch`, `tabs`, `toggle`, `toggle-group`, `tooltip`
+| Source                                                                               | Use                                                           |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Commit `3099c4b` (`feat(ui): reset @atlas/ui onto shadcn Base UI Vega preset (#42)`) | Bulk regenerate/refresh of upstream shadcn Vega primitives    |
+| `packages/ui/components.json` (`style: base-vega`, schema from shadcn)               | Locked generation target                                      |
+| Per-file `git log -- packages/ui/src/components/ui/<file>.tsx`                       | First introduction and later Atlas-only edits                 |
+| `packages/ui/README.md`                                                              | Documents locked preset `bJzBPQGZc` and regeneration workflow |
 
-**Extended shadcn components (additional runtime deps, exported from `@atlas/ui/extended`):**
+**Key distinction:** copied/generated upstream source (shadcn MIT) vs independently Atlas-authored
+source (Apache-2.0). Substantial Atlas modification does **not** reclassify shadcn-generated files
+as Atlas-authored.
 
-`calendar` (react-day-picker), `carousel` (embla), `chart` (recharts), `command` (cmdk),
-`input-otp`, `resizable` (react-resizable-panels)
+### Current HEAD — component classification
 
-**Atlas-authored UI (not shadcn templates):**
+| File / group                                                                                                                                                                                                                                                                                                                                                                                                                                               | Origin evidence                                                                                                                                                                                                                                                                                     | Current primitive dependency                                                                                            | Classification                    | Notice                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------- |
+| **Base UI Vega preset — regenerated in `3099c4b`** (`accordion`, `alert-dialog`, `avatar`, `badge`, `breadcrumb`, `button`, `button-group`, `checkbox`, `collapsible`, `combobox`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`, `hover-card`, `input`, `item`, `menubar`, `navigation-menu`, `popover`, `progress`, `radio-group`, `scroll-area`, `select`, `separator`, `sheet`, `slider`, `switch`, `tabs`, `toggle`, `toggle-group`, `tooltip`) | `3099c4b`; prior Radix/shadcn lineage from `abbc212` / `71f6516`                                                                                                                                                                                                                                    | `@base-ui/react/*`                                                                                                      | shadcn-generated → Atlas-modified | shadcn MIT                 |
+| **Native/DOM Vega preset — regenerated in `3099c4b`** (`alert`, `aspect-ratio`, `card`, `empty`, `field`, `form`, `input-group`, `kbd`, `label`, `native-select`, `pagination`, `skeleton`, `sonner`, `spinner`, `table`, `textarea`)                                                                                                                                                                                                                      | `3099c4b`; several trace to earlier shadcn/Radix-era commits (`abbc212`, `71f6516`, `1437a64`, `4bdf1a0`, `705ceef`, `8a330d2`) but were **replaced/refreshed** from shadcn Vega in `3099c4b` (for example `field.tsx` diff removes `@radix-ui/react-slot` and adopts shadcn `data-slot` structure) | native DOM / wrapper only                                                                                               | shadcn-generated → Atlas-modified | shadcn MIT                 |
+| **Extended shadcn — regenerated in `3099c4b`** (`calendar`, `carousel`, `chart`, `command`, `input-otp`, `resizable`)                                                                                                                                                                                                                                                                                                                                      | `3099c4b`; shadcn extended set                                                                                                                                                                                                                                                                      | `react-day-picker`, `embla-carousel-react`, `recharts`, `cmdk`, `input-otp`, `react-resizable-panels` (dependency-only) | shadcn-generated → Atlas-modified | shadcn MIT + npm inventory |
+| **Atlas behavioral compositions** (`empty-state`, `error-fallback`, `loader`, `theme-toggle`)                                                                                                                                                                                                                                                                                                                                                              | Independent introduction: `ae4a70c` (app-state kit), `fb479db` (theme toggle); later adapted in `3099c4b` to compose canonical shadcn surfaces without replacing authorship                                                                                                                         | composes shadcn primitives (`Empty`, `Alert`, `Button`, `Spinner`, `DropdownMenu`, …)                                   | Atlas-authored composition        | Apache-2.0                 |
 
-`alert`, `card`, `empty`, `empty-state`, `error-fallback`, `field`, `form`, `input-group`, `kbd`,
-`label`, `loader`, `native-select`, `pagination`, `skeleton`, `sonner` (wrapper), `spinner`,
-`table`, `textarea`, `theme-toggle`
+**How the conclusion was established:** `git show 3099c4b --stat -- packages/ui/src/components/ui/`
+lists all Vega-regenerated primitives. Files such as `card.tsx` and `alert.tsx` use native DOM only
+but were rewritten in `3099c4b` with shadcn Vega structure (`data-slot`, preset token classes). Only
+the four composition files above retain independent Atlas introduction commits and composition logic
+after the preset reset.
 
 **Upstream licenses (verified 2026-08-27):**
 
-| Upstream                                                             | License | Copied into repo?            |
-| -------------------------------------------------------------------- | ------- | ---------------------------- |
-| [shadcn/ui](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)    | MIT     | Yes — component source       |
-| [@base-ui/react](https://github.com/mui/base-ui/blob/master/LICENSE) | MIT     | **No** — npm dependency only |
-| Radix (historical)                                                   | MIT     | Historical Git blobs only    |
+| Upstream                                                                                      | License | Copied into repo?                                                                        |
+| --------------------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| [shadcn/ui](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)                             | MIT     | Yes — shadcn-generated/refreshed component source under `packages/ui/src/components/ui/` |
+| [@base-ui/react](https://github.com/mui/base-ui/blob/master/LICENSE)                          | MIT     | **No** — npm dependency only                                                             |
+| [Radix UI Primitives](https://www.radix-ui.com/primitives/docs/overview/introduction#license) | MIT     | Historical Git blobs only (pre-`3099c4b`)                                                |
 
 **Required/prudent notices:** shadcn MIT text in
 [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md). Per-file MIT headers are **not**
@@ -128,9 +138,25 @@ No `apps/*/public/**` assets are committed. Favicons/icons are not vendored in-r
 
 ### Fonts
 
-| Mechanism                  | Location                                                           | Committed files |
-| -------------------------- | ------------------------------------------------------------------ | --------------- |
-| `next/font/google` (Inter) | `apps/web/src/app/layout.tsx`, `apps/reference/src/app/layout.tsx` | None            |
+Atlas does **not** commit Inter font binaries to Git. Applications use `next/font/google`, which
+obtains the font during the build and self-hosts the resulting font assets in the built application
+([Next.js font optimization docs](https://nextjs.org/docs/app/building-your-application/optimizing/fonts)).
+Inter is licensed under
+[SIL Open Font License 1.1](https://github.com/rsms/inter/blob/master/LICENSE.txt).
+
+| Field                               | Value                                                           |
+| ----------------------------------- | --------------------------------------------------------------- |
+| Font                                | Inter                                                           |
+| License                             | SIL Open Font License 1.1                                       |
+| Source                              | `next/font/google` (`import { Inter } from "next/font/google"`) |
+| Committed to repository             | **No** — no `.woff`/`.woff2`/`.ttf` tracked at HEAD             |
+| Present in built/deployed artifacts | **Yes** — Next.js emits self-hosted font files in build output  |
+| Runtime download from Google        | **No** — not the current `next/font/google` model               |
+
+Built artifacts may contain redistributed Inter font software. SIL OFL-1.1 attribution/license
+preservation requirements should be respected in distributions containing those generated font
+assets. Final notice obligations for specific deployment packaging are a **legal-review item** (see
+§13).
 
 ### Historical binary assets
 
@@ -188,6 +214,11 @@ git grep -iE 'sk_live_|Bearer [a-zA-Z0-9]{20,}' $(git rev-list --all --max-count
 
 Automated wrapper: `pnpm provenance:history` → `node scripts/provenance-audit.mjs --history`
 
+**Reliability:** `pnpm provenance:history` exits non-zero if an audit command itself fails (invalid
+revision, missing tooling, unexpected non-zero status). Expected empty search results and grep-style
+“no match” exits (exit code `1` on the deleted-binary path) print `(no matches)` — they are **not**
+treated as command failures.
+
 ### Sampling strategy
 
 1. Prioritized `packages/ui` (current + Radix → Base UI migration).
@@ -235,7 +266,8 @@ pnpm licenses:report    # Summary counts
 ```
 
 **Policy:** `scripts/license-policy.mjs` — SPDX classifications: `allowed`, `review-required`,
-`disallowed`, `unknown`.
+`disallowed`, `unknown`. Atlas currently evaluates multi-license expressions conservatively for
+gating; reviewed exceptions may document acceptable selectable-license cases.
 
 **Workspace packages:** `@atlas/*` excluded from third-party enumeration.
 
@@ -288,16 +320,16 @@ All review-required packages at HEAD have explicit entries in
 
 ## 12. Automated checks
 
-| Command                   | Purpose                                                         |
-| ------------------------- | --------------------------------------------------------------- |
-| `pnpm licenses:check`     | Dependency license policy                                       |
-| `pnpm licenses:report`    | Human-readable inventory summary                                |
-| `pnpm provenance:check`   | HEAD: no committed binaries, required docs, no stale Radix deps |
-| `pnpm provenance:history` | Print historical audit commands/output                          |
-| `pnpm dependencies:check` | Private/git/file dependency sources (#26)                       |
-| `pnpm governance:check`   | Apache-2.0 governance (#19)                                     |
+| Command                   | Purpose                                                             |
+| ------------------------- | ------------------------------------------------------------------- |
+| `pnpm licenses:check`     | Dependency license policy                                           |
+| `pnpm licenses:report`    | Human-readable inventory summary                                    |
+| `pnpm provenance:check`   | HEAD: no committed binaries, required docs, no stale Radix deps     |
+| `pnpm provenance:history` | Print historical audit commands/output; **fails on command errors** |
+| `pnpm dependencies:check` | Private/git/file dependency sources (#26)                           |
+| `pnpm governance:check`   | Apache-2.0 governance (#19)                                         |
 
-Tests: `scripts/__tests__/audit-licenses.test.mjs`
+Tests: `scripts/__tests__/audit-licenses.test.mjs`, `scripts/__tests__/provenance-audit.test.mjs`
 
 ---
 
@@ -313,6 +345,7 @@ Tests: `scripts/__tests__/audit-licenses.test.mjs`
 **Requires qualified legal review:**
 
 - Whether central `THIRD_PARTY_NOTICES.md` satisfies MIT attribution for your distribution model
+- Whether built-application Inter/OFL notice handling is sufficient for your deployment packaging
 - FSL / LGPL / MPL dispositions for specific deployment scenarios
 - Trademark use of third-party names in public docs/marketing
 - Final public-history strategy (#24) if any engagement-specific commits exist outside this sample

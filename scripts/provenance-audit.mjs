@@ -24,6 +24,26 @@ const BINARY_EXTENSIONS = [
 
 const REQUIRED_NOTICE_FILES = ["THIRD_PARTY_NOTICES.md", "docs/how-we-build/provenance.md"];
 
+const HISTORY_CHECKS = [
+  {
+    label: "Deleted binary assets by extension",
+    command:
+      "git log --all --diff-filter=D --name-only --pretty=format: | sort -u | grep -E '\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$'",
+    allowedExitCodes: [0, 1],
+  },
+  {
+    label: "Radix-era UI migration",
+    command: "git log --all -S '@radix-ui/react-dialog' --oneline -- packages/ui",
+    allowedExitCodes: [0],
+  },
+  {
+    label: "Largest historical binary blobs",
+    command:
+      "git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '/^blob/ && $4 ~ /\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$/ {print $3, $4}' | sort -rn | head -20",
+    allowedExitCodes: [0],
+  },
+];
+
 function fail(errors, message) {
   errors.push(message);
 }
@@ -105,29 +125,94 @@ function checkLicenseConsistency(errors) {
   }
 }
 
+/**
+ * Execute a historical audit command and distinguish expected empty results from failures.
+ *
+ * @param {object} check
+ * @param {string} check.command
+ * @param {number[]} [check.allowedExitCodes=[0]]
+ * @param {import("node:child_process").ExecSyncOptionsWithStringEncoding} [options]
+ */
+export function runHistoryCommand(check, options = {}) {
+  const cwd = options.cwd ?? repoRoot;
+  const exec = options.execSync ?? execSync;
+
+  try {
+    const output = exec(check.command, {
+      cwd,
+      encoding: "utf8",
+      shell: options.shell ?? "/bin/bash",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+
+    return {
+      ok: true,
+      output,
+      exitCode: 0,
+    };
+  } catch (error) {
+    const exitCode = typeof error.status === "number" ? error.status : 1;
+    const stdout = (error.stdout ?? "").toString().trim();
+    const stderr = (error.stderr ?? "").toString().trim();
+    const allowedExitCodes = check.allowedExitCodes ?? [0];
+
+    if (allowedExitCodes.includes(exitCode)) {
+      return {
+        ok: true,
+        output: stdout,
+        exitCode,
+      };
+    }
+
+    return {
+      ok: false,
+      output: stdout,
+      stderr,
+      exitCode,
+      command: check.command,
+    };
+  }
+}
+
+export function formatHistoryOutput(result) {
+  return result.output || "(no matches)";
+}
+
+export function runHistoryEvidence(checks = HISTORY_CHECKS, options = {}) {
+  const failures = [];
+
+  for (const check of checks) {
+    const result = runHistoryCommand(check, options);
+
+    if (!result.ok) {
+      failures.push(result);
+      continue;
+    }
+
+    console.log(`$ ${check.command}`);
+    console.log(formatHistoryOutput(result));
+    console.log("");
+  }
+
+  return failures;
+}
+
 function printHistoryEvidence() {
   console.log("\nHistorical audit evidence (read-only):\n");
 
-  const commands = [
-    "git log --all --diff-filter=D --name-only --pretty=format: | sort -u | grep -E '\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$'",
-    "git log --all -S '@radix-ui/react-dialog' --oneline -- packages/ui",
-    "git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '/^blob/ && $4 ~ /\\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$/ {print $3, $4}' | sort -rn | head -20",
-  ];
+  const failures = runHistoryEvidence();
 
-  for (const command of commands) {
-    console.log(`$ ${command}`);
-    try {
-      const output = execSync(command, {
-        cwd: repoRoot,
-        encoding: "utf8",
-        shell: "/bin/bash",
-        stdio: ["ignore", "pipe", "pipe"],
-      }).trim();
-      console.log(output || "(no matches)");
-    } catch {
-      console.log("(no matches)");
+  if (failures.length > 0) {
+    console.error("Historical audit command failed:\n");
+    for (const failure of failures) {
+      console.error(`$ ${failure.command}`);
+      if (failure.stderr) {
+        console.error(failure.stderr);
+      }
+      console.error(`Exit status: ${failure.exitCode}`);
+      console.error("");
     }
-    console.log("");
+    process.exit(1);
   }
 }
 
