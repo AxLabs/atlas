@@ -55,6 +55,8 @@ export function validateExceptionEntry(key, entry, { package: pkg } = {}) {
   }
 
   const declaredLicense = pkg?.license ?? null;
+  const declaredStatus = classifyLicenseExpression(declaredLicense);
+
   if (pkg && requiresEffectiveLicenseEvidence(declaredLicense)) {
     if (typeof entry.effectiveLicense !== "string" || entry.effectiveLicense.trim().length === 0) {
       errors.push(
@@ -66,6 +68,31 @@ export function validateExceptionEntry(key, entry, { package: pkg } = {}) {
       errors.push(
         `${key}: source is required when manifest license is missing or nonstandard`,
       );
+    }
+  }
+
+  if (
+    typeof entry.effectiveLicense === "string" &&
+    entry.effectiveLicense.trim().length > 0 &&
+    classifyLicenseExpression(entry.effectiveLicense) === "unknown"
+  ) {
+    errors.push(`${key}: effectiveLicense is unknown to Atlas policy`);
+  }
+
+  if (declaredStatus === "disallowed") {
+    errors.push(`${key}: disallowed licenses cannot be overridden by an exception`);
+  }
+
+  if (
+    typeof entry.effectiveLicense === "string" &&
+    classifyLicenseExpression(entry.effectiveLicense) === "disallowed"
+  ) {
+    errors.push(`${key}: effectiveLicense is disallowed by Atlas policy`);
+  }
+
+  if (declaredStatus === "review-required" || declaredStatus === "unknown") {
+    if (entry.disposition !== "accepted") {
+      errors.push(`${key}: disposition must be "accepted" to acknowledge a reviewed license`);
     }
   }
 
@@ -86,4 +113,93 @@ export function validateExceptions(exceptions, packagesByKey) {
   }
 
   return errors;
+}
+
+/**
+ * Resolve final license disposition for a package, applying validated exceptions.
+ * Invalid or incomplete exceptions never bypass policy.
+ */
+export function resolvePackageLicenseRecord(pkg, exception, exceptionErrors = []) {
+  const declaredLicense = pkg.license ?? null;
+  const declaredClassification = classifyLicenseExpression(declaredLicense);
+  const baseRecord = {
+    name: pkg.name,
+    version: pkg.version,
+    declaredLicense,
+    classification: declaredClassification,
+  };
+
+  if (!exception || exceptionErrors.length > 0) {
+    return baseRecord;
+  }
+
+  const effectiveLicense =
+    typeof exception.effectiveLicense === "string" && exception.effectiveLicense.trim().length > 0
+      ? exception.effectiveLicense.trim()
+      : declaredLicense;
+  const effectiveClassification = classifyLicenseExpression(effectiveLicense);
+
+  if (declaredClassification === "disallowed" || effectiveClassification === "disallowed") {
+    return {
+      ...baseRecord,
+      classification: "disallowed",
+      exception: summarizeException(exception),
+    };
+  }
+
+  if (declaredClassification === "unknown") {
+    if (exception.disposition !== "accepted" || effectiveClassification === "unknown") {
+      return {
+        ...baseRecord,
+        classification: effectiveClassification === "unknown" ? "unknown" : declaredClassification,
+        exception: summarizeException(exception),
+      };
+    }
+
+    return {
+      ...baseRecord,
+      declaredLicense: effectiveLicense,
+      classification: effectiveClassification,
+      disposition: "accepted",
+      exception: summarizeException(exception),
+    };
+  }
+
+  if (declaredClassification === "review-required") {
+    if (exception.disposition !== "accepted") {
+      return {
+        ...baseRecord,
+        classification: "review-required",
+        exception: summarizeException(exception),
+      };
+    }
+
+    return {
+      ...baseRecord,
+      classification: "allowed",
+      disposition: "accepted",
+      exception: summarizeException(exception),
+    };
+  }
+
+  if (declaredClassification === "allowed") {
+    return {
+      ...baseRecord,
+      disposition: exception.disposition === "accepted" ? "accepted" : undefined,
+      exception: summarizeException(exception),
+    };
+  }
+
+  return baseRecord;
+}
+
+function summarizeException(exception) {
+  return {
+    status: exception.status,
+    reason: exception.reason,
+    reviewedOn: exception.reviewedOn,
+    effectiveLicense: exception.effectiveLicense,
+    source: exception.source,
+    disposition: exception.disposition,
+  };
 }

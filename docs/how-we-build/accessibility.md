@@ -166,9 +166,9 @@ import { Dialog, DialogContent, DialogTrigger } from "@atlas/ui";
 
 ## Component Library
 
-`@atlas/ui` is shadcn-based. Interactive primitives use Base UI where applicable, while other
-components use native DOM or dependency-specific primitives. Atlas wrappers preserve upstream
-accessibility semantics:
+`@atlas/ui` interactive primitives primarily use Base UI through shadcn-generated component shells,
+with native-DOM shadcn components where appropriate. Atlas wrappers preserve upstream accessibility
+semantics:
 
 - **Dialog** — Base UI focus trapping and Escape handling
 - **DropdownMenu** — Accessible upstream menu primitives with keyboard navigation

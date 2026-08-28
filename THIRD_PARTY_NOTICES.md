@@ -108,7 +108,8 @@ Reproducible enumeration:
 ```bash
 pnpm install --frozen-lockfile
 pnpm licenses:check      # policy gate
-pnpm licenses:report     # human-readable summary
+pnpm licenses:report     # human-readable full inventory
+node scripts/audit-licenses.mjs --report --json
 ```
 
 Policy: `scripts/license-policy.mjs`. Reviewed exceptions:
