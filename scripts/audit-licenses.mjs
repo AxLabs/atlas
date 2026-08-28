@@ -143,7 +143,7 @@ export function summarizeInventory(records) {
       continue;
     }
 
-    summary[record.classification].push(record);
+    summary[record.declaredClassification].push(record);
   }
 
   return summary;
@@ -153,16 +153,33 @@ export function summarizePackages(packages, exceptions) {
   return summarizeInventory(buildInventoryRecords(packages, exceptions));
 }
 
+function formatLicenseRecordLine(record) {
+  const lines = [`  ${record.name}@${record.version}`];
+  lines.push(`    declared=${record.declaredLicense ?? "none"}`);
+  lines.push(`    classification=${record.declaredClassification}`);
+
+  if (record.effectiveLicense != null) {
+    lines.push(`    effective=${record.effectiveLicense}`);
+  }
+
+  if (record.effectiveClassification != null) {
+    lines.push(`    effectiveClassification=${record.effectiveClassification}`);
+  }
+
+  if (record.disposition) {
+    lines.push(`    disposition=${record.disposition}`);
+  }
+
+  return lines.join("\n");
+}
+
 function printReport(records, summary) {
   console.log(
     "Dependency license inventory (supportedArchitectures universe, excluding @atlas/*)\n",
   );
 
   for (const record of records) {
-    const disposition = record.disposition ? ` disposition=${record.disposition}` : "";
-    console.log(
-      `  ${record.name}@${record.version} license=${record.declaredLicense ?? "none"} classification=${record.classification}${disposition}`,
-    );
+    console.log(formatLicenseRecordLine(record));
   }
 
   console.log("");
@@ -170,7 +187,35 @@ function printReport(records, summary) {
   console.log(`  review-required:  ${summary["review-required"].length}`);
   console.log(`  unknown:          ${summary.unknown.length}`);
   console.log(`  disallowed:       ${summary.disallowed.length}`);
-  console.log(`  reviewed except.: ${summary.reviewed.length}`);
+  console.log(`  reviewed/accepted: ${summary.reviewed.length}`);
+}
+
+function printCheckSummary(summary) {
+  console.log("Dependency license audit");
+  console.log(`  allowed: ${summary.allowed.length}`);
+  console.log(`  reviewed/accepted: ${summary.reviewed.length}`);
+  console.log(`  review-required unresolved: ${summary["review-required"].length}`);
+  console.log(`  unknown: ${summary.unknown.length}`);
+  console.log(`  disallowed: ${summary.disallowed.length}`);
+}
+
+function printBlockingRecords(records) {
+  const blocking = records.filter(
+    (record) =>
+      record.declaredClassification === "disallowed" ||
+      (record.declaredClassification === "unknown" && record.disposition !== "accepted") ||
+      (record.declaredClassification === "review-required" && record.disposition !== "accepted"),
+  );
+
+  if (blocking.length === 0) {
+    return;
+  }
+
+  console.error("\nBlocking dependency license records:\n");
+  for (const record of blocking) {
+    console.error(formatLicenseRecordLine(record));
+    console.error("");
+  }
 }
 
 export function buildJsonReport({ root = repoRoot, packages, exceptions, records, summary } = {}) {
@@ -195,7 +240,11 @@ export function buildJsonReport({ root = repoRoot, packages, exceptions, records
       name: record.name,
       version: record.version,
       declaredLicense: record.declaredLicense,
-      classification: record.classification,
+      declaredClassification: record.declaredClassification,
+      ...(record.effectiveLicense != null ? { effectiveLicense: record.effectiveLicense } : {}),
+      ...(record.effectiveClassification != null
+        ? { effectiveClassification: record.effectiveClassification }
+        : {}),
       ...(record.disposition ? { disposition: record.disposition } : {}),
       ...(record.exception ? { exception: record.exception } : {}),
     })),
@@ -251,9 +300,8 @@ function main() {
     return;
   }
 
-  printReport(audit.records, audit.summary);
-
   if (reportOnly) {
+    printReport(audit.records, audit.summary);
     return;
   }
 
@@ -274,6 +322,8 @@ function main() {
   }
 
   if (errors.length > 0) {
+    printCheckSummary(audit.summary);
+    printBlockingRecords(audit.records);
     console.error("\nDependency license check failed:\n");
     for (const error of errors) {
       console.error(`  - ${error}`);
@@ -281,6 +331,7 @@ function main() {
     process.exit(1);
   }
 
+  printCheckSummary(audit.summary);
   console.log("\n✓ Dependency license policy checks passed");
 }
 

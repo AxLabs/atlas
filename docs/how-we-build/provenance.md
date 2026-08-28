@@ -134,7 +134,10 @@ Atlas **does not** copy Base UI implementation source into the repo. Components 
 
 `git ls-files` returns **zero** tracked files matching the binary/static asset extensions checked by
 `pnpm provenance:check` (see `scripts/provenance-audit.mjs`). Reviewed assets may be explicitly
-allowed via [`reviewed-assets.json`](../../reviewed-assets.json) when path and SHA-256 match.
+allowed via [`reviewed-assets.json`](../../reviewed-assets.json) when path and SHA-256 match. The
+`license` field records the reviewed redistribution basis for Atlas-authored or commercial assets;
+it is informational provenance metadata and is **not** interpreted by the dependency license
+classifier (`pnpm licenses:check`).
 
 No `apps/*/public/**` assets are committed. Favicons/icons are not vendored in-repo.
 

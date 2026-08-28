@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isValidIsoDate } from "./license-exceptions.mjs";
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDir, "..");
 
@@ -41,6 +43,8 @@ export const BINARY_EXTENSIONS = [
 ];
 
 const REQUIRED_NOTICE_FILES = ["THIRD_PARTY_NOTICES.md", "docs/how-we-build/provenance.md"];
+
+const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 
 const DELETED_BINARY_GIT_ARGS = [
   "log",
@@ -298,7 +302,7 @@ function sha256File(filePath) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
 
-export function loadReviewedAssets(root = repoRoot) {
+export function loadReviewedAssets(root = defaultRepoRoot) {
   const filePath = path.join(root, "reviewed-assets.json");
   if (!existsSync(filePath)) {
     return {};
@@ -322,6 +326,22 @@ export function validateReviewedAsset(pathKey, entry) {
     }
   }
 
+  if (
+    typeof entry.sha256 === "string" &&
+    entry.sha256.trim().length > 0 &&
+    !SHA256_PATTERN.test(entry.sha256.trim())
+  ) {
+    errors.push(`${pathKey}: sha256 must be exactly 64 hexadecimal characters`);
+  }
+
+  if (
+    typeof entry.reviewedOn === "string" &&
+    entry.reviewedOn.trim().length > 0 &&
+    !isValidIsoDate(entry.reviewedOn)
+  ) {
+    errors.push(`${pathKey}: reviewedOn must be a valid YYYY-MM-DD date`);
+  }
+
   return errors;
 }
 
@@ -335,21 +355,12 @@ function checkRequiredDocumentation(errors, root) {
 
 function checkCommittedBinaryAssets(errors, root) {
   const tracked = gitTrackedFiles(root);
+  const trackedSet = new Set(tracked);
   const reviewedAssets = loadReviewedAssets(root);
   const unreviewed = [];
 
-  for (const file of tracked) {
-    if (!isBinaryPath(file)) {
-      continue;
-    }
-
-    const review = reviewedAssets[file];
-    if (!review) {
-      unreviewed.push(file);
-      continue;
-    }
-
-    const reviewErrors = validateReviewedAsset(file, review);
+  for (const [assetPath, review] of Object.entries(reviewedAssets)) {
+    const reviewErrors = validateReviewedAsset(assetPath, review);
     if (reviewErrors.length > 0) {
       for (const reviewError of reviewErrors) {
         fail(errors, reviewError);
@@ -357,18 +368,33 @@ function checkCommittedBinaryAssets(errors, root) {
       continue;
     }
 
-    const absolutePath = path.join(root, file);
+    if (!trackedSet.has(assetPath)) {
+      fail(errors, `Stale reviewed asset entry for path not tracked at HEAD: ${assetPath}`);
+      continue;
+    }
+
+    const absolutePath = path.join(root, assetPath);
     if (!existsSync(absolutePath)) {
-      fail(errors, `Reviewed asset path does not exist at HEAD: ${file}`);
+      fail(errors, `Reviewed asset path does not exist at HEAD: ${assetPath}`);
       continue;
     }
 
     const actualHash = sha256File(absolutePath);
-    if (actualHash !== review.sha256) {
+    if (actualHash !== review.sha256.toLowerCase()) {
       fail(
         errors,
-        `Reviewed asset hash mismatch for ${file}: expected ${review.sha256}, found ${actualHash}`,
+        `Reviewed asset hash mismatch for ${assetPath}: expected ${review.sha256}, found ${actualHash}`,
       );
+    }
+  }
+
+  for (const file of tracked) {
+    if (!isBinaryPath(file)) {
+      continue;
+    }
+
+    if (!reviewedAssets[file]) {
+      unreviewed.push(file);
     }
   }
 

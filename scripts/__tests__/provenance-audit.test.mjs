@@ -311,11 +311,28 @@ test("reviewed asset validation requires evidence fields", () => {
   assert.ok(errors.some((error) => error.includes("origin")));
 });
 
-test("loadReviewedAssets returns empty map when no assets are reviewed", () => {
-  const root = mkdtempSync(path.join(os.tmpdir(), "atlas-reviewed-assets-"));
-  writeFileSync(path.join(root, "reviewed-assets.json"), '{"assets":{}}\n', "utf8");
-  assert.deepEqual(loadReviewedAssets(root), {});
-  rmSync(root, { recursive: true, force: true });
+test("loadReviewedAssets works without an explicit root", () => {
+  assert.ok(typeof loadReviewedAssets() === "object");
+});
+
+test("reviewed asset validation rejects malformed sha256 and invalid dates", () => {
+  const shaErrors = validateReviewedAsset("assets/logo.svg", {
+    sha256: "not-a-valid-hash",
+    origin: "Atlas-authored",
+    license: "Apache-2.0",
+    reason: "Fixture logo",
+    reviewedOn: "2026-08-28",
+  });
+  assert.ok(shaErrors.some((error) => error.includes("sha256 must be exactly 64 hexadecimal")));
+
+  const dateErrors = validateReviewedAsset("assets/logo.svg", {
+    sha256: "a".repeat(64),
+    origin: "Atlas-authored",
+    license: "Apache-2.0",
+    reason: "Fixture logo",
+    reviewedOn: "2026-02-31",
+  });
+  assert.ok(dateErrors.some((error) => error.includes("reviewedOn must be a valid YYYY-MM-DD date")));
 });
 
 test("findRadixHistory returns non-empty lines from direct git output", () => {

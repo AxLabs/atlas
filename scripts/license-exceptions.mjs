@@ -2,7 +2,7 @@ import { classifyLicenseExpression } from "./license-policy.mjs";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-function isValidReviewedOn(value) {
+export function isValidIsoDate(value) {
   if (typeof value !== "string" || !ISO_DATE_PATTERN.test(value)) {
     return false;
   }
@@ -50,7 +50,7 @@ export function validateExceptionEntry(key, entry, { package: pkg } = {}) {
     errors.push(`${key}: reason must be a non-empty string`);
   }
 
-  if (!isValidReviewedOn(entry.reviewedOn)) {
+  if (!isValidIsoDate(entry.reviewedOn)) {
     errors.push(`${key}: reviewedOn must be a valid YYYY-MM-DD date`);
   }
 
@@ -126,13 +126,14 @@ export function resolvePackageLicenseRecord(pkg, exception, exceptionErrors = []
     name: pkg.name,
     version: pkg.version,
     declaredLicense,
-    classification: declaredClassification,
+    declaredClassification,
   };
 
   if (!exception || exceptionErrors.length > 0) {
     return baseRecord;
   }
 
+  const exceptionSummary = summarizeException(exception);
   const effectiveLicense =
     typeof exception.effectiveLicense === "string" && exception.effectiveLicense.trim().length > 0
       ? exception.effectiveLicense.trim()
@@ -142,8 +143,11 @@ export function resolvePackageLicenseRecord(pkg, exception, exceptionErrors = []
   if (declaredClassification === "disallowed" || effectiveClassification === "disallowed") {
     return {
       ...baseRecord,
-      classification: "disallowed",
-      exception: summarizeException(exception),
+      ...(effectiveLicense !== declaredLicense ? { effectiveLicense } : {}),
+      ...(effectiveClassification !== declaredClassification
+        ? { effectiveClassification }
+        : {}),
+      exception: exceptionSummary,
     };
   }
 
@@ -151,17 +155,20 @@ export function resolvePackageLicenseRecord(pkg, exception, exceptionErrors = []
     if (exception.disposition !== "accepted" || effectiveClassification === "unknown") {
       return {
         ...baseRecord,
-        classification: effectiveClassification === "unknown" ? "unknown" : declaredClassification,
-        exception: summarizeException(exception),
+        ...(effectiveLicense !== declaredLicense ? { effectiveLicense } : {}),
+        ...(effectiveClassification !== declaredClassification
+          ? { effectiveClassification }
+          : {}),
+        exception: exceptionSummary,
       };
     }
 
     return {
       ...baseRecord,
-      declaredLicense: effectiveLicense,
-      classification: effectiveClassification,
+      effectiveLicense,
+      effectiveClassification,
       disposition: "accepted",
-      exception: summarizeException(exception),
+      exception: exceptionSummary,
     };
   }
 
@@ -169,16 +176,14 @@ export function resolvePackageLicenseRecord(pkg, exception, exceptionErrors = []
     if (exception.disposition !== "accepted") {
       return {
         ...baseRecord,
-        classification: "review-required",
-        exception: summarizeException(exception),
+        exception: exceptionSummary,
       };
     }
 
     return {
       ...baseRecord,
-      classification: "allowed",
       disposition: "accepted",
-      exception: summarizeException(exception),
+      exception: exceptionSummary,
     };
   }
 
@@ -186,7 +191,7 @@ export function resolvePackageLicenseRecord(pkg, exception, exceptionErrors = []
     return {
       ...baseRecord,
       disposition: exception.disposition === "accepted" ? "accepted" : undefined,
-      exception: summarizeException(exception),
+      exception: exceptionSummary,
     };
   }
 

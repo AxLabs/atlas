@@ -11,8 +11,11 @@ const NON_REGISTRY_SPEC_PATTERNS = [
   /^file:/i,
   /^link:/i,
   /^workspace:/i,
-  /^https?:\/\/.+\.(?:tgz|tar\.gz|tar\.bz2|tar)(?:\?.*)?$/i,
+  /^https?:\/\//i,
+  /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(?:#.+)?$/,
 ];
+
+const NPM_ALIAS_PATTERN = /^npm:(?:@[^@]+\/[^@]+|[^@]+)@/;
 
 const LOCKFILE_NON_REGISTRY_PATTERNS = [
   /^\s+tarball:\s/i,
@@ -40,7 +43,13 @@ export function isNonRegistryDependencySpec(spec) {
     return false;
   }
 
-  return NON_REGISTRY_SPEC_PATTERNS.some((pattern) => pattern.test(spec.trim()));
+  const trimmed = spec.trim();
+
+  if (NPM_ALIAS_PATTERN.test(trimmed)) {
+    return false;
+  }
+
+  return NON_REGISTRY_SPEC_PATTERNS.some((pattern) => pattern.test(trimmed));
 }
 
 export function discoverWorkspacePackageRoots(repoRoot) {

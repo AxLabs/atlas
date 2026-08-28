@@ -122,6 +122,71 @@ test("provenance check allows reviewed binary asset with matching hash", () => {
   }
 });
 
+test("provenance check fails on stale reviewed asset entry", () => {
+  const fixture = createProvenanceFixture({
+    LICENSE: "Apache License\nVersion 2.0\n",
+    "THIRD_PARTY_NOTICES.md": "# notices\n",
+    "docs/how-we-build/provenance.md": "# provenance\n",
+    "reviewed-assets.json": `${JSON.stringify(
+      {
+        assets: {
+          "apps/web/public/old-logo.png": {
+            sha256: "a".repeat(64),
+            origin: "Atlas-authored",
+            license: "Apache-2.0",
+            reason: "Removed asset",
+            reviewedOn: "2026-08-28",
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "packages/ui/package.json": JSON.stringify({ name: "@atlas/ui", dependencies: {} }),
+  });
+
+  try {
+    const errors = runCurrentTreeProvenanceCheck({ root: fixture.root });
+    assert.ok(errors.some((error) => error.includes("Stale reviewed asset entry")));
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("provenance check fails on reviewed asset hash mismatch", () => {
+  const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+  const fixture = createProvenanceFixture({
+    LICENSE: "Apache License\nVersion 2.0\n",
+    "THIRD_PARTY_NOTICES.md": "# notices\n",
+    "docs/how-we-build/provenance.md": "# provenance\n",
+    "reviewed-assets.json": `${JSON.stringify(
+      {
+        assets: {
+          "apps/web/public/logo.png": {
+            sha256: "b".repeat(64),
+            origin: "Atlas-authored",
+            license: "Apache-2.0",
+            reason: "Fixture logo",
+            reviewedOn: "2026-08-28",
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "packages/ui/package.json": JSON.stringify({ name: "@atlas/ui", dependencies: {} }),
+    "apps/web/public/logo.png": pngBytes,
+  });
+
+  try {
+    const errors = runCurrentTreeProvenanceCheck({ root: fixture.root });
+    assert.ok(errors.some((error) => error.includes("hash mismatch")));
+  } finally {
+    fixture.cleanup();
+  }
+});
+
 test("provenance check fails on stale radix declaration", () => {
   const fixture = createProvenanceFixture({
     LICENSE: "Apache License\nVersion 2.0\n",

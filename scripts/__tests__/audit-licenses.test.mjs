@@ -10,6 +10,7 @@ import {
   enumerateInstalledPackages,
   loadExceptionsFile,
   runLicenseAudit,
+  summarizeInventory,
   summarizePackages,
 } from "../audit-licenses.mjs";
 import {
@@ -267,6 +268,7 @@ test("invalid exception cannot bypass disallowed license policy", () => {
   assert.equal(summary.disallowed.length, 1);
   assert.equal(summary.reviewed.length, 0);
   assert.ok(errors.length > 0);
+  assert.equal(summary.disallowed[0].declaredClassification, "disallowed");
 });
 
 test("unknown plus effective MIT is accepted when properly evidenced", () => {
@@ -283,8 +285,100 @@ test("unknown plus effective MIT is accepted when properly evidenced", () => {
     [],
   );
 
-  assert.equal(record.classification, "allowed");
+  assert.equal(record.declaredLicense, null);
+  assert.equal(record.declaredClassification, "unknown");
+  assert.equal(record.effectiveLicense, "MIT");
+  assert.equal(record.effectiveClassification, "allowed");
   assert.equal(record.disposition, "accepted");
+});
+
+test("review-required MPL keeps declared classification when accepted", () => {
+  const record = resolvePackageLicenseRecord(
+    { name: "axe-core", version: "4.11.0", license: "MPL-2.0" },
+    {
+      status: "reviewed",
+      disposition: "accepted",
+      reason: "Reviewed transitive dependency.",
+      reviewedOn: "2026-08-27",
+    },
+    [],
+  );
+
+  assert.equal(record.declaredLicense, "MPL-2.0");
+  assert.equal(record.declaredClassification, "review-required");
+  assert.equal(record.disposition, "accepted");
+  assert.equal(record.effectiveClassification, undefined);
+});
+
+test("disallowed GPL cannot be rewritten into allowed disposition", () => {
+  const record = resolvePackageLicenseRecord(
+    { name: "blocked-package", version: "1.0.0", license: "GPL-3.0" },
+    {
+      status: "reviewed",
+      disposition: "accepted",
+      reason: "Should not work.",
+      reviewedOn: "2026-08-27",
+    },
+    [],
+  );
+
+  assert.equal(record.declaredClassification, "disallowed");
+  assert.equal(record.disposition, undefined);
+});
+
+test("json report preserves declared and effective license evidence", () => {
+  const packages = [
+    { name: "browser-assert", version: "1.2.1", license: null },
+    { name: "axe-core", version: "4.11.0", license: "MPL-2.0" },
+    { name: "blocked-package", version: "1.0.0", license: "GPL-3.0" },
+  ];
+  const exceptions = {
+    "browser-assert@1.2.1": {
+      status: "reviewed",
+      disposition: "accepted",
+      effectiveLicense: "MIT",
+      source: "node_modules/browser-assert/LICENSE",
+      reason: "MIT per LICENSE file.",
+      reviewedOn: "2026-08-27",
+    },
+    "axe-core@4.11.0": {
+      status: "reviewed",
+      disposition: "accepted",
+      reason: "Reviewed transitive dependency.",
+      reviewedOn: "2026-08-27",
+    },
+  };
+  const records = buildInventoryRecords(packages, exceptions);
+  const summary = summarizeInventory(records);
+  const report = buildJsonReport({ packages, exceptions, records, summary });
+
+  const browserAssert = report.packages.find((pkg) => pkg.name === "browser-assert");
+  assert.deepEqual(browserAssert, {
+    name: "browser-assert",
+    version: "1.2.1",
+    declaredLicense: null,
+    declaredClassification: "unknown",
+    effectiveLicense: "MIT",
+    effectiveClassification: "allowed",
+    disposition: "accepted",
+    exception: {
+      status: "reviewed",
+      reason: "MIT per LICENSE file.",
+      reviewedOn: "2026-08-27",
+      effectiveLicense: "MIT",
+      source: "node_modules/browser-assert/LICENSE",
+      disposition: "accepted",
+    },
+  });
+
+  const axeCore = report.packages.find((pkg) => pkg.name === "axe-core");
+  assert.equal(axeCore.declaredClassification, "review-required");
+  assert.equal(axeCore.disposition, "accepted");
+  assert.equal(axeCore.effectiveClassification, undefined);
+
+  const blocked = report.packages.find((pkg) => pkg.name === "blocked-package");
+  assert.equal(blocked.declaredClassification, "disallowed");
+  assert.equal(blocked.disposition, undefined);
 });
 
 test("runLicenseAudit validates repository license-exceptions.json against installed packages", () => {
@@ -335,7 +429,7 @@ test("json report schema includes stable package records", () => {
 
   assert.equal(report.schemaVersion, "1");
   assert.equal(report.packages.length, 1);
-  assert.equal(report.packages[0].classification, "allowed");
+  assert.equal(report.packages[0].declaredClassification, "allowed");
   assert.equal(report.packages[0].name, "sample");
 });
 
@@ -432,7 +526,7 @@ test("platform-specific optional dependency with disallowed license fails audit"
     assert.ok(
       audit.records.some(
         (record) =>
-          record.name === "@next/swc-darwin-arm64" && record.classification === "disallowed",
+          record.name === "@next/swc-darwin-arm64" && record.declaredClassification === "disallowed",
       ),
     );
   } finally {
