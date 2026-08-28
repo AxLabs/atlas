@@ -1,5 +1,24 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { createRequire } from "node:module";
+import { execSync } from "node:child_process";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const defaultRepoRoot = path.resolve(scriptDir, "..");
+const require = createRequire(import.meta.url);
+
+function loadDependencyValidation() {
+  try {
+    return require("@atlas/cli/dependency-validation");
+  } catch {
+    execSync("pnpm turbo build --filter=@atlas/cli", {
+      cwd: defaultRepoRoot,
+      stdio: "inherit",
+    });
+    return require("@atlas/cli/dependency-validation");
+  }
+}
 
 const NON_REGISTRY_SPEC_PATTERNS = [
   /^git\+/i,
@@ -52,40 +71,75 @@ export function isNonRegistryDependencySpec(spec) {
   return NON_REGISTRY_SPEC_PATTERNS.some((pattern) => pattern.test(trimmed));
 }
 
-export function discoverWorkspacePackageRoots(repoRoot) {
+function listDependencySourceWorkspaceRoots(repoRoot) {
+  const { discoverWorkspaceRoots } = loadDependencyValidation();
+  const workspaceRoots = discoverWorkspaceRoots(repoRoot);
+  const rootPackageJson = path.join(repoRoot, "package.json");
+
+  if (existsSync(rootPackageJson) && !workspaceRoots.includes(".")) {
+    return [".", ...workspaceRoots];
+  }
+
+  return workspaceRoots;
+}
+
+export function collectWorkspaceDiscoveryFindings(repoRoot) {
+  const findings = [];
   const workspaceFile = path.join(repoRoot, "pnpm-workspace.yaml");
-  const workspaceYaml = readFileSync(workspaceFile, "utf8");
-  const packageGlobs = [...workspaceYaml.matchAll(/^\s+-\s+"([^"]+)"/gm)].map(
-    (match) => match[1],
-  );
-  const roots = new Set(["."]);
 
-  for (const glob of packageGlobs) {
-    if (!glob.endsWith("/*")) {
-      roots.add(glob);
-      continue;
-    }
+  if (!existsSync(workspaceFile)) {
+    findings.push({
+      message: "Missing pnpm-workspace.yaml",
+    });
+    return findings;
+  }
 
-    const base = glob.slice(0, -2);
+  const { discoverWorkspaceRoots, readPnpmWorkspacePatterns } = loadDependencyValidation();
+  const { patterns } = readPnpmWorkspacePatterns(workspaceFile);
+  const workspaceRoots = discoverWorkspaceRoots(repoRoot);
+
+  if (patterns.length > 0 && workspaceRoots.length === 0) {
+    findings.push({
+      message: `pnpm-workspace.yaml declares ${patterns.length} package pattern(s) but no workspace roots were discovered`,
+    });
+  }
+
+  for (const base of ["apps", "packages"]) {
     const parent = path.join(repoRoot, base);
     if (!existsSync(parent)) {
       continue;
     }
 
     for (const entry of readdirSync(parent, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        roots.add(path.join(base, entry.name));
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const relativeRoot = `${base}/${entry.name}`;
+      const manifestPath = path.join(parent, entry.name, "package.json");
+      if (existsSync(manifestPath) && !workspaceRoots.includes(relativeRoot)) {
+        findings.push({
+          message: `Workspace package at ${relativeRoot} exists but was not discovered from pnpm-workspace.yaml patterns`,
+        });
       }
     }
   }
 
-  return [...roots].sort();
+  return findings;
 }
 
 export function collectWorkspaceDependencySourceFindings(repoRoot) {
+  const discoveryFindings = collectWorkspaceDiscoveryFindings(repoRoot);
+  if (discoveryFindings.length > 0) {
+    return discoveryFindings.map((finding) => ({
+      kind: "workspace-discovery",
+      ...finding,
+    }));
+  }
+
   const findings = [];
 
-  for (const workspaceRoot of discoverWorkspacePackageRoots(repoRoot)) {
+  for (const workspaceRoot of listDependencySourceWorkspaceRoots(repoRoot)) {
     const pkgPath = path.join(repoRoot, workspaceRoot, "package.json");
     if (!existsSync(pkgPath)) {
       continue;
@@ -101,6 +155,7 @@ export function collectWorkspaceDependencySourceFindings(repoRoot) {
 
         if (isNonRegistryDependencySpec(spec)) {
           findings.push({
+            kind: "workspace",
             workspace: pkg.name ?? workspaceRoot,
             section: sectionName,
             dependency: name,
@@ -113,8 +168,8 @@ export function collectWorkspaceDependencySourceFindings(repoRoot) {
 
   return findings.sort(
     (left, right) =>
-      left.workspace.localeCompare(right.workspace) ||
-      left.dependency.localeCompare(right.dependency),
+      (left.workspace ?? "").localeCompare(right.workspace ?? "") ||
+      (left.dependency ?? "").localeCompare(right.dependency ?? ""),
   );
 }
 
@@ -133,8 +188,8 @@ function isAllowedWorkspaceLockfileLink(line, contextLines) {
 
 export function collectLockfileNonRegistryFindings(repoRoot) {
   const lockPath = path.join(repoRoot, "pnpm-lock.yaml");
-  if (!statSync(lockPath).isFile()) {
-    return [{ line: 0, text: "Missing pnpm-lock.yaml" }];
+  if (!existsSync(lockPath)) {
+    return [{ kind: "lockfile", line: 0, text: "Missing pnpm-lock.yaml" }];
   }
 
   const lines = readFileSync(lockPath, "utf8").split("\n");
@@ -145,17 +200,17 @@ export function collectLockfileNonRegistryFindings(repoRoot) {
     const contextLines = lines.slice(Math.max(0, i - 3), i + 1);
 
     if (LOCKFILE_NON_REGISTRY_PATTERNS.some((pattern) => pattern.test(line))) {
-      findings.push({ line: i + 1, text: line.trim() });
+      findings.push({ kind: "lockfile", line: i + 1, text: line.trim() });
       continue;
     }
 
     if (/^\s+version:\s+link:/.test(line) && !isAllowedWorkspaceLockfileLink(line, contextLines)) {
-      findings.push({ line: i + 1, text: line.trim() });
+      findings.push({ kind: "lockfile", line: i + 1, text: line.trim() });
       continue;
     }
 
     if (/^\s+version:\s+file:/.test(line)) {
-      findings.push({ line: i + 1, text: line.trim() });
+      findings.push({ kind: "lockfile", line: i + 1, text: line.trim() });
     }
   }
 
@@ -163,6 +218,14 @@ export function collectLockfileNonRegistryFindings(repoRoot) {
 }
 
 export function formatDependencySourceFinding(finding) {
+  if (finding.kind === "workspace-discovery" || finding.message) {
+    return finding.message;
+  }
+
+  if (finding.text === "Missing pnpm-lock.yaml") {
+    return finding.text;
+  }
+
   if ("workspace" in finding) {
     return `${finding.workspace} (${finding.section}): ${finding.dependency} declares non-registry source "${finding.spec}"`;
   }
@@ -172,13 +235,7 @@ export function formatDependencySourceFinding(finding) {
 
 export function collectDependencySourceFindings(repoRoot) {
   return [
-    ...collectWorkspaceDependencySourceFindings(repoRoot).map((finding) => ({
-      kind: "workspace",
-      ...finding,
-    })),
-    ...collectLockfileNonRegistryFindings(repoRoot).map((finding) => ({
-      kind: "lockfile",
-      ...finding,
-    })),
+    ...collectWorkspaceDependencySourceFindings(repoRoot),
+    ...collectLockfileNonRegistryFindings(repoRoot),
   ];
 }

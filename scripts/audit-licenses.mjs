@@ -263,7 +263,7 @@ export function runLicenseAudit({ root = repoRoot, reportOnly = false } = {}) {
   const packages = enumerateInstalledPackages(root);
   const packagesByKey = new Map(packages.map((pkg) => [`${pkg.name}@${pkg.version}`, pkg]));
   const exceptions = loadExceptionsFile(root);
-  const exceptionErrors = validateExceptions(exceptions, packagesByKey);
+  const exceptionErrors = validateExceptions(exceptions, packagesByKey, { repoRoot: root });
   const records = buildInventoryRecords(packages, exceptions);
   const summary = summarizeInventory(records);
 

@@ -310,12 +310,13 @@ packages no longer in the audit universe fail `pnpm licenses:check`.
 
 Example snapshot results (replace by re-running the commands above at audit time):
 
-| Status                                    | Count                           |
-| ----------------------------------------- | ------------------------------- |
-| allowed                                   | _(from `pnpm licenses:report`)_ |
-| review-required (reviewed via exceptions) | _(from `pnpm licenses:report`)_ |
-| unknown                                   | 0 expected at HEAD              |
-| disallowed                                | 0 expected at HEAD              |
+| Status                     | Count                           |
+| -------------------------- | ------------------------------- |
+| allowed                    | _(from `pnpm licenses:report`)_ |
+| reviewed/accepted          | _(from `pnpm licenses:report`)_ |
+| review-required unresolved | 0 expected at HEAD              |
+| unknown                    | 0 expected at HEAD              |
+| disallowed                 | 0 expected at HEAD              |
 
 ---
 

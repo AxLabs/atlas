@@ -1,3 +1,6 @@
+import { existsSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
+
 import { classifyLicenseExpression } from "./license-policy.mjs";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -99,11 +102,81 @@ export function validateExceptionEntry(key, entry, { package: pkg } = {}) {
   return errors;
 }
 
-export function validateExceptions(exceptions, packagesByKey) {
+export function validateExceptionEvidenceSource(key, entry, { package: pkg, repoRoot } = {}) {
+  const errors = [];
+  const declaredLicense = pkg?.license ?? null;
+
+  if (!repoRoot || !requiresEffectiveLicenseEvidence(declaredLicense)) {
+    return errors;
+  }
+
+  const source = entry?.source;
+  if (typeof source !== "string" || source.trim().length === 0) {
+    return errors;
+  }
+
+  const trimmed = source.trim();
+  if (path.isAbsolute(trimmed)) {
+    errors.push(`${key}: source must be relative to the repository root`);
+    return errors;
+  }
+
+  const resolved = path.resolve(repoRoot, trimmed);
+  const relativeToRepo = path.relative(repoRoot, resolved);
+  if (relativeToRepo.startsWith("..") || path.isAbsolute(relativeToRepo)) {
+    errors.push(`${key}: source escapes the repository root (${trimmed})`);
+    return errors;
+  }
+
+  let stats;
+  try {
+    stats = statSync(resolved);
+  } catch {
+    errors.push(`${key}: evidence source does not exist (${trimmed})`);
+    return errors;
+  }
+
+  if (!stats.isFile()) {
+    errors.push(`${key}: evidence source is not a readable file (${trimmed})`);
+    return errors;
+  }
+
+  try {
+    readFileSync(resolved);
+  } catch {
+    errors.push(`${key}: evidence source is not readable (${trimmed})`);
+    return errors;
+  }
+
+  if (pkg) {
+    const normalizedSource = trimmed.replace(/\\/g, "/");
+    const expectedPrefix = `node_modules/${pkg.name}/`;
+    if (!normalizedSource.startsWith(expectedPrefix)) {
+      errors.push(
+        `${key}: evidence source must reference installed package material under ${expectedPrefix}`,
+      );
+      return errors;
+    }
+
+    const pkgDir = path.resolve(pkg.path ?? path.join(repoRoot, "node_modules", pkg.name));
+    const relativeToPackage = path.relative(pkgDir, resolved);
+    if (relativeToPackage.startsWith("..") || path.isAbsolute(relativeToPackage)) {
+      errors.push(
+        `${key}: evidence source does not resolve inside installed package directory for ${pkg.name}`,
+      );
+    }
+  }
+
+  return errors;
+}
+
+export function validateExceptions(exceptions, packagesByKey, { repoRoot } = {}) {
   const errors = [];
 
   for (const [key, entry] of Object.entries(exceptions)) {
-    errors.push(...validateExceptionEntry(key, entry, { package: packagesByKey.get(key) }));
+    const pkg = packagesByKey.get(key);
+    errors.push(...validateExceptionEntry(key, entry, { package: pkg }));
+    errors.push(...validateExceptionEvidenceSource(key, entry, { package: pkg, repoRoot }));
   }
 
   for (const key of Object.keys(exceptions)) {

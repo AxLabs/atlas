@@ -27,6 +27,7 @@ import {
   requiresEffectiveLicenseEvidence,
   resolvePackageLicenseRecord,
   validateExceptionEntry,
+  validateExceptionEvidenceSource,
   validateExceptions,
 } from "../license-exceptions.mjs";
 import {
@@ -168,6 +169,153 @@ test("valid missing-license resolution passes validation", () => {
     { package: { license: null } },
   );
   assert.deepEqual(errors, []);
+});
+
+function createEvidenceFixture({ source, packageName = "browser-assert", version = "1.2.1" }) {
+  const root = mkdtempSync(path.join(os.tmpdir(), "atlas-license-evidence-"));
+  const packageDir = path.join(root, "node_modules", packageName);
+  mkdirSync(packageDir, { recursive: true });
+  writeFileSync(
+    path.join(packageDir, "package.json"),
+    `${JSON.stringify({ name: packageName, version, license: null }, null, 2)}\n`,
+    "utf8",
+  );
+
+  if (source) {
+    const evidencePath = path.join(root, source);
+    mkdirSync(path.dirname(evidencePath), { recursive: true });
+    writeFileSync(evidencePath, "MIT License\n", "utf8");
+  }
+
+  return {
+    root,
+    pkg: {
+      name: packageName,
+      version,
+      license: null,
+      path: packageDir,
+    },
+    cleanup: () => rmSync(root, { recursive: true, force: true }),
+  };
+}
+
+test("valid existing evidence file passes filesystem validation", () => {
+  const fixture = createEvidenceFixture({
+    source: "node_modules/browser-assert/LICENSE",
+  });
+
+  try {
+    const errors = validateExceptionEvidenceSource(
+      "browser-assert@1.2.1",
+      {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "node_modules/browser-assert/LICENSE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      { package: fixture.pkg, repoRoot: fixture.root },
+    );
+    assert.deepEqual(errors, []);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("nonexistent evidence file fails filesystem validation", () => {
+  const fixture = createEvidenceFixture({ source: null });
+
+  try {
+    const errors = validateExceptionEvidenceSource(
+      "browser-assert@1.2.1",
+      {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "node_modules/browser-assert/LICENSE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      { package: fixture.pkg, repoRoot: fixture.root },
+    );
+    assert.ok(errors.some((error) => error.includes("does not exist")));
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("typo in evidence filename fails filesystem validation", () => {
+  const fixture = createEvidenceFixture({
+    source: "node_modules/browser-assert/LICENSE",
+  });
+
+  try {
+    const errors = validateExceptionEvidenceSource(
+      "browser-assert@1.2.1",
+      {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "node_modules/browser-assert/LICNESE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      { package: fixture.pkg, repoRoot: fixture.root },
+    );
+    assert.ok(errors.some((error) => error.includes("does not exist")));
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("evidence path escaping repository root fails filesystem validation", () => {
+  const fixture = createEvidenceFixture({
+    source: "node_modules/browser-assert/LICENSE",
+  });
+
+  try {
+    const errors = validateExceptionEvidenceSource(
+      "browser-assert@1.2.1",
+      {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "../../outside/LICENSE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      { package: fixture.pkg, repoRoot: fixture.root },
+    );
+    assert.ok(errors.some((error) => error.includes("escapes the repository root")));
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("unrelated package evidence fails filesystem validation", () => {
+  const fixture = createEvidenceFixture({
+    source: "node_modules/react/LICENSE",
+    packageName: "browser-assert",
+  });
+
+  try {
+    const errors = validateExceptionEvidenceSource(
+      "browser-assert@1.2.1",
+      {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "node_modules/react/LICENSE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      { package: fixture.pkg, repoRoot: fixture.root },
+    );
+    assert.ok(errors.some((error) => error.includes("node_modules/browser-assert/")));
+  } finally {
+    fixture.cleanup();
+  }
 });
 
 test("unknown plus effective GPL remains disallowed", () => {
@@ -404,7 +552,9 @@ test("enumerateInstalledPackages includes non-host platform optional dependencie
 test("repository license-exceptions.json matches installed packages", () => {
   const packages = enumerateInstalledPackages();
   const packagesByKey = new Map(packages.map((pkg) => [`${pkg.name}@${pkg.version}`, pkg]));
-  const errors = validateExceptions(loadExceptionsFile(), packagesByKey);
+  const errors = validateExceptions(loadExceptionsFile(), packagesByKey, {
+    repoRoot: process.cwd(),
+  });
   assert.deepEqual(errors, []);
 });
 
