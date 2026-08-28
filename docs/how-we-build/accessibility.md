@@ -166,12 +166,14 @@ import { Dialog, DialogContent, DialogTrigger } from "@atlas/ui";
 
 ## Component Library
 
-Our UI components (`@atlas/ui`) are built on Radix UI primitives with accessibility built in:
+`@atlas/ui` is shadcn-based. Interactive primitives use Base UI where applicable, while other
+components use native DOM or dependency-specific primitives. Atlas wrappers preserve upstream
+accessibility semantics:
 
-- **Dialog** — Focus trapping, Escape handling
-- **DropdownMenu** — Arrow key navigation
-- **Select** — Keyboard-native behavior
-- **Tooltip** — Screen reader accessible
+- **Dialog** — Base UI focus trapping and Escape handling
+- **DropdownMenu** — Accessible upstream menu primitives with keyboard navigation
+- **Select** — Accessible upstream select primitives with keyboard-native behavior
+- **Tooltip** — Screen reader accessible upstream tooltip behavior
 
 **Use these instead of building custom solutions.**
 

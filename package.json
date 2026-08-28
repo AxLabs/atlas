@@ -49,6 +49,10 @@
     "changeset:status": "changeset status",
     "governance:check": "node scripts/validate-governance.mjs",
     "dependencies:check": "pnpm turbo build --filter=@atlas/cli && node scripts/validate-dependencies.mjs",
+    "licenses:check": "node scripts/audit-licenses.mjs",
+    "licenses:report": "node scripts/audit-licenses.mjs --report",
+    "provenance:check": "node scripts/provenance-audit.mjs",
+    "provenance:history": "node scripts/provenance-audit.mjs --history",
     "agents:check": "node --test scripts/__tests__/agent-discoverability.test.mjs",
     "docs:validate": "pnpm docs:check && pnpm governance:check",
     "release:rehearse": "node scripts/release-rehearse.mjs"
