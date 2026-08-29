@@ -95,14 +95,15 @@ pnpm lint && pnpm typecheck && pnpm test
 
 Also run when your change touches the affected areas:
 
-| Change type                    | Additional commands                     |
-| ------------------------------ | --------------------------------------- |
-| Documentation / Markdown links | `pnpm docs:check`                       |
-| Release governance             | `pnpm governance:check`                 |
-| Formatting                     | `pnpm format` or `pnpm format:write`    |
-| Build-affecting code           | `pnpm build`                            |
-| User-facing flows              | `pnpm --filter @atlas/web test:e2e`     |
-| Shared UI components           | `pnpm --filter @atlas/ui test:coverage` |
+| Change type                    | Additional commands                                      |
+| ------------------------------ | -------------------------------------------------------- |
+| Security / CI workflows        | `pnpm security:check` and `pnpm security:workflow-check` |
+| Documentation / Markdown links | `pnpm docs:check`                                        |
+| Release governance             | `pnpm governance:check`                                  |
+| Formatting                     | `pnpm format` or `pnpm format:write`                     |
+| Build-affecting code           | `pnpm build`                                             |
+| User-facing flows              | `pnpm --filter @atlas/web test:e2e`                      |
+| Shared UI components           | `pnpm --filter @atlas/ui test:coverage`                  |
 
 CI runs internal documentation link checks on every pull request. External URL checks are optional
 locally: `pnpm docs:check --external`.

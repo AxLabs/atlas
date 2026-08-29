@@ -52,6 +52,9 @@ test("referenced agent documentation paths exist", () => {
     "docs/how-we-build/doctor.md",
     "docs/how-we-build/upgrades.md",
     "docs/how-we-build/architecture-ownership.md",
+    "docs/how-we-build/security.md",
+    "docs/security/threat-model.md",
+    "SECURITY.md",
     "docs/adr/0010-atlas-upgrades-downstream-propagation.md",
   ];
 

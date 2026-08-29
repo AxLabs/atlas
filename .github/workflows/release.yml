@@ -10,20 +10,24 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   rehearsal:
     name: Release Rehearsal
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -44,24 +48,69 @@ jobs:
           echo "  Current Atlas line: v${VERSION}"
           echo "  GitHub Release publication remains deferred to issue #24"
 
+  sbom:
+    name: SBOM snapshot
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Generate SPDX SBOM
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: pnpm sbom:generate --output "artifacts/atlas-sbom-${GITHUB_SHA}.spdx.json"
+
+      - name: Validate SBOM JSON
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const file = `artifacts/atlas-sbom-${process.env.GITHUB_SHA}.spdx.json`;
+            const doc = JSON.parse(fs.readFileSync(file, "utf8"));
+            if (!doc.spdxVersion || !Array.isArray(doc.packages) || doc.packages.length === 0) {
+              throw new Error("SBOM is missing SPDX metadata or package records");
+            }
+            console.log(`✓ SBOM valid (${doc.packages.length} packages)`);
+          '
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: atlas-sbom-${{ github.sha }}
+          path: artifacts/atlas-sbom-${{ github.sha }}.spdx.json
+          retention-days: 90
+
   version-pr:
     name: Atlas Version PR
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -71,7 +120,7 @@ jobs:
 
       - name: Create or update Version PR
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
           title: "chore(release): atlas version"
           commit: "chore(release): atlas version"

@@ -7,32 +7,51 @@ on:
     types: [opened, synchronize, reopened]
   schedule:
     - cron: "0 2 * * 1" # Weekly on Monday at 2 AM
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org/
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 10.19.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run pnpm audit
-        run: pnpm audit --audit-level moderate --json || true | jq .
+      - name: Evaluate Atlas vulnerability policy
+        env:
+          ATLAS_SECURITY_AUDIT_DIR: ${{ runner.temp }}/atlas-audit
+        run: pnpm security:check
 
-      - name: Report pnpm audit summary (non-blocking)
-        run: |
-          # Show summary of audit results
-          echo "Security audit completed"
-          pnpm audit --audit-level moderate --json || true | jq '.metadata.vulnerabilities // empty'
+      - name: Validate workflow and tool pinning
+        run: pnpm security:workflow-check
+
+      - name: Prove Gitleaks detects a synthetic secret fixture
+        run: node scripts/gitleaks-fixture.mjs
+
+      - name: Upload raw pnpm audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: atlas-pnpm-audit-${{ github.sha }}
+          path: ${{ runner.temp }}/atlas-audit/pnpm-audit.json
+          if-no-files-found: warn
+          retention-days: 90

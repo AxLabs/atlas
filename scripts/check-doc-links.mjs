@@ -35,13 +35,14 @@ const EXCLUDED_DIR_NAMES = new Set([
   "_archive",
 ]);
 
-const MAINTAINED_ROOT_FILES = new Set(["README.md", "AGENTS.md", "CONTRIBUTING.md"]);
+const MAINTAINED_ROOT_FILES = new Set(["README.md", "AGENTS.md", "CONTRIBUTING.md", "SECURITY.md"]);
 
 const MAINTAINED_DIRECTORIES = [
   path.join("docs", "public"),
   path.join("docs", "how-we-build"),
   path.join("docs", "adr"),
   path.join("docs", "audit"),
+  path.join("docs", "security"),
   path.join(".github"),
 ];
 
@@ -49,9 +50,11 @@ const CANONICAL_PREFIXES = [
   "README.md",
   "AGENTS.md",
   "CONTRIBUTING.md",
+  "SECURITY.md",
   path.join("docs", "public"),
   path.join("docs", "how-we-build"),
   path.join("docs", "adr"),
+  path.join("docs", "security"),
 ];
 
 const MARKDOWN_LINK_RE = /!?\[[^\]]*\]\(([^)]+)\)/g;

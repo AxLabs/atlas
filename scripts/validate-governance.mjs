@@ -163,6 +163,9 @@ function main() {
   assertFileExists(CANONICAL_GOVERNANCE_DOC, "governance documentation");
   assertFileExists("CHANGELOG.md", "changelog");
   assertFileExists("docs/migrations/README.md", "migrations index");
+  assertFileExists("SECURITY.md", "security policy");
+  assertFileExists("docs/security/threat-model.md", "threat model");
+  assertFileExists("docs/how-we-build/security.md", "security engineering documentation");
 
   checkLicenseFile();
   assertLicenseIsApache("package.json");

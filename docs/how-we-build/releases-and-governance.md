@@ -88,16 +88,14 @@ Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v0.1.0`).
 
 A deliberate tagged snapshot at one SemVer version. Intended contents:
 
-| Artifact            | In #19             | Notes                               |
-| ------------------- | ------------------ | ----------------------------------- |
-| Git tag `vX.Y.Z`    | Prepared           | Publication in #24                  |
-| GitHub Release      | **Deferred (#24)** | Not created by current automation   |
-| Root `CHANGELOG.md` | Yes                | Canonical history                   |
-| Migration notes     | When needed        | `docs/migrations/`                  |
-| CI evidence links   | When available     | In release notes when #24 publishes |
-
-Do not claim SBOM or security bundles until
-[#14](https://github.com/blitzcraftlabs/atlas/issues/14).
+| Artifact            | In #19             | Notes                                                  |
+| ------------------- | ------------------ | ------------------------------------------------------ |
+| Git tag `vX.Y.Z`    | Prepared           | Publication in #24                                     |
+| GitHub Release      | **Deferred (#24)** | Not created by current automation                      |
+| Root `CHANGELOG.md` | Yes                | Canonical history                                      |
+| Migration notes     | When needed        | `docs/migrations/`                                     |
+| SPDX SBOM snapshot  | Yes (#14)          | Workflow artifact `atlas-sbom-<sha>`; 90-day retention |
+| CI evidence links   | When available     | In release notes when #24 publishes                    |
 
 ---
 
@@ -235,12 +233,12 @@ products. All workspace packages share one version via a **fixed** changeset gro
 
 ## Related issues
 
-| Issue   | Topic                                       | #19 status                     |
-| ------- | ------------------------------------------- | ------------------------------ |
-| **#24** | Public cutover + GitHub Release publication | Deferred                       |
-| **#14** | Security release artifacts                  | Not claimed                    |
-| **#17** | Upgrade rehearsal programme                 | See [upgrades.md](upgrades.md) |
-| **#27** | Third-party provenance                      | Separate                       |
+| Issue   | Topic                                       | #19 status                       |
+| ------- | ------------------------------------------- | -------------------------------- |
+| **#24** | Public cutover + GitHub Release publication | Deferred                         |
+| **#14** | Security release artifacts                  | SBOM snapshots + blocking policy |
+| **#17** | Upgrade rehearsal programme                 | See [upgrades.md](upgrades.md)   |
+| **#27** | Third-party provenance                      | Separate                         |
 
 ---
 

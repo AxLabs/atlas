@@ -32,6 +32,9 @@ build
 storybook-static
 packages/ui/design-system-screenshots
 
+# Security / SBOM local output
+artifacts
+
 # Misc
 .DS_Store
 *.pem

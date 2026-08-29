@@ -44,6 +44,7 @@ These rules apply to all code in Atlas:
 | [Authorization](authorization.md)                   | Typed permissions, server enforcement, UI gating |
 | [Testing](testing.md)                               | Test setup, patterns, utilities                  |
 | [Continuous Integration](ci.md)                     | CI layout, self-hosted overlay                   |
+| [Security](security.md)                             | Blocking audit, pins, SBOM, runner trust         |
 | [Accessibility](accessibility.md)                   | a11y rules and patterns                          |
 | [Local Dev Composition](local-dev-composition.md)   | Docker Compose patterns (opt-in)                 |
 | [Documentation Policy](documentation-policy.md)     | How we maintain docs                             |

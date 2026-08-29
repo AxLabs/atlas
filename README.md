@@ -27,10 +27,10 @@ pnpm --filter @atlas/reference dev  # http://localhost:3001
 
 ## Documentation
 
-| Audience                                               | Documentation                                                                                               |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| **External** (evaluation, onboarding, architecture)    | **[Public Docs](docs/public/README.md)**                                                                    |
-| **Contributors** (maintainers, clients, collaborators) | [CONTRIBUTING.md](CONTRIBUTING.md), [How We Build](docs/how-we-build/README.md), [ADRs](docs/adr/README.md) |
+| Audience                                               | Documentation                                                                                                                           |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **External** (evaluation, onboarding, architecture)    | **[Public Docs](docs/public/README.md)**                                                                                                |
+| **Contributors** (maintainers, clients, collaborators) | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [How We Build](docs/how-we-build/README.md), [ADRs](docs/adr/README.md) |
 
 ### Public Documentation
 

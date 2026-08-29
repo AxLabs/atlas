@@ -79,24 +79,28 @@ global.URL = class URL {
 
 // Mock Next.js headers for API route tests
 const cookieStore = new Map();
+const cookieSetMock = jest.fn((name, value) => {
+  cookieStore.set(name, value);
+});
+const cookieGetMock = jest.fn((name) => {
+  const value = cookieStore.get(name);
+  return value !== undefined && value !== "" ? { name, value } : undefined;
+});
 
 jest.mock("next/headers", () => ({
   headers: jest.fn(() => ({
     get: jest.fn(),
   })),
   cookies: jest.fn(async () => ({
-    get: jest.fn((name) => {
-      const value = cookieStore.get(name);
-      return value ? { name, value } : undefined;
-    }),
-    set: jest.fn((name, value) => {
-      cookieStore.set(name, value);
-    }),
+    get: cookieGetMock,
+    set: cookieSetMock,
   })),
 }));
 
 beforeEach(() => {
   cookieStore.clear();
+  cookieSetMock.mockClear();
+  cookieGetMock.mockClear();
 });
 
 // Mock Next.js navigation
