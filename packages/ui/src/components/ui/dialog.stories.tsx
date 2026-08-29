@@ -12,6 +12,8 @@ import {
 import { Input } from "./input";
 import { Label } from "./label";
 
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Dialog> = {
@@ -102,4 +104,33 @@ export const WithCustomClose: Story = {
       </DialogContent>
     </Dialog>
   ),
+};
+
+export const KeyboardInteraction: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Dialog>
+      <DialogTrigger render={<Button variant="outline" />}>Open Dialog</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Keyboard dialog</DialogTitle>
+          <DialogDescription>
+            Opens from the trigger, receives focus, and closes with Escape.
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Open Dialog" });
+
+    trigger.focus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeVisible());
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+  },
 };

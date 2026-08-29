@@ -283,6 +283,23 @@ HIGH-risk subsystem below threshold exits non-zero (`pnpm test:scripts`).
 Full failure-mode table: [testing-risk-matrix.md](testing-risk-matrix.md). Auth/session tests
 intersect [security.md](security.md); do not duplicate the threat model.
 
+## Storybook UI quality (issue #16)
+
+Storybook complements Jest and application E2E — it does not replace them.
+
+| Layer                        | Command                                                | Scope                     |
+| ---------------------------- | ------------------------------------------------------ | ------------------------- |
+| Storybook build              | `pnpm --filter @atlas/ui build-storybook`              | Every story compiles      |
+| Interaction + axe            | `pnpm --filter @atlas/ui test:storybook`               | `critical`-tagged stories |
+| Cross-browser keyboard/focus | `pnpm --filter @atlas/ui test:storybook:cross-browser` | Chromium + WebKit         |
+| Visual regression            | `pnpm --filter @atlas/ui test:visual`                  | Chromium pixel baselines  |
+
+CI runs these in the **UI Quality** workflow on `ubuntu-latest` with path filtering for
+`packages/ui/**` and related shared config. Pixel baselines are Chromium-only; WebKit is exercised
+for interaction, not screenshots.
+
+Details: `packages/ui/.storybook/README.md`.
+
 ## Browser and viewport policy
 
 Required CI Playwright projects: **Chromium** and **WebKit**. Firefox is not a required CI browser.

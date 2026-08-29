@@ -179,9 +179,38 @@ semantics:
 
 ## Testing Accessibility
 
-### Manual Keyboard Test
+Atlas uses **layered** accessibility verification. None of these layers alone proves WCAG
+certification.
 
-Before submitting a PR:
+| Layer                              | What it catches                             | CI gate                                                             |
+| ---------------------------------- | ------------------------------------------- | ------------------------------------------------------------------- |
+| ESLint `jsx-a11y`                  | Common markup mistakes in app code          | `pnpm lint`                                                         |
+| Storybook axe (`critical` stories) | Representative composition violations       | `pnpm --filter @atlas/ui test:storybook`                            |
+| Storybook interactions             | Keyboard/focus seams on critical primitives | `pnpm --filter @atlas/ui test:storybook` + cross-browser Playwright |
+| Jest / RTL                         | Form association, owned wrappers            | `pnpm test:risk-coverage`                                           |
+| Manual checklist (below)           | Screen reader, zoom, contrast review        | PR review for complex UI                                            |
+
+### Manual checklist
+
+Use this checklist when shipping a **new complex component**, a **material interaction change**, or
+a **major design-system release**:
+
+1. Keyboard-only navigation through the full flow
+2. Visible focus on every interactive control
+3. Logical focus order and focus restoration after dialogs/menus
+4. Screen-reader accessible names and state announcements
+5. Form labels, errors, and `aria-invalid` / `aria-describedby` wiring
+6. Dialog/modal escape and focus trap behavior
+7. Zoom/reflow at 200% without loss of content or controls
+8. Reduced-motion behavior where animations communicate state
+9. Touch target size on mobile layouts (reference 390×844)
+10. Light and dark contrast review for text and controls
+
+This is guidance for human review, not a certification checklist.
+
+### Manual keyboard smoke test
+
+Before submitting a PR with interaction changes:
 
 1. Tab through all interactive elements
 2. Verify focus is visible
@@ -189,14 +218,12 @@ Before submitting a PR:
 4. Test Escape on modals/menus
 5. Test Arrow keys in menus
 
-### Storybook a11y Addon
+### Storybook automation
 
-The Accessibility tab in Storybook shows:
+Representative `critical` Storybook compositions are checked with axe and interaction tests in the
+**UI Quality** workflow. See `packages/ui/.storybook/README.md`.
 
-- Color contrast issues
-- Missing labels
-- Invalid ARIA
-- Keyboard issues
+The Storybook Accessibility addon tab remains useful for local exploration but is not the CI gate.
 
 ### Screen Reader Testing (Optional)
 

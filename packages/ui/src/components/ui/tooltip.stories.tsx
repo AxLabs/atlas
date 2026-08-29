@@ -1,6 +1,9 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import type { Meta, StoryObj } from "@storybook/react";
+import * as React from "react";
 
 const triggerButtonStyle = {
   padding: "8px 16px",
@@ -80,4 +83,31 @@ export const WithSide: Story = {
       </Tooltip>
     </div>
   ),
+};
+
+export const KeyboardAccessibility: Story = {
+  tags: ["critical"],
+  render: () => {
+    function TooltipKeyboardDemo() {
+      const [open, setOpen] = React.useState(true);
+
+      return (
+        <Tooltip open={open} onOpenChange={setOpen}>
+          <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+            Show tooltip
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Keyboard accessible tooltip</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return <TooltipKeyboardDemo />;
+  },
+  play: async () => {
+    await screen.findByRole("tooltip");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+  },
 };

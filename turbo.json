@@ -45,6 +45,18 @@
       "dependsOn": ["^build"],
       "outputs": ["storybook-static/**"]
     },
+    "test:storybook": {
+      "dependsOn": ["build-storybook"],
+      "outputs": []
+    },
+    "test:storybook:cross-browser": {
+      "dependsOn": ["build-storybook"],
+      "outputs": ["playwright-report-storybook/**", "test-results/**"]
+    },
+    "test:visual": {
+      "dependsOn": ["build-storybook"],
+      "outputs": ["visual-tests/__snapshots__/**", "playwright-report-visual/**", "test-results/**"]
+    },
     "clean": {
       "cache": false
     }

@@ -88,16 +88,32 @@ export const NoFiles: Story = {
 };
 
 export const WithImage: Story = {
+  parameters: {
+    a11y: {
+      // Decorative illustration only; alt text is intentionally empty.
+      config: {
+        rules: [{ id: "image-alt", enabled: false }],
+      },
+    },
+  },
   render: () => (
     <div style={{ width: "500px" }}>
       <Empty>
         <EmptyHeader>
           <EmptyMedia>
-            <img
-              src="https://illustrations.popsy.co/gray/crashed-error.svg"
-              alt="No data"
-              className="h-32 w-32"
-            />
+            <svg
+              viewBox="0 0 120 120"
+              aria-hidden="true"
+              className="text-muted-foreground h-32 w-32"
+            >
+              <circle cx="60" cy="60" r="48" fill="currentColor" opacity="0.15" />
+              <path
+                d="M40 78h40M48 52h24"
+                stroke="currentColor"
+                strokeWidth="6"
+                strokeLinecap="round"
+              />
+            </svg>
           </EmptyMedia>
           <EmptyTitle>No data available</EmptyTitle>
           <EmptyDescription>

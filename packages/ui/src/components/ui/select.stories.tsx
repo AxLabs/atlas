@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "./select";
 
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
 const frameworks = [
@@ -126,4 +128,38 @@ export const WithLabel: Story = {
       </Select>
     </div>
   ),
+};
+
+export const KeyboardInteraction: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Select defaultValue="next" items={frameworks}>
+      <SelectTrigger className="w-[180px]" aria-label="Framework">
+        <SelectValue placeholder="Select a framework" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {frameworks.map((framework) => (
+            <SelectItem key={framework.value} value={framework.value}>
+              {framework.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("combobox", { name: "Framework" });
+
+    await userEvent.click(trigger);
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeVisible());
+
+    await userEvent.keyboard("{ArrowDown}");
+    await userEvent.keyboard("{Enter}");
+    await expect(trigger).toHaveTextContent("React");
+
+    await userEvent.keyboard("{Escape}");
+    await expect(trigger).toHaveFocus();
+  },
 };

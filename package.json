@@ -36,6 +36,7 @@
     "atlas": "pnpm exec atlas",
     "validate:env": "pnpm --filter @atlas/web validate:env && pnpm --filter @atlas/reference validate:env",
     "storybook": "pnpm --filter @atlas/ui storybook",
+    "storybook:build": "pnpm --filter @atlas/ui build-storybook",
     "perf:lhci": "pnpm --filter @atlas/web perf:lhci",
     "perf:analyze": "pnpm --filter @atlas/web perf:analyze",
     "perf:enable": "node tools/perf/enable.js",

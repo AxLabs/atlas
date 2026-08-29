@@ -29,6 +29,8 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
 const triggerButtonClassName =
@@ -200,4 +202,32 @@ export const Default: Story = {
       </DropdownMenu>
     </div>
   ),
+};
+
+export const KeyboardInteraction: Story = {
+  tags: ["critical"],
+  render: () => (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger render={<button type="button" className={triggerButtonClassName} />}>
+        Open menu
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem>Profile</DropdownMenuItem>
+        <DropdownMenuItem>Settings</DropdownMenuItem>
+        <DropdownMenuItem>Logout</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = await canvas.findByRole("button", { name: "Open menu" });
+
+    await userEvent.click(trigger);
+    await screen.findByRole("menu");
+
+    await userEvent.keyboard("{ArrowDown}");
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+  },
 };

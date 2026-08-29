@@ -15,6 +15,8 @@ import {
 } from "./form";
 import { Input } from "./input";
 
+import { expect, waitFor, within } from "@storybook/test";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Form> = {
@@ -174,5 +176,54 @@ function ErrorFormDemo() {
 }
 
 export const WithError: Story = {
+  tags: ["critical"],
   render: () => <ErrorFormDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const password = canvas.getByLabelText("Password");
+
+    await waitFor(() => expect(password).toHaveAttribute("aria-invalid", "true"));
+    await expect(password).toHaveAccessibleDescription(/at least 8 characters/i);
+    await expect(canvas.getByRole("alert")).toBeVisible();
+  },
+};
+
+const disabledSchema = z.object({
+  email: z.string().email(),
+});
+
+function DisabledFieldDemo() {
+  const form = useForm<z.infer<typeof disabledSchema>>({
+    resolver: zodResolver(disabledSchema),
+    defaultValues: {
+      email: "disabled@example.com",
+    },
+    disabled: true,
+  });
+
+  return (
+    <Form {...form}>
+      <form className="space-y-4" style={{ width: "300px" }}>
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
+              </FormControl>
+              <FormDescription>Disabled field example.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </form>
+    </Form>
+  );
+}
+
+export const DisabledField: Story = {
+  tags: ["critical"],
+  render: () => <DisabledFieldDemo />,
 };
