@@ -53,13 +53,51 @@ function countHits(values) {
   return { covered, total };
 }
 
-export function summarizeFileCoverage(fileCoverage) {
-  const statements = countHits(Object.values(fileCoverage.s ?? {}));
-  const functions = countHits(Object.values(fileCoverage.f ?? {}));
-  const branches = countHits(Object.values(fileCoverage.b ?? {}));
-  const lines = fileCoverage.l
-    ? countHits(Object.values(fileCoverage.l))
-    : statements;
+function assertCoverageField(value, fieldName, filePath) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`Malformed Istanbul coverage for ${filePath}: ${fieldName} must be an object`);
+  }
+}
+
+function assertValidStatementLine(statementId, location, filePath) {
+  if (
+    !location?.start ||
+    !Number.isInteger(location.start.line) ||
+    location.start.line < 1
+  ) {
+    throw new Error(
+      `Malformed Istanbul coverage for ${filePath}: statement ${statementId} has no valid statementMap entry`
+    );
+  }
+}
+
+function getLineHits(fileCoverage, filePath) {
+  assertCoverageField(fileCoverage.statementMap, "statementMap", filePath);
+
+  const lineHits = new Map();
+  for (const [statementId, hits] of Object.entries(fileCoverage.s)) {
+    const location = fileCoverage.statementMap[statementId];
+    assertValidStatementLine(statementId, location, filePath);
+
+    const line = location.start.line;
+    const previous = lineHits.get(line) ?? 0;
+    lineHits.set(line, Math.max(previous, hits));
+  }
+
+  return [...lineHits.values()];
+}
+
+export function summarizeFileCoverage(fileCoverage, filePath = "<unknown>") {
+  assertCoverageField(fileCoverage, "file coverage", filePath);
+  assertCoverageField(fileCoverage.s, "s", filePath);
+  assertCoverageField(fileCoverage.f, "f", filePath);
+  assertCoverageField(fileCoverage.b, "b", filePath);
+
+  const statements = countHits(Object.values(fileCoverage.s));
+  const functions = countHits(Object.values(fileCoverage.f));
+  const branches = countHits(Object.values(fileCoverage.b));
+  const lines = countHits(getLineHits(fileCoverage, filePath));
+
   return { statements, functions, branches, lines };
 }
 
@@ -112,7 +150,19 @@ export function evaluateSubsystem(subsystem, report) {
     if (!subsystem.include || !matchesAny(filePath, subsystem.include)) {
       continue;
     }
-    matched.push({ filePath, summary: summarizeFileCoverage(fileCoverage) });
+    try {
+      matched.push({ filePath, summary: summarizeFileCoverage(fileCoverage, filePath) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        id: subsystem.id,
+        ok: false,
+        reason: "malformed-coverage",
+        matchedFiles: matched.length,
+        percents: {},
+        failures: [message],
+      };
+    }
   }
 
   if (matched.length === 0) {

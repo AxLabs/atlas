@@ -346,7 +346,7 @@ test.describe("API recovery, flags, and consent traffic", () => {
     });
   });
 
-  test("network failure surfaces a user-visible error on users list", async ({ page }) => {
+  test("API 500 surfaces a user-visible error on users list", async ({ page }) => {
     await page.goto("/harness");
     await page.getByRole("button", { name: "reference-user" }).click();
     await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
