@@ -222,23 +222,25 @@ jobs:
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm typecheck
 
-      - name: Run unit tests
+      - name: Run unit and integration tests
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: pnpm test
         env:
           CI: true
 
-      - name: Run @atlas/ui Jest coverage thresholds
+      - name: Enforce critical subsystem coverage
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm --filter @atlas/ui test:coverage
+        run: pnpm test:risk-coverage
         env:
           CI: true
 
-      - name: Upload coverage
+      - name: Upload coverage report to Codecov
         if: success() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
-          files: ./packages/ui/coverage/coverage-final.json
+          files: |
+            ./packages/ui/coverage/coverage-final.json
+            ./apps/web/coverage/coverage-final.json
           fail_ci_if_error: false
 
       - name: Skip application checks (docs-only change)
@@ -258,8 +260,8 @@ jobs:
           (steps.detect.outputs.app == 'true' || github.event_name == 'push') &&
           env.ATLAS_CI_USE_SELF_HOSTED != 'true'
         run: |
-          pnpm --filter @atlas/web exec playwright install --with-deps chromium
-          pnpm --filter @atlas/reference exec playwright install --with-deps chromium
+          pnpm --filter @atlas/web exec playwright install --with-deps chromium webkit
+          pnpm --filter @atlas/reference exec playwright install --with-deps chromium webkit
 
       - name: Run E2E tests
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'

@@ -24,7 +24,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "jest",
-    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=lcov",
+    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=json",
     "test:watch": "jest --watch",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

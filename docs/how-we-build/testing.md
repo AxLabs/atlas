@@ -252,23 +252,86 @@ await screen.findByText("Welcome");
 await user.click(button);
 ```
 
+## Risk-based coverage
+
+Atlas does **not** aim for repository-wide 80% coverage. Critical owned subsystems must not regress:
+
+```bash
+pnpm test:risk-coverage
+```
+
+That command collects Jest coverage for `@atlas/web` and `@atlas/ui`, then evaluates
+[`coverage-policy.json`](../../coverage-policy.json) via `scripts/coverage-policy.mjs`. Missing
+reports, missing subsystems, zero matched files, or a metric below the floor fail the gate.
+
+Suggested floors (do not lower them just to make CI green):
+
+| Subsystem                | statements/lines | branches | functions |
+| ------------------------ | ---------------- | -------- | --------- |
+| web auth, web API        | ≥ 85%            | ≥ 75%    | ≥ 85%     |
+| UI forms, owned UI logic | ≥ 80%            | ≥ 70%    | ≥ 80%     |
+
+Update floors in `coverage-policy.json` only with an explicit residual-risk note in
+[testing-risk-matrix.md](testing-risk-matrix.md).
+
+Codecov upload is **reporting**. Local CI already enforced the floors. `fail_ci_if_error: false` on
+the Codecov step must not be treated as the coverage policy.
+
+The failure fixture `scripts/__fixtures__/coverage-policy/below-threshold-web-api.json` proves a
+HIGH-risk subsystem below threshold exits non-zero (`pnpm test:scripts`).
+
+Full failure-mode table: [testing-risk-matrix.md](testing-risk-matrix.md). Auth/session tests
+intersect [security.md](security.md); do not duplicate the threat model.
+
+## Browser and viewport policy
+
+Required CI Playwright projects: **Chromium** and **WebKit**. Firefox is not a required CI browser.
+
+Critical navigation is covered at desktop width and one agreed narrow viewport (**390×844**) in the
+reference suite. Do not duplicate the entire E2E matrix per viewport.
+
+## Flake policy
+
+| Suite                 | Retries            | Flake handling                                                     |
+| --------------------- | ------------------ | ------------------------------------------------------------------ |
+| Jest unit/integration | None               | Fail the job                                                       |
+| Playwright            | `retries: 2` on CI | `failOnFlakyTests: true` on CI so a retry-pass still fails the run |
+
+A flaky test is one that both fails and passes in the same CI invocation (Playwright `flaky`
+status). Reproduce locally with `--repeat-each=10` on the named spec. Quarantine requires a linked
+GitHub issue, owner, and expiry. Do not use permanent `test.skip()` as a flake strategy.
+
+## Runtime expectations
+
+Keep PR suites practical. Prefer fake timers and Playwright routing over real sleeps or live
+vendors. If one area becomes disproportionately expensive, change topology (narrower specs,
+parallelism where deterministic) rather than deleting risk coverage.
+
 ## Running Tests
 
 ```bash
-# All tests
+# All workspace Jest tests + script tests
 pnpm test
+
+# Script tests only (includes coverage-policy fixtures)
+pnpm test:scripts
+
+# Critical subsystem coverage gate
+pnpm test:risk-coverage
 
 # Watch mode
 pnpm test:watch
 
-# With coverage
-pnpm test:coverage
+# Package coverage (feeds the gate)
+pnpm --filter @atlas/web test:coverage
+pnpm --filter @atlas/ui test:coverage
 
 # Specific file
 pnpm test src/features/users/UserList.test.tsx
 
-# E2E tests
-pnpm test:e2e
+# E2E (Chromium + WebKit)
+pnpm --filter @atlas/web test:e2e
+pnpm --filter @atlas/reference test:e2e
 ```
 
 ## Troubleshooting

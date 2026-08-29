@@ -13,12 +13,12 @@ pull_request / push to main
   └── Security Audit     (blocking Atlas vulnerability policy + workflow pins)
 ```
 
-| Job                | When it runs                                                        | What it does                                                                                  |
-| ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **Governance**     | Always                                                              | License, provenance, and dependency-ownership gates                                           |
-| **CI**             | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, build, E2E |
-| **Secrets Scan**   | Always                                                              | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                    |
-| **Security Audit** | Always (also weekly cron)                                           | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                      |
+| Job                | When it runs                                                        | What it does                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Governance**     | Always                                                              | License, provenance, and dependency-ownership gates                                                                                                 |
+| **CI**             | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, `test:risk-coverage`, Codecov report, build, Chromium+WebKit E2E |
+| **Secrets Scan**   | Always                                                              | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                          |
+| **Security Audit** | Always (also weekly cron)                                           | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                            |
 
 **Docs-only PRs** still run Node setup and `pnpm docs:check` (via
 `node scripts/check-doc-links.mjs`). They skip install, lint, typecheck, tests, build, and E2E after
@@ -34,9 +34,10 @@ Run the same checks before opening a PR:
 pnpm install --frozen-lockfile
 pnpm docs:check
 pnpm validate:env
-pnpm format && pnpm lint && pnpm typecheck && pnpm test
+pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm test:risk-coverage
 pnpm build
 pnpm --filter @atlas/web test:e2e
+pnpm --filter @atlas/reference test:e2e
 ```
 
 Minimum bar (matches `CONTRIBUTING.md`):
@@ -86,17 +87,19 @@ self-hosted-runner boundary. Fork pull requests (`head.repo.full_name != github.
 run on GitHub-hosted runners, even when `ATLAS_CI_RUNNER_PROFILE=self-hosted`. Atlas does not use
 `pull_request_target` to execute untrusted PR code.
 
-Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium
-system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot elevate for
-`playwright install --with-deps`). Web and reference suites run sequentially in one container to
-reduce runner disk pressure. Installs on self-hosted runners materialize host-only optional
-dependencies (`linux`/`x64` override); the Governance job on `ubuntu-latest` still installs the full
-Atlas-supported architecture set for deterministic license auditing. The container runs as the host
-runner user (`--user "$(id -u):$(id -g)"`) so Playwright and Next.js artifacts written through the
-bind-mounted workspace are not owned by root. pnpm is invoked via `corepack pnpm` from the
-repository root so Corepack honors the repo's `packageManager` field without `corepack enable`.
-Playwright's dev server command uses `corepack pnpm dev` so the webServer subprocess can resolve
-pnpm inside the container. Ensure Docker is installed and the runner user can run containers.
+Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium and
+WebKit system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot
+elevate for `playwright install --with-deps`). GitHub-hosted CI installs both required browsers
+explicitly. Playwright configs define the same projects locally and in CI. Web and reference suites
+run sequentially in one container to reduce runner disk pressure. Installs on self-hosted runners
+materialize host-only optional dependencies (`linux`/`x64` override); the Governance job on
+`ubuntu-latest` still installs the full Atlas-supported architecture set for deterministic license
+auditing. The container runs as the host runner user (`--user "$(id -u):$(id -g)"`) so Playwright
+and Next.js artifacts written through the bind-mounted workspace are not owned by root. pnpm is
+invoked via `corepack pnpm` from the repository root so Corepack honors the repo's `packageManager`
+field without `corepack enable`. Playwright's dev server command uses `corepack pnpm dev` so the
+webServer subprocess can resolve pnpm inside the container. Ensure Docker is installed and the
+runner user can run containers.
 
 The **CI** job uses `runs-on: [self-hosted, ci]`, a single isolated per-run checkout subdirectory
 under `${{ github.workspace }}` (so a poisoned default workdir does not block `actions/checkout`),

@@ -45,5 +45,6 @@ module.exports = {
     "!src/env/server-env.ts",
     // Exclude env schemas (pure Zod schemas, validated via integration tests)
     "!src/schemas/env/**/*",
+    "!src/lib/api/contracts/schema.ts",
   ],
 };

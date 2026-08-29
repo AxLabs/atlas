@@ -1,0 +1,16 @@
+{
+  "/repo/apps/web/src/lib/api/client.ts": {
+    "path": "/repo/apps/web/src/lib/api/client.ts",
+    "s": { "0": 1, "1": 1, "2": 1, "3": 1 },
+    "f": { "0": 1, "1": 1 },
+    "b": { "0": [1, 1], "1": [1, 0] },
+    "l": { "1": 1, "2": 1, "3": 1, "4": 1 }
+  },
+  "/repo/apps/web/src/lib/auth/session.ts": {
+    "path": "/repo/apps/web/src/lib/auth/session.ts",
+    "s": { "0": 1, "1": 1, "2": 1, "3": 1 },
+    "f": { "0": 1, "1": 1 },
+    "b": { "0": [1, 1], "1": [1, 1] },
+    "l": { "1": 1, "2": 1, "3": 1, "4": 1 }
+  }
+}

@@ -97,7 +97,10 @@ test.describe("Reference application", () => {
 
     await page.goto("/");
     await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page.getByRole("dialog").getByRole("link", { name: "Users" }).click();
+    await page
+      .getByRole("navigation", { name: "Reference application" })
+      .getByRole("link", { name: "Users" })
+      .click();
 
     await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
     await expect(page.getByRole("link", { name: "Reference User", exact: true })).toBeVisible();
@@ -215,7 +218,13 @@ test.describe("Reference application", () => {
     await page.getByRole("button", { name: "server-error" }).click();
 
     await page.goto("/platform");
+    await expect(
+      page.getByRole("heading", { name: "Platform diagnostics", level: 1 })
+    ).toBeVisible();
     await page.getByRole("button", { name: "Trigger controlled failure" }).click();
+    await expect(page.getByRole("button", { name: "Trigger controlled failure" })).toBeEnabled({
+      timeout: 15000,
+    });
     await expect(page.getByText(/Correlation ID:/i)).toBeVisible({ timeout: 10000 });
   });
 
@@ -228,11 +237,17 @@ test.describe("Reference application", () => {
 
     await page.goto("/");
     await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page.getByRole("dialog").getByRole("link", { name: "Settings" }).click();
+    await page
+      .getByRole("navigation", { name: "Reference application" })
+      .getByRole("link", { name: "Settings" })
+      .click();
     await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
 
     await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page.getByRole("dialog").getByRole("link", { name: "Platform" }).click();
+    await page
+      .getByRole("navigation", { name: "Reference application" })
+      .getByRole("link", { name: "Platform" })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Platform diagnostics", level: 1 })
     ).toBeVisible();
@@ -301,5 +316,100 @@ test.describe("Authorization", () => {
 
     await page.goto("/users");
     await expect(page.getByRole("link", { name: "New user" })).toBeVisible();
+  });
+});
+
+test.describe("API recovery, flags, and consent traffic", () => {
+  test("users list recovers after server-error via retry", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "server-error" }).click();
+    await expect(page.getByText(/Scenario set to server-error/)).toBeVisible();
+
+    await page.goto("/users");
+    await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
+
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "success" }).click();
+    await expect(page.getByText(/Scenario set to success/)).toBeVisible();
+
+    await page.goto("/users");
+    const tryAgain = page.getByRole("button", { name: "Try again" });
+    if (await tryAgain.isVisible()) {
+      await tryAgain.click();
+    }
+    await expect(page.getByRole("cell", { name: "Reference User", exact: true })).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("network failure surfaces a user-visible error on users list", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-user" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "success" }).click();
+
+    await page.route("**/api/users", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({
+            error: {
+              code: "INTERNAL_ERROR",
+              message: "Simulated outage",
+              userMessage: "The users service is unavailable.",
+            },
+          }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.goto("/users");
+    await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
+  });
+
+  test("create-user form shows client validation before submit", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-admin" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "success" }).click();
+
+    await page.goto("/users/new");
+    await page.getByLabel("Email").fill("not-an-email");
+    await page.getByRole("button", { name: "Create user" }).click();
+    await expect(page.getByText("Enter a valid email address")).toBeVisible();
+  });
+
+  test("example feature flag shows export and kill switch disables it", async ({ page }) => {
+    await page.goto("/harness");
+    await page.getByRole("button", { name: "reference-admin" }).click();
+    await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+    await page.getByRole("button", { name: "success" }).click();
+
+    await page.goto("/users?ff_example_feature=1");
+    await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
+
+    await page.goto("/users?ff_example_feature=1&ff_kill_example_feature=1");
+    await expect(page.getByRole("button", { name: "Export (killed)" })).toBeVisible();
+  });
+
+  test("does not release analytics traffic before consent", async ({ page }) => {
+    const analyticsHits: string[] = [];
+    page.on("request", (request) => {
+      const url = request.url();
+      if (/google-analytics|googletagmanager|posthog/i.test(url)) {
+        analyticsHits.push(url);
+      }
+    });
+
+    await page.goto("/");
+    await expect(page.getByText("Sign in required")).toBeVisible();
+    expect(analyticsHits).toEqual([]);
   });
 });

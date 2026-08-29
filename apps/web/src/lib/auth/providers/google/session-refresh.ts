@@ -13,7 +13,12 @@ import "server-only";
 import { getServerConfig } from "@/config/server";
 import { enrichSessionResponse } from "@/lib/application/authz";
 
-import { createSessionCookie, needsRefresh, readSession } from "../../session";
+import {
+  createSessionCookie,
+  destroySessionCookie,
+  needsRefresh,
+  readSession,
+} from "../../session";
 import { refreshAccessToken } from "../google";
 
 import type { SessionData, SessionResponse } from "../../types";
@@ -76,7 +81,11 @@ export async function readGoogleSessionWithRefresh(): Promise<SessionData | null
     try {
       return await refreshGoogleSession(session);
     } catch {
-      // Refresh failed - session may still be valid for a bit
+      const now = Math.floor(Date.now() / 1000);
+      if (session.accessTokenExpiresAt <= now) {
+        await destroySessionCookie();
+        return null;
+      }
       return session;
     }
   }

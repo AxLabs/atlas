@@ -149,9 +149,9 @@ or GitHub Release publication before #24.
 
 ## Residual programmes
 
-| Issue | Residual                                                              |
-| ----- | --------------------------------------------------------------------- |
-| #12   | Broader risk-based testing (this issue only adds auth negative paths) |
-| #18   | Independent review / operational runbooks                             |
-| #20   | Formal certification claims remain out of scope                       |
-| #24   | Public repo cutover, GitHub Release publication, ruleset reproduction |
+| Issue | Residual                                                                                             |
+| ----- | ---------------------------------------------------------------------------------------------------- |
+| #12   | Risk-based testing programme (auth gaps beyond #14, API client, forms, E2E browsers, coverage gates) |
+| #18   | Independent review / operational runbooks                                                            |
+| #20   | Formal certification claims remain out of scope                                                      |
+| #24   | Public repo cutover, GitHub Release publication, ruleset reproduction                                |

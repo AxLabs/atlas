@@ -30,8 +30,10 @@ export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   correlationId?: string;
 
   /**
-   * Custom timeout in milliseconds.
-   * Overrides the default timeout from config.
+   * Atlas request timeout in milliseconds.
+   * When set (including the recommended {@link DEFAULT_TIMEOUT}), composed with
+   * any caller `AbortSignal` so cancellation and timeout both abort the fetch.
+   * Omitted timeout means Atlas does not install its own timer.
    */
   timeout?: number;
 
@@ -69,10 +71,66 @@ let authTokenProvider: (() => Promise<string | null>) | null = null;
  * Set the global auth token provider.
  * This function will be called for each API request to inject auth tokens.
  *
- * @param provider - Async function that returns the auth token
+ * @param provider - Async function that returns the auth token, or `null` to clear
  */
-export function setAuthTokenProvider(provider: () => Promise<string | null>): void {
+export function setAuthTokenProvider(provider: (() => Promise<string | null>) | null): void {
   authTokenProvider = provider;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+/**
+ * Combine a caller AbortSignal with an optional Atlas timeout.
+ * Caller abort is not overwritten by the timeout controller.
+ */
+function composeAbortSignal(
+  caller: AbortSignal | undefined,
+  timeoutMs: number | undefined
+): { signal: AbortSignal | undefined; cleanup: () => void } {
+  const signals: AbortSignal[] = [];
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  if (caller) {
+    signals.push(caller);
+  }
+
+  if (typeof timeoutMs === "number" && timeoutMs > 0) {
+    const timeoutController = new AbortController();
+    timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+    signals.push(timeoutController.signal);
+  }
+
+  const cleanup = () => {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  if (signals.length === 0) {
+    return { signal: undefined, cleanup };
+  }
+
+  if (signals.length === 1) {
+    return { signal: signals[0], cleanup };
+  }
+
+  if (typeof AbortSignal.any === "function") {
+    return { signal: AbortSignal.any(signals), cleanup };
+  }
+
+  const merged = new AbortController();
+  const abortMerged = () => merged.abort();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      merged.abort();
+      break;
+    }
+    signal.addEventListener("abort", abortMerged, { once: true });
+  }
+
+  return { signal: merged.signal, cleanup };
 }
 
 /**
@@ -158,24 +216,19 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
   let lastError: unknown;
   const maxAttempts = skipRetry ? 1 : RETRY_CONFIG.maxAttempts;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      // Add timeout if specified
-      let response: Response;
-      if (timeout) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const callerSignal = fetchOptions.signal ?? undefined;
 
-        try {
-          response = await fetch(url, {
-            ...requestInit,
-            signal: controller.signal,
-          });
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      } else {
-        response = await fetch(url, requestInit);
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const { signal, cleanup } = composeAbortSignal(callerSignal, timeout);
+    try {
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          ...requestInit,
+          ...(signal ? { signal } : {}),
+        });
+      } finally {
+        cleanup();
       }
 
       // Extract correlation ID from response
@@ -260,19 +313,42 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
     } catch (error) {
       lastError = error;
 
-      // Don't retry ApiError (already processed)
       if (error instanceof ApiError) {
         throw error;
       }
 
-      // Check if it's a network error and retryable
+      if (isAbortError(error)) {
+        if (callerSignal?.aborted) {
+          throw new ApiError(
+            {
+              code: "REQUEST_CANCELLED",
+              message: "Request was cancelled",
+              userMessage: "The request was cancelled.",
+              correlationId,
+            },
+            undefined,
+            error
+          );
+        }
+
+        throw new ApiError(
+          {
+            code: "TIMEOUT",
+            message: "Request timed out",
+            userMessage: "The request timed out. Please try again.",
+            correlationId,
+          },
+          408,
+          error
+        );
+      }
+
       if (attempt < maxAttempts - 1) {
         const delay = calculateBackoff(attempt);
         await sleep(delay);
-        continue; // Retry
+        continue;
       }
 
-      // Out of retries - normalize and throw
       throw normalizeApiError(error, correlationId);
     }
   }

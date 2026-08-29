@@ -1,0 +1,11 @@
+{
+  "reports": [{ "id": "web", "path": "scripts/__fixtures__/coverage/passing-web.json" }],
+  "subsystems": [
+    {
+      "id": "web-api",
+      "report": "web",
+      "include": ["**/apps/web/src/lib/api/**"],
+      "thresholds": { "statements": 85, "lines": 85, "branches": 75, "functions": 85 }
+    }
+  ]
+}
