@@ -25,9 +25,10 @@ exit 0 / exit 1
 Checked-in policy ([`security/policy.json`](../../security/policy.json)):
 
 - **Blocking threshold:** `high` (HIGH and CRITICAL)
-- Current HIGH/CRITICAL lockfile findings are listed in
-  [`security-audit-exceptions.json`](../../security-audit-exceptions.json) with owners, rationale,
-  compensating controls, and an expiry of 2026-11-27. Removing or letting those expire re-blocks CI.
+- Remaining HIGH lockfile findings after in-range upgrades and `pnpm.overrides` are listed in
+  [`security-audit-exceptions.json`](../../security-audit-exceptions.json) with owners,
+  path-specific rationale, compensating controls, and an expiry of 2026-11-27. Removing or letting
+  those expire re-blocks CI.
 - Moderate and low findings are **reported** and do not block unless the policy file is changed
 - `pnpm audit` is invoked **without** `--audit-level` filtering so the evaluator sees the full
   report
@@ -52,16 +53,27 @@ pnpm security:workflow-check
 
 ## Secret scanning
 
-Gitleaks runs in CI on `ubuntu-latest` with `--network=none`, `--redact`, and `--exit-code 1`. The
-image is pinned by digest in `security/policy.json` (`gitleaks` v8.30.1 at the time of #14).
+The **Secrets Scan** job in `.github/workflows/ci.yml` checks out with `fetch-depth: 0` and runs the
+digest-pinned Gitleaks image (`gitleaks` v8.30.1 in `security/policy.json`) in git-aware mode:
 
-A synthetic GitHub-token-shaped fixture is assembled **at runtime** (`scripts/gitleaks-fixture.mjs`)
-so the scanner is proven to fail closed without committing a secret string in source.
+```text
+gitleaks git --redact --verbose --exit-code 1 /repo
+```
+
+Coverage is the Git history present in that checkout (commits reachable from the fetched refs GitHub
+Actions materializes for the job). It is **not** a guarantee that every remote branch name that ever
+existed on every fork is scanned if it was never fetched. Docker uses `--network=none`.
+
+A synthetic GitHub-token-shaped fixture is assembled **at runtime**
+(`scripts/gitleaks-fixture.mjs`): a temporary repository commits the token, deletes it, and asserts
+the working tree is clean while Gitleaks still exits non-zero because the secret remains in history.
+The token is never committed to Atlas.
 
 ## GitHub Actions pins
 
-Remote `uses:` references must be 40-character commit SHAs with a human-readable version comment.
-Mutable refs (`@v4`, `@main`, `@latest`) fail `pnpm security:workflow-check`.
+Remote `uses:` references must match `owner/repo[@/subpath]@<exactly 40 hex characters>`.
+`pnpm security:workflow-check` is an allow-rule: tags, branches, and truncated SHAs fail, including
+refs that are not in a known-mutable list (`@stable`, `@release`, `@abcdef1`, …).
 
 Local `uses: ./…` actions are bound to the checked-out commit.
 

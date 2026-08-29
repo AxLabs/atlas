@@ -117,28 +117,158 @@ export function isOperationalError(error) {
   return Boolean(error && error.code === "ATLAS_SECURITY_OPERATIONAL");
 }
 
-export function assertAuditDocument(audit) {
-  if (audit === null || typeof audit !== "object" || Array.isArray(audit)) {
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export function validateAuditDocumentShape(audit) {
+  if (!isPlainObject(audit)) {
     throw operationalError("audit document is missing or not an object");
   }
 
-  const hasV2 = audit.vulnerabilities !== undefined;
-  const hasV1 = audit.advisories !== undefined;
-  const hasMetadata = audit.metadata !== undefined;
+  const hasV2 = Object.hasOwn(audit, "vulnerabilities");
+  const hasV1 = Object.hasOwn(audit, "advisories");
+  const hasMetadata = Object.hasOwn(audit, "metadata");
 
   if (!hasV2 && !hasV1 && !hasMetadata) {
     throw operationalError("audit document is missing vulnerabilities, advisories, and metadata");
   }
 
-  if (hasV2 && (audit.vulnerabilities === null || typeof audit.vulnerabilities !== "object")) {
+  if (hasV2 && !isPlainObject(audit.vulnerabilities)) {
     throw operationalError("audit document vulnerabilities must be an object");
   }
 
-  if (hasV1 && (audit.advisories === null || typeof audit.advisories !== "object")) {
+  if (hasV1 && !isPlainObject(audit.advisories)) {
     throw operationalError("audit document advisories must be an object");
   }
 
   return audit;
+}
+
+export function assertAuditDocument(audit) {
+  return validateAuditDocumentShape(audit);
+}
+
+export function validateVulnerabilityRecord(packageName, entry) {
+  if (!isPlainObject(entry)) {
+    throw operationalError(`vulnerability record "${packageName}" is malformed`);
+  }
+
+  if (Object.hasOwn(entry, "severity") && !normalizeSeverity(entry.severity)) {
+    throw operationalError(
+      `vulnerability record "${packageName}" has unknown severity ${JSON.stringify(entry.severity)}`,
+    );
+  }
+
+  if (!Array.isArray(entry.via)) {
+    throw operationalError(`vulnerability record "${packageName}" via must be an array`);
+  }
+
+  return entry;
+}
+
+export function validateViaRecord(packageName, via, parentSeverity) {
+  if (typeof via === "string") {
+    return [];
+  }
+
+  if (!isPlainObject(via)) {
+    throw operationalError(`vulnerability record "${packageName}" has a malformed via entry`);
+  }
+
+  const name =
+    typeof via.name === "string" && via.name.trim()
+      ? via.name.trim()
+      : typeof via.dependency === "string" && via.dependency.trim()
+        ? via.dependency.trim()
+        : typeof packageName === "string" && packageName.trim()
+          ? packageName.trim()
+          : null;
+
+  const severity = normalizeSeverity(via.severity) || normalizeSeverity(parentSeverity);
+  if (Object.hasOwn(via, "severity") && !normalizeSeverity(via.severity)) {
+    throw operationalError(
+      `via record for "${packageName}" has unknown severity ${JSON.stringify(via.severity)}`,
+    );
+  }
+  if (!severity) {
+    throw operationalError(`via record for "${packageName}" is missing a known severity`);
+  }
+  if (!name) {
+    throw operationalError(`via record for "${packageName}" is missing a package name`);
+  }
+
+  const advisoryId =
+    normalizeAdvisoryId(via.id) ||
+    normalizeAdvisoryId(via.github_advisory_id) ||
+    advisoryIdFromUrl(via.url) ||
+    (typeof via.source === "string" ? normalizeAdvisoryId(via.source) : null);
+
+  if (!advisoryId) {
+    throw operationalError(
+      `via record for "${packageName}" does not identify an advisory, severity, and package`,
+    );
+  }
+
+  return [
+    {
+      packageName: name,
+      severity,
+      advisoryId,
+      title: typeof via.title === "string" ? via.title : "Untitled advisory",
+      url: typeof via.url === "string" ? via.url : null,
+      range: typeof via.range === "string" ? via.range : null,
+      patchedVersions:
+        via.fixAvailable && typeof via.fixAvailable === "object" && via.fixAvailable.version
+          ? via.fixAvailable.version
+          : null,
+    },
+  ];
+}
+
+export function validateLegacyAdvisoryRecord(key, advisory) {
+  if (!isPlainObject(advisory)) {
+    throw operationalError(`advisory record "${key}" is malformed`);
+  }
+
+  const severity = normalizeSeverity(advisory.severity);
+  if (!severity) {
+    throw operationalError(
+      `advisory record "${key}" has unknown severity ${JSON.stringify(advisory.severity)}`,
+    );
+  }
+
+  const moduleName =
+    typeof advisory.module_name === "string" && advisory.module_name.trim()
+      ? advisory.module_name.trim()
+      : typeof advisory.name === "string" && advisory.name.trim()
+        ? advisory.name.trim()
+        : null;
+
+  if (!moduleName) {
+    throw operationalError(`advisory record "${key}" is missing a package name`);
+  }
+
+  const advisoryId =
+    normalizeAdvisoryId(advisory.github_advisory_id) ||
+    normalizeAdvisoryId(Array.isArray(advisory.cves) ? advisory.cves[0] : undefined) ||
+    advisoryIdFromUrl(advisory.url);
+
+  if (!advisoryId) {
+    throw operationalError(`advisory record "${key}" does not identify a GHSA or CVE advisory`);
+  }
+
+  return {
+    packageName: moduleName,
+    severity,
+    advisoryId,
+    title: typeof advisory.title === "string" ? advisory.title : "Untitled advisory",
+    url: typeof advisory.url === "string" ? advisory.url : null,
+    range:
+      typeof advisory.vulnerable_versions === "string" ? advisory.vulnerable_versions : null,
+    patchedVersions:
+      typeof advisory.patched_versions === "string" ? advisory.patched_versions : null,
+  };
 }
 
 function advisoryIdFromUrl(url) {
@@ -168,41 +298,8 @@ function normalizeAdvisoryId(value) {
   return `GHSA-${parts[1].toLowerCase()}-${parts[2].toLowerCase()}-${parts[3].toLowerCase()}`;
 }
 
-function collectFromVia(packageName, via, parentSeverity) {
-  if (typeof via === "string") {
-    return [];
-  }
-  if (!via || typeof via !== "object") {
-    return [];
-  }
-
-  const advisoryId =
-    normalizeAdvisoryId(via.id) ||
-    normalizeAdvisoryId(via.github_advisory_id) ||
-    advisoryIdFromUrl(via.url) ||
-    (typeof via.source === "string" ? normalizeAdvisoryId(via.source) : null);
-
-  const severity = normalizeSeverity(via.severity) || normalizeSeverity(parentSeverity) || "low";
-  const name = typeof via.name === "string" ? via.name : packageName;
-
-  return [
-    {
-      packageName: name,
-      severity,
-      advisoryId: advisoryId ? advisoryId : `UNRESOLVED:${name}:${via.source ?? via.title ?? "unknown"}`,
-      title: typeof via.title === "string" ? via.title : "Untitled advisory",
-      url: typeof via.url === "string" ? via.url : null,
-      range: typeof via.range === "string" ? via.range : null,
-      patchedVersions:
-        via.fixAvailable && typeof via.fixAvailable === "object" && via.fixAvailable.version
-          ? via.fixAvailable.version
-          : null,
-    },
-  ];
-}
-
 export function collectFindings(audit) {
-  const document = assertAuditDocument(audit);
+  const document = validateAuditDocumentShape(audit);
   const findings = [];
   const seen = new Set();
 
@@ -215,41 +312,22 @@ export function collectFindings(audit) {
     findings.push(finding);
   }
 
-  if (document.vulnerabilities && typeof document.vulnerabilities === "object") {
+  if (Object.hasOwn(document, "vulnerabilities")) {
     for (const [packageName, entry] of Object.entries(document.vulnerabilities)) {
-      if (!entry || typeof entry !== "object") {
-        continue;
-      }
-      const viaList = Array.isArray(entry.via) ? entry.via : [];
-      const parentSeverity = entry.severity;
+      const record = validateVulnerabilityRecord(packageName, entry);
+      const parentSeverity = record.severity;
       const patched =
-        entry.fixAvailable && typeof entry.fixAvailable === "object" && entry.fixAvailable.version
-          ? entry.fixAvailable.version
-          : typeof entry.fixAvailable === "boolean"
-            ? null
-            : null;
+        record.fixAvailable && typeof record.fixAvailable === "object" && record.fixAvailable.version
+          ? record.fixAvailable.version
+          : null;
 
-      if (viaList.length === 0) {
-        const severity = normalizeSeverity(parentSeverity) || "low";
-        addFinding({
-          packageName: entry.name || packageName,
-          severity,
-          advisoryId: `UNRESOLVED:${packageName}`,
-          title: "Unresolved vulnerability entry",
-          url: null,
-          range: typeof entry.range === "string" ? entry.range : null,
-          patchedVersions: patched,
-        });
-        continue;
-      }
-
-      for (const via of viaList) {
-        for (const finding of collectFromVia(entry.name || packageName, via, parentSeverity)) {
+      for (const via of record.via) {
+        for (const finding of validateViaRecord(record.name || packageName, via, parentSeverity)) {
           if (!finding.patchedVersions && patched) {
             finding.patchedVersions = patched;
           }
-          if (!finding.range && typeof entry.range === "string") {
-            finding.range = entry.range;
+          if (!finding.range && typeof record.range === "string") {
+            finding.range = record.range;
           }
           addFinding(finding);
         }
@@ -257,26 +335,9 @@ export function collectFindings(audit) {
     }
   }
 
-  if (document.advisories && typeof document.advisories === "object") {
-    for (const advisory of Object.values(document.advisories)) {
-      if (!advisory || typeof advisory !== "object") {
-        continue;
-      }
-      const moduleName = advisory.module_name || advisory.name;
-      const advisoryId =
-        normalizeAdvisoryId(advisory.github_advisory_id) ||
-        normalizeAdvisoryId(advisory.cves?.[0]) ||
-        advisoryIdFromUrl(advisory.url) ||
-        `UNRESOLVED:${moduleName ?? "unknown"}`;
-      addFinding({
-        packageName: moduleName || "unknown",
-        severity: normalizeSeverity(advisory.severity) || "low",
-        advisoryId,
-        title: advisory.title || "Untitled advisory",
-        url: advisory.url || null,
-        range: advisory.vulnerable_versions || null,
-        patchedVersions: advisory.patched_versions || null,
-      });
+  if (Object.hasOwn(document, "advisories")) {
+    for (const [key, advisory] of Object.entries(document.advisories)) {
+      addFinding(validateLegacyAdvisoryRecord(key, advisory));
     }
   }
 

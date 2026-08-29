@@ -14,7 +14,7 @@ import {
   formatSecuritySummary,
   loadPolicy,
 } from "../security-audit-policy.mjs";
-import { findMutableActionRefs, validateGithubWorkflows } from "../validate-github-workflows.mjs";
+import { findInvalidActionRefs, validateGithubWorkflows } from "../validate-github-workflows.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cli = path.join(repoRoot, "scripts", "security-audit.mjs");
@@ -206,6 +206,67 @@ describe("security audit CLI", () => {
     assert.match(result.stderr, /failed closed/);
   });
 
+  it("fails closed on unknown severity instead of treating it as low", () => {
+    const result = runCli([
+      "--audit-json",
+      path.join(fixtures, "unknown-severity.json"),
+      "--exceptions",
+      emptyExceptions,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /unknown severity/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("fails closed on a malformed vulnerabilities entry", () => {
+    const result = runCli([
+      "--audit-json",
+      path.join(fixtures, "malformed-vulnerability.json"),
+      "--exceptions",
+      emptyExceptions,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /malformed/);
+  });
+
+  it("fails closed on a malformed advisories entry", () => {
+    const result = runCli([
+      "--audit-json",
+      path.join(fixtures, "malformed-advisory.json"),
+      "--exceptions",
+      emptyExceptions,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /malformed/);
+  });
+
+  it("fails closed on a malformed via entry", () => {
+    const result = runCli([
+      "--audit-json",
+      path.join(fixtures, "malformed-via.json"),
+      "--exceptions",
+      emptyExceptions,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /via record/);
+  });
+
+  it("fails closed on an unexpected recognized audit shape", () => {
+    const result = runCli([
+      "--audit-json",
+      path.join(fixtures, "unexpected-audit-shape.json"),
+      "--exceptions",
+      emptyExceptions,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /vulnerabilities must be an object/);
+  });
+
   it("rejects wildcard exceptions", () => {
     const exceptions = writeExceptions([{ ...validException, advisory: "*" }]);
     const result = runCli([
@@ -244,16 +305,31 @@ describe("GitHub workflow security validator", () => {
     assert.deepEqual(errors, []);
   });
 
-  it("flags mutable action tags", () => {
-    const matches = findMutableActionRefs("        uses: actions/checkout@v4\n");
-    assert.equal(matches.length, 1);
+  it("rejects mutable and truncated remote action refs", () => {
+    const failing = [
+      "        uses: actions/checkout@v5\n",
+      "        uses: actions/checkout@main\n",
+      "        uses: vendor/action@stable\n",
+      "        uses: vendor/action@release\n",
+      "        uses: vendor/action@abcdef1\n",
+    ];
+    for (const content of failing) {
+      const matches = findInvalidActionRefs(content);
+      assert.equal(matches.length, 1, content);
+    }
   });
 
-  it("does not flag SHA-pinned actions", () => {
-    const matches = findMutableActionRefs(
-      "        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0\n",
-    );
-    assert.equal(matches.length, 0);
+  it("accepts exact SHA pins, action subpaths, and local actions", () => {
+    const sha = "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09";
+    const passing = [
+      `        uses: actions/checkout@${sha} # v5.1.0\n`,
+      `        uses: owner/repo/subaction@${sha}\n`,
+      "        uses: ./.github/actions/setup-atlas-ci\n",
+    ];
+    for (const content of passing) {
+      const matches = findInvalidActionRefs(content);
+      assert.equal(matches.length, 0, content);
+    }
   });
 });
 
@@ -271,12 +347,13 @@ describe("SBOM generation", () => {
 });
 
 describe("Gitleaks synthetic fixture", () => {
-  it("exits non-zero against a runtime-constructed fake credential", () => {
+  it("detects a synthetic credential committed then deleted from git history", () => {
     const result = runSyntheticSecretFixture(repoRoot);
     if (result.error) {
       assert.equal(result.error.code, "ENOENT");
       assert.fail(`docker is required to prove Gitleaks detection: ${result.error.message}`);
     }
+    assert.equal(result.worktreeHasSecret, false);
     assert.notEqual(result.status, 0);
   });
 });

@@ -92,14 +92,14 @@ reduce XSS theft; they do not encrypt the verifier at rest in the browser cookie
 
 ## Supply-chain / build
 
-| Threat                             | Control                                                              |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| Malicious / vulnerable npm package | Frozen lockfile CI, Atlas audit policy (HIGH/CRITICAL), Renovate     |
-| Lockfile manipulation              | CI lockfile-up-to-date check; forbidden alternate lockfiles          |
-| GitHub Action compromise           | SHA-pinned remote actions; mutable-ref regression check              |
-| Mutable container tags             | Gitleaks pinned by digest                                            |
-| Secret leakage in git              | Gitleaks on every PR/push; fixture proves detection                  |
-| Artifact tampering                 | GitHub-hosted artifact service; no signed provenance attestation yet |
+| Threat                             | Control                                                                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Malicious / vulnerable npm package | Frozen lockfile CI, Atlas audit policy (HIGH/CRITICAL), Renovate                                                                    |
+| Lockfile manipulation              | CI lockfile-up-to-date check; forbidden alternate lockfiles                                                                         |
+| GitHub Action compromise           | SHA-pinned remote actions; full-SHA allow-rule in workflow check                                                                    |
+| Mutable container tags             | Gitleaks pinned by digest                                                                                                           |
+| Secret leakage in git              | Gitleaks git-history scan of the CI checkout (`fetch-depth: 0`); history fixture proves committed-then-deleted secrets are detected |
+| Artifact tampering                 | GitHub-hosted artifact service; no signed provenance attestation yet                                                                |
 
 `pnpm audit` is **not** complete application security.
 
@@ -128,21 +128,21 @@ Operators must treat the runner host as equivalent to **write access to the cano
 
 ## Abuse-case table
 
-| Threat                        | Entry point                  | Asset                 | Impact                          | Mitigation                          | Detection                 | Residual risk                            | Owner / consumer         |
-| ----------------------------- | ---------------------------- | --------------------- | ------------------------------- | ----------------------------------- | ------------------------- | ---------------------------------------- | ------------------------ |
-| OAuth CSRF                    | `/api/auth/google/callback`  | Session               | Account login CSRF              | State cookie + `verifyState`        | Redirect `invalid_state`  | Stolen temp cookie                       | Atlas                    |
-| Missing PKCE verifier         | Callback without temp cookie | Tokens                | Auth code exchange fails        | Missing cookie → `missing_state`    | Login error query         | —                                        | Atlas                    |
-| Open redirect                 | `?returnTo=` on start        | User browser          | Phish after login               | Same-origin check                   | Ignored returnTo          | Stored path still attacker-influenced    | Atlas + consumer URLs    |
-| Refresh without session       | `POST /api/auth/refresh`     | Auth state            | No silent login                 | 401                                 | 401                       | —                                        | Atlas                    |
-| Refresh without refresh token | Same                         | Auth state            | 400, no new session             | 400                                 | 400                       | Failed me-path refresh keeps old session | Atlas                    |
-| Logout cookie leftover        | `POST /api/auth/logout`      | Session cookie        | Session should end              | maxAge 0, httpOnly                  | Cookie cleared            | Browser cookie UI lag                    | Atlas                    |
-| Token in `/api/auth/me`       | GET me                       | Access/refresh tokens | XSS theft                       | Response omits tokens               | Tests                     | Permissions still revealed               | Atlas                    |
-| XSS → cookie theft            | Injected script              | Session cookie        | Account takeover                | httpOnly; CSP when enabled          | CSP reports if configured | CSP off by default                       | Consumer (`CSP_MODE`)    |
-| Vulnerable HIGH npm package   | `pnpm install`               | Build / runtime       | Known CVE                       | Blocking audit policy               | Security Audit job        | Transitive, unfixed upstream             | Maintainers + exceptions |
-| Fork PR on self-hosted        | `pull_request` from fork     | Runner host           | Arbitrary code on persistent VM | Trust check → GitHub-hosted only    | Workflow validator        | Operator misconfig                       | Maintainers              |
-| Mutable Action tag            | Workflow edit                | CI integrity          | Supply-chain                    | SHA pin + `security:workflow-check` | CI                        | Compromised SHA still trusted            | Maintainers              |
-| Secret committed              | Git push                     | Credentials           | Credential leak                 | Gitleaks + fixture                  | Secrets Scan              | Undetected new secret formats            | Maintainers + consumers  |
-| PII in logs                   | Logger / Sentry              | User data             | Privacy                         | Redact helpers                      | Code review               | Ad-hoc `console.log`                     | Consumers                |
+| Threat                        | Entry point                  | Asset                 | Impact                          | Mitigation                          | Detection                 | Residual risk                             | Owner / consumer         |
+| ----------------------------- | ---------------------------- | --------------------- | ------------------------------- | ----------------------------------- | ------------------------- | ----------------------------------------- | ------------------------ |
+| OAuth CSRF                    | `/api/auth/google/callback`  | Session               | Account login CSRF              | State cookie + `verifyState`        | Redirect `invalid_state`  | Stolen temp cookie                        | Atlas                    |
+| Missing PKCE verifier         | Callback without temp cookie | Tokens                | Auth code exchange fails        | Missing cookie → `missing_state`    | Login error query         | —                                         | Atlas                    |
+| Open redirect                 | `?returnTo=` on start        | User browser          | Phish after login               | Same-origin check                   | Ignored returnTo          | Stored path still attacker-influenced     | Atlas + consumer URLs    |
+| Refresh without session       | `POST /api/auth/refresh`     | Auth state            | No silent login                 | 401                                 | 401                       | —                                         | Atlas                    |
+| Refresh without refresh token | Same                         | Auth state            | 400, no new session             | 400                                 | 400                       | Failed me-path refresh keeps old session  | Atlas                    |
+| Logout cookie leftover        | `POST /api/auth/logout`      | Session cookie        | Session should end              | maxAge 0, httpOnly                  | Cookie cleared            | Browser cookie UI lag                     | Atlas                    |
+| Token in `/api/auth/me`       | GET me                       | Access/refresh tokens | XSS theft                       | Response omits tokens               | Tests                     | Permissions still revealed                | Atlas                    |
+| XSS → cookie theft            | Injected script              | Session cookie        | Account takeover                | httpOnly; CSP when enabled          | CSP reports if configured | CSP off by default                        | Consumer (`CSP_MODE`)    |
+| Vulnerable HIGH npm package   | `pnpm install`               | Build / runtime       | Known CVE                       | Blocking audit policy               | Security Audit job        | Transitive, unfixed upstream              | Maintainers + exceptions |
+| Fork PR on self-hosted        | `pull_request` from fork     | Runner host           | Arbitrary code on persistent VM | Trust check → GitHub-hosted only    | Workflow validator        | Operator misconfig                        | Maintainers              |
+| Mutable Action tag            | Workflow edit                | CI integrity          | Supply-chain                    | SHA pin + `security:workflow-check` | CI                        | Compromised SHA still trusted             | Maintainers              |
+| Secret committed              | Git push                     | Credentials           | Credential leak                 | Gitleaks history scan + fixture     | Secrets Scan              | Unfetched remote refs; undetected formats | Maintainers + consumers  |
+| PII in logs                   | Logger / Sentry              | User data             | Privacy                         | Redact helpers                      | Code review               | Ad-hoc `console.log`                      | Consumers                |
 
 ## Out of scope for this document
 

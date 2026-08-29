@@ -311,12 +311,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
 
       - name: Run Gitleaks in Docker (fail on secrets)
         run: |
           docker run --rm --network=none \
             -v "$PWD:/repo:ro" -w /repo \
             ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
-            detect --no-git --source=/repo \
-            --redact --verbose --exit-code 1
-          # gitleaks v8.30.1
+            git --redact --verbose --exit-code 1 /repo
+          # gitleaks v8.30.1 — git-aware history scan of the fetched checkout

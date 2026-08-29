@@ -15,9 +15,8 @@ const REQUIRED_DOCUMENTS = [
   "security-audit-exceptions.json",
 ];
 
-const MUTABLE_REF_PATTERN =
-  /uses:\s*(?!\.\/)([^\s#]+?)@(main|master|latest|v?\d+(?:\.\d+){0,2})\b/i;
-const SHA_REF_PATTERN = /uses:\s*(?!\.\/)([^\s#]+?)@([0-9a-f]{40})\b/i;
+const FULL_SHA_ACTION_PATTERN =
+  /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*@[0-9a-fA-F]{40}$/;
 const GITLEAKS_LATEST_PATTERN = /gitleaks\/gitleaks:(latest|main|master)\b/i;
 const FAIL_OPEN_AUDIT_PATTERN =
   /(?:pnpm\s+audit|security:check|security-audit\.mjs)[\s\S]{0,80}\|\|\s*true/;
@@ -51,18 +50,31 @@ function stripComments(content) {
     .join("\n");
 }
 
-export function findMutableActionRefs(content) {
+export function findInvalidActionRefs(content) {
   const matches = [];
   for (const line of content.split("\n")) {
     if (!line.includes("uses:")) {
       continue;
     }
     const stripped = line.replace(/#.*$/, "");
-    if (MUTABLE_REF_PATTERN.test(stripped) && !SHA_REF_PATTERN.test(stripped)) {
+    const match = stripped.match(/uses:\s*(\S+)/);
+    if (!match) {
+      continue;
+    }
+    const uses = match[1];
+    if (uses.startsWith("./")) {
+      continue;
+    }
+    if (!FULL_SHA_ACTION_PATTERN.test(uses)) {
       matches.push(line.trim());
     }
   }
   return matches;
+}
+
+/** @deprecated Use findInvalidActionRefs — remote uses: must be exact 40-char SHAs. */
+export function findMutableActionRefs(content) {
+  return findInvalidActionRefs(content);
 }
 
 export function findMissingJobTimeouts(content) {
@@ -157,6 +169,9 @@ export function findGitleaksPinIssues(content, policy) {
   if (!content.includes("--network=none") || !content.includes("--redact") || !content.includes("--exit-code 1")) {
     errors.push("Gitleaks invocation must keep --network=none, --redact, and --exit-code 1");
   }
+  if (content.includes("--no-git")) {
+    errors.push("Gitleaks must scan git history; --no-git is not allowed");
+  }
   return errors;
 }
 
@@ -197,8 +212,8 @@ export function validateGithubWorkflows(root = DEFAULT_REPO_ROOT) {
     const content = readFileSync(filePath, "utf8");
     const uncommented = stripComments(content);
 
-    for (const match of findMutableActionRefs(content)) {
-      errors.push(`${relativePath}: mutable GitHub Action reference: ${match}`);
+    for (const match of findInvalidActionRefs(content)) {
+      errors.push(`${relativePath}: remote GitHub Action reference must be a 40-character commit SHA: ${match}`);
     }
 
     if (relativePath.startsWith(`.github/workflows${path.sep}`)) {
