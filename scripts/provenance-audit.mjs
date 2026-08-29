@@ -1,10 +1,17 @@
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isValidIsoDate } from "./license-exceptions.mjs";
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(scriptDir, "..");
+const defaultRepoRoot = path.resolve(scriptDir, "..");
+
+function resolveRepoRoot(root) {
+  return root ?? process.env.ATLAS_REPO_ROOT ?? defaultRepoRoot;
+}
 
 export const BINARY_EXTENSIONS = [
   ".png",
@@ -14,15 +21,30 @@ export const BINARY_EXTENSIONS = [
   ".gif",
   ".svg",
   ".ico",
+  ".avif",
   ".pdf",
   ".woff",
   ".woff2",
   ".ttf",
   ".otf",
   ".eot",
+  ".webm",
+  ".mp4",
+  ".wasm",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".7z",
+  ".exe",
+  ".dll",
+  ".so",
+  ".dylib",
+  ".bin",
 ];
 
 const REQUIRED_NOTICE_FILES = ["THIRD_PARTY_NOTICES.md", "docs/how-we-build/provenance.md"];
+
+const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 
 const DELETED_BINARY_GIT_ARGS = [
   "log",
@@ -61,7 +83,7 @@ const HISTORY_CHECKS = [
     run: findRadixHistory,
   },
   {
-    label: "Largest historical binary blobs",
+    label: "Largest historical blobs (all objects, extension classified afterward)",
     commands: [REV_LIST_GIT_ARGS, CAT_FILE_BATCH_CHECK_ARGS],
     run: findHistoricalBinaryBlobs,
   },
@@ -77,17 +99,36 @@ export class GitCommandError extends Error {
   }
 }
 
+export class ShallowRepositoryError extends Error {
+  constructor() {
+    super("Historical provenance audit requires a full Git clone.");
+    this.name = "ShallowRepositoryError";
+  }
+}
+
 export function isBinaryPath(filePath) {
   const lower = filePath.toLowerCase();
   return BINARY_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+export function classifyHistoricalPath(filePath) {
+  if (isBinaryPath(filePath)) {
+    return "asset-extension";
+  }
+
+  if (!filePath.includes(".")) {
+    return "extensionless";
+  }
+
+  return "other";
 }
 
 export function filterDeletedBinaryAssets(lines) {
   return [...new Set(lines.filter(Boolean).filter(isBinaryPath))].sort();
 }
 
-export function parseRevListBinaryCandidates(revListOutput) {
-  const candidates = [];
+export function parseRevListObjects(revListOutput) {
+  const objects = [];
 
   for (const line of revListOutput.split("\n")) {
     if (!line) {
@@ -99,22 +140,17 @@ export function parseRevListBinaryCandidates(revListOutput) {
       continue;
     }
 
-    const objectPath = line.slice(spaceIndex + 1);
-    if (!isBinaryPath(objectPath)) {
-      continue;
-    }
-
-    candidates.push({
+    objects.push({
       sha: line.slice(0, spaceIndex),
-      path: objectPath,
+      path: line.slice(spaceIndex + 1),
     });
   }
 
-  return candidates;
+  return objects;
 }
 
-export function rankHistoricalBinaryBlobs(candidates, batchCheckOutput, limit = 20) {
-  const pathBySha = new Map(candidates.map((candidate) => [candidate.sha, candidate.path]));
+export function rankHistoricalBlobs(objects, batchCheckOutput, limit = 20) {
+  const pathBySha = new Map(objects.map((object) => [object.sha, object.path]));
   const ranked = [];
 
   for (const line of batchCheckOutput.split("\n")) {
@@ -131,22 +167,29 @@ export function rankHistoricalBinaryBlobs(candidates, batchCheckOutput, limit = 
       continue;
     }
 
-    ranked.push({ size, path: objectPath });
+    ranked.push({
+      size,
+      path: objectPath,
+      classification: classifyHistoricalPath(objectPath),
+    });
   }
 
   return ranked
     .sort((left, right) => right.size - left.size || left.path.localeCompare(right.path))
     .slice(0, limit)
-    .map(({ size, path: objectPath }) => `${size} ${objectPath}`);
+    .map(
+      ({ size, path: objectPath, classification }) =>
+        `${size} ${objectPath} [${classification}]`,
+    );
 }
 
 export function formatGitCommand(args) {
   return `git ${args.map((arg) => (/\s/.test(arg) ? `'${arg}'` : arg)).join(" ")}`;
 }
 
-export function createRunGitOrThrow(execFileSyncImpl) {
+export function createRunGitOrThrow(execFileSyncImpl, defaultRoot = defaultRepoRoot) {
   return function runGitOrThrow(args, options = {}) {
-    const cwd = options.cwd ?? repoRoot;
+    const cwd = options.cwd ?? defaultRoot;
 
     try {
       return execFileSyncImpl("git", args, {
@@ -171,6 +214,18 @@ function resolveRunGit(options) {
   return options.runGit ?? defaultRunGitOrThrow;
 }
 
+export function isShallowRepository(options = {}) {
+  const runGit = resolveRunGit(options);
+  const output = runGit(["rev-parse", "--is-shallow-repository"], options);
+  return output.trim() === "true";
+}
+
+export function assertFullGitHistory(options = {}) {
+  if (isShallowRepository(options)) {
+    throw new ShallowRepositoryError();
+  }
+}
+
 export function findDeletedBinaryAssets(options = {}) {
   const runGit = resolveRunGit(options);
   const output = runGit(DELETED_BINARY_GIT_ARGS, options);
@@ -186,19 +241,19 @@ export function findRadixHistory(options = {}) {
 export function findHistoricalBinaryBlobs(options = {}) {
   const runGit = resolveRunGit(options);
   const revListOutput = runGit(REV_LIST_GIT_ARGS, options);
-  const candidates = parseRevListBinaryCandidates(revListOutput);
+  const objects = parseRevListObjects(revListOutput);
 
-  if (candidates.length === 0) {
+  if (objects.length === 0) {
     return [];
   }
 
-  const batchInput = `${candidates.map((candidate) => candidate.sha).join("\n")}\n`;
+  const batchInput = `${objects.map((object) => object.sha).join("\n")}\n`;
   const batchOutput = runGit(CAT_FILE_BATCH_CHECK_ARGS, {
     ...options,
     input: batchInput,
   });
 
-  return rankHistoricalBinaryBlobs(candidates, batchOutput);
+  return rankHistoricalBlobs(objects, batchOutput);
 }
 
 export function formatHistoryOutput(items) {
@@ -206,6 +261,8 @@ export function formatHistoryOutput(items) {
 }
 
 export function runHistoryEvidence(checks = HISTORY_CHECKS, options = {}) {
+  assertFullGitHistory(options);
+
   const failures = [];
 
   for (const check of checks) {
@@ -223,6 +280,7 @@ export function runHistoryEvidence(checks = HISTORY_CHECKS, options = {}) {
         commands: check.commands.map(formatGitCommand),
         stderr: error.stderr ?? error.message,
         exitCode: error.exitCode ?? 1,
+        error,
       });
     }
   }
@@ -234,34 +292,122 @@ function fail(errors, message) {
   errors.push(message);
 }
 
-function gitTrackedFiles() {
-  return execFileSync("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8" })
+function gitTrackedFiles(root) {
+  return execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" })
     .split("\n")
     .filter(Boolean);
 }
 
-function checkRequiredDocumentation(errors) {
+function sha256File(filePath) {
+  return createHash("sha256").update(readFileSync(filePath)).digest("hex");
+}
+
+export function loadReviewedAssets(root = defaultRepoRoot) {
+  const filePath = path.join(root, "reviewed-assets.json");
+  if (!existsSync(filePath)) {
+    return {};
+  }
+
+  const raw = JSON.parse(readFileSync(filePath, "utf8"));
+  return raw.assets ?? {};
+}
+
+export function validateReviewedAsset(pathKey, entry) {
+  const errors = [];
+  const requiredFields = ["sha256", "origin", "license", "reason", "reviewedOn"];
+
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    return [`${pathKey}: reviewed asset must be an object`];
+  }
+
+  for (const field of requiredFields) {
+    if (typeof entry[field] !== "string" || entry[field].trim().length === 0) {
+      errors.push(`${pathKey}: ${field} must be a non-empty string`);
+    }
+  }
+
+  if (
+    typeof entry.sha256 === "string" &&
+    entry.sha256.trim().length > 0 &&
+    !SHA256_PATTERN.test(entry.sha256.trim())
+  ) {
+    errors.push(`${pathKey}: sha256 must be exactly 64 hexadecimal characters`);
+  }
+
+  if (
+    typeof entry.reviewedOn === "string" &&
+    entry.reviewedOn.trim().length > 0 &&
+    !isValidIsoDate(entry.reviewedOn)
+  ) {
+    errors.push(`${pathKey}: reviewedOn must be a valid YYYY-MM-DD date`);
+  }
+
+  return errors;
+}
+
+function checkRequiredDocumentation(errors, root) {
   for (const relativePath of REQUIRED_NOTICE_FILES) {
-    if (!existsSync(path.join(repoRoot, relativePath))) {
+    if (!existsSync(path.join(root, relativePath))) {
       fail(errors, `Missing provenance documentation: ${relativePath}`);
     }
   }
 }
 
-function checkCommittedBinaryAssets(errors) {
-  const tracked = gitTrackedFiles();
-  const matches = tracked.filter((file) => isBinaryPath(file));
+function checkCommittedBinaryAssets(errors, root) {
+  const tracked = gitTrackedFiles(root);
+  const trackedSet = new Set(tracked);
+  const reviewedAssets = loadReviewedAssets(root);
+  const unreviewed = [];
 
-  if (matches.length > 0) {
+  for (const [assetPath, review] of Object.entries(reviewedAssets)) {
+    const reviewErrors = validateReviewedAsset(assetPath, review);
+    if (reviewErrors.length > 0) {
+      for (const reviewError of reviewErrors) {
+        fail(errors, reviewError);
+      }
+      continue;
+    }
+
+    if (!trackedSet.has(assetPath)) {
+      fail(errors, `Stale reviewed asset entry for path not tracked at HEAD: ${assetPath}`);
+      continue;
+    }
+
+    const absolutePath = path.join(root, assetPath);
+    if (!existsSync(absolutePath)) {
+      fail(errors, `Reviewed asset path does not exist at HEAD: ${assetPath}`);
+      continue;
+    }
+
+    const actualHash = sha256File(absolutePath);
+    if (actualHash !== review.sha256.toLowerCase()) {
+      fail(
+        errors,
+        `Reviewed asset hash mismatch for ${assetPath}: expected ${review.sha256}, found ${actualHash}`,
+      );
+    }
+  }
+
+  for (const file of tracked) {
+    if (!isBinaryPath(file)) {
+      continue;
+    }
+
+    if (!reviewedAssets[file]) {
+      unreviewed.push(file);
+    }
+  }
+
+  if (unreviewed.length > 0) {
     fail(
       errors,
-      `Committed binary assets are not allowed at HEAD without provenance review: ${matches.join(", ")}`,
+      `Committed binary/static assets require an entry in reviewed-assets.json: ${unreviewed.join(", ")}`,
     );
   }
 }
 
-function checkVendoredDirectories(errors) {
-  const tracked = gitTrackedFiles();
+function checkVendoredDirectories(errors, root) {
+  const tracked = gitTrackedFiles(root);
   const suspicious = tracked.filter((file) =>
     /(^|\/)(vendor|vendored|third_party|third-party)(\/|$)/i.test(file),
   );
@@ -271,8 +417,8 @@ function checkVendoredDirectories(errors) {
   }
 }
 
-function checkStaleRadixDeclarations(errors) {
-  const uiManifest = path.join(repoRoot, "packages/ui/package.json");
+function checkStaleRadixDeclarations(errors, root) {
+  const uiManifest = path.join(root, "packages/ui/package.json");
   if (!existsSync(uiManifest)) {
     return;
   }
@@ -296,8 +442,8 @@ function checkStaleRadixDeclarations(errors) {
   }
 }
 
-function checkLicenseConsistency(errors) {
-  const licensePath = path.join(repoRoot, "LICENSE");
+function checkLicenseConsistency(errors, root) {
+  const licensePath = path.join(root, "LICENSE");
   if (!existsSync(licensePath)) {
     fail(errors, "Missing root LICENSE file");
     return;
@@ -309,25 +455,52 @@ function checkLicenseConsistency(errors) {
   }
 }
 
+function printShallowCloneRemediation() {
+  console.error("Historical provenance audit requires a full Git clone.");
+  console.error("Fetch complete history before rerunning:");
+  console.error("  git fetch --unshallow --tags");
+}
+
 function printHistoryEvidence() {
   console.log("\nHistorical audit evidence (read-only):\n");
 
-  const failures = runHistoryEvidence();
+  try {
+    const failures = runHistoryEvidence();
 
-  if (failures.length > 0) {
-    console.error("Historical audit command failed:\n");
-    for (const failure of failures) {
-      for (const command of failure.commands) {
-        console.error(`$ ${command}`);
+    if (failures.length > 0) {
+      console.error("Historical audit command failed:\n");
+      for (const failure of failures) {
+        for (const command of failure.commands) {
+          console.error(`$ ${command}`);
+        }
+        if (failure.stderr) {
+          console.error(failure.stderr);
+        }
+        console.error(`Exit status: ${failure.exitCode}`);
+        console.error("");
       }
-      if (failure.stderr) {
-        console.error(failure.stderr);
-      }
-      console.error(`Exit status: ${failure.exitCode}`);
-      console.error("");
+      process.exit(1);
     }
-    process.exit(1);
+  } catch (error) {
+    if (error instanceof ShallowRepositoryError) {
+      printShallowCloneRemediation();
+      process.exit(1);
+    }
+    throw error;
   }
+}
+
+export function runCurrentTreeProvenanceCheck({ root = defaultRepoRoot } = {}) {
+  const repoRoot = resolveRepoRoot(root);
+  const errors = [];
+
+  checkRequiredDocumentation(errors, repoRoot);
+  checkCommittedBinaryAssets(errors, repoRoot);
+  checkVendoredDirectories(errors, repoRoot);
+  checkStaleRadixDeclarations(errors, repoRoot);
+  checkLicenseConsistency(errors, repoRoot);
+
+  return errors;
 }
 
 function main() {
@@ -338,13 +511,7 @@ function main() {
     return;
   }
 
-  const errors = [];
-
-  checkRequiredDocumentation(errors);
-  checkCommittedBinaryAssets(errors);
-  checkVendoredDirectories(errors);
-  checkStaleRadixDeclarations(errors);
-  checkLicenseConsistency(errors);
+  const errors = runCurrentTreeProvenanceCheck();
 
   if (errors.length > 0) {
     console.error("Provenance audit failed:\n");

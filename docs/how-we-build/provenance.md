@@ -26,10 +26,11 @@ OSS cutover. This is **not legal advice** or a compliance certification.
 | `.gitignore`, `.npmrc`, `pnpm-lock.yaml`, `renovate.json`                               | Yes                                     |
 | Git LFS (`.gitattributes`)                                                              | **Not used** — no `.gitattributes` file |
 
-### Git history (275 commits)
+### Git history
 
 Risk-based sampling with reproducible commands (see §6). Full line-by-line provenance was **not**
-performed for trivial Atlas-authored files.
+performed for trivial Atlas-authored files. Historical evidence requires a **full Git clone** —
+shallow checkouts cause `pnpm provenance:history` to fail with remediation instructions.
 
 ---
 
@@ -45,7 +46,7 @@ performed for trivial Atlas-authored files.
 | `packages/cli` generators                                                                    | Atlas                      | Atlas-authored templates                      | Apache-2.0                           | None                                        |
 | Docs archived Radix references                                                               | shadcn/Radix era docs      | historical-only prose                         | N/A                                  | Update stale claims (see §3)                |
 | Fonts (Inter)                                                                                | `next/font/google`         | build-time fetch; self-hosted in build output | SIL OFL-1.1 (Inter)                  | No font binaries in Git; see §4 and notices |
-| npm dependencies (1246+ packages)                                                            | npm registry               | dependency-only                               | See `pnpm licenses:report`           | Policy in `scripts/license-policy.mjs`      |
+| npm dependencies (transitive inventory)                                                      | npm registry               | dependency-only                               | See `pnpm licenses:report`           | Policy in `scripts/license-policy.mjs`      |
 
 **Distinction:** dependency licenses (`pnpm licenses:check`) ≠ copied-source provenance (this doc +
 `THIRD_PARTY_NOTICES.md`).
@@ -131,8 +132,12 @@ Atlas **does not** copy Base UI implementation source into the repo. Components 
 
 ### HEAD
 
-`git ls-files` returns **zero** tracked files matching: `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`,
-`.svg`, `.ico`, `.pdf`, `.woff`, `.woff2`, `.ttf`, `.otf`, `.eot`
+`git ls-files` returns **zero** tracked files matching the binary/static asset extensions checked by
+`pnpm provenance:check` (see `scripts/provenance-audit.mjs`). Reviewed assets may be explicitly
+allowed via [`reviewed-assets.json`](../../reviewed-assets.json) when path and SHA-256 match. The
+`license` field records the reviewed redistribution basis for Atlas-authored or commercial assets;
+it is informational provenance metadata and is **not** interpreted by the dependency license
+classifier (`pnpm licenses:check`).
 
 No `apps/*/public/**` assets are committed. Favicons/icons are not vendored in-repo.
 
@@ -191,11 +196,10 @@ git rev-list --all --count
 git log --all --diff-filter=D --name-only --pretty=format: | sort -u \
   | grep -E '\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$'
 
-# Largest historical binary blobs
+# Largest historical blobs (all objects ranked by size, extension classified afterward)
 git rev-list --objects --all \
   | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
-  | awk '/^blob/ && $4 ~ /\.(png|jpg|jpeg|webp|gif|svg|ico|woff|woff2|ttf|otf|pdf)$/ {print $3, $4}' \
-  | sort -rn | head -20
+  | awk '/^blob/ {print $3, $4}' | sort -rn | head -20
 
 # Radix-era UI migration
 git log --all -S '@radix-ui/react-dialog' --oneline -- packages/ui
@@ -214,11 +218,14 @@ git grep -iE 'sk_live_|Bearer [a-zA-Z0-9]{20,}' $(git rev-list --all --max-count
 
 Automated wrapper: `pnpm provenance:history` → `node scripts/provenance-audit.mjs --history`
 
-**Reliability:** `pnpm provenance:history` exits non-zero if an audit command itself fails (invalid
-revision, missing tooling, unexpected non-zero status). Each Git invocation is checked
-independently; filtering, deduplication, sorting, and ranking happen in JavaScript only after
-successful Git output. Expected empty filtered results print `(no matches)` — they are **not**
-treated as command failures.
+**Reliability:** `pnpm provenance:history` exits non-zero when:
+
+- the repository is a shallow clone (`git rev-parse --is-shallow-repository` → `true`);
+- an audit command itself fails (invalid revision, missing tooling, unexpected non-zero status).
+
+Each Git invocation is checked independently; filtering, deduplication, sorting, and ranking happen
+in JavaScript only after successful Git output. Expected empty filtered results print `(no matches)`
+— they are **not** treated as command failures.
 
 ### Sampling strategy
 
@@ -257,6 +264,22 @@ stripped. No bogus per-file attribution added to Atlas-authored helpers.
 
 ## 9. Dependency-license inventory
 
+**Audit snapshot:** regenerate evidence for the commit under review:
+
+```bash
+AUDITED_COMMIT="$(git rev-parse HEAD)"
+pnpm install --frozen-lockfile
+pnpm licenses:check
+pnpm licenses:report
+node scripts/audit-licenses.mjs --report --json > "/tmp/atlas-licenses-${AUDITED_COMMIT}.json"
+```
+
+Record in PR/issue closure:
+
+- Audit date (UTC)
+- Audited commit (`git rev-parse HEAD`)
+- Inventory schema version (`scripts/audit-licenses.mjs` → `INVENTORY_SCHEMA_VERSION`)
+
 **Data source:** installed package `package.json` manifests under `node_modules/` (hoisted layout
 per `.npmrc` `node-linker=hoisted`). Not lockfile metadata alone.
 
@@ -268,29 +291,32 @@ dependency set; CI on Ubuntu is not limited to Linux-only optional packages.
 ```bash
 pnpm install --frozen-lockfile
 pnpm licenses:check     # CI gate — fails on unknown/disallowed/unreviewed
-pnpm licenses:report    # Summary counts
+pnpm licenses:report    # Human-readable full inventory
+node scripts/audit-licenses.mjs --report --json  # Stable machine-readable inventory
 ```
 
 **Policy:** `scripts/license-policy.mjs` — SPDX classifications: `allowed`, `review-required`,
-`disallowed`, `unknown`. Atlas currently evaluates multi-license expressions conservatively for
-gating; reviewed exceptions may document acceptable selectable-license cases.
+`disallowed`, `unknown`. Atlas evaluates multi-license expressions conservatively for gating
+(stricter than SPDX `OR` selection semantics); reviewed exceptions may document acceptable cases.
 
 **Reviewed exceptions:** [`license-exceptions.json`](../../license-exceptions.json) entries must
-include `status: "reviewed"`, non-empty `reason`, and valid `reviewedOn` (`YYYY-MM-DD`). When
-manifest license metadata is missing or nonstandard, exceptions must also include `effectiveLicense`
-and `source`. Stale exceptions for packages no longer in the audit universe fail
-`pnpm licenses:check`.
+include `status: "reviewed"`, `disposition: "accepted"`, non-empty `reason`, and valid `reviewedOn`
+(`YYYY-MM-DD`). When manifest license metadata is missing or nonstandard, exceptions must also
+include `effectiveLicense` and `source` (and the effective license must be allowed or
+review-required with acceptance). Disallowed licenses cannot be overridden. Stale exceptions for
+packages no longer in the audit universe fail `pnpm licenses:check`.
 
 **Workspace packages:** `@atlas/*` excluded from third-party enumeration.
 
-Representative HEAD results (2026-08-27 audit):
+Example snapshot results (replace by re-running the commands above at audit time):
 
-| Status                                    | Count |
-| ----------------------------------------- | ----- |
-| allowed                                   | 1272  |
-| review-required (reviewed via exceptions) | 23    |
-| unknown                                   | 0     |
-| disallowed                                | 0     |
+| Status                     | Count                           |
+| -------------------------- | ------------------------------- |
+| allowed                    | _(from `pnpm licenses:report`)_ |
+| reviewed/accepted          | _(from `pnpm licenses:report`)_ |
+| review-required unresolved | 0 expected at HEAD              |
+| unknown                    | 0 expected at HEAD              |
+| disallowed                 | 0 expected at HEAD              |
 
 ---
 
@@ -332,14 +358,15 @@ All review-required packages at HEAD have explicit entries in
 
 ## 12. Automated checks
 
-| Command                   | Purpose                                                             |
-| ------------------------- | ------------------------------------------------------------------- |
-| `pnpm licenses:check`     | Dependency license policy                                           |
-| `pnpm licenses:report`    | Human-readable inventory summary                                    |
-| `pnpm provenance:check`   | HEAD: no committed binaries, required docs, no stale Radix deps     |
-| `pnpm provenance:history` | Print historical audit commands/output; **fails on command errors** |
-| `pnpm dependencies:check` | Private/git/file dependency sources (#26)                           |
-| `pnpm governance:check`   | Apache-2.0 governance (#19)                                         |
+| Command                                           | Purpose                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `pnpm licenses:check`                             | Dependency license policy                                                            |
+| `pnpm licenses:report`                            | Human-readable full dependency inventory                                             |
+| `node scripts/audit-licenses.mjs --report --json` | Stable machine-readable inventory                                                    |
+| `pnpm provenance:check`                           | HEAD: reviewed assets gate, required docs, no stale Radix deps                       |
+| `pnpm provenance:history`                         | Print historical audit commands/output; **fails on shallow clone or command errors** |
+| `pnpm dependencies:check`                         | Private/git/file dependency sources (#26)                                            |
+| `pnpm governance:check`                           | Apache-2.0 governance (#19)                                                          |
 
 Tests: `scripts/__tests__/audit-licenses.test.mjs`, `scripts/__tests__/provenance-audit.test.mjs`
 

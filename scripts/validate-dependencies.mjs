@@ -1,10 +1,13 @@
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readJson } from "./atlas-workspaces.mjs";
+import {
+  collectDependencySourceFindings,
+  formatDependencySourceFinding,
+} from "./dependency-sources.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -42,8 +45,6 @@ const ALIGNED_PACKAGES = [
   "react",
   "react-dom",
 ];
-
-const LOCKFILE_SUSPICIOUS_SOURCE = /(?:git\+|github:.*\/|file:\/|file:\.\.)/;
 
 function listDependencySections(pkg) {
   return {
@@ -116,25 +117,9 @@ function checkAlignedVersions(workspaceRoots) {
   }
 }
 
-function checkLockfileSources() {
-  const lockPath = path.join(repoRoot, "pnpm-lock.yaml");
-  if (!statSync(lockPath).isFile()) {
-    fail("Missing pnpm-lock.yaml");
-    return;
-  }
-
-  const lockfile = readFileSync(lockPath, "utf8");
-  const lines = lockfile.split("\n");
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!LOCKFILE_SUSPICIOUS_SOURCE.test(line)) {
-      continue;
-    }
-    if (line.includes("workspace:")) {
-      continue;
-    }
-    fail(`Suspicious package source in pnpm-lock.yaml line ${i + 1}: ${line.trim()}`);
+function checkDependencySources() {
+  for (const finding of collectDependencySourceFindings(repoRoot)) {
+    fail(formatDependencySourceFinding(finding));
   }
 }
 
@@ -193,7 +178,7 @@ const workspaceRoots = discoverWorkspaceRoots(repoRoot);
 
 checkGenericWorkspaceOwnership();
 checkAlignedVersions(workspaceRoots);
-checkLockfileSources();
+checkDependencySources();
 checkStaleUiPackages();
 checkAppStylingDuplicates();
 checkHookformResolverOwnership();

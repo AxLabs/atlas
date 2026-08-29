@@ -1,6 +1,11 @@
 /**
  * SPDX-oriented dependency license policy for Atlas (#27).
  * Engineering policy only — not legal advice.
+ *
+ * Multi-license expressions are classified conservatively: Atlas policy is stricter than
+ * SPDX "OR" selection semantics. For example, `MIT OR GPL-3.0` is treated as disallowed
+ * because any disallowed token makes the whole expression disallowed. Parentheses are
+ * stripped before tokenization; nested grouping is not interpreted.
  */
 
 export const LICENSE_POLICY = {
@@ -61,30 +66,48 @@ export function normalizeSpdxId(value) {
     .replace(/\s+/g, " ");
 }
 
+/**
+ * Normalize npm `license` / legacy `licenses[]` into a conservative SPDX-like expression.
+ * Legacy array entries are combined with AND — Atlas does not assume npm's ambiguous
+ * array semantics and fails conservatively when multiple licenses are declared.
+ */
 export function normalizeLicenseField(license, licenses) {
-  if (license == null) {
-    if (Array.isArray(licenses) && licenses.length > 0) {
-      const first = licenses[0];
-      if (typeof first === "string") {
-        return first.trim() || null;
-      }
-      if (typeof first?.type === "string") {
-        return first.type.trim() || null;
-      }
+  if (license != null) {
+    if (typeof license === "string") {
+      const trimmed = license.trim();
+      return trimmed.length > 0 ? trimmed : null;
     }
+
+    if (typeof license === "object" && typeof license.type === "string") {
+      return license.type.trim() || null;
+    }
+  }
+
+  if (!Array.isArray(licenses) || licenses.length === 0) {
     return null;
   }
 
-  if (typeof license === "string") {
-    const trimmed = license.trim();
-    return trimmed.length > 0 ? trimmed : null;
+  const types = licenses
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return entry.trim();
+      }
+      if (typeof entry?.type === "string") {
+        return entry.type.trim();
+      }
+      return "";
+    })
+    .filter(Boolean);
+
+  if (types.length === 0) {
+    return null;
   }
 
-  if (typeof license === "object" && typeof license.type === "string") {
-    return license.type.trim() || null;
+  if (types.length === 1) {
+    return types[0];
   }
 
-  return null;
+  return types.join(" AND ");
 }
 
 export function classifySingleLicense(spdxId) {
@@ -147,16 +170,10 @@ function mergeStatuses(statuses, operator) {
 
 function splitTopLevel(expression, operator) {
   const parts = [];
-  let depth = 0;
   let start = 0;
 
   for (let i = 0; i < expression.length; i += 1) {
-    const char = expression[i];
-    if (char === "(") {
-      depth += 1;
-    } else if (char === ")") {
-      depth -= 1;
-    } else if (depth === 0 && expression.slice(i, i + operator.length) === operator) {
+    if (expression.slice(i, i + operator.length) === operator) {
       parts.push(expression.slice(start, i).trim());
       start = i + operator.length;
       i += operator.length - 1;
