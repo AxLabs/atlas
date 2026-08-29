@@ -55,8 +55,8 @@ pnpm security:workflow-check
 Gitleaks runs in CI on `ubuntu-latest` with `--network=none`, `--redact`, and `--exit-code 1`. The
 image is pinned by digest in `security/policy.json` (`gitleaks` v8.30.1 at the time of #14).
 
-A synthetic AWS-style fixture is constructed **at runtime** (`scripts/gitleaks-fixture.mjs`) so the
-scanner is proven to fail closed without committing secrets.
+A synthetic GitHub-token-shaped fixture is assembled **at runtime** (`scripts/gitleaks-fixture.mjs`)
+so the scanner is proven to fail closed without committing a secret string in source.
 
 ## GitHub Actions pins
 
