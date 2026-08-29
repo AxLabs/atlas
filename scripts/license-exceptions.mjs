@@ -170,13 +170,33 @@ export function validateExceptionEvidenceSource(key, entry, { package: pkg, repo
   return errors;
 }
 
+export function validatePackageException(key, entry, pkg, repoRoot) {
+  return [
+    ...validateExceptionEntry(key, entry, { package: pkg }),
+    ...validateExceptionEvidenceSource(key, entry, { package: pkg, repoRoot }),
+  ];
+}
+
+export function buildExceptionErrorsByKey(exceptions, packagesByKey, { repoRoot } = {}) {
+  const errorsByKey = new Map();
+
+  for (const [key, entry] of Object.entries(exceptions)) {
+    const pkg = packagesByKey.get(key);
+    const errors = validatePackageException(key, entry, pkg, repoRoot);
+    if (errors.length > 0) {
+      errorsByKey.set(key, errors);
+    }
+  }
+
+  return errorsByKey;
+}
+
 export function validateExceptions(exceptions, packagesByKey, { repoRoot } = {}) {
   const errors = [];
 
   for (const [key, entry] of Object.entries(exceptions)) {
     const pkg = packagesByKey.get(key);
-    errors.push(...validateExceptionEntry(key, entry, { package: pkg }));
-    errors.push(...validateExceptionEvidenceSource(key, entry, { package: pkg, repoRoot }));
+    errors.push(...validatePackageException(key, entry, pkg, repoRoot));
   }
 
   for (const key of Object.keys(exceptions)) {

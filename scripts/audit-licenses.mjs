@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 
 import { assertLicenseAuditArchitectures } from "./license-audit-config.mjs";
 import {
+  buildExceptionErrorsByKey,
   resolvePackageLicenseRecord,
-  validateExceptionEntry,
   validateExceptions,
+  validatePackageException,
 } from "./license-exceptions.mjs";
 import { isAtlasWorkspacePackage, normalizeLicenseField } from "./license-policy.mjs";
 
@@ -108,15 +109,26 @@ export function enumerateInstalledPackages(root = repoRoot) {
   );
 }
 
-export function buildInventoryRecords(packages, exceptions) {
+function resolveExceptionValidationErrors(key, exception, pkg, options = {}) {
+  if (!exception) {
+    return [];
+  }
+
+  const { validationErrorsByKey, repoRoot } = options;
+  if (validationErrorsByKey?.has(key)) {
+    return validationErrorsByKey.get(key);
+  }
+
+  return validatePackageException(key, exception, pkg, repoRoot);
+}
+
+export function buildInventoryRecords(packages, exceptions, options = {}) {
   const records = [];
 
   for (const pkg of packages) {
     const key = `${pkg.name}@${pkg.version}`;
     const exception = exceptions[key];
-    const entryErrors = exception
-      ? validateExceptionEntry(key, exception, { package: pkg })
-      : [];
+    const entryErrors = resolveExceptionValidationErrors(key, exception, pkg, options);
     records.push(resolvePackageLicenseRecord(pkg, exception, entryErrors));
   }
 
@@ -149,8 +161,8 @@ export function summarizeInventory(records) {
   return summary;
 }
 
-export function summarizePackages(packages, exceptions) {
-  return summarizeInventory(buildInventoryRecords(packages, exceptions));
+export function summarizePackages(packages, exceptions, options = {}) {
+  return summarizeInventory(buildInventoryRecords(packages, exceptions, options));
 }
 
 function formatLicenseRecordLine(record) {
@@ -263,8 +275,11 @@ export function runLicenseAudit({ root = repoRoot, reportOnly = false } = {}) {
   const packages = enumerateInstalledPackages(root);
   const packagesByKey = new Map(packages.map((pkg) => [`${pkg.name}@${pkg.version}`, pkg]));
   const exceptions = loadExceptionsFile(root);
+  const validationErrorsByKey = buildExceptionErrorsByKey(exceptions, packagesByKey, {
+    repoRoot: root,
+  });
   const exceptionErrors = validateExceptions(exceptions, packagesByKey, { repoRoot: root });
-  const records = buildInventoryRecords(packages, exceptions);
+  const records = buildInventoryRecords(packages, exceptions, { validationErrorsByKey });
   const summary = summarizeInventory(records);
 
   return {

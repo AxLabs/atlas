@@ -29,6 +29,7 @@ import {
   validateExceptionEntry,
   validateExceptionEvidenceSource,
   validateExceptions,
+  validatePackageException,
 } from "../license-exceptions.mjs";
 import {
   classifyLicenseExpression,
@@ -475,58 +476,66 @@ test("disallowed GPL cannot be rewritten into allowed disposition", () => {
 });
 
 test("json report preserves declared and effective license evidence", () => {
-  const packages = [
-    { name: "browser-assert", version: "1.2.1", license: null },
-    { name: "axe-core", version: "4.11.0", license: "MPL-2.0" },
-    { name: "blocked-package", version: "1.0.0", license: "GPL-3.0" },
-  ];
-  const exceptions = {
-    "browser-assert@1.2.1": {
-      status: "reviewed",
-      disposition: "accepted",
-      effectiveLicense: "MIT",
-      source: "node_modules/browser-assert/LICENSE",
-      reason: "MIT per LICENSE file.",
-      reviewedOn: "2026-08-27",
-    },
-    "axe-core@4.11.0": {
-      status: "reviewed",
-      disposition: "accepted",
-      reason: "Reviewed transitive dependency.",
-      reviewedOn: "2026-08-27",
-    },
-  };
-  const records = buildInventoryRecords(packages, exceptions);
-  const summary = summarizeInventory(records);
-  const report = buildJsonReport({ packages, exceptions, records, summary });
-
-  const browserAssert = report.packages.find((pkg) => pkg.name === "browser-assert");
-  assert.deepEqual(browserAssert, {
-    name: "browser-assert",
-    version: "1.2.1",
-    declaredLicense: null,
-    declaredClassification: "unknown",
-    effectiveLicense: "MIT",
-    effectiveClassification: "allowed",
-    disposition: "accepted",
-    exception: {
-      status: "reviewed",
-      reason: "MIT per LICENSE file.",
-      reviewedOn: "2026-08-27",
-      effectiveLicense: "MIT",
-      source: "node_modules/browser-assert/LICENSE",
-      disposition: "accepted",
-    },
+  const fixture = createEvidenceFixture({
+    source: "node_modules/browser-assert/LICENSE",
   });
 
-  const axeCore = report.packages.find((pkg) => pkg.name === "axe-core");
-  assert.equal(axeCore.declaredClassification, "review-required");
-  assert.equal(axeCore.disposition, "accepted");
-  assert.equal(axeCore.effectiveClassification, undefined);
+  try {
+    const packages = [
+      fixture.pkg,
+      { name: "axe-core", version: "4.11.0", license: "MPL-2.0" },
+      { name: "blocked-package", version: "1.0.0", license: "GPL-3.0" },
+    ];
+    const exceptions = {
+      "browser-assert@1.2.1": {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "node_modules/browser-assert/LICENSE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      "axe-core@4.11.0": {
+        status: "reviewed",
+        disposition: "accepted",
+        reason: "Reviewed transitive dependency.",
+        reviewedOn: "2026-08-27",
+      },
+    };
+    const records = buildInventoryRecords(packages, exceptions, { repoRoot: fixture.root });
+    const summary = summarizeInventory(records);
+    const report = buildJsonReport({ packages, exceptions, records, summary });
 
-  const blocked = report.packages.find((pkg) => pkg.name === "blocked-package");
-  assert.equal(blocked.declaredClassification, "disallowed");
-  assert.equal(blocked.disposition, undefined);
+    const browserAssert = report.packages.find((pkg) => pkg.name === "browser-assert");
+    assert.deepEqual(browserAssert, {
+      name: "browser-assert",
+      version: "1.2.1",
+      declaredLicense: null,
+      declaredClassification: "unknown",
+      effectiveLicense: "MIT",
+      effectiveClassification: "allowed",
+      disposition: "accepted",
+      exception: {
+        status: "reviewed",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+        effectiveLicense: "MIT",
+        source: "node_modules/browser-assert/LICENSE",
+        disposition: "accepted",
+      },
+    });
+
+    const axeCore = report.packages.find((pkg) => pkg.name === "axe-core");
+    assert.equal(axeCore.declaredClassification, "review-required");
+    assert.equal(axeCore.disposition, "accepted");
+    assert.equal(axeCore.effectiveClassification, undefined);
+
+    const blocked = report.packages.find((pkg) => pkg.name === "blocked-package");
+    assert.equal(blocked.declaredClassification, "disallowed");
+    assert.equal(blocked.disposition, undefined);
+  } finally {
+    fixture.cleanup();
+  }
 });
 
 test("runLicenseAudit validates repository license-exceptions.json against installed packages", () => {
@@ -589,6 +598,178 @@ test("non-registry dependency specs are detected", () => {
   assert.equal(isNonRegistryDependencySpec("github:foo/bar"), true);
   assert.equal(isNonRegistryDependencySpec("git+https://example.com/repo.git"), true);
   assert.equal(isNonRegistryDependencySpec("^1.0.0"), false);
+});
+
+function createMissingLicenseExceptionFixture({
+  evidenceSource,
+  writeEvidenceFile = false,
+  packageName = "example",
+  version = "1.0.0",
+}) {
+  const root = mkdtempSync(path.join(os.tmpdir(), "atlas-license-exception-audit-"));
+  const packageDir = path.join(root, "node_modules", packageName);
+  mkdirSync(packageDir, { recursive: true });
+  writeFileSync(
+    path.join(root, "pnpm-workspace.yaml"),
+    `packages:
+  - "apps/*"
+  - "packages/*"
+
+supportedArchitectures:
+  os:
+    - linux
+    - darwin
+  cpu:
+    - x64
+    - arm64
+`,
+    "utf8",
+  );
+  writeFileSync(
+    path.join(packageDir, "package.json"),
+    `${JSON.stringify({ name: packageName, version, license: null }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const source = evidenceSource ?? `node_modules/${packageName}/DOES-NOT-EXIST`;
+  if (writeEvidenceFile) {
+    const evidencePath = path.join(root, source);
+    mkdirSync(path.dirname(evidencePath), { recursive: true });
+    writeFileSync(evidencePath, "MIT License\n", "utf8");
+  }
+
+  const exceptions = {
+    [`${packageName}@${version}`]: {
+      status: "reviewed",
+      disposition: "accepted",
+      effectiveLicense: "MIT",
+      source,
+      reason: "Reviewed.",
+      reviewedOn: "2026-08-27",
+    },
+  };
+
+  writeFileSync(
+    path.join(root, "license-exceptions.json"),
+    `${JSON.stringify({ exceptions }, null, 2)}\n`,
+    "utf8",
+  );
+
+  return {
+    root,
+    packageName,
+    version,
+    cleanup: () => rmSync(root, { recursive: true, force: true }),
+  };
+}
+
+test("invalid evidence cannot become accepted inventory record", () => {
+  const fixture = createMissingLicenseExceptionFixture({
+    evidenceSource: "node_modules/example/DOES-NOT-EXIST",
+  });
+
+  try {
+    const audit = runLicenseAudit({ root: fixture.root, reportOnly: true });
+    const record = audit.records.find(
+      (entry) => entry.name === fixture.packageName && entry.version === fixture.version,
+    );
+
+    assert.ok(record);
+    assert.equal(record.declaredClassification, "unknown");
+    assert.equal(record.disposition, undefined);
+    assert.notEqual(record.disposition, "accepted");
+    assert.notEqual(record.effectiveClassification, "allowed");
+    assert.ok(audit.exceptionErrors.some((error) => error.includes("does not exist")));
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("invalid evidence is not counted as reviewed in summary", () => {
+  const fixture = createMissingLicenseExceptionFixture({
+    evidenceSource: "node_modules/example/DOES-NOT-EXIST",
+  });
+
+  try {
+    const audit = runLicenseAudit({ root: fixture.root, reportOnly: true });
+    assert.equal(audit.summary.reviewed.length, 0);
+    assert.equal(audit.summary.unknown.length, 1);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("json report does not represent invalid evidence as accepted", () => {
+  const fixture = createMissingLicenseExceptionFixture({
+    evidenceSource: "node_modules/example/DOES-NOT-EXIST",
+  });
+
+  try {
+    const audit = runLicenseAudit({ root: fixture.root, reportOnly: true });
+    const report = buildJsonReport({
+      root: fixture.root,
+      packages: audit.packages,
+      exceptions: audit.exceptions,
+      records: audit.records,
+      summary: audit.summary,
+    });
+    const pkg = report.packages.find((entry) => entry.name === fixture.packageName);
+
+    assert.ok(pkg);
+    assert.notEqual(pkg.disposition, "accepted");
+    assert.equal(pkg.declaredClassification, "unknown");
+    assert.equal(report.summary.reviewed, 0);
+    assert.equal(report.summary.unknown, 1);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("valid evidence still yields accepted effective license in inventory", () => {
+  const fixture = createMissingLicenseExceptionFixture({
+    evidenceSource: "node_modules/example/LICENSE",
+    writeEvidenceFile: true,
+  });
+
+  try {
+    const audit = runLicenseAudit({ root: fixture.root, reportOnly: true });
+    const record = audit.records.find(
+      (entry) => entry.name === fixture.packageName && entry.version === fixture.version,
+    );
+
+    assert.ok(record);
+    assert.equal(record.declaredClassification, "unknown");
+    assert.equal(record.effectiveLicense, "MIT");
+    assert.equal(record.effectiveClassification, "allowed");
+    assert.equal(record.disposition, "accepted");
+    assert.equal(audit.summary.reviewed.length, 1);
+    assert.equal(audit.exceptionErrors.length, 0);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("validatePackageException combines entry and evidence validation", () => {
+  const fixture = createEvidenceFixture({ source: null });
+
+  try {
+    const errors = validatePackageException(
+      "browser-assert@1.2.1",
+      {
+        status: "reviewed",
+        disposition: "accepted",
+        effectiveLicense: "MIT",
+        source: "node_modules/browser-assert/LICENSE",
+        reason: "MIT per LICENSE file.",
+        reviewedOn: "2026-08-27",
+      },
+      fixture.pkg,
+      fixture.root,
+    );
+    assert.ok(errors.some((error) => error.includes("does not exist")));
+  } finally {
+    fixture.cleanup();
+  }
 });
 
 function createTempAuditFixture({ exceptions, packages }) {
