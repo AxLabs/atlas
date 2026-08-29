@@ -43,6 +43,7 @@ These rules apply to all code in Atlas:
 | [API & Data Fetching](api.md)                       | React Query, API client, contracts               |
 | [Authorization](authorization.md)                   | Typed permissions, server enforcement, UI gating |
 | [Testing](testing.md)                               | Test setup, patterns, utilities                  |
+| [Testing risk matrix](testing-risk-matrix.md)       | Owned failure modes, gates, exclusions           |
 | [Continuous Integration](ci.md)                     | CI layout, self-hosted overlay                   |
 | [Security](security.md)                             | Blocking audit, pins, SBOM, runner trust         |
 | [Accessibility](accessibility.md)                   | a11y rules and patterns                          |

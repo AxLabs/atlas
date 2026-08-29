@@ -36,7 +36,7 @@ export function FormField({
   children,
 }: FormFieldProps) {
   const fieldId = `field-${name}`;
-  const helpTextId = helpText ? `${fieldId}-help` : undefined;
+  const helpTextId = helpText && !error ? `${fieldId}-help` : undefined;
   const errorId = error ? `${fieldId}-error` : undefined;
   const describedBy = [helpTextId, errorId].filter(Boolean).join(" ") || undefined;
 

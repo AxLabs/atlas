@@ -53,19 +53,22 @@ function isReferenceUsersScenario(value: string): value is ReferenceUsersScenari
 }
 
 /**
- * Resolve scenario state from request headers, query params, and cookies.
+ * Resolve scenario state from cookies, then query params, then headers.
+ * Later sources override earlier ones so an explicit `?scenario=` or harness
+ * header is not silently replaced by a leftover cookie.
  */
 export async function resolveReferenceScenario(
   request?: NextRequest
 ): Promise<ReferenceScenarioState> {
   const state: ReferenceScenarioState = {};
 
-  if (request) {
-    const headerValue = request.headers.get(REFERENCE_SCENARIO_HEADER);
-    if (headerValue) {
-      Object.assign(state, parseScenarioPayload(headerValue));
-    }
+  const cookieStore = await cookies();
+  const cookieValue = cookieStore.get(REFERENCE_SCENARIO_COOKIE)?.value;
+  if (cookieValue) {
+    Object.assign(state, parseScenarioPayload(cookieValue));
+  }
 
+  if (request) {
     const queryScenario = request.nextUrl.searchParams.get("scenario");
     if (queryScenario && isReferenceUsersScenario(queryScenario)) {
       state.users = queryScenario;
@@ -75,12 +78,11 @@ export async function resolveReferenceScenario(
     if (queryAuth && isReferenceAuthPersona(queryAuth)) {
       state.auth = queryAuth;
     }
-  }
 
-  const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(REFERENCE_SCENARIO_COOKIE)?.value;
-  if (cookieValue) {
-    Object.assign(state, parseScenarioPayload(cookieValue));
+    const headerValue = request.headers.get(REFERENCE_SCENARIO_HEADER);
+    if (headerValue) {
+      Object.assign(state, parseScenarioPayload(headerValue));
+    }
   }
 
   return state;

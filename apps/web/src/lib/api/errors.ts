@@ -84,13 +84,14 @@ export function normalizeApiError(error: unknown, correlationId?: string): ApiEr
     return error;
   }
 
-  // Standard Error object
-  if (error instanceof Error) {
+  // Fetch network failures are TypeError instances (and therefore also Error).
+  // Classify them before the generic Error branch.
+  if (error instanceof TypeError) {
     return new ApiError(
       {
-        code: "UNKNOWN_ERROR",
-        message: error.message,
-        userMessage: "An unexpected error occurred. Please try again.",
+        code: "NETWORK_ERROR",
+        message: error.message || "Network request failed",
+        userMessage: "Unable to connect to the server. Please check your connection.",
         correlationId,
       },
       undefined,
@@ -98,13 +99,13 @@ export function normalizeApiError(error: unknown, correlationId?: string): ApiEr
     );
   }
 
-  // Network errors (fetch failures)
-  if (error && typeof error === "object" && "name" in error && error.name === "TypeError") {
+  // Standard Error object
+  if (error instanceof Error) {
     return new ApiError(
       {
-        code: "NETWORK_ERROR",
-        message: "message" in error ? String(error.message) : "Network request failed",
-        userMessage: "Unable to connect to the server. Please check your connection.",
+        code: "UNKNOWN_ERROR",
+        message: error.message,
+        userMessage: "An unexpected error occurred. Please try again.",
         correlationId,
       },
       undefined,

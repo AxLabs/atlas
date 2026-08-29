@@ -42,4 +42,19 @@ describe("ErrorFallback", () => {
 
     expect(screen.getByText("corr-123")).toBeInTheDocument();
   });
+
+  it("prefers ApiError userMessage and hides raw messages in production", () => {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    render(
+      <ErrorFallback
+        error={{
+          shape: { message: "secret stack", userMessage: "Try again later." },
+        }}
+      />
+    );
+    expect(screen.getByText("Try again later.")).toBeInTheDocument();
+    expect(screen.queryByText("secret stack")).not.toBeInTheDocument();
+    process.env.NODE_ENV = previous;
+  });
 });

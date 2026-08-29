@@ -1,0 +1,56 @@
+{
+  "reports": [
+    { "id": "web", "path": "apps/web/coverage/coverage-final.json" },
+    { "id": "ui", "path": "packages/ui/coverage/coverage-final.json" }
+  ],
+  "subsystems": [
+    {
+      "id": "web-auth",
+      "report": "web",
+      "include": ["**/apps/web/src/lib/auth/**", "**/apps/web/src/app/api/auth/**"],
+      "exclude": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/providers/google.ts",
+        "**/useSession.ts",
+        "**/lib/auth/server.ts"
+      ],
+      "thresholds": { "statements": 85, "lines": 85, "branches": 75, "functions": 85 }
+    },
+    {
+      "id": "web-api",
+      "report": "web",
+      "include": ["**/apps/web/src/lib/api/**"],
+      "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/contracts/schema.ts"],
+      "thresholds": { "statements": 85, "lines": 85, "branches": 75, "functions": 85 }
+    },
+    {
+      "id": "ui-form-infrastructure",
+      "report": "ui",
+      "include": [
+        "**/packages/ui/src/components/forms/**",
+        "**/packages/ui/src/hooks/use-zod-form.ts",
+        "**/packages/ui/src/lib/forms/**"
+      ],
+      "exclude": ["**/*.example.ts", "**/*.example.tsx", "**/*.test.ts", "**/*.test.tsx"],
+      "thresholds": { "statements": 80, "lines": 80, "branches": 70, "functions": 80 }
+    },
+    {
+      "id": "ui-owned-behavior",
+      "report": "ui",
+      "include": [
+        "**/packages/ui/src/components/ui/button.tsx",
+        "**/packages/ui/src/components/ui/select.tsx",
+        "**/packages/ui/src/components/ui/dialog.tsx",
+        "**/packages/ui/src/components/ui/tooltip.tsx",
+        "**/packages/ui/src/components/ui/error-fallback.tsx",
+        "**/packages/ui/src/components/ui/empty-state.tsx",
+        "**/packages/ui/src/components/ui/switch.tsx",
+        "**/packages/ui/src/hooks/use-theme.ts",
+        "**/packages/ui/src/lib/theme-boot-script.ts"
+      ],
+      "exclude": ["**/*.test.ts", "**/*.test.tsx"],
+      "thresholds": { "statements": 80, "lines": 80, "branches": 70, "functions": 80 }
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "/repo/apps/web/src/lib/api/client.ts": {
+    "path": "/repo/apps/web/src/lib/api/client.ts",
+    "statementMap": {
+      "0": { "start": { "line": 1, "column": 0 }, "end": { "line": 1, "column": 10 } },
+      "1": { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } },
+      "2": { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } },
+      "3": { "start": { "line": 4, "column": 0 }, "end": { "line": 4, "column": 10 } }
+    },
+    "fnMap": {
+      "0": {
+        "name": "fetchJson",
+        "decl": { "line": 1, "column": 0 },
+        "loc": { "start": { "line": 1, "column": 0 }, "end": { "line": 4, "column": 0 } },
+        "line": 1
+      },
+      "1": {
+        "name": "parseResponse",
+        "decl": { "line": 2, "column": 0 },
+        "loc": { "start": { "line": 2, "column": 0 }, "end": { "line": 4, "column": 0 } },
+        "line": 2
+      }
+    },
+    "branchMap": {
+      "0": {
+        "loc": { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } },
+        "type": "if",
+        "locations": [
+          { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } },
+          { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } }
+        ]
+      },
+      "1": {
+        "loc": { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } },
+        "type": "if",
+        "locations": [
+          { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } },
+          { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } }
+        ]
+      }
+    },
+    "s": { "0": 1, "1": 1, "2": 1, "3": 1 },
+    "f": { "0": 1, "1": 1 },
+    "b": { "0": [1, 1], "1": [1, 0] }
+  },
+  "/repo/apps/web/src/lib/auth/session.ts": {
+    "path": "/repo/apps/web/src/lib/auth/session.ts",
+    "statementMap": {
+      "0": { "start": { "line": 1, "column": 0 }, "end": { "line": 1, "column": 10 } },
+      "1": { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } },
+      "2": { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } },
+      "3": { "start": { "line": 4, "column": 0 }, "end": { "line": 4, "column": 10 } }
+    },
+    "fnMap": {
+      "0": {
+        "name": "getSession",
+        "decl": { "line": 1, "column": 0 },
+        "loc": { "start": { "line": 1, "column": 0 }, "end": { "line": 4, "column": 0 } },
+        "line": 1
+      },
+      "1": {
+        "name": "clearSession",
+        "decl": { "line": 2, "column": 0 },
+        "loc": { "start": { "line": 2, "column": 0 }, "end": { "line": 4, "column": 0 } },
+        "line": 2
+      }
+    },
+    "branchMap": {
+      "0": {
+        "loc": { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } },
+        "type": "if",
+        "locations": [
+          { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } },
+          { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 10 } }
+        ]
+      },
+      "1": {
+        "loc": { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } },
+        "type": "if",
+        "locations": [
+          { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } },
+          { "start": { "line": 3, "column": 0 }, "end": { "line": 3, "column": 10 } }
+        ]
+      }
+    },
+    "s": { "0": 1, "1": 1, "2": 1, "3": 1 },
+    "f": { "0": 1, "1": 1 },
+    "b": { "0": [1, 1], "1": [1, 1] }
+  }
+}
