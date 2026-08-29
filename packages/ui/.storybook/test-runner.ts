@@ -13,7 +13,11 @@ const config: TestRunnerConfig = {
     await page.emulateMedia({ reducedMotion: "reduce" });
   },
   async postVisit(page, context) {
-    const storyParameters = context.parameters ?? {};
+    const storyParameters =
+      "parameters" in context
+        ? ((context as { parameters?: { a11y?: { disable?: boolean; config?: unknown } } })
+            .parameters ?? {})
+        : {};
     const a11yConfig = storyParameters.a11y ?? {};
 
     if (a11yConfig.disable === true) {
@@ -26,7 +30,7 @@ const config: TestRunnerConfig = {
     }
 
     await checkA11y(page, STORY_ROOT, {
-      axeOptions: a11yConfig.config,
+      axeOptions: a11yConfig.config as Record<string, unknown> | undefined,
       detailedReport: true,
       detailedReportOptions: {
         html: true,

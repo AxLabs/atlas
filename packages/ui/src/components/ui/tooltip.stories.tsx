@@ -1,6 +1,6 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
-import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+import { expect, screen, userEvent, waitFor } from "@storybook/test";
 
 import type { Meta, StoryObj } from "@storybook/react";
 import * as React from "react";
