@@ -137,6 +137,16 @@ const RECOMMENDED_VALIDATION_COMMANDS: AgentValidationCommand[] = [
     when: "When release or governance policy changes.",
   },
   {
+    id: "security-check",
+    command: "pnpm security:check",
+    when: "When dependencies, lockfile, or security policy change.",
+  },
+  {
+    id: "security-workflow-check",
+    command: "pnpm security:workflow-check",
+    when: "When GitHub workflows or security tooling pins change.",
+  },
+  {
     id: "validate-env",
     command: "pnpm validate:env",
     when: "When environment schema or runtime config changes.",

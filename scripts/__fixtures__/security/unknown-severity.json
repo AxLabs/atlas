@@ -1,0 +1,33 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "atlas-synthetic-unknown": {
+      "name": "atlas-synthetic-unknown",
+      "severity": "severe",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 900010,
+          "name": "atlas-synthetic-unknown",
+          "dependency": "atlas-synthetic-unknown",
+          "title": "Synthetic unknown severity",
+          "url": "https://github.com/advisories/GHSA-atls-unkn-0001",
+          "severity": "severe",
+          "range": "<1.0.0"
+        }
+      ],
+      "effects": [],
+      "range": "<1.0.0",
+      "nodes": ["node_modules/atlas-synthetic-unknown"]
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    }
+  }
+}

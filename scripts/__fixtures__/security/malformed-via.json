@@ -1,0 +1,28 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "atlas-synthetic-via": {
+      "name": "atlas-synthetic-via",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "name": "atlas-synthetic-via",
+          "title": "Missing advisory identifiers"
+        }
+      ],
+      "effects": [],
+      "range": "<1.0.0",
+      "nodes": ["node_modules/atlas-synthetic-via"]
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 1,
+      "critical": 0
+    }
+  }
+}

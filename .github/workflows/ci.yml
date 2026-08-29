@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   ATLAS_CI_RUNNER_PROFILE: ${{ vars.ATLAS_CI_RUNNER_PROFILE || 'github-hosted' }}
 
@@ -18,17 +21,18 @@ jobs:
   governance:
     name: Governance
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
           version: 10.19.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -50,20 +54,24 @@ jobs:
 
   ci:
     name: CI
-    runs-on:
-      ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && fromJSON('["self-hosted", "ci"]') ||
-      'ubuntu-latest' }}
     env:
       CI_CHECKOUT_DIR: ci-ws-ci-r${{ github.run_id }}
       CI_CHECKOUT_LINK: ci-link-ci
+      ATLAS_CI_USE_SELF_HOSTED:
+        ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on:
+      ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository) &&
+      fromJSON('["self-hosted", "ci"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     defaults:
       run:
         working-directory:
-          ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && env.CI_CHECKOUT_DIR ||
-          github.workspace }}
+          ${{ env.ATLAS_CI_USE_SELF_HOSTED == 'true' && env.CI_CHECKOUT_DIR || github.workspace }}
     steps:
       - name: Repair default workspace permissions
-        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
         continue-on-error: true
         working-directory: ${{ github.workspace }}
         shell: bash
@@ -76,20 +84,20 @@ jobs:
           fi
 
       - name: Checkout repository (GitHub-hosted)
-        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
-        uses: actions/checkout@v4
+        if: env.ATLAS_CI_USE_SELF_HOSTED != 'true'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 
       - name: Checkout repository (self-hosted)
-        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
-        uses: actions/checkout@v4
+        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
           path: ${{ env.CI_CHECKOUT_DIR }}
 
       - name: Link checkout for composite actions
-        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
@@ -152,13 +160,13 @@ jobs:
           echo "✅ Lockfile exists"
 
       - name: Setup Atlas CI (GitHub-hosted)
-        if: vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
+        if: env.ATLAS_CI_USE_SELF_HOSTED != 'true'
         uses: ./.github/actions/setup-atlas-ci
         with:
           runner-profile: github-hosted
 
       - name: Setup CI Node (self-hosted)
-        if: vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
         uses: ./ci-link-ci/.github/actions/setup-ci-node
 
       - name: Check documentation links
@@ -167,7 +175,7 @@ jobs:
       - name: Install dependencies
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
         run: |
-          if [ "${ATLAS_CI_RUNNER_PROFILE}" = "self-hosted" ]; then
+          if [ "${ATLAS_CI_USE_SELF_HOSTED}" = "true" ]; then
             # Host-only optional deps: full cross-platform audit runs in the Governance job.
             pnpm install --frozen-lockfile \
               --config.supportedArchitectures.os=linux \
@@ -228,7 +236,7 @@ jobs:
 
       - name: Upload coverage
         if: success() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           files: ./packages/ui/coverage/coverage-final.json
           fail_ci_if_error: false
@@ -248,7 +256,7 @@ jobs:
       - name: Install Playwright browsers
         if:
           (steps.detect.outputs.app == 'true' || github.event_name == 'push') &&
-          env.ATLAS_CI_RUNNER_PROFILE != 'self-hosted'
+          env.ATLAS_CI_USE_SELF_HOSTED != 'true'
         run: |
           pnpm --filter @atlas/web exec playwright install --with-deps chromium
           pnpm --filter @atlas/reference exec playwright install --with-deps chromium
@@ -260,7 +268,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
           SKIP_ENV_VALIDATION: false
         run: |
-          if [ "${ATLAS_CI_RUNNER_PROFILE}" = "self-hosted" ]; then
+          if [ "${ATLAS_CI_USE_SELF_HOSTED}" = "true" ]; then
             pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
             checkout_dir="${GITHUB_WORKSPACE}/${CI_CHECKOUT_DIR}"
             docker run --rm \
@@ -284,30 +292,32 @@ jobs:
 
       - name: Upload Playwright report
         if: always() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report
           path:
-            ${{ env.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
-            format('{0}/apps/web/playwright-report/', env.CI_CHECKOUT_DIR) ||
-            'apps/web/playwright-report/' }}
+            ${{ env.ATLAS_CI_USE_SELF_HOSTED == 'true' && format('{0}/apps/web/playwright-report/',
+            env.CI_CHECKOUT_DIR) || 'apps/web/playwright-report/' }}
           retention-days: 30
 
       - name: Cleanup job artifacts
-        if: always() && vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted'
+        if: always() && env.ATLAS_CI_USE_SELF_HOSTED == 'true'
         uses: ./ci-link-ci/.github/actions/cleanup-self-hosted-job
 
   gitleaks:
     name: Secrets Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
 
       - name: Run Gitleaks in Docker (fail on secrets)
         run: |
           docker run --rm --network=none \
             -v "$PWD:/repo:ro" -w /repo \
-            ghcr.io/gitleaks/gitleaks:latest \
-            detect --no-git --source=/repo \
-            --redact --verbose --exit-code 1
+            ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git --redact --verbose --exit-code 1 /repo
+          # gitleaks v8.30.1 — git-aware history scan of the fetched checkout

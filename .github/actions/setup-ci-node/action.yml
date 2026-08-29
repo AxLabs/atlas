@@ -38,13 +38,13 @@ runs:
         echo "PNPM_PACKAGE_JSON=${manifest}" >> "$GITHUB_ENV"
         echo "Using package manifest: ${manifest}"
 
-    - uses: pnpm/action-setup@v4
+    - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
       with:
         package_json_file: ${{ env.PNPM_PACKAGE_JSON }}
 
     # Self-hosted runners use the persistent PNPM_STORE_DIR above. Omit setup-node
     # cache so post steps do not try to save GitHub Actions pnpm cache paths.
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
       with:
         node-version: 22
 

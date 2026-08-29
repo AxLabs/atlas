@@ -7,14 +7,18 @@ runners by default**. Teams with a self-hosted fleet can opt in without replacin
 
 ```text
 pull_request / push to main
+  ├── Governance         (licenses, provenance, dependency ownership)
   ├── CI                 (path filter → one install → quality → build → E2E)
-  └── Secrets Scan       (Gitleaks on ubuntu-latest; parallel)
+  ├── Secrets Scan       (Gitleaks digest-pinned; parallel)
+  └── Security Audit     (blocking Atlas vulnerability policy + workflow pins)
 ```
 
-| Job              | When it runs                                                        | What it does                                                                                  |
-| ---------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **CI**           | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, build, E2E |
-| **Secrets Scan** | Always                                                              | Gitleaks Docker scan on `ubuntu-latest`                                                       |
+| Job                | When it runs                                                        | What it does                                                                                  |
+| ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Governance**     | Always                                                              | License, provenance, and dependency-ownership gates                                           |
+| **CI**             | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, build, E2E |
+| **Secrets Scan**   | Always                                                              | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                    |
+| **Security Audit** | Always (also weekly cron)                                           | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                      |
 
 **Docs-only PRs** still run Node setup and `pnpm docs:check` (via
 `node scripts/check-doc-links.mjs`). They skip install, lint, typecheck, tests, build, and E2E after
@@ -77,6 +81,11 @@ sudo mkdir -p /var/cache/ci
 sudo chown -R <runner-user>:<runner-user> /var/cache/ci
 ```
 
+**Trust boundary:** push access to the canonical Atlas repository is part of the trusted
+self-hosted-runner boundary. Fork pull requests (`head.repo.full_name != github.repository`) always
+run on GitHub-hosted runners, even when `ATLAS_CI_RUNNER_PROFILE=self-hosted`. Atlas does not use
+`pull_request_target` to execute untrusted PR code.
+
 Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium
 system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot elevate for
 `playwright install --with-deps`). Web and reference suites run sequentially in one container to
@@ -114,12 +123,12 @@ Add those in your product repo when you have a real database and content pipelin
 
 ## Optional workflows
 
-| Workflow              | Purpose                                                                                            | Enable                                   |
-| --------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `security-audit.yml`  | Weekly `pnpm audit` (informational until [#14](https://github.com/blitzcraftlabs/atlas/issues/14)) | On by default (schedule)                 |
-| `perf-lighthouse.yml` | Lighthouse CI budgets                                                                              | `pnpm perf:enable`                       |
-| `perf-bundle.yml`     | Bundle size analysis                                                                               | `pnpm perf:enable`                       |
-| `release.yml`         | Atlas Version PR only (no GitHub Release before #24)                                               | On `main`; `workflow_dispatch` rehearsal |
+| Workflow              | Purpose                                                   | Enable                                   |
+| --------------------- | --------------------------------------------------------- | ---------------------------------------- |
+| `security-audit.yml`  | Blocking Atlas vulnerability policy + workflow pin checks | On by default (PRs, `main`, weekly)      |
+| `perf-lighthouse.yml` | Lighthouse CI budgets                                     | `pnpm perf:enable`                       |
+| `perf-bundle.yml`     | Bundle size analysis                                      | `pnpm perf:enable`                       |
+| `release.yml`         | Atlas Version PR only (no GitHub Release before #24)      | On `main`; `workflow_dispatch` rehearsal |
 
 Performance budget details live in `tools/perf/README.md` when workflows are enabled.
 
@@ -153,9 +162,10 @@ git checkout -b test/ci-app-change
 
 Push a branch and open a PR against `main`. In the Actions tab confirm:
 
-- Two jobs: **CI** and **Secrets Scan**
+- Jobs: **Governance**, **CI**, **Secrets Scan**, plus **Security Audit** from `security-audit.yml`
 - **CI** runs change detection first, then skips heavy steps on docs-only PRs
 - Self-hosted runs consume one `[self-hosted, ci]` runner slot per workflow (not three)
+- Fork PRs never use the persistent self-hosted runner
 
 ### 4. Self-hosted profile (if applicable)
 
@@ -166,11 +176,16 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 ## Branch protection
 
-Required status checks for `main`:
+Required status checks for `main` (when the GitHub plan allows branch protection / rulesets):
 
 - **CI / Governance** — licensing, versioning, and release policy validation
 - **CI / CI** — consolidated application pipeline
 - **CI / Secrets Scan** — Gitleaks scan
+- **Security Audit / Security Audit** — Atlas dependency vulnerability policy
+
+The private repository's current GitHub plan returned HTTP 403 for branch protection and ruleset
+APIs (inspected 2026-08-29). Reproduce the required checks on the future public canonical repo
+([#24](https://github.com/blitzcraftlabs/atlas/issues/24)). See [security engineering](security.md).
 
 If branch protection still references retired job names (**Detect Changes**, **Quality**, **Build
 and E2E**), update them to **CI / CI**. Legacy names from the old **Gitleaks Secrets Scan**

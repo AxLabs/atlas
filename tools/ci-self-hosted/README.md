@@ -33,6 +33,9 @@ pnpm ci:self-hosted:disable
 
 Delete `ATLAS_CI_RUNNER_PROFILE` or set it to `github-hosted`.
 
+Push access to the canonical Atlas repository is part of the trusted self-hosted-runner boundary.
+Fork pull requests never execute on persistent Atlas self-hosted machines.
+
 ## What changes
 
 | Profile                   | `runs-on`           | pnpm cache                        | Turbo cache                  |

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "exceptions": [
+    {
+      "advisory": "GHSA-jmr9-qjv8-65gv",
+      "packageName": "extract-zip",
+      "owner": "@atlas-maintainers",
+      "reason": "extract-zip@2.0.1 is pulled only through @lhci/cli → lighthouse → puppeteer-core → @puppeteer/browsers. The registry reports no patched extract-zip line (patched_versions <0.0.0). Upgrading Lighthouse/Puppeteer enough to drop 2.0.1 is a tooling major-line change outside issue #14.",
+      "compensatingControl": "Dev-only LHCI/Lighthouse path; Atlas never extracts attacker-supplied zip archives. Browser downloads are vendor artifacts on trusted CI/developer hosts, not a production request handler or client bundle.",
+      "reviewedOn": "2026-08-29",
+      "expiresOn": "2026-11-27"
+    },
+    {
+      "advisory": "GHSA-5c6j-r48x-rmvq",
+      "packageName": "serialize-javascript",
+      "owner": "@atlas-maintainers",
+      "reason": "serialize-javascript@6.0.2 is required by terser-webpack-plugin 5.x via @sentry/nextjs's webpack plugin. The first patched release is 7.0.3 (major). Forcing 7.x would ignore terser-webpack-plugin's ^6 range and is not a safe drop-in for this PR.",
+      "compensatingControl": "The vulnerable serialize() path is webpack/terser minification of first-party source during local and CI builds. Atlas does not pass untrusted objects (RegExp.flags / Date) into serialize-javascript. The package is not used as a Next.js request handler or shipped as a browser API.",
+      "reviewedOn": "2026-08-29",
+      "expiresOn": "2026-11-27"
+    },
+    {
+      "advisory": "GHSA-ph9p-34f9-6g65",
+      "packageName": "tmp",
+      "owner": "@atlas-maintainers",
+      "reason": "Vulnerable tmp@0.0.33 / tmp@0.1.0 come from @turbo/gen → inquirer/external-editor and from @lhci/cli. The patched line is tmp >=0.2.6, which changes the callback API those inquirer 6/7 stacks still call. A tmp 0.2 override is not a compatible refresh for this PR.",
+      "compensatingControl": "CLI/dev-only. The GHSA requires untrusted prefix/postfix/dir options; Atlas and these tools use library-controlled temp names, not attacker-supplied tmp options. Not present in production application bundles or server runtime.",
+      "reviewedOn": "2026-08-29",
+      "expiresOn": "2026-11-27"
+    }
+  ]
+}
