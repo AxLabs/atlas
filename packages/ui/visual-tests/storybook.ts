@@ -10,7 +10,7 @@ export const VIEWPORTS = {
 export type ThemeName = "light" | "dark";
 
 export function storyIframePath(storyId: string, theme: ThemeName = "light") {
-  const params = new URLSearchParams({ id: storyId, viewMode: "story" });
+  const params = new URLSearchParams({ id: storyId });
   if (theme === "dark") {
     params.set("globals", "theme:dark");
   }

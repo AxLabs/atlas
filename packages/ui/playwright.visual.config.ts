@@ -16,6 +16,10 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
+      // Measured on ubuntu-latest (GHA): ~1% pixel delta vs dev-captured baselines due to
+      // Chromium/font rasterization variance across Linux hosts. Re-capture baselines on
+      // ubuntu-latest to tighten toward Playwright's default (0) over time.
+      maxDiffPixelRatio: 0.01,
     },
   },
   use: {
