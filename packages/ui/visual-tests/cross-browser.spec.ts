@@ -33,8 +33,8 @@ test.describe("Dialog keyboard composition", () => {
   test("opens, traps focus, closes, and restores focus", async ({ page, baseURL }) => {
     await gotoStory(page, baseURL!, "ui-dialog--keyboard-interaction");
 
-    const trigger = story(page).getByRole("button", { name: "Open Dialog" });
-    await expect(trigger).toBeVisible({ timeout: 30_000 });
+    const trigger = story(page).locator('button[aria-label="Open Dialog"]');
+    await trigger.waitFor({ state: "visible", timeout: 30_000 });
     await trigger.focus();
     await page.keyboard.press("Enter");
 
