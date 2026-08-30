@@ -22,7 +22,7 @@
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-mobile-chromium.png": {
-      "sha256": "c8202d1d771c28fd4eb08ebc37befe6a3a2fdb3c540861b4ce44602572272187",
+      "sha256": "843e7f6cd20f7e573de80495360f5da6daf02f52920a436905b1608fb75f406f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
@@ -36,7 +36,7 @@
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-mobile-chromium.png": {
-      "sha256": "17d88358ec46f70a091282ff063866a83270461bf4cfa8f3e25618feb6a83843",
+      "sha256": "625ac6e2045ae789980ba776be5949974dbcad82bb6f5ff591ff49abbfc2c42b",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
