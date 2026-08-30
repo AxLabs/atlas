@@ -1,3 +1,5 @@
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import { Label } from "./label";
 import {
   Select,
@@ -8,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./select";
-
-import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
 import type { Meta, StoryObj } from "@storybook/react";
 

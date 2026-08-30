@@ -1,3 +1,5 @@
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import { Button } from "./button";
 import {
   Dialog,
@@ -11,8 +13,6 @@ import {
 } from "./dialog";
 import { Input } from "./input";
 import { Label } from "./label";
-
-import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
@@ -110,7 +110,9 @@ export const KeyboardInteraction: Story = {
   tags: ["critical"],
   render: () => (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" />}>Open Dialog</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" aria-label="Open Dialog" />}>
+        Open Dialog
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Keyboard dialog</DialogTitle>

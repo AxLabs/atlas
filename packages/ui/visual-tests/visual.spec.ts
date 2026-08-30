@@ -1,14 +1,14 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { gotoStory, snapshotName, STORYBOOK_ROOT, VIEWPORTS } from "./storybook";
 
-type VisualCase = {
+interface VisualCase {
   storyId: string;
   name: string;
-  themes: Array<"light" | "dark">;
-  viewports: Array<keyof typeof VIEWPORTS>;
-  prepare?: (page: import("@playwright/test").Page) => Promise<void>;
-};
+  themes: ("light" | "dark")[];
+  viewports: (keyof typeof VIEWPORTS)[];
+  prepare?: (page: Page) => Promise<void>;
+}
 
 const cases: VisualCase[] = [
   {
@@ -102,8 +102,7 @@ for (const visualCase of cases) {
         }
 
         await expect(page.locator(STORYBOOK_ROOT)).toHaveScreenshot(
-          snapshotName([visualCase.name, theme, viewportName]),
-          { fullPage: false }
+          snapshotName([visualCase.name, theme, viewportName])
         );
       });
     }

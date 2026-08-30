@@ -1,9 +1,8 @@
+import { expect, userEvent, within } from "@storybook/test";
 import { Loader2, Mail } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "./button";
-
-import { expect, userEvent, within } from "@storybook/test";
 
 import type { Meta, StoryObj } from "@storybook/react";
 

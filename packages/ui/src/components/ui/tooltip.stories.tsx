@@ -1,9 +1,8 @@
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
-import { expect, screen, userEvent, waitFor } from "@storybook/test";
-
 import type { Meta, StoryObj } from "@storybook/react";
-import * as React from "react";
 
 const triggerButtonStyle = {
   padding: "8px 16px",
@@ -87,27 +86,27 @@ export const WithSide: Story = {
 
 export const KeyboardAccessibility: Story = {
   tags: ["critical"],
-  render: () => {
-    function TooltipKeyboardDemo() {
-      const [open, setOpen] = React.useState(true);
+  render: () => (
+    <Tooltip>
+      <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Show tooltip
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Keyboard accessible tooltip</p>
+      </TooltipContent>
+    </Tooltip>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Show tooltip" });
 
-      return (
-        <Tooltip open={open} onOpenChange={setOpen}>
-          <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
-            Show tooltip
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Keyboard accessible tooltip</p>
-          </TooltipContent>
-        </Tooltip>
-      );
-    }
+    await expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 
-    return <TooltipKeyboardDemo />;
-  },
-  play: async () => {
-    await screen.findByRole("tooltip");
+    trigger.focus();
+    await waitFor(() => expect(screen.getByRole("tooltip")).toBeVisible());
+
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
   },
 };
