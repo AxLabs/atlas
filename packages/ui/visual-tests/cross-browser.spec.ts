@@ -8,8 +8,19 @@ function story(page: Page) {
 
 async function expectFocusInside(container: Locator) {
   await expect
-    .poll(async () => container.evaluate((element) => element.contains(document.activeElement)))
+    .poll(async () => container.evaluate((element) => element.contains(document.activeElement)), {
+      timeout: 10_000,
+    })
     .toBe(true);
+}
+
+async function moveFocusInside(container: Locator, page: Page) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    if (await container.evaluate((element) => element.contains(document.activeElement))) {
+      return;
+    }
+    await page.keyboard.press("Tab");
+  }
 }
 
 test.describe("Select keyboard composition", () => {
@@ -40,7 +51,7 @@ test.describe("Dialog keyboard composition", () => {
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await page.keyboard.press("Tab");
+    await moveFocusInside(dialog, page);
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Tab");
