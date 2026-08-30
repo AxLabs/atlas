@@ -40,6 +40,7 @@ test.describe("Dialog keyboard composition", () => {
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
+    await page.keyboard.press("Tab");
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Tab");
