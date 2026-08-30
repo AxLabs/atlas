@@ -1,241 +1,241 @@
 {
   "assets": {
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-dark-desktop-chromium.png": {
-      "sha256": "6e1223d82db9b196cb5293b9b0c18acc774106b5d4c000ad093c2ff8eec77293",
+      "sha256": "5f9afd168348e40f0b619bace9ed0e87b7c553c419de9ef94b1880e616931c27",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-light-desktop-chromium.png": {
-      "sha256": "85de0e69ae4b6b2e89261627cb571aeba91f7f1b1d5cc5cae9e571a72e6b60ca",
+      "sha256": "ca880a69bd67b3240e5e8bacea5d7b968ff219376208d043dd41b54310e6097c",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-desktop-chromium.png": {
-      "sha256": "0e270fdb0af61475476c05de0b9e2c169ca02f039244311dc9901d4c9fe68446",
+      "sha256": "b127c83f14331f3dab597d29dd5b28ba2a637355b87762e420ebc223ab864af7",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-mobile-chromium.png": {
-      "sha256": "8532935e579f72e0f217dd2b45419333b3f1df498ca43ed125c16f0e05c96340",
+      "sha256": "c8202d1d771c28fd4eb08ebc37befe6a3a2fdb3c540861b4ce44602572272187",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-desktop-chromium.png": {
-      "sha256": "470064dc5ec2bb2d2fe446586704ba8c8b021955cacb79f4b1b21d6fa2ba704a",
+      "sha256": "0b22ad510ef2572d15052a41485035b1a5e95fad4fc7794f295f78ae006d41dc",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-mobile-chromium.png": {
-      "sha256": "77ab3b39086a233b375ac5dfbae5a6d8fe805e66de6cf740cee8b7237d8e884d",
+      "sha256": "17d88358ec46f70a091282ff063866a83270461bf4cfa8f3e25618feb6a83843",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-desktop-chromium.png": {
-      "sha256": "cabdedce229447563bea9e8ae8bc74c72948fa37ccb0ca23a4acccc8a87b8fc8",
+      "sha256": "140b6f4e57356d4e5083dbc0dde2e8c52d123daf0b7e9146dda54b96e2c3cf78",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-mobile-chromium.png": {
-      "sha256": "6581c380e133bbe6cf55c4bf59da8e24a2ef6d0a9796f65d65603aadc9bc68f7",
+      "sha256": "4bdab1d3fd1fa9e242e507a3a69b9b84305bb6828a6341809f7d8426df133d5e",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-desktop-chromium.png": {
-      "sha256": "d71eb43cd8089d86112e8459b6583cd0e44c7e2674223ca91c8b4426f2fa7877",
+      "sha256": "675a44d77a823cb4f8d3ffc5c63125f3c72647149f8cf2ba1a47042927ae777a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-mobile-chromium.png": {
-      "sha256": "599816ca6ffe118e92a747bb7536bdb4def866001f8c519ddb06d0a09cf9a605",
+      "sha256": "facf0e10e3077f4635471b1f03ebdbbae8784673d03e41db634bd6f9ac7826f5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-desktop-chromium.png": {
-      "sha256": "5732f730253a8020d9a321cd85f402c533c9e5a84d5cd4929637ef2d4fac8735",
+      "sha256": "b9a4ac9ef1f8c8b96476c584c468025307d799d3a58164a647ebf1f9078f6788",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-mobile-chromium.png": {
-      "sha256": "6076e6954debc8709f7f60e46e6c48d4a1fa9c5566c4224a13608dbd25d2b43f",
+      "sha256": "1dc3e401dcf499b944c9210c4932a4a3efd70439f68536cf22fe2f977b6ec419",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-desktop-chromium.png": {
-      "sha256": "c58c1791c9a49607eb2c29990c020a8ca0e0f918fcbc000956a237520a2d0982",
+      "sha256": "70928af39516fe02ef91e0cf71678f518885e85a1193f7acb3c7b0ecca503886",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-mobile-chromium.png": {
-      "sha256": "2d5fa2966fd589e4d5b9bd4993ac6cc8a136e32afa9acbc05592c8f1463ebbef",
+      "sha256": "2dddfde7fc37feda89b6bf8f627e16506b45768e2e08622719ab67fb1f99d838",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-desktop-chromium.png": {
-      "sha256": "e8747b822d0024e5bd77c37a29082e2e438040bdc93ee367e3c9218d3c14b265",
+      "sha256": "1a19484f848f7040ce040e41a29c8c623b9548a8503f348c9cbb9ff1a13511f8",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-mobile-chromium.png": {
-      "sha256": "8f5073ea8695bca0a264e0de448e65d505a515ee1e5546d94ffe2c69934a7034",
+      "sha256": "80cf454313ccee16b166553de187e54a9c28262a364bcf9e4fd26bd09e15b073",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-desktop-chromium.png": {
-      "sha256": "5adb421f27ebb3e7e5bbd7cc14bae9a83342117c788a7e26d2ead0d77cdbe2bb",
+      "sha256": "192669bbb66c3bacc142c144d86fc769ee685cd59c064cada9569a1ee2a2a12c",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-mobile-chromium.png": {
-      "sha256": "cfd5f97c6588195ae918f6d55dc2f38c318810f9681facbdb805acb49936ae9e",
+      "sha256": "47bad6c3112616ff16c1d3c53077d3c21a5d6828e4b8ca10425d06bd6e50b319",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-dark-desktop-chromium.png": {
-      "sha256": "3c77a977f4282d09873221465eb484cd61f2524b7d4008ab43f48f8472772a20",
+      "sha256": "f4ec684ad119cbf6e85c1a146c7818d0da1106462d96f48afa565a90ef09e016",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-light-desktop-chromium.png": {
-      "sha256": "8f7364c4795c43b3c50258ca0bd529955a1cedaf701fb358f59c996e9336f5d8",
+      "sha256": "e76e24de62040283371f9a7b2cc022a56c412b0e5290b3e7305fd4698f342169",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-desktop-chromium.png": {
-      "sha256": "d3137ab1729cd6f5411ebed043b821e6931e90062b95b5b64ec79ccd973d9dce",
+      "sha256": "acbf747673b12baa782a0aad670056508ed3e355eb95ea0911d59694f93db063",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-mobile-chromium.png": {
-      "sha256": "5c13f503cbb136ec076748b2d2e77cff2591be47864238e6226109b61339c353",
+      "sha256": "e87e45f51d8dcb86aa1151b480667f41d0d1661c38c00299a24518ffbadf5ee3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-desktop-chromium.png": {
-      "sha256": "22fbf46c1f7f315a538be1dd3fca63e302c83a318d1cf9e8d38c8c263e0627be",
+      "sha256": "4d0c5df274734848f5d46cf96850d6c34c3ec3d995ff227c4498cf06113620e0",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-mobile-chromium.png": {
-      "sha256": "573c64d6a3298ae7187eeeae66f92d97a738fd208334b6248cd887cd3a0ab5a4",
+      "sha256": "2831f1fbe76af49e1c9ff7993fd3c46b52cb6ce18105e76d7f818b36142e72f2",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-desktop-chromium.png": {
-      "sha256": "c202e0fe58167a258a0a89900fd5a81ada46d4c6bc985f5ae7ee825e14d1b69a",
+      "sha256": "5f8782d8cd651bfb5d87a237e34028e930ce1c4713efbd51c67acb59e31646d5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-mobile-chromium.png": {
-      "sha256": "adf6b55ad95afb4467187d23b95322c18f418c029d3374c37360d9037b98874e",
+      "sha256": "f2b97421fdda348024742c7f720eb700329fefcd6cf725a223bd58761f1b4803",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-desktop-chromium.png": {
-      "sha256": "908ef16b65e2fb0fb1b9f3125a2663719ea46ab3ffe3eab1bcce59fddb5bb11e",
+      "sha256": "8b99f51edb8c8746f0bd1c53fa7b8f8b7dbd44ee0a52258f68ba9efccf88a2c5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-mobile-chromium.png": {
-      "sha256": "a09c04b93bd86ad576e353e0bf5f0866ee64851fc6dcd3b03c81a2e9ad15d7a8",
+      "sha256": "f36ccb15a711b3619cdc0e7011e6e05bd04d018afb32cce563316503b56a32d3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-desktop-chromium.png": {
-      "sha256": "78261703495a979410ffa3bbc2005d02c9632102395aabaecc440f5e3117fa4d",
+      "sha256": "a55a8042d9668e6ca0a213d252bba9ad3ac9802e3edb1426a3665fff402c9ea0",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-mobile-chromium.png": {
-      "sha256": "f891c79e357d7d21dd2da9a0cee202d7ca55c6a9137248da22475a22f16220ee",
+      "sha256": "ae1229736d3b8edce4b42a926170df6d22e7618ece94b793137347e155cbde87",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-desktop-chromium.png": {
-      "sha256": "6ce999aba48d6768cb93f76a37be17eca5c749b6b7630fdaae5523e78e30f93a",
+      "sha256": "75e021b6fd9c14c28c13fabf83297393e15a38da507654896fd67c81dead6229",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-mobile-chromium.png": {
-      "sha256": "6ce999aba48d6768cb93f76a37be17eca5c749b6b7630fdaae5523e78e30f93a",
+      "sha256": "82d47dfcff524ff4ca03b03e8902b552d8d64e34e644d6f58d49651ccd5ecdbd",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-dark-desktop-chromium.png": {
-      "sha256": "b08e6e4772e4187f625954e9bc3a8d62cbbc6864c222894789e7fb7423f33846",
+      "sha256": "efcd594f59293f1b568cf59f1d07e3a4f47e15f6b4d4e246b91e457e372a55e4",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-light-desktop-chromium.png": {
-      "sha256": "8f332c7f934ff75f7e0e6b41a152f65a4b4946d9199f43d6eb3fc1c2cb64df38",
+      "sha256": "9f45d7ca144144bae275b59334abae55b5c193ae388679e94506407daa3ab775",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux)",
+      "reason": "Playwright visual regression baseline captured from Storybook in CI (Chromium, Linux, viewport clip)",
       "reviewedOn": "2026-08-30"
     }
   }

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { gotoStory, snapshotName, STORYBOOK_ROOT, VIEWPORTS } from "./storybook";
+import { gotoStory, snapshotName, VIEWPORTS } from "./storybook";
 
 interface VisualCase {
   storyId: string;
@@ -101,9 +101,9 @@ for (const visualCase of cases) {
           await visualCase.prepare(page);
         }
 
-        await expect(page.locator(STORYBOOK_ROOT)).toHaveScreenshot(
-          snapshotName([visualCase.name, theme, viewportName])
-        );
+        await expect(page).toHaveScreenshot(snapshotName([visualCase.name, theme, viewportName]), {
+          clip: { x: 0, y: 0, width: viewport.width, height: viewport.height },
+        });
       });
     }
   }
