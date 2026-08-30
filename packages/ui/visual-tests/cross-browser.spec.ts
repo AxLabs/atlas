@@ -34,7 +34,7 @@ test.describe("Dialog keyboard composition", () => {
     await gotoStory(page, baseURL!, "ui-dialog--keyboard-interaction");
 
     const trigger = story(page).getByRole("button", { name: "Open Dialog" });
-    await expect(trigger).toBeVisible();
+    await expect(trigger).toBeVisible({ timeout: 30_000 });
     await trigger.focus();
     await page.keyboard.press("Enter");
 

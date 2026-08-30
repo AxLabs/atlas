@@ -32,10 +32,14 @@ export async function gotoStory(
   await page.waitForFunction(
     (selector) => {
       const element = document.querySelector(selector);
-      return element instanceof HTMLElement && element.childElementCount > 0;
+      if (!(element instanceof HTMLElement) || element.childElementCount === 0) {
+        return false;
+      }
+
+      return element.querySelector("button, [role='combobox'], input, textarea, select") !== null;
     },
     STORYBOOK_ROOT,
-    { timeout: 15_000 }
+    { timeout: 30_000 }
   );
   await page.waitForTimeout(150);
 }

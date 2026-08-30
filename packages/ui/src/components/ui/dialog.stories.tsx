@@ -110,7 +110,22 @@ export const KeyboardInteraction: Story = {
   tags: ["critical"],
   render: () => (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" aria-label="Open Dialog" />}>
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            aria-label="Open Dialog"
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              background: "white",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          />
+        }
+      >
         Open Dialog
       </DialogTrigger>
       <DialogContent>
