@@ -14,9 +14,9 @@ async function expectFocusInside(container: Locator) {
     .toBe(true);
 }
 
-async function moveFocusInside(container: Locator, page: Page) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    if (await container.evaluate((element) => element.contains(document.activeElement))) {
+async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (await target.evaluate((element) => element === document.activeElement)) {
       return;
     }
     await page.keyboard.press("Tab");
@@ -51,10 +51,14 @@ test.describe("Dialog keyboard composition", () => {
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await moveFocusInside(dialog, page);
-    await expectFocusInside(dialog);
+
+    const cancel = dialog.getByRole("button", { name: "Cancel" });
+    const continueButton = dialog.getByRole("button", { name: "Continue" });
+    await focusByTabbing(cancel, page);
+    await expect(cancel).toBeFocused();
 
     await page.keyboard.press("Tab");
+    await expect(continueButton).toBeFocused();
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Escape");

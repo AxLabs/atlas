@@ -128,13 +128,19 @@ export const KeyboardInteraction: Story = {
       >
         Open Dialog
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Keyboard dialog</DialogTitle>
           <DialogDescription>
             Opens from the trigger, receives focus, and closes with Escape.
           </DialogDescription>
         </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline">
+            Cancel
+          </Button>
+          <Button type="button">Continue</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   ),
