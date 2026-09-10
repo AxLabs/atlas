@@ -23,6 +23,7 @@ const DEFAULT_EXCEPTIONS = path.join(
   REPO_ROOT,
   "packages/ui/.storybook/a11y-exceptions.json"
 );
+const DEFAULT_STORYBOOK_INDEX_RELATIVE = "packages/ui/storybook-static/index.json";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -181,6 +182,50 @@ function validateExceptionRecord(record, index) {
   return failures;
 }
 
+/**
+ * Load the built Storybook index (produced by `pnpm --filter @atlas/ui build-storybook`) so
+ * manifest story IDs can be validated against what Storybook actually generated, instead of
+ * trusting `critical-stories.json` to stay in sync by hand. IDs are derived by Storybook from
+ * title+export name, so a rename anywhere in that chain silently produces a new ID; comparing
+ * against the built artifact (rather than reverse-engineering the ID algorithm) is the only way
+ * to reliably catch that drift.
+ *
+ * Returns `missing: true` (not an error) when the file does not exist, so callers that cannot
+ * guarantee Storybook was built first (e.g. `pnpm test` outside the UI Quality workflow) can
+ * choose to treat that as non-fatal via `requireStorybookIndex`. Malformed/unparsable files are
+ * always a failure, missing files are only a failure when required, and stale IDs are always a
+ * failure when the index is present -- this is what keeps the check fail-closed in the one place
+ * that matters (`storybook-critical-policy.mjs` run from CI, after the build step) without making
+ * unrelated `pnpm test` runs that never build Storybook flaky.
+ */
+function loadStorybookIndex(storybookIndexPath) {
+  if (!fs.existsSync(storybookIndexPath)) {
+    return { entries: null, missing: true, error: null };
+  }
+
+  let data;
+  try {
+    data = readJson(storybookIndexPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      entries: null,
+      missing: false,
+      error: `Built Storybook index could not be parsed (${storybookIndexPath}): ${message}`,
+    };
+  }
+
+  if (!data || typeof data.entries !== "object" || data.entries === null || Array.isArray(data.entries)) {
+    return {
+      entries: null,
+      missing: false,
+      error: `Built Storybook index is malformed: "entries" must be an object (${storybookIndexPath})`,
+    };
+  }
+
+  return { entries: data.entries, missing: false, error: null };
+}
+
 function indexExceptions(exceptions) {
   const byStoryRule = new Map();
   for (const record of exceptions) {
@@ -213,10 +258,22 @@ export function evaluateCriticalStoryPolicy({
   repoRoot = REPO_ROOT,
   manifestPath = DEFAULT_MANIFEST,
   exceptionsPath = DEFAULT_EXCEPTIONS,
+  storybookIndexPath = path.join(repoRoot, DEFAULT_STORYBOOK_INDEX_RELATIVE),
+  requireStorybookIndex = false,
 } = {}) {
   const failures = [];
   const manifest = loadCriticalManifest(manifestPath);
   const exceptionsData = loadA11yExceptions(exceptionsPath);
+  const storybookIndex = loadStorybookIndex(storybookIndexPath);
+  const storybookIndexRelative = path.relative(repoRoot, storybookIndexPath) || storybookIndexPath;
+
+  if (storybookIndex.error) {
+    failures.push(storybookIndex.error);
+  } else if (storybookIndex.missing && requireStorybookIndex) {
+    failures.push(
+      `Built Storybook index not found (${storybookIndexRelative}). Run "pnpm --filter @atlas/ui build-storybook" before validating the critical-story manifest.`
+    );
+  }
 
   for (let index = 0; index < exceptionsData.exceptions.length; index += 1) {
     failures.push(...validateExceptionRecord(exceptionsData.exceptions[index], index));
@@ -255,6 +312,12 @@ export function evaluateCriticalStoryPolicy({
 
     if (hasA11yDisable(block)) {
       failures.push(`${story.id}: parameters.a11y.disable=true is not allowed on protected stories`);
+    }
+
+    if (storybookIndex.entries && !(story.id in storybookIndex.entries)) {
+      failures.push(
+        `${story.id}: story ID not found in built Storybook index (${storybookIndexRelative}) -- it is stale (the story title or export was renamed, generating a new ID, or the story was removed). Rebuild Storybook and update critical-stories.json with the current ID.`
+      );
     }
 
     const disabledRules = extractA11yConfigRules(block);
@@ -302,6 +365,9 @@ function parseArgs(argv) {
     } else if (arg === "--repo-root" && argv[index + 1]) {
       options.repoRoot = path.resolve(argv[index + 1]);
       index += 1;
+    } else if (arg === "--storybook-index" && argv[index + 1]) {
+      options.storybookIndexPath = path.resolve(argv[index + 1]);
+      index += 1;
     }
   }
 
@@ -310,7 +376,11 @@ function parseArgs(argv) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const result = evaluateCriticalStoryPolicy(options);
+  // The CLI is the authoritative enforcement entrypoint (run from CI after build-storybook), so it
+  // always requires the built Storybook index to exist -- unlike the bare `evaluateCriticalStoryPolicy()`
+  // default used by unit tests that may run without a Storybook build available (see
+  // storybook-critical-policy.test.mjs).
+  const result = evaluateCriticalStoryPolicy({ ...options, requireStorybookIndex: true });
 
   if (result.ok) {
     console.log(

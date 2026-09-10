@@ -87,6 +87,11 @@ baselines are Chromium-only** and committed under `packages/ui/visual-tests/__sn
 Comparison uses a tight `maxDiffPixelRatio` of `0.005` after canonical GitHub-hosted `ubuntu-24.04`
 Chromium capture.
 
+Element-scoped baselines prove pixel stability of the captured element only, not full-page layout:
+`dialog-open` captures the dialog surface itself (not the backdrop/overlay dimming behind it), and
+`select-open` captures only the listbox, so its desktop and mobile baselines can be pixel-identical
+when the listbox content doesn't resize between viewports — that is expected, not a coverage gap.
+
 ```bash
 pnpm --filter @atlas/ui build-storybook
 pnpm --filter @atlas/ui test:visual
@@ -102,10 +107,15 @@ pnpm --filter @atlas/ui build-storybook
 pnpm --filter @atlas/ui test:visual:update
 ```
 
-**Canonical environment:** generate baselines on Linux with the same Playwright version as CI
-(`ubuntu-24.04` + `playwright install --with-deps chromium`). Element-scoped baselines are captured
-from Storybook static iframes with `locale: en-US`, `timezoneId: UTC`, and `reducedMotion: reduce`.
-For a containerized update matching CI:
+**Canonical environment:** the only source of truth for committed baselines is the GitHub-hosted
+`ubuntu-24.04` runner used by the `ui-quality` workflow (`playwright install --with-deps chromium`).
+Element-scoped baselines are captured from Storybook static iframes with `locale: en-US`,
+`timezoneId: UTC`, and `reducedMotion: reduce`.
+
+Docker (including the Noble container below) is a **close Linux reproduction for local debugging
+only** — it is not equivalent to the GitHub-hosted runner. Font hinting and other rasterization
+details can still differ even with a matching Playwright version, which can produce baselines that
+pass locally but diff in CI (or vice versa):
 
 ```bash
 pw_version=$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')
@@ -115,6 +125,10 @@ docker run --rm \
   "mcr.microsoft.com/playwright:v${pw_version}-noble" \
   bash -lc 'corepack enable && pnpm build-storybook && pnpm test:visual:update'
 ```
+
+**Do not commit baselines generated locally or in Docker.** Open a draft PR and let the `ui-quality`
+workflow regenerate and confirm the diff on the canonical GitHub-hosted runner first; a committed
+baseline update must ultimately match what that runner produces.
 
 CI uploads `test-results/`, `playwright-report-visual/`, and `playwright-report-storybook/` when
 visual tests fail.

@@ -88,14 +88,6 @@ export const NoFiles: Story = {
 };
 
 export const WithImage: Story = {
-  parameters: {
-    a11y: {
-      // Decorative illustration only; alt text is intentionally empty.
-      config: {
-        rules: [{ id: "image-alt", enabled: false }],
-      },
-    },
-  },
   render: () => (
     <div style={{ width: "500px" }}>
       <Empty>

@@ -1,0 +1,237 @@
+/**
+ * Runtime accessibility policy for the critical Storybook test-runner (#16 / #67 review).
+ *
+ * `scripts/storybook-critical-policy.mjs` inspects story source text as an early structural
+ * check, but source text cannot see accessibility parameters inherited from Storybook's global
+ * preview, component meta, or merged configuration. This module is the authoritative, fail-closed
+ * runtime gate: `.storybook/test-runner.ts` calls `evaluateA11yRuntimePolicy` with the *effective
+ * merged* `parameters.a11y` Storybook computes for each story (via `getStoryContext`), so a
+ * disable or a rule override inherited from any level is caught the same way a story-level one
+ * would be.
+ *
+ * Date validation intentionally mirrors `scripts/license-exceptions.mjs` (`isValidIsoDate`). Keep
+ * the two in sync if the exception date format ever changes.
+ */
+
+import { readFileSync } from "node:fs";
+
+export interface A11yException {
+  storyId: string;
+  rule: string;
+  owner: string;
+  reason: string;
+  reviewedOn: string;
+  expiry: string;
+}
+
+export interface InvalidA11yException {
+  index: number;
+  failures: string[];
+}
+
+export interface A11yExceptionValidation {
+  valid: A11yException[];
+  invalid: InvalidA11yException[];
+}
+
+type A11yRuleValue = { enabled?: boolean } | boolean | undefined;
+export type A11yRuleMap = Record<string, A11yRuleValue>;
+export interface A11yRuleArrayEntry {
+  id?: string;
+  enabled?: boolean;
+}
+
+export interface EffectiveA11yParameters {
+  disable?: boolean;
+  config?: {
+    rules?: A11yRuleMap | A11yRuleArrayEntry[];
+  };
+}
+
+export interface A11yRuntimeCheckInput {
+  storyId: string;
+  parameters: { a11y?: EffectiveA11yParameters } | null | undefined;
+  validExceptions: A11yException[];
+  exceptionFileFailures: string[];
+}
+
+export interface A11yRuntimeCheckResult {
+  ok: boolean;
+  failures: string[];
+  disabledRules: string[];
+}
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const REQUIRED_EXCEPTION_FIELDS = [
+  "storyId",
+  "rule",
+  "owner",
+  "reason",
+  "reviewedOn",
+  "expiry",
+] as const;
+
+export function isValidIsoDate(value: unknown): value is string {
+  if (typeof value !== "string" || !ISO_DATE_PATTERN.test(value)) {
+    return false;
+  }
+
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+}
+
+export function isExceptionExpired(expiry: unknown): boolean {
+  if (!isValidIsoDate(expiry)) {
+    return true;
+  }
+  const expiryDate = new Date(`${expiry}T00:00:00.000Z`);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  return expiryDate < today;
+}
+
+/** Structural validation for a single exception record. Mirrors storybook-critical-policy.mjs. */
+export function validateExceptionRecord(record: unknown, index: number): string[] {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    return [`exceptions[${index}]: must be an object`];
+  }
+
+  const candidate = record as Record<string, unknown>;
+  const failures: string[] = [];
+
+  for (const field of REQUIRED_EXCEPTION_FIELDS) {
+    const value = candidate[field];
+    if (typeof value !== "string" || value.trim() === "") {
+      failures.push(`exceptions[${index}]: missing or empty "${field}"`);
+    }
+  }
+
+  if (typeof candidate.reviewedOn === "string" && !isValidIsoDate(candidate.reviewedOn)) {
+    failures.push(`exceptions[${index}]: invalid reviewedOn "${candidate.reviewedOn}"`);
+  }
+
+  if (typeof candidate.expiry === "string") {
+    if (!isValidIsoDate(candidate.expiry)) {
+      failures.push(`exceptions[${index}]: invalid expiry "${candidate.expiry}"`);
+    } else if (isExceptionExpired(candidate.expiry)) {
+      failures.push(
+        `exceptions[${index}]: expired exception for ${String(candidate.storyId ?? "?")} rule ${String(candidate.rule ?? "?")} (expiry ${candidate.expiry})`
+      );
+    }
+  }
+
+  return failures;
+}
+
+/**
+ * Validate the whole a11y-exceptions.json payload. Malformed or expired records are excluded from
+ * `valid` (so they can never authorize weakening a check) and are always reported in `invalid`.
+ */
+export function validateA11yExceptions(data: unknown): A11yExceptionValidation {
+  const container = data as { exceptions?: unknown } | null | undefined;
+
+  if (!container || !Array.isArray(container.exceptions)) {
+    return {
+      valid: [],
+      invalid: [{ index: -1, failures: ['a11y-exceptions.json: "exceptions" must be an array'] }],
+    };
+  }
+
+  const valid: A11yException[] = [];
+  const invalid: InvalidA11yException[] = [];
+
+  container.exceptions.forEach((record, index) => {
+    const failures = validateExceptionRecord(record, index);
+    if (failures.length > 0) {
+      invalid.push({ index, failures });
+    } else {
+      valid.push(record as A11yException);
+    }
+  });
+
+  return { valid, invalid };
+}
+
+export function loadA11yExceptionsFile(filePath: string): A11yExceptionValidation {
+  let data: unknown;
+  try {
+    data = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      valid: [],
+      invalid: [
+        {
+          index: -1,
+          failures: [`a11y-exceptions.json could not be read or parsed (${filePath}): ${message}`],
+        },
+      ],
+    };
+  }
+  return validateA11yExceptions(data);
+}
+
+/** Accepts both `{ id: { enabled: false } }` and `[{ id, enabled: false }]` axe rule shapes. */
+export function extractDisabledRuleIds(
+  rules: A11yRuleMap | A11yRuleArrayEntry[] | undefined
+): string[] {
+  if (!rules) {
+    return [];
+  }
+
+  if (Array.isArray(rules)) {
+    return rules
+      .filter(
+        (rule): rule is A11yRuleArrayEntry & { id: string } =>
+          typeof rule?.id === "string" && rule.enabled === false
+      )
+      .map((rule) => rule.id);
+  }
+
+  return Object.entries(rules)
+    .filter(([, value]) => {
+      if (value === false) {
+        return true;
+      }
+      return Boolean(value) && typeof value === "object" && value.enabled === false;
+    })
+    .map(([ruleId]) => ruleId);
+}
+
+/**
+ * Authoritative fail-closed decision for one story's *effective merged* accessibility parameters.
+ * No global, meta, or story-level configuration can weaken checks unless a valid, unexpired,
+ * exact story+rule exception exists in the registry.
+ */
+export function evaluateA11yRuntimePolicy(input: A11yRuntimeCheckInput): A11yRuntimeCheckResult {
+  const failures: string[] = [...input.exceptionFileFailures];
+  const a11y = input.parameters?.a11y ?? {};
+
+  if (a11y.disable === true) {
+    failures.push(
+      `${input.storyId}: effective parameters.a11y.disable=true is not allowed on protected stories (global, meta, and story parameters are merged before this check runs)`
+    );
+  }
+
+  const disabledRules = extractDisabledRuleIds(a11y.config?.rules);
+  for (const rule of disabledRules) {
+    const hasValidException = input.validExceptions.some(
+      (exception) => exception.storyId === input.storyId && exception.rule === rule
+    );
+    if (!hasValidException) {
+      failures.push(
+        `${input.storyId}: axe rule "${rule}" is disabled in effective parameters without a valid, unexpired exception in a11y-exceptions.json`
+      );
+    }
+  }
+
+  return { ok: failures.length === 0, failures, disabledRules };
+}

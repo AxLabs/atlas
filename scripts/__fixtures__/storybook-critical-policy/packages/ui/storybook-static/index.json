@@ -1,0 +1,13 @@
+{
+  "v": 5,
+  "entries": {
+    "ui-select--keyboard-interaction": {
+      "id": "ui-select--keyboard-interaction",
+      "title": "UI/Select",
+      "name": "Keyboard Interaction",
+      "importPath": "./src/components/ui/select.stories.tsx",
+      "type": "story",
+      "tags": ["critical", "test"]
+    }
+  }
+}

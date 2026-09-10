@@ -65,7 +65,10 @@ test.describe("Select keyboard composition", () => {
     // focus stays on the combobox does not move the highlighted option in WebKit.
     await page.keyboard.press("r");
     await expect.poll(async () => highlightedSelectOption(page)).toBe("React");
-    await page.getByRole("option", { name: "React" }).press("Enter");
+
+    // Select from the existing keyboard state (no option `.click()`/`.press()`), so this proves a
+    // genuine end-to-end keyboard action rather than a locator-focused synthetic key dispatch.
+    await page.keyboard.press("Enter");
     await expect(page.getByRole("listbox")).toHaveCount(0);
     await expect(trigger).toContainText("React");
     await expect(trigger).toBeFocused();
