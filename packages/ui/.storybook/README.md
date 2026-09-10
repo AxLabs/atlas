@@ -68,8 +68,8 @@ Visual tests render static Storybook iframes with deterministic themes and viewp
 target the protected component or portaled overlay (dialog, menu, listbox, tooltip) rather than the
 full viewport where practical, so empty pixels do not dilute regression sensitivity. **Pixel
 baselines are Chromium-only** and committed under `packages/ui/visual-tests/__snapshots__/`.
-Comparison uses Playwright strict defaults (`maxDiffPixels: 0`) after canonical Linux baseline
-capture.
+Comparison uses a tight `maxDiffPixelRatio` of `0.005` after canonical GitHub-hosted `ubuntu-24.04`
+Chromium capture.
 
 ```bash
 pnpm --filter @atlas/ui build-storybook
@@ -87,7 +87,7 @@ pnpm --filter @atlas/ui test:visual:update
 ```
 
 **Canonical environment:** generate baselines on Linux with the same Playwright version as CI
-(`ubuntu-latest` + `playwright install --with-deps chromium`). Element-scoped baselines are captured
+(`ubuntu-24.04` + `playwright install --with-deps chromium`). Element-scoped baselines are captured
 from Storybook static iframes with `locale: en-US`, `timezoneId: UTC`, and `reducedMotion: reduce`.
 For a containerized update matching CI:
 

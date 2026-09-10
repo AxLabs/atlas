@@ -1,241 +1,241 @@
 {
   "assets": {
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-dark-desktop-chromium.png": {
-      "sha256": "3aa67b69729182d46b62e96ed96152b3881bfc61ebf00eb6ce67f138705ccc7a",
+      "sha256": "6b9eb82e5258fc3aaaa0620bfc98a0cacd6e95d9c8000e9d757d60f8e859fc8f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-light-desktop-chromium.png": {
-      "sha256": "285c3b5f97cc256f618cb2f44460ff9889f6f895d22138db7e6eb44d28d83c3f",
+      "sha256": "4ff0b44f1edde802266f9e99eb0f11015c56b0703239989bd3477f00cf56bfe9",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-desktop-chromium.png": {
-      "sha256": "07cea484cbeea36645a3182ad4e13caa92c48e32ab6089a39de249e661bf5bd6",
+      "sha256": "ba583ad523e2ab513f52479553ca4d3d55630a1d1ae6fb16e96ff875ce431c36",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-mobile-chromium.png": {
-      "sha256": "e3baa2a281f5cacf0cd3fc8ddb4419907555213b99c315779d68c52f9937da7b",
+      "sha256": "159d2f96987e19e4daeb0afb232f32f0018a0c216022d0b6bbaaabc2e2050058",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-desktop-chromium.png": {
-      "sha256": "cbaadd6cf62c36e5028b06d39f233f5138d8f9afbadd10ce5ec619905a59cbff",
+      "sha256": "ec3e8ecceddf6962c6cab4e30e48b6bfef17f45ff0a3a998ea18dc587f175795",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-mobile-chromium.png": {
-      "sha256": "a8c78dba4cd125677488a95bf4b39f3a2b492b6299d520c9bb48ed5814dac08f",
+      "sha256": "a7d5d91fcf3ee7568112a2ab80144423b25a48651ab680381f2b49494f7874a2",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-desktop-chromium.png": {
-      "sha256": "5ea9adfd41fcf27e8ac415c1a95e117a64ff2893597ab4a2893240841f14abb3",
+      "sha256": "6dd65d1527c55534cb349737606b2ba2935187ebcfee363e8ccee5919ec52d5e",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-mobile-chromium.png": {
-      "sha256": "48c698f0ea558a7e638f2afe0f4282f8fd46039dad22a5fdc9c406916cba1b28",
+      "sha256": "398957904d1e1e65f20df908f9ee1766279818abb120694b92d7fa98da9fe06a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-desktop-chromium.png": {
-      "sha256": "c37f17f4c0f6d276ab76be54166c20f3f62a5c4d59c8e77dd4d7407b84c004d5",
+      "sha256": "a626684544908f0ad0cb3baab211f6a9c74ac2b835541c7fbc554d0303797cf4",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-mobile-chromium.png": {
-      "sha256": "264fdf39c3d704104f98738dc4c8ba740deba08055011cb35da2d6085ad3a828",
+      "sha256": "731868b7bb402bb5374a493a2ea95dfec966dc3bad4140ec2cb738ee4e2af2e7",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-desktop-chromium.png": {
-      "sha256": "4df74169db412761f49f9853c3bca9b571894c2d7e1a88eb144a3b45901db500",
+      "sha256": "21e8b2b83e7e68479d100c76d943f2bdd7cbc58d2272089cb35309a255516404",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-mobile-chromium.png": {
-      "sha256": "6133f97c9a9b8dae72b23df036cc36fd37e1a5ec884857f7bd95f2973dd3e18b",
+      "sha256": "20cbf97d01e5f2d35875ec54aa0a9b5261526241aff4a85ecda93be0730ab92c",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-desktop-chromium.png": {
-      "sha256": "350d61de61a0f382772c334f3eceb0df3b77c6431768341d9114e32cef1c8ddc",
+      "sha256": "302e4928e69fa74ac57e1e1bb487e31d784635990579f13abbac8c6b1bdfe405",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-mobile-chromium.png": {
-      "sha256": "e6b2fd65295014e5b561b42ab0a164b7968643fe2a6be9a85c24f3e056ad9a1d",
+      "sha256": "c067fcabb005a94440a527b00e27451ce805ffcfd6a6940c1a4c1aad9ce80396",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-desktop-chromium.png": {
-      "sha256": "33d93a86051cd060603f8d7f3c1a28daaada7a12f6ceb7d45d5739afbbaba286",
+      "sha256": "272e7804cdf04c5fa70aab4a452533f17f4b8324ce100791bd6890c70c4f410d",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-mobile-chromium.png": {
-      "sha256": "9ff2f649c26c83b3d74b4ff4bc4cf556b481970c909ff3c057746ee4f6108812",
+      "sha256": "2b4b76ef461b458994298d38864be0f1838cb1e871c2ef82b452c714745968ff",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-desktop-chromium.png": {
-      "sha256": "85ec1fa4a6ce8022454f0b10f5cefa883fe293de30b544c004cd094605b3f2a1",
+      "sha256": "fcee574621e1cb691a6ab1318fda25bac31f72d415d0a5322924345b8849be44",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-mobile-chromium.png": {
-      "sha256": "35108704e1e01e302de9494a88c4d6d255a02b596c8228f82471f7d5985563c3",
+      "sha256": "1257fb719cf64d73c8d5efee1ba371c3d1b57576aa1f7da1efdd7682e7654a4f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-dark-desktop-chromium.png": {
-      "sha256": "522018d3393ede1b1d4be23fa51447e2aa6628dc85bc045fc289a810798d731e",
+      "sha256": "feb74a1f7b0c65708dade10d6121dc50f46ac7e1dc6bfb89af9b06201d7d5416",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-light-desktop-chromium.png": {
-      "sha256": "d18fdb3b299c4bc89758482bcd9490bf4f3e68b1d46d2cd90362e5333e44651f",
+      "sha256": "a2fdad0772c498ce7e5df77786db56053e77f6c40f94c9ee82a9340498b4d19a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-desktop-chromium.png": {
-      "sha256": "9df7d4f51f25661f2b20620033ebcacf4a03dc7f01476f86b73deb2321c60db5",
+      "sha256": "3b20252c1ea71fe5864c15ec60a59827c6b1e345dfd8a669286c57391d82fc37",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-mobile-chromium.png": {
-      "sha256": "ab1c8772d640ab7bada0b8d7cb28f5375ca7e80a4fe25681815103113aaef9c5",
+      "sha256": "0cdff40d56a6545a0e18227fe578921676ed7569507156b737a607f8457d32a8",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-desktop-chromium.png": {
-      "sha256": "ce0da99982e4d9ed6f689510a106253453b3cf16e939f202716a6b43fa632bc1",
+      "sha256": "ea31257b6a3778eb0bed4ab01ad815261ba876dfdf27feef0f95332b7f10360b",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-mobile-chromium.png": {
-      "sha256": "2bd344054f9422900a2468363c5a1e56bfd7d8d9ec51cfb869d80fb0cfa7494c",
+      "sha256": "74b38c55c7c9ccb2f6b0b0d37e55b9ed44f007cd451b3c3f5ac89f8b29677f74",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-desktop-chromium.png": {
-      "sha256": "a9578627f09349bb2d538cdb713444f7d6835d0f3e6e03dfe9b6578c25067bb1",
+      "sha256": "c0ce5e18f13bdc8b4b35250bac2428e6889317cd31538db6ef2699b0cc1e920f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-mobile-chromium.png": {
-      "sha256": "8986a854998b1385f9ebf9b9992fc7a2f11983e730f75b42c64439b7cece8b3f",
+      "sha256": "b5dc35e511a8dc5a5d3d2d10a22458492df68dd631bdd884cedad9fff35ca1c0",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-desktop-chromium.png": {
-      "sha256": "06ac404d7e77b8cffd790b62686b1523246a9a42158ba001b3c4338277486bb2",
+      "sha256": "0e0b95889d4ddf935e7af2be6354df311ed717fb999d27830c3a65fbe1434835",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-mobile-chromium.png": {
-      "sha256": "8729421175d44f08ca2d7ed03a54134d15cd6c57eb92bc22ac36c1fe89b0b030",
+      "sha256": "6690ea1790cc97274449e02688866c37c330db37a8259a0720ebc9c17e63d694",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-desktop-chromium.png": {
-      "sha256": "96259d8d8295c0a81f16d78c29cd3c946dfb9c1fd6e3eb994fa1dee153f71b6d",
+      "sha256": "67c60b02171f920cbb32e448f7e80ee726a74c5e14baeef49bcb710d59ce41c3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-mobile-chromium.png": {
-      "sha256": "96259d8d8295c0a81f16d78c29cd3c946dfb9c1fd6e3eb994fa1dee153f71b6d",
+      "sha256": "67c60b02171f920cbb32e448f7e80ee726a74c5e14baeef49bcb710d59ce41c3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-desktop-chromium.png": {
-      "sha256": "6f118f9e7f717e4b7dd9d4b551567d7631c3cad72048b2d8502b2a8108d38bdb",
+      "sha256": "88c53af5f8a1ee7c9c363fc62b5d6e87ad47e1b09432a3617b26db0eedf74f52",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-mobile-chromium.png": {
-      "sha256": "6f118f9e7f717e4b7dd9d4b551567d7631c3cad72048b2d8502b2a8108d38bdb",
+      "sha256": "88c53af5f8a1ee7c9c363fc62b5d6e87ad47e1b09432a3617b26db0eedf74f52",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-dark-desktop-chromium.png": {
-      "sha256": "b1641e0230cdb9083055afe9ac5f58e9fc389a4525dbf03fd9557cf5eda5f962",
+      "sha256": "f9da2479ef1216809870a0432cc2a23a3f89b535b91e2d53cc568b3bc761d476",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-light-desktop-chromium.png": {
-      "sha256": "f49da9d4430f7683c24b5323fa26fc251c35547a5a2b7f1981e0d6ed75bd9aa4",
+      "sha256": "8ee0fdb8141e4f0689774329def15667cb84152cf127104048cf873849b46955",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-latest Chromium (locale en-US, timezone UTC, reduced motion)",
       "reviewedOn": "2026-09-10"
     }
   }

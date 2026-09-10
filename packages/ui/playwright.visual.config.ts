@@ -16,8 +16,10 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
-      // Strict pixel comparison after canonical Linux baseline capture (element-scoped
-      // screenshots, not full viewport). Playwright default: maxDiffPixels 0.
+      // Canonical baselines are GitHub-hosted ubuntu-24.04 Chromium captures.
+      // A tight ratio absorbs residual font/antialias rasterization between runs
+      // without restoring the previous 1% full-viewport slack.
+      maxDiffPixelRatio: 0.005,
     },
   },
   use: {
