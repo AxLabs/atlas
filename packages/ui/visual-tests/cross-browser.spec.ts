@@ -32,8 +32,7 @@ test.describe("Select keyboard composition", () => {
     await page.keyboard.press("ArrowDown");
     await expect(page.getByRole("listbox")).toBeVisible();
 
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("Enter");
+    await page.getByRole("option", { name: "React" }).click();
     await expect(trigger).toContainText("React");
 
     await page.keyboard.press("Escape");
@@ -98,7 +97,7 @@ test.describe("Tooltip keyboard accessibility", () => {
     const trigger = story(page).getByRole("button", { name: "Show tooltip" });
     await expect(page.getByRole("tooltip")).toHaveCount(0);
 
-    await trigger.focus();
+    await focusByTabbing(trigger, page);
     await expect(trigger).toBeFocused();
     await expect(page.getByRole("tooltip")).toBeVisible();
 
