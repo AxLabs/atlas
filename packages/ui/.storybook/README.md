@@ -58,9 +58,25 @@ pnpm --filter @atlas/ui test:storybook
 `test:storybook:cross-browser` targets the same static artifact with Playwright (Chromium + WebKit).
 These tests focus on keyboard/focus seams Atlas owns; they do not duplicate the full story catalog.
 
+Proven in CI for both browsers:
+
+- **Select** — keyboard open, typeahead navigation, keyboard selection, and focus return to the
+  trigger
+- **Dialog** — keyboard focus stays on dialog controls, Escape close, and focus return to the
+  trigger. CI does **not** assert wrap-around across Chromium and WebKit.
+- **DropdownMenu / Tooltip / Form / Button** — the keyboard and association checks in
+  `visual-tests/cross-browser.spec.ts`
+
 ```bash
 pnpm --filter @atlas/ui test:storybook:cross-browser
 ```
+
+### Change detection
+
+The UI Quality job runs on every push to `main`, and on pull requests whose changed files can affect
+Storybook quality enforcement. Classification lives in `scripts/ui-quality-paths.mjs` (not a
+workflow-only grep) so a PR that only edits `scripts/storybook-critical-policy.mjs`, its tests,
+fixtures, or the path classifier still runs the gate.
 
 ### Visual regression
 

@@ -290,13 +290,14 @@ Storybook complements Jest and application E2E — it does not replace them.
 | Layer                        | Command                                                | Scope                     |
 | ---------------------------- | ------------------------------------------------------ | ------------------------- |
 | Storybook build              | `pnpm --filter @atlas/ui build-storybook`              | Every story compiles      |
+| Critical story policy        | `node scripts/storybook-critical-policy.mjs`           | Protected tags/play/axe   |
 | Interaction + axe            | `pnpm --filter @atlas/ui test:storybook`               | `critical`-tagged stories |
 | Cross-browser keyboard/focus | `pnpm --filter @atlas/ui test:storybook:cross-browser` | Chromium + WebKit         |
 | Visual regression            | `pnpm --filter @atlas/ui test:visual`                  | Chromium pixel baselines  |
 
-CI runs these in the **UI Quality** workflow on `ubuntu-latest` with path filtering for
-`packages/ui/**` and related shared config. Pixel baselines are Chromium-only; WebKit is exercised
-for interaction, not screenshots.
+CI runs these in the **UI Quality** workflow on `ubuntu-24.04` with path filtering for
+`packages/ui/**`, Storybook critical-policy scripts, and related shared config. Pixel baselines are
+Chromium-only with `maxDiffPixelRatio: 0.005`; WebKit is exercised for interaction, not screenshots.
 
 Details: `packages/ui/.storybook/README.md`.
 

@@ -23,25 +23,60 @@ async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
   }
 }
 
+async function highlightedSelectOption(page: Page) {
+  return page.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.getAttribute("role") === "option") {
+      return (active.textContent || "").replace(/\s+/g, " ").trim();
+    }
+
+    const highlighted = document.querySelector<HTMLElement>(
+      '[role="option"][data-highlighted], [role="option"][data-active], [role="option"][aria-current="true"]'
+    );
+    if (highlighted) {
+      return (highlighted.textContent || "").replace(/\s+/g, " ").trim();
+    }
+
+    const listbox = document.querySelector("[role='listbox']");
+    const activeId = listbox?.getAttribute("aria-activedescendant");
+    if (activeId) {
+      const option = document.getElementById(activeId);
+      if (option) {
+        return (option.textContent || "").replace(/\s+/g, " ").trim();
+      }
+    }
+
+    return null;
+  });
+}
+
 test.describe("Select keyboard composition", () => {
   test("opens, navigates, selects, and restores focus", async ({ page, baseURL }) => {
     await gotoStory(page, baseURL!, "ui-select--keyboard-interaction");
 
     const trigger = story(page).getByRole("combobox", { name: "Framework" });
     await trigger.focus();
+    await expect(trigger).toBeFocused();
+
     await page.keyboard.press("ArrowDown");
     await expect(page.getByRole("listbox")).toBeVisible();
 
-    await page.getByRole("option", { name: "React" }).click();
+    // Typeahead is the keyboard navigation both engines expose. ArrowDown while
+    // focus stays on the combobox does not move the highlighted option in WebKit.
+    await page.keyboard.press("r");
+    await expect.poll(async () => highlightedSelectOption(page)).toBe("React");
+    await page.getByRole("option", { name: "React" }).press("Enter");
+    await expect(page.getByRole("listbox")).toHaveCount(0);
     await expect(trigger).toContainText("React");
-
-    await page.keyboard.press("Escape");
     await expect(trigger).toBeFocused();
   });
 });
 
 test.describe("Dialog keyboard composition", () => {
-  test("opens, traps focus, closes, and restores focus", async ({ page, baseURL }) => {
+  test("opens, keeps keyboard focus inside, closes, and restores focus", async ({
+    page,
+    baseURL,
+  }) => {
     await gotoStory(page, baseURL!, "ui-dialog--keyboard-interaction");
 
     const trigger = story(page).locator('button[aria-label="Open Dialog"]');
@@ -56,9 +91,14 @@ test.describe("Dialog keyboard composition", () => {
     const continueButton = dialog.getByRole("button", { name: "Continue" });
     await focusByTabbing(cancel, page);
     await expect(cancel).toBeFocused();
+    await expectFocusInside(dialog);
 
     await page.keyboard.press("Tab");
     await expect(continueButton).toBeFocused();
+    await expectFocusInside(dialog);
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(cancel).toBeFocused();
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Escape");
