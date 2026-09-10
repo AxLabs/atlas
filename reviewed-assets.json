@@ -1,242 +1,242 @@
 {
   "assets": {
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-dark-desktop-chromium.png": {
-      "sha256": "6e1223d82db9b196cb5293b9b0c18acc774106b5d4c000ad093c2ff8eec77293",
+      "sha256": "3aa67b69729182d46b62e96ed96152b3881bfc61ebf00eb6ce67f138705ccc7a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-light-desktop-chromium.png": {
-      "sha256": "85de0e69ae4b6b2e89261627cb571aeba91f7f1b1d5cc5cae9e571a72e6b60ca",
+      "sha256": "285c3b5f97cc256f618cb2f44460ff9889f6f895d22138db7e6eb44d28d83c3f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-desktop-chromium.png": {
-      "sha256": "d9651f25bbb47a4df02c535252a3ed51ee4cb4b7a427fd79759c8a79ce97e7fe",
+      "sha256": "07cea484cbeea36645a3182ad4e13caa92c48e32ab6089a39de249e661bf5bd6",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-mobile-chromium.png": {
-      "sha256": "0a63758c41b6e9043bfe5a97520fce2f98e77eb8fc5664649ce0d999a69a81ff",
+      "sha256": "e3baa2a281f5cacf0cd3fc8ddb4419907555213b99c315779d68c52f9937da7b",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-desktop-chromium.png": {
-      "sha256": "c9fb5512edd59115ee276d6284076c39d5888060c14254fa28396e926c48254d",
+      "sha256": "cbaadd6cf62c36e5028b06d39f233f5138d8f9afbadd10ce5ec619905a59cbff",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-mobile-chromium.png": {
-      "sha256": "c14e5e8e2bb14906c3187873719771c3aede0922fc69a8cfb18555ee8c953348",
+      "sha256": "a8c78dba4cd125677488a95bf4b39f3a2b492b6299d520c9bb48ed5814dac08f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-desktop-chromium.png": {
-      "sha256": "808a9a6aeff6258315c63a2abde4bf69e373cbeab722e0997fd5a2ece17285bc",
+      "sha256": "5ea9adfd41fcf27e8ac415c1a95e117a64ff2893597ab4a2893240841f14abb3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-mobile-chromium.png": {
-      "sha256": "8c0a05053d976cc1eb113092f0c0b6db7f2b0c272de2a510cb26100162dd6104",
+      "sha256": "48c698f0ea558a7e638f2afe0f4282f8fd46039dad22a5fdc9c406916cba1b28",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-desktop-chromium.png": {
-      "sha256": "fa497b76186adf05a992dadb0757b127df43e2a972eb2dffcae27c727962acaf",
+      "sha256": "c37f17f4c0f6d276ab76be54166c20f3f62a5c4d59c8e77dd4d7407b84c004d5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-mobile-chromium.png": {
-      "sha256": "995a6566c0b219fb29d55de4726d826cdeb7fddf24fabba8c29aea132b9ef4c6",
+      "sha256": "264fdf39c3d704104f98738dc4c8ba740deba08055011cb35da2d6085ad3a828",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-desktop-chromium.png": {
-      "sha256": "5732f730253a8020d9a321cd85f402c533c9e5a84d5cd4929637ef2d4fac8735",
+      "sha256": "4df74169db412761f49f9853c3bca9b571894c2d7e1a88eb144a3b45901db500",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-mobile-chromium.png": {
-      "sha256": "6076e6954debc8709f7f60e46e6c48d4a1fa9c5566c4224a13608dbd25d2b43f",
+      "sha256": "6133f97c9a9b8dae72b23df036cc36fd37e1a5ec884857f7bd95f2973dd3e18b",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-desktop-chromium.png": {
-      "sha256": "c58c1791c9a49607eb2c29990c020a8ca0e0f918fcbc000956a237520a2d0982",
+      "sha256": "350d61de61a0f382772c334f3eceb0df3b77c6431768341d9114e32cef1c8ddc",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-mobile-chromium.png": {
-      "sha256": "2d5fa2966fd589e4d5b9bd4993ac6cc8a136e32afa9acbc05592c8f1463ebbef",
+      "sha256": "e6b2fd65295014e5b561b42ab0a164b7968643fe2a6be9a85c24f3e056ad9a1d",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-desktop-chromium.png": {
-      "sha256": "e8747b822d0024e5bd77c37a29082e2e438040bdc93ee367e3c9218d3c14b265",
+      "sha256": "33d93a86051cd060603f8d7f3c1a28daaada7a12f6ceb7d45d5739afbbaba286",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-mobile-chromium.png": {
-      "sha256": "8f5073ea8695bca0a264e0de448e65d505a515ee1e5546d94ffe2c69934a7034",
+      "sha256": "9ff2f649c26c83b3d74b4ff4bc4cf556b481970c909ff3c057746ee4f6108812",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-desktop-chromium.png": {
-      "sha256": "5adb421f27ebb3e7e5bbd7cc14bae9a83342117c788a7e26d2ead0d77cdbe2bb",
+      "sha256": "85ec1fa4a6ce8022454f0b10f5cefa883fe293de30b544c004cd094605b3f2a1",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-mobile-chromium.png": {
-      "sha256": "cfd5f97c6588195ae918f6d55dc2f38c318810f9681facbdb805acb49936ae9e",
+      "sha256": "35108704e1e01e302de9494a88c4d6d255a02b596c8228f82471f7d5985563c3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-dark-desktop-chromium.png": {
-      "sha256": "3c77a977f4282d09873221465eb484cd61f2524b7d4008ab43f48f8472772a20",
+      "sha256": "522018d3393ede1b1d4be23fa51447e2aa6628dc85bc045fc289a810798d731e",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-light-desktop-chromium.png": {
-      "sha256": "8f7364c4795c43b3c50258ca0bd529955a1cedaf701fb358f59c996e9336f5d8",
+      "sha256": "d18fdb3b299c4bc89758482bcd9490bf4f3e68b1d46d2cd90362e5333e44651f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-desktop-chromium.png": {
-      "sha256": "dfe22f946af7664c0a606f3b7894cf65320efae50e46fda2b5cb4605fb6acea3",
+      "sha256": "9df7d4f51f25661f2b20620033ebcacf4a03dc7f01476f86b73deb2321c60db5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-mobile-chromium.png": {
-      "sha256": "e8d3e5168bbac9100aa16cf09bcc6c5bb1b372a6c673e6d96da63eac4151b7bb",
+      "sha256": "ab1c8772d640ab7bada0b8d7cb28f5375ca7e80a4fe25681815103113aaef9c5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-desktop-chromium.png": {
-      "sha256": "246a4b058b95fffbce76bfdb45ea913659847594450ab654a57a1ef005e5cc4e",
+      "sha256": "ce0da99982e4d9ed6f689510a106253453b3cf16e939f202716a6b43fa632bc1",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-mobile-chromium.png": {
-      "sha256": "bbeb83c0e8dfb30113cda51f8b6f529ff74bd538e52f836786bbae20e4624df6",
+      "sha256": "2bd344054f9422900a2468363c5a1e56bfd7d8d9ec51cfb869d80fb0cfa7494c",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-desktop-chromium.png": {
-      "sha256": "d0e527deee4dfcd081b25ee08900345c8c57e8bec3166d548a0f8ad10327c70f",
+      "sha256": "a9578627f09349bb2d538cdb713444f7d6835d0f3e6e03dfe9b6578c25067bb1",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-mobile-chromium.png": {
-      "sha256": "92aae69e0678ce0ebe5384f8e022c454de925ae35dfb6df7cd5956abe1bdea80",
+      "sha256": "8986a854998b1385f9ebf9b9992fc7a2f11983e730f75b42c64439b7cece8b3f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-desktop-chromium.png": {
-      "sha256": "b08b1b5eac90e67634a7fffbf6cf36f3505dbff7b50efa9c051f44a310fcb5a6",
+      "sha256": "06ac404d7e77b8cffd790b62686b1523246a9a42158ba001b3c4338277486bb2",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-mobile-chromium.png": {
-      "sha256": "739e811616ed1614ed3415cd41bdfb29cb6c89c0ae6ef47f0a70c2ac7a71c408",
+      "sha256": "8729421175d44f08ca2d7ed03a54134d15cd6c57eb92bc22ac36c1fe89b0b030",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-desktop-chromium.png": {
-      "sha256": "518c5399eebecf2c8c72061a1abced2afe9732ebbea9733de5c8759d09f83a8e",
+      "sha256": "96259d8d8295c0a81f16d78c29cd3c946dfb9c1fd6e3eb994fa1dee153f71b6d",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-mobile-chromium.png": {
-      "sha256": "518c5399eebecf2c8c72061a1abced2afe9732ebbea9733de5c8759d09f83a8e",
+      "sha256": "96259d8d8295c0a81f16d78c29cd3c946dfb9c1fd6e3eb994fa1dee153f71b6d",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-desktop-chromium.png": {
-      "sha256": "7829a64ccda348f10aa7a3fd6496a462f7445b4d146396e1275ea52224df6acf",
+      "sha256": "6f118f9e7f717e4b7dd9d4b551567d7631c3cad72048b2d8502b2a8108d38bdb",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-mobile-chromium.png": {
-      "sha256": "7829a64ccda348f10aa7a3fd6496a462f7445b4d146396e1275ea52224df6acf",
+      "sha256": "6f118f9e7f717e4b7dd9d4b551567d7631c3cad72048b2d8502b2a8108d38bdb",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-dark-desktop-chromium.png": {
-      "sha256": "4fee81947ad7780d1f29ac29ef9a5f44298755b907c46eed5666e3b67f57a1ba",
+      "sha256": "b1641e0230cdb9083055afe9ac5f58e9fc389a4525dbf03fd9557cf5eda5f962",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-light-desktop-chromium.png": {
-      "sha256": "28e1122bfe28436a83401aecced50fb82814b00f52e348a54d66315de2b341bf",
+      "sha256": "f49da9d4430f7683c24b5323fa26fc251c35547a5a2b7f1981e0d6ed75bd9aa4",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot from Storybook static iframe (Chromium, Linux, locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-08-31"
+      "reviewedOn": "2026-09-10"
     }
   }
 }
