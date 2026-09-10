@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { gotoStory, snapshotName, VIEWPORTS } from "./storybook";
+import { gotoStory, snapshotName, STORYBOOK_ROOT, VIEWPORTS } from "./storybook";
 
 interface VisualCase {
   storyId: string;
@@ -8,6 +8,8 @@ interface VisualCase {
   themes: ("light" | "dark")[];
   viewports: (keyof typeof VIEWPORTS)[];
   prepare?: (page: Page) => Promise<void>;
+  /** Portaled overlays (dialog, menu, listbox, tooltip) use page-level locators. */
+  screenshot?: (page: Page) => Promise<Locator>;
 }
 
 const cases: VisualCase[] = [
@@ -16,12 +18,14 @@ const cases: VisualCase[] = [
     name: "button-all-variants",
     themes: ["light", "dark"],
     viewports: ["desktop"],
+    screenshot: async (page) => page.locator(STORYBOOK_ROOT),
   },
   {
     storyId: "ui-select--keyboard-interaction",
     name: "select-closed",
     themes: ["light", "dark"],
     viewports: ["desktop", "mobile"],
+    screenshot: async (page) => page.getByRole("combobox"),
   },
   {
     storyId: "ui-select--keyboard-interaction",
@@ -32,6 +36,7 @@ const cases: VisualCase[] = [
       await page.getByRole("combobox").click();
       await expect(page.getByRole("listbox")).toBeVisible();
     },
+    screenshot: async (page) => page.getByRole("listbox"),
   },
   {
     storyId: "ui-dialog--keyboard-interaction",
@@ -42,6 +47,7 @@ const cases: VisualCase[] = [
       await page.getByRole("button", { name: "Open Dialog" }).click();
       await expect(page.getByRole("dialog")).toBeVisible();
     },
+    screenshot: async (page) => page.getByRole("dialog"),
   },
   {
     storyId: "ui-dropdownmenu--keyboard-interaction",
@@ -52,6 +58,7 @@ const cases: VisualCase[] = [
       await page.getByRole("button", { name: "Open menu" }).click();
       await expect(page.getByRole("menu")).toBeVisible();
     },
+    screenshot: async (page) => page.getByRole("menu"),
   },
   {
     storyId: "ui-tooltip--keyboard-accessibility",
@@ -62,30 +69,35 @@ const cases: VisualCase[] = [
       await page.getByRole("button", { name: "Show tooltip" }).hover();
       await expect(page.getByRole("tooltip")).toBeVisible();
     },
+    screenshot: async (page) => page.getByRole("tooltip"),
   },
   {
     storyId: "ui-form--with-error",
     name: "form-error",
     themes: ["light", "dark"],
     viewports: ["desktop", "mobile"],
+    screenshot: async (page) => page.locator(STORYBOOK_ROOT),
   },
   {
     storyId: "ui-form--disabled-field",
     name: "form-disabled",
     themes: ["light", "dark"],
     viewports: ["desktop"],
+    screenshot: async (page) => page.locator(STORYBOOK_ROOT),
   },
   {
     storyId: "ui-errorfallback--default",
     name: "error-fallback",
     themes: ["light", "dark"],
     viewports: ["desktop", "mobile"],
+    screenshot: async (page) => page.locator(STORYBOOK_ROOT),
   },
   {
     storyId: "ui-emptystate--default",
     name: "empty-state",
     themes: ["light", "dark"],
     viewports: ["desktop", "mobile"],
+    screenshot: async (page) => page.locator(STORYBOOK_ROOT),
   },
 ];
 
@@ -101,9 +113,11 @@ for (const visualCase of cases) {
           await visualCase.prepare(page);
         }
 
-        await expect(page).toHaveScreenshot(snapshotName([visualCase.name, theme, viewportName]), {
-          clip: { x: 0, y: 0, width: viewport.width, height: viewport.height },
-        });
+        const target = visualCase.screenshot
+          ? await visualCase.screenshot(page)
+          : page.locator(STORYBOOK_ROOT);
+
+        await expect(target).toHaveScreenshot(snapshotName([visualCase.name, theme, viewportName]));
       });
     }
   }

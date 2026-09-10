@@ -15,6 +15,8 @@ export default defineConfig({
   use: {
     baseURL,
     reducedMotion: "reduce",
+    locale: "en-US",
+    timezoneId: "UTC",
     trace: "retain-on-failure",
   },
   projects: [

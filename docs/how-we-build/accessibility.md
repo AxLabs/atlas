@@ -221,7 +221,15 @@ Before submitting a PR with interaction changes:
 ### Storybook automation
 
 Representative `critical` Storybook compositions are checked with axe and interaction tests in the
-**UI Quality** workflow. See `packages/ui/.storybook/README.md`.
+**UI Quality** workflow. A machine-readable manifest
+(`packages/ui/.storybook/critical-stories.json`) is validated by
+`node scripts/storybook-critical-policy.mjs` before tests run. The policy fails CI if a protected
+story is removed, loses its `critical` tag, drops a required `play` function, disables axe
+(`parameters.a11y.disable`), or weakens axe rules without a documented entry in
+`packages/ui/.storybook/a11y-exceptions.json` (owner, reason, review date, expiry). There are
+currently no approved exceptions.
+
+See `packages/ui/.storybook/README.md`.
 
 The Storybook Accessibility addon tab remains useful for local exploration but is not the CI gate.
 

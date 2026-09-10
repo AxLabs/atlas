@@ -21,14 +21,15 @@ Static output: `packages/ui/storybook-static/` (gitignored; produced in CI and l
 
 ## Quality gates
 
-Atlas enforces three complementary layers in the **UI Quality** GitHub Actions job:
+Atlas enforces four complementary layers in the **UI Quality** GitHub Actions job:
 
-| Layer                        | Command                                                | What it proves                                            |
-| ---------------------------- | ------------------------------------------------------ | --------------------------------------------------------- |
-| Storybook build              | `pnpm --filter @atlas/ui build-storybook`              | Every story compiles and renders into the static artifact |
-| Interaction + axe            | `pnpm --filter @atlas/ui test:storybook`               | Critical stories run `play` functions and axe checks      |
-| Cross-browser keyboard/focus | `pnpm --filter @atlas/ui test:storybook:cross-browser` | Chromium + WebKit exercise high-risk compositions         |
-| Visual regression            | `pnpm --filter @atlas/ui test:visual`                  | Chromium pixel baselines for the risk matrix              |
+| Layer                        | Command                                                | What it proves                                              |
+| ---------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| Storybook build              | `pnpm --filter @atlas/ui build-storybook`              | Every story compiles and renders into the static artifact   |
+| Critical story policy        | `node scripts/storybook-critical-policy.mjs`           | Protected stories retain tags, play, and axe requirements   |
+| Interaction + axe            | `pnpm --filter @atlas/ui test:storybook`               | Critical stories run `play` functions and axe checks        |
+| Cross-browser keyboard/focus | `pnpm --filter @atlas/ui test:storybook:cross-browser` | Chromium + WebKit exercise high-risk compositions           |
+| Visual regression            | `pnpm --filter @atlas/ui test:visual`                  | Chromium element-scoped pixel baselines for the risk matrix |
 
 Run the full local UI-quality bundle:
 
@@ -42,8 +43,10 @@ pnpm --filter @atlas/ui test:ui-quality
 `@storybook/test-runner` with `axe-playwright`.
 
 - Only stories tagged `critical` are executed (see `.storybook/test-runner.ts`).
-- Accessibility exceptions are documented in `.storybook/a11y-exceptions.md`.
-- Do not globally disable axe rules.
+- The critical matrix is enforced by `critical-stories.json` and
+  `node scripts/storybook-critical-policy.mjs` (runs in CI before the test runner).
+- Accessibility exceptions are documented in `a11y-exceptions.json` (see `a11y-exceptions.md`).
+- Do not globally disable axe rules or set `parameters.a11y.disable = true` on protected stories.
 
 ```bash
 pnpm --filter @atlas/ui build-storybook
@@ -61,8 +64,12 @@ pnpm --filter @atlas/ui test:storybook:cross-browser
 
 ### Visual regression
 
-Visual tests render static Storybook iframes with deterministic themes and viewports. **Pixel
+Visual tests render static Storybook iframes with deterministic themes and viewports. Screenshots
+target the protected component or portaled overlay (dialog, menu, listbox, tooltip) rather than the
+full viewport where practical, so empty pixels do not dilute regression sensitivity. **Pixel
 baselines are Chromium-only** and committed under `packages/ui/visual-tests/__snapshots__/`.
+Comparison uses Playwright strict defaults (`maxDiffPixels: 0`) after canonical Linux baseline
+capture.
 
 ```bash
 pnpm --filter @atlas/ui build-storybook
@@ -80,8 +87,9 @@ pnpm --filter @atlas/ui test:visual:update
 ```
 
 **Canonical environment:** generate baselines on Linux with the same Playwright version as CI
-(`ubuntu-latest` + `playwright install --with-deps chromium`). For a containerized update matching
-CI:
+(`ubuntu-latest` + `playwright install --with-deps chromium`). Element-scoped baselines are captured
+from Storybook static iframes with `locale: en-US`, `timezoneId: UTC`, and `reducedMotion: reduce`.
+For a containerized update matching CI:
 
 ```bash
 pw_version=$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')
@@ -97,7 +105,8 @@ visual tests fail.
 
 ## Writing critical stories
 
-Tag representative stories with `critical` to include them in interaction/axe CI:
+Add or update entries in `critical-stories.json` when changing the protected matrix. Tag
+representative stories with `critical` to include them in interaction/axe CI:
 
 ```tsx
 export const KeyboardInteraction: Story = {

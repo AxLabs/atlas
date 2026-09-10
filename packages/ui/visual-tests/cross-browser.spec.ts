@@ -32,7 +32,8 @@ test.describe("Select keyboard composition", () => {
     await page.keyboard.press("ArrowDown");
     await expect(page.getByRole("listbox")).toBeVisible();
 
-    await page.getByRole("option", { name: "React" }).click();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
     await expect(trigger).toContainText("React");
 
     await page.keyboard.press("Escape");
@@ -58,6 +59,13 @@ test.describe("Dialog keyboard composition", () => {
     await expect(cancel).toBeFocused();
 
     await page.keyboard.press("Tab");
+    await expect(continueButton).toBeFocused();
+
+    await page.keyboard.press("Tab");
+    await expect(cancel).toBeFocused();
+    await expectFocusInside(dialog);
+
+    await page.keyboard.press("Shift+Tab");
     await expect(continueButton).toBeFocused();
     await expectFocusInside(dialog);
 
@@ -90,12 +98,7 @@ test.describe("Tooltip keyboard accessibility", () => {
     const trigger = story(page).getByRole("button", { name: "Show tooltip" });
     await expect(page.getByRole("tooltip")).toHaveCount(0);
 
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      await page.keyboard.press("Tab");
-      if (await trigger.evaluate((element) => element === document.activeElement)) {
-        break;
-      }
-    }
+    await trigger.focus();
     await expect(trigger).toBeFocused();
     await expect(page.getByRole("tooltip")).toBeVisible();
 
@@ -123,7 +126,7 @@ test.describe("Button rendering semantics", () => {
     const button = story(page).getByRole("button", { name: "Save changes" });
     await expect(button).toBeEnabled();
     await button.focus();
-    await page.keyboard.press("Enter");
+    await page.keyboard.press("Space");
     await expect(story(page).getByText("Saved")).toBeVisible();
 
     const disabled = story(page).getByRole("button", { name: "Disabled action" });

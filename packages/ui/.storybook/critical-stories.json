@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "stories": [
+    {
+      "id": "ui-select--keyboard-interaction",
+      "component": "Select",
+      "file": "packages/ui/src/components/ui/select.stories.tsx",
+      "exportName": "KeyboardInteraction",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-dialog--keyboard-interaction",
+      "component": "Dialog",
+      "file": "packages/ui/src/components/ui/dialog.stories.tsx",
+      "exportName": "KeyboardInteraction",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-dropdownmenu--keyboard-interaction",
+      "component": "DropdownMenu",
+      "file": "packages/ui/src/components/ui/dropdown-menu.stories.tsx",
+      "exportName": "KeyboardInteraction",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-tooltip--keyboard-accessibility",
+      "component": "Tooltip",
+      "file": "packages/ui/src/components/ui/tooltip.stories.tsx",
+      "exportName": "KeyboardAccessibility",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-form--with-error",
+      "component": "Form",
+      "file": "packages/ui/src/components/ui/form.stories.tsx",
+      "exportName": "WithError",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-form--disabled-field",
+      "component": "Form",
+      "file": "packages/ui/src/components/ui/form.stories.tsx",
+      "exportName": "DisabledField",
+      "requiresPlay": false,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-button--all-variants",
+      "component": "Button",
+      "file": "packages/ui/src/components/ui/button.stories.tsx",
+      "exportName": "AllVariants",
+      "requiresPlay": false,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-button--native-semantics",
+      "component": "Button",
+      "file": "packages/ui/src/components/ui/button.stories.tsx",
+      "exportName": "NativeSemantics",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-errorfallback--default",
+      "component": "ErrorFallback",
+      "file": "packages/ui/src/components/ui/error-fallback.stories.tsx",
+      "exportName": "Default",
+      "requiresPlay": false,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-emptystate--default",
+      "component": "EmptyState",
+      "file": "packages/ui/src/components/ui/empty-state.stories.tsx",
+      "exportName": "Default",
+      "requiresPlay": false,
+      "requiresCriticalTag": true
+    }
+  ]
+}
