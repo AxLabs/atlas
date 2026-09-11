@@ -41,10 +41,19 @@ export interface A11yRuleArrayEntry {
   enabled?: boolean;
 }
 
+/** Only `rules` may appear in Storybook `parameters.a11y.config` on protected stories. */
+export const SUPPORTED_A11Y_CONFIG_KEYS = ["rules"] as const;
+
+export type SupportedA11yConfigKey = (typeof SUPPORTED_A11Y_CONFIG_KEYS)[number];
+
 export interface EffectiveA11yParameters {
   disable?: boolean;
-  config?: {
+  config?: Partial<Record<SupportedA11yConfigKey, unknown>> & {
     rules?: A11yRuleMap | A11yRuleArrayEntry[];
+    /** Rejected at policy time — narrows axe to an explicit rule subset. */
+    disableOtherRules?: boolean;
+    /** Rejected at policy time — can disable or replace built-in axe checks. */
+    checks?: Record<string, unknown> | unknown[];
   };
   /**
    * Axe run-time options (passed to axe.run()). Any value here can narrow the axe scan scope
@@ -214,6 +223,60 @@ export function extractDisabledRuleIds(
     .map(([ruleId]) => ruleId);
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * Fail-closed allowlist for Storybook `parameters.a11y.config` (axe.configure() input).
+ * Only `rules` is supported on protected stories; every other configure-time key can weaken
+ * coverage (disableOtherRules, checks, locale, etc.) and is rejected.
+ */
+export function validateA11yConfig(
+  storyId: string,
+  config: EffectiveA11yParameters["config"] | undefined
+): string[] {
+  if (config === undefined) {
+    return [];
+  }
+
+  if (!isPlainObject(config)) {
+    return [`${storyId}: effective parameters.a11y.config must be a plain object when present`];
+  }
+
+  const failures: string[] = [];
+
+  if (config.disableOtherRules === true) {
+    failures.push(
+      `${storyId}: effective parameters.a11y.config.disableOtherRules=true is not allowed on protected stories — ` +
+        `it narrows axe to an explicit rule subset instead of the default full scan`
+    );
+  }
+
+  if (config.checks !== undefined) {
+    failures.push(
+      `${storyId}: effective parameters.a11y.config.checks is not allowed on protected stories — ` +
+        `configure-time checks can disable or replace built-in axe checks`
+    );
+  }
+
+  const explicitlyHandledKeys = new Set(["disableOtherRules", "checks"]);
+
+  for (const key of Object.keys(config)) {
+    if (explicitlyHandledKeys.has(key)) {
+      continue;
+    }
+    if (!(SUPPORTED_A11Y_CONFIG_KEYS as readonly string[]).includes(key)) {
+      failures.push(
+        `${storyId}: effective parameters.a11y.config.${key} is not allowed on protected stories — ` +
+          `only config.rules is supported; unsupported configure-time keys can silently weaken axe coverage`
+      );
+    }
+  }
+
+  return failures;
+}
+
 /**
  * Authoritative fail-closed decision for one story's *effective merged* accessibility parameters.
  * No global, meta, or story-level configuration can weaken checks unless a valid, unexpired,
@@ -240,6 +303,8 @@ export function evaluateA11yRuntimePolicy(input: A11yRuntimeCheckInput): A11yRun
         `move this story out of the protected matrix.`
     );
   }
+
+  failures.push(...validateA11yConfig(input.storyId, a11y.config));
 
   const disabledRules = extractDisabledRuleIds(a11y.config?.rules);
   for (const rule of disabledRules) {

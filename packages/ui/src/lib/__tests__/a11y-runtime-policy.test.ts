@@ -5,6 +5,7 @@ import {
   extractDisabledRuleIds,
   isExceptionExpired,
   isValidIsoDate,
+  validateA11yConfig,
   validateA11yExceptions,
   validateExceptionRecord,
   type EffectiveA11yParameters,
@@ -359,5 +360,74 @@ describe("runtime policy against Storybook's real composed parameters", () => {
     const result = evaluateWithRawExceptions(id, parameters, { version: 1, exceptions: [] });
     expect(result.ok).toBe(false);
     expect(result.failures.join("\n")).toMatch(/a11y\.options is not allowed/);
+  });
+});
+
+describe("evaluateA11yRuntimePolicy configure-time config allowlist", () => {
+  it("fails when disableOtherRules is true", () => {
+    const result = evaluateA11yRuntimePolicy({
+      storyId: "ui-fixture--story",
+      parameters: { a11y: { config: { disableOtherRules: true } } },
+      validExceptions: [],
+      exceptionFileFailures: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/disableOtherRules=true is not allowed/);
+  });
+
+  it("fails when checks are configured", () => {
+    const result = evaluateA11yRuntimePolicy({
+      storyId: "ui-fixture--story",
+      parameters: {
+        a11y: {
+          config: {
+            checks: [{ id: "color-contrast", enabled: false }],
+          },
+        },
+      },
+      validExceptions: [],
+      exceptionFileFailures: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/config\.checks is not allowed/);
+  });
+
+  it("fails on an unknown unsupported config key", () => {
+    const result = evaluateA11yRuntimePolicy({
+      storyId: "ui-fixture--story",
+      parameters: { a11y: { config: { locale: { lang: "en" } } } },
+      validExceptions: [],
+      exceptionFileFailures: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/config\.locale is not allowed/);
+  });
+
+  it("passes when only supported config.rules is present with an approved exception", () => {
+    const storyId = "ui-fixture--story";
+    const result = evaluateA11yRuntimePolicy({
+      storyId,
+      parameters: {
+        a11y: { config: { rules: { "color-contrast": { enabled: false } } } },
+      },
+      validExceptions: [
+        {
+          storyId,
+          rule: "color-contrast",
+          owner: "@atlas/ui-owners",
+          reason: "Approved per-rule exception",
+          reviewedOn: "2026-01-01",
+          expiry: "2099-01-01",
+        },
+      ],
+      exceptionFileFailures: [],
+    });
+    expect(result).toEqual({ ok: true, failures: [], disabledRules: ["color-contrast"] });
+  });
+});
+
+describe("validateA11yConfig", () => {
+  it("returns no failures for undefined config", () => {
+    expect(validateA11yConfig("ui-fixture--story", undefined)).toEqual([]);
   });
 });

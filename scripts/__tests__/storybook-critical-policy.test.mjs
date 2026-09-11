@@ -185,10 +185,7 @@ describe("storybook critical policy", () => {
       repoRoot: fixtures,
       manifestPath: path.join(fixtures, "manifest-no-tests-story.json"),
       exceptionsPath: path.join(fixtures, "a11y-exceptions.json"),
-      storybookIndexPath: path.join(
-        fixtures,
-        "packages/ui/storybook-static/index-no-tests-story.json"
-      ),
+      storybookIndexPath: path.join(fixtures, "storybook-index-no-tests-story.json"),
     });
     assert.equal(result.ok, false);
     assert.match(
@@ -205,10 +202,7 @@ describe("storybook critical policy", () => {
       repoRoot: fixtures,
       manifestPath: path.join(fixtures, "manifest-no-tests-inherited.json"),
       exceptionsPath: path.join(fixtures, "a11y-exceptions.json"),
-      storybookIndexPath: path.join(
-        fixtures,
-        "packages/ui/storybook-static/index-no-tests-inherited.json"
-      ),
+      storybookIndexPath: path.join(fixtures, "storybook-index-no-tests-inherited.json"),
     });
     assert.equal(result.ok, false);
     assert.match(

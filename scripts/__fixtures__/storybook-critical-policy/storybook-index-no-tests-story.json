@@ -1,0 +1,13 @@
+{
+  "v": 5,
+  "entries": {
+    "ui-select--keyboard-interaction-with-no-tests": {
+      "id": "ui-select--keyboard-interaction-with-no-tests",
+      "title": "UI/Select",
+      "name": "Keyboard Interaction With No Tests",
+      "importPath": "./src/components/ui/select.stories.tsx",
+      "type": "story",
+      "tags": ["critical", "no-tests", "test"]
+    }
+  }
+}
