@@ -36,6 +36,7 @@
     "atlas": "pnpm exec atlas",
     "validate:env": "pnpm --filter @atlas/web validate:env && pnpm --filter @atlas/reference validate:env",
     "storybook": "pnpm --filter @atlas/ui storybook",
+    "storybook:build": "pnpm --filter @atlas/ui build-storybook",
     "perf:lhci": "pnpm --filter @atlas/web perf:lhci",
     "perf:analyze": "pnpm --filter @atlas/web perf:analyze",
     "perf:enable": "node tools/perf/enable.js",
@@ -84,6 +85,7 @@
       "react-dom": "19.0.0",
       "@xmldom/xmldom": "0.8.15",
       "basic-ftp": "5.3.1",
+      "browserslist": "4.28.7",
       "brace-expansion@1": "1.1.18",
       "brace-expansion@2": "2.1.4",
       "brace-expansion@5": "5.0.9",
@@ -102,6 +104,7 @@
       "postcss": "8.5.26",
       "preact": "10.28.2",
       "rollup": "4.61.1",
+      "sharp": "0.35.4",
       "vite": "6.4.3",
       "ws@7": "7.5.13",
       "ws@8": "8.21.3"

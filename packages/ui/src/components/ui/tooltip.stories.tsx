@@ -1,3 +1,5 @@
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 import type { Meta, StoryObj } from "@storybook/react";
@@ -80,4 +82,59 @@ export const WithSide: Story = {
       </Tooltip>
     </div>
   ),
+};
+
+export const KeyboardAccessibility: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Tooltip>
+      <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Show tooltip
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Keyboard accessible tooltip</p>
+      </TooltipContent>
+    </Tooltip>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Show tooltip" });
+
+    await expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    trigger.focus();
+    await waitFor(() => expect(screen.getByRole("tooltip")).toBeVisible());
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+  },
+};
+
+/**
+ * Dedicated axe story: tooltip is visible when postVisit runs so axe scans the full portal surface.
+ *
+ * KeyboardAccessibility dismisses the tooltip before postVisit — axe there only audits the closed
+ * trigger state. This story focuses the trigger via its play function and leaves it focused (and
+ * the tooltip visible) so axe can audit the tooltip portal rendered into document.body.
+ */
+export const AxeOpenTooltip: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Tooltip>
+      <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Show tooltip
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Keyboard accessible tooltip</p>
+      </TooltipContent>
+    </Tooltip>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Show tooltip" });
+    trigger.focus();
+    await waitFor(() => expect(screen.getByRole("tooltip")).toBeVisible());
+    // Intentionally leave the tooltip open so postVisit/axe audits the portal surface.
+  },
 };

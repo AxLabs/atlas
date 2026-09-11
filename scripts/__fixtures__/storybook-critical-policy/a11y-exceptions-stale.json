@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "exceptions": [
+    {
+      "storyId": "ui-select--keyboard-interaction",
+      "rule": "color-contrast",
+      "owner": "@fixture",
+      "reason": "Fixture stale exception",
+      "reviewedOn": "2024-01-01",
+      "expiry": "2024-06-01"
+    }
+  ]
+}

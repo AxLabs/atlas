@@ -14,6 +14,13 @@ const preview: Preview = {
     backgrounds: {
       disable: true,
     },
+    // Prevent addon-a11y from auto-running axe on every render. Atlas enforces accessibility via
+    // the test-runner's postVisit (checkA11y with body scope + policy checks). When both run
+    // concurrently the test-runner gets "Axe is already running". With manual:true developers can
+    // still trigger axe from the Accessibility panel; the test-runner postVisit is unaffected.
+    a11y: {
+      manual: true,
+    },
   },
   decorators: [
     withThemeByClassName({

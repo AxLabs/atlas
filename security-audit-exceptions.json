@@ -11,6 +11,15 @@
       "expiresOn": "2026-11-27"
     },
     {
+      "advisory": "GHSA-7pqw-9j4j-h8q3",
+      "packageName": "extract-zip",
+      "owner": "@atlas-maintainers",
+      "reason": "Same extract-zip@2.0.1 transitive path as GHSA-jmr9-qjv8-65gv (@lhci/cli → lighthouse → puppeteer-core → @puppeteer/browsers). The registry still reports no patched extract-zip line (patched_versions <0.0.0).",
+      "compensatingControl": "Dev-only LHCI/Lighthouse path; Atlas never extracts attacker-supplied zip archives or symlink entries from untrusted sources. Browser downloads are vendor artifacts on trusted CI/developer hosts, not a production request handler or client bundle.",
+      "reviewedOn": "2026-09-10",
+      "expiresOn": "2026-11-27"
+    },
+    {
       "advisory": "GHSA-5c6j-r48x-rmvq",
       "packageName": "serialize-javascript",
       "owner": "@atlas-maintainers",

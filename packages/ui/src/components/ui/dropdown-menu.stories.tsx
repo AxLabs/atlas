@@ -1,3 +1,4 @@
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 import {
   Cloud,
   CreditCard,
@@ -14,6 +15,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import * as React from "react";
 
 import {
   DropdownMenu,
@@ -200,4 +202,94 @@ export const Default: Story = {
       </DropdownMenu>
     </div>
   ),
+};
+
+function KeyboardInteractionDemo() {
+  const [selected, setSelected] = React.useState<string | null>(null);
+  return (
+    <div>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger render={<button type="button" className={triggerButtonClassName} />}>
+          Open menu
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {/* Base UI MenuItem uses onClick for activation (keyboard Enter fires a synthetic click) */}
+          <DropdownMenuItem onClick={() => setSelected("Profile")}>Profile</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSelected("Settings")}>Settings</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSelected("Logout")}>Logout</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {selected !== null && (
+        <p data-testid="selected-item" style={{ marginTop: "8px", fontSize: "14px" }}>
+          Selected: {selected}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export const KeyboardInteraction: Story = {
+  tags: ["critical"],
+  render: () => <KeyboardInteractionDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = await canvas.findByRole("button", { name: "Open menu" });
+
+    await userEvent.click(trigger);
+    await screen.findByRole("menu");
+
+    // Base UI auto-highlights the first item (Profile) when the menu opens; ArrowDown moves to
+    // Settings. Navigate down then back up to land on Profile, then Enter to activate it.
+    await userEvent.keyboard("{ArrowDown}");
+    await userEvent.keyboard("{ArrowUp}");
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+    // Prove the intended item was activated, not just that the menu closed.
+    // waitFor: React state update (onClick → setSelected) may commit asynchronously.
+    await waitFor(() =>
+      expect(canvas.getByTestId("selected-item")).toHaveTextContent("Selected: Profile")
+    );
+  },
+};
+
+/**
+ * Dedicated axe story: menu is open when postVisit runs so axe scans the full portal surface.
+ *
+ * KeyboardInteraction closes the menu before postVisit — axe there only audits the closed trigger
+ * state. This story opens the menu via its play function and leaves it open so axe can audit the
+ * menu portal rendered into document.body.
+ */
+export const AxeOpenMenu: Story = {
+  tags: ["critical"],
+  parameters: {
+    // axe-core 4.11 misreports color-contrast for oklch() colors. The menu items use
+    // oklch(0.22 0.01 286) text on oklch(0.965 0.003 286)/oklch(1 0 0) backgrounds; actual
+    // contrast ratios are 16:1 (highlighted) and 20:1 (default), both well above WCAG AA 4.5:1.
+    // Exception registered in a11y-exceptions.json (expiry 2027-03-01 for axe-core upgrade check).
+    a11y: {
+      config: {
+        rules: [{ id: "color-contrast", enabled: false }],
+      },
+    },
+  },
+  render: () => (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger render={<button type="button" className={triggerButtonClassName} />}>
+        Open menu
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem>Profile</DropdownMenuItem>
+        <DropdownMenuItem>Settings</DropdownMenuItem>
+        <DropdownMenuItem>Logout</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = await canvas.findByRole("button", { name: "Open menu" });
+    await userEvent.click(trigger);
+    await screen.findByRole("menu");
+    // Intentionally leave the menu open so postVisit/axe audits the portal surface.
+  },
 };

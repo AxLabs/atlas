@@ -1,3 +1,5 @@
+import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
+
 import { Label } from "./label";
 import {
   Select,
@@ -126,4 +128,75 @@ export const WithLabel: Story = {
       </Select>
     </div>
   ),
+};
+
+export const KeyboardInteraction: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Select defaultValue="next" items={frameworks}>
+      <SelectTrigger className="w-[180px]" aria-label="Framework">
+        <SelectValue placeholder="Select a framework" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {frameworks.map((framework) => (
+            <SelectItem key={framework.value} value={framework.value}>
+              {framework.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("combobox", { name: "Framework" });
+
+    await userEvent.click(trigger);
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeVisible());
+
+    await userEvent.keyboard("{ArrowDown}");
+    await userEvent.keyboard("{Enter}");
+    await expect(trigger).toHaveTextContent("React");
+    // Wait for the listbox to be fully removed before play returns so the body-scoped axe scan
+    // (postVisit) does not see a partially-dismissed listbox that lacks aria-input-field-name.
+    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
+
+    await userEvent.keyboard("{Escape}");
+    await expect(trigger).toHaveFocus();
+  },
+};
+
+/**
+ * Dedicated axe story: listbox is open when postVisit runs so axe scans the full portal surface.
+ *
+ * KeyboardInteraction closes the listbox before postVisit — axe there only audits the closed
+ * trigger state. This story opens the listbox via its play function and leaves it open so axe
+ * can audit the listbox portal rendered into document.body.
+ */
+export const AxeOpenListbox: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Select defaultValue="next" items={frameworks}>
+      <SelectTrigger className="w-[180px]" aria-label="Framework">
+        <SelectValue placeholder="Select a framework" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {frameworks.map((framework) => (
+            <SelectItem key={framework.value} value={framework.value}>
+              {framework.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("combobox", { name: "Framework" });
+    await userEvent.click(trigger);
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeVisible());
+    // Intentionally leave the listbox open so postVisit/axe audits the portal surface.
+  },
 };

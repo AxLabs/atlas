@@ -13,6 +13,8 @@ bun.lockb
 coverage
 test-results
 playwright-report
+packages/ui/playwright-report-visual
+packages/ui/playwright-report-storybook
 apps/web/.gen-validation-*.json
 apps/web/src/features/__gen-validation-*
 apps/web/src/app/__gen-validation-*
@@ -30,6 +32,7 @@ apps/web/.next/analyze
 dist
 build
 storybook-static
+packages/ui/test-results
 packages/ui/design-system-screenshots
 
 # Security / SBOM local output

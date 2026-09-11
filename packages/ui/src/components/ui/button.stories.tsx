@@ -1,4 +1,6 @@
+import { expect, userEvent, within } from "@storybook/test";
 import { Loader2, Mail } from "lucide-react";
+import * as React from "react";
 
 import { Button } from "./button";
 
@@ -126,6 +128,7 @@ export const Disabled: Story = {
 };
 
 export const AllVariants: Story = {
+  tags: ["critical"],
   render: () => (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
@@ -140,10 +143,40 @@ export const AllVariants: Story = {
         <Button size="sm">Small</Button>
         <Button size="default">Default</Button>
         <Button size="lg">Large</Button>
-        <Button size="icon">
+        <Button size="icon" aria-label="Send email">
           <Mail />
         </Button>
       </div>
     </div>
   ),
+};
+
+function NativeSemanticsDemo() {
+  const [saved, setSaved] = React.useState(false);
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <Button type="button" onClick={() => setSaved(true)}>
+        Save changes
+      </Button>
+      <Button type="button" disabled>
+        Disabled action
+      </Button>
+      {saved ? <p>Saved</p> : null}
+    </div>
+  );
+}
+
+export const NativeSemantics: Story = {
+  tags: ["critical"],
+  render: () => <NativeSemanticsDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", { name: "Save changes" });
+
+    button.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(canvas.getByText("Saved")).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Disabled action" })).toBeDisabled();
+  },
 };

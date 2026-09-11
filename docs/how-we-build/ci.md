@@ -9,6 +9,7 @@ runners by default**. Teams with a self-hosted fleet can opt in without replacin
 pull_request / push to main
   ├── Governance         (licenses, provenance, dependency ownership)
   ├── CI                 (path filter → one install → quality → build → E2E)
+  ├── UI Quality         (Storybook build, axe/interaction, visual regression; github-hosted)
   ├── Secrets Scan       (Gitleaks digest-pinned; parallel)
   └── Security Audit     (blocking Atlas vulnerability policy + workflow pins)
 ```
@@ -17,6 +18,7 @@ pull_request / push to main
 | ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Governance**     | Always                                                              | License, provenance, and dependency-ownership gates                                                                                                 |
 | **CI**             | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, `test:risk-coverage`, Codecov report, build, Chromium+WebKit E2E |
+| **UI Quality**     | When UI-impacting paths change or push to `main`                    | Storybook build, critical-story policy, `test:storybook`, Chromium+WebKit keyboard checks, Playwright visual baselines (`ubuntu-24.04`)             |
 | **Secrets Scan**   | Always                                                              | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                          |
 | **Security Audit** | Always (also weekly cron)                                           | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                            |
 
@@ -38,6 +40,7 @@ pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm test:risk-covera
 pnpm build
 pnpm --filter @atlas/web test:e2e
 pnpm --filter @atlas/reference test:e2e
+pnpm --filter @atlas/ui test:ui-quality
 ```
 
 Minimum bar (matches `CONTRIBUTING.md`):

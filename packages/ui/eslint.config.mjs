@@ -9,6 +9,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default [
+  {
+    ignores: [
+      "**/storybook-static/**",
+      "playwright.*.config.ts",
+      "playwright-report-*/**",
+      "test-results/**",
+    ],
+  },
   ...baseConfig,
   {
     // Override parser options to specify this package's tsconfig

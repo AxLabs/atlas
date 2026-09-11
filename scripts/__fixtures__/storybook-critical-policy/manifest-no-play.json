@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "stories": [
+    {
+      "id": "ui-select--keyboard-interaction",
+      "component": "Select",
+      "file": "packages/ui/src/components/ui/select.stories.tsx",
+      "exportName": "KeyboardInteractionNoPlay",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    }
+  ]
+}
