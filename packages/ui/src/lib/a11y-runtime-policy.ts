@@ -34,11 +34,17 @@ export interface A11yExceptionValidation {
   invalid: InvalidA11yException[];
 }
 
-type A11yRuleValue = { enabled?: boolean } | boolean | undefined;
-export type A11yRuleMap = Record<string, A11yRuleValue>;
+/** Map-form rule value: only `{ enabled: boolean }` is supported on protected stories. */
+export interface A11yRuleMapEntry {
+  enabled: boolean;
+}
+
+export type A11yRuleMap = Record<string, A11yRuleMapEntry>;
+
+/** Array-form rule entry: only `{ id: string; enabled: boolean }` is supported. */
 export interface A11yRuleArrayEntry {
-  id?: string;
-  enabled?: boolean;
+  id: string;
+  enabled: boolean;
 }
 
 /** Only `rules` may appear in Storybook `parameters.a11y.config` on protected stories. */
@@ -196,7 +202,7 @@ export function loadA11yExceptionsFile(filePath: string): A11yExceptionValidatio
   return validateA11yExceptions(data);
 }
 
-/** Accepts both `{ id: { enabled: false } }` and `[{ id, enabled: false }]` axe rule shapes. */
+/** Reads disabled rule ids from validated `{ id, enabled }` array or `{ ruleId: { enabled } }` map shapes. */
 export function extractDisabledRuleIds(
   rules: A11yRuleMap | A11yRuleArrayEntry[] | undefined
 ): string[] {
@@ -205,22 +211,102 @@ export function extractDisabledRuleIds(
   }
 
   if (Array.isArray(rules)) {
-    return rules
-      .filter(
-        (rule): rule is A11yRuleArrayEntry & { id: string } =>
-          typeof rule?.id === "string" && rule.enabled === false
-      )
-      .map((rule) => rule.id);
+    return rules.filter((rule) => rule.enabled === false).map((rule) => rule.id);
   }
 
   return Object.entries(rules)
-    .filter(([, value]) => {
-      if (value === false) {
-        return true;
-      }
-      return Boolean(value) && typeof value === "object" && value.enabled === false;
-    })
+    .filter(([, value]) => value.enabled === false)
     .map(([ruleId]) => ruleId);
+}
+
+/**
+ * Fail-closed allowlist for Storybook `parameters.a11y.config.rules`.
+ * Only `{ id, enabled }` (array form) or `{ [ruleId]: { enabled } }` (map form) are supported.
+ * Any other axe rule property (selector, matches, reviewOnFail, impact, etc.) can weaken coverage
+ * without setting enabled=false and is rejected.
+ */
+export function validateA11yRules(storyId: string, rules: unknown): string[] {
+  if (rules === undefined) {
+    return [];
+  }
+
+  const failures: string[] = [];
+
+  if (Array.isArray(rules)) {
+    rules.forEach((entry, index) => {
+      if (!isPlainObject(entry)) {
+        failures.push(
+          `${storyId}: effective parameters.a11y.config.rules[${index}] must be a plain object with id and enabled`
+        );
+        return;
+      }
+
+      const extraKeys = Object.keys(entry).filter((key) => key !== "id" && key !== "enabled");
+      if (extraKeys.length > 0) {
+        failures.push(
+          `${storyId}: effective parameters.a11y.config.rules[${index}] contains unsupported properties (${extraKeys.join(", ")}) — only id and enabled are allowed on protected stories`
+        );
+      }
+
+      if (typeof entry.id !== "string" || entry.id.trim() === "") {
+        failures.push(
+          `${storyId}: effective parameters.a11y.config.rules[${index}] requires a non-empty string id`
+        );
+      }
+
+      if (typeof entry.enabled !== "boolean") {
+        failures.push(
+          `${storyId}: effective parameters.a11y.config.rules[${index}] requires enabled to be a boolean`
+        );
+      }
+    });
+
+    return failures;
+  }
+
+  if (!isPlainObject(rules)) {
+    return [
+      `${storyId}: effective parameters.a11y.config.rules must be an array or plain object map when present`,
+    ];
+  }
+
+  for (const [ruleId, value] of Object.entries(rules)) {
+    if (ruleId.trim() === "") {
+      failures.push(
+        `${storyId}: effective parameters.a11y.config.rules map keys must be non-empty rule id strings`
+      );
+      continue;
+    }
+
+    if (typeof value === "boolean") {
+      failures.push(
+        `${storyId}: effective parameters.a11y.config.rules["${ruleId}"] must be { enabled: boolean } — bare boolean values are not allowed on protected stories`
+      );
+      continue;
+    }
+
+    if (!isPlainObject(value)) {
+      failures.push(
+        `${storyId}: effective parameters.a11y.config.rules["${ruleId}"] must be a plain object with only enabled`
+      );
+      continue;
+    }
+
+    const extraKeys = Object.keys(value).filter((key) => key !== "enabled");
+    if (extraKeys.length > 0) {
+      failures.push(
+        `${storyId}: effective parameters.a11y.config.rules["${ruleId}"] contains unsupported properties (${extraKeys.join(", ")}) — only enabled is allowed on protected stories`
+      );
+    }
+
+    if (typeof value.enabled !== "boolean") {
+      failures.push(
+        `${storyId}: effective parameters.a11y.config.rules["${ruleId}"] requires enabled to be a boolean`
+      );
+    }
+  }
+
+  return failures;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -272,6 +358,10 @@ export function validateA11yConfig(
           `only config.rules is supported; unsupported configure-time keys can silently weaken axe coverage`
       );
     }
+  }
+
+  if (config.rules !== undefined) {
+    failures.push(...validateA11yRules(storyId, config.rules));
   }
 
   return failures;

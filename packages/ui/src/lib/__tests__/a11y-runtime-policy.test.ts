@@ -7,6 +7,7 @@ import {
   isValidIsoDate,
   validateA11yConfig,
   validateA11yExceptions,
+  validateA11yRules,
   validateExceptionRecord,
   type EffectiveA11yParameters,
 } from "../a11y-runtime-policy";
@@ -429,5 +430,116 @@ describe("evaluateA11yRuntimePolicy configure-time config allowlist", () => {
 describe("validateA11yConfig", () => {
   it("returns no failures for undefined config", () => {
     expect(validateA11yConfig("ui-fixture--story", undefined)).toEqual([]);
+  });
+});
+
+describe("validateA11yRules (nested config.rules allowlist)", () => {
+  const storyId = "ui-fixture--story";
+
+  const approvedColorContrastException = {
+    storyId,
+    rule: "color-contrast",
+    owner: "@atlas/ui-owners",
+    reason: "Approved per-rule exception",
+    reviewedOn: "2026-01-01",
+    expiry: "2099-01-01",
+  };
+
+  it("1. rejects array-form rule-level selector", () => {
+    const failures = validateA11yRules(storyId, [{ id: "button-name", selector: ".foo" }]);
+    expect(failures.join("\n")).toMatch(/unsupported properties \(selector\)/);
+  });
+
+  it("2. rejects array-form rule-level reviewOnFail", () => {
+    const failures = validateA11yRules(storyId, [{ id: "color-contrast", reviewOnFail: true }]);
+    expect(failures.join("\n")).toMatch(/unsupported properties \(reviewOnFail\)/);
+  });
+
+  it("3. rejects array-form unknown rule-level keys even when enabled is present", () => {
+    const failures = validateA11yRules(storyId, [
+      { id: "some-rule", enabled: true, customUnknownKey: "whatever" },
+    ]);
+    expect(failures.join("\n")).toMatch(/unsupported properties \(customUnknownKey\)/);
+  });
+
+  it("4. rejects malformed array-form rule entries", () => {
+    expect(validateA11yRules(storyId, [{ enabled: false }]).join("\n")).toMatch(
+      /requires a non-empty string id/
+    );
+    expect(validateA11yRules(storyId, [{ id: "button-name" }]).join("\n")).toMatch(
+      /requires enabled to be a boolean/
+    );
+    expect(validateA11yRules(storyId, "not-an-array-or-map").join("\n")).toMatch(
+      /must be an array or plain object map/
+    );
+  });
+
+  it("5. passes array-form { id, enabled: false } with a valid exact exception", () => {
+    const result = evaluateA11yRuntimePolicy({
+      storyId,
+      parameters: {
+        a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
+      },
+      validExceptions: [approvedColorContrastException],
+      exceptionFileFailures: [],
+    });
+    expect(result).toEqual({ ok: true, failures: [], disabledRules: ["color-contrast"] });
+  });
+
+  it("6. fails array-form { id, enabled: false } without a valid exception", () => {
+    const result = evaluateA11yRuntimePolicy({
+      storyId,
+      parameters: {
+        a11y: { config: { rules: [{ id: "color-contrast", enabled: false }] } },
+      },
+      validExceptions: [],
+      exceptionFileFailures: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/without a valid, unexpired exception/);
+  });
+
+  it("7. accepts ordinary enabled rules using only the supported array shape", () => {
+    const failures = validateA11yRules(storyId, [
+      { id: "color-contrast", enabled: true },
+      { id: "button-name", enabled: true },
+    ]);
+    expect(failures).toEqual([]);
+
+    const result = evaluateA11yRuntimePolicy({
+      storyId,
+      parameters: {
+        a11y: {
+          config: {
+            rules: [
+              { id: "color-contrast", enabled: true },
+              { id: "button-name", enabled: true },
+            ],
+          },
+        },
+      },
+      validExceptions: [],
+      exceptionFileFailures: [],
+    });
+    expect(result).toEqual({ ok: true, failures: [], disabledRules: [] });
+  });
+
+  it("rejects map-form nested extra keys", () => {
+    const failures = validateA11yRules(storyId, {
+      "color-contrast": { enabled: false, reviewOnFail: true },
+    });
+    expect(failures.join("\n")).toMatch(/unsupported properties \(reviewOnFail\)/);
+  });
+
+  it("accepts map-form { enabled: boolean } with an approved exception", () => {
+    const result = evaluateA11yRuntimePolicy({
+      storyId,
+      parameters: {
+        a11y: { config: { rules: { "color-contrast": { enabled: false } } } },
+      },
+      validExceptions: [approvedColorContrastException],
+      exceptionFileFailures: [],
+    });
+    expect(result).toEqual({ ok: true, failures: [], disabledRules: ["color-contrast"] });
   });
 });
