@@ -15,13 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Public documentation aligned to the Apache-2.0 GitHub repository: clone/fork access, contribution
   model, and durable evidence in place of private-era issue numbers.
 
-## [0.1.0] - 2026-08-19
+## 0.1.0 - 2026-08-19
+
+> Historical internal Atlas snapshot. No canonical public Git tag or GitHub Release was published
+> for this version.
 
 ### Added
 
 - Initial pre-1.0 platform snapshot baseline.
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
-
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0
