@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fail-closed policy for critical Storybook stories (#16 / #66).
+ * Fail-closed policy for critical Storybook stories.
  *
  * Validates that protected stories exist, retain the critical tag, required play
  * functions, and do not disable axe or weaken rules without a documented exception.

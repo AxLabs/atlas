@@ -1,7 +1,7 @@
 # Atlas threat model
 
-This is a working threat model derived from the Atlas codebase at the time of issue #14. It is
-**not** a STRIDE certification, penetration-test report, or independent security review.
+This is a working threat model derived from the Atlas codebase. It is **not** a STRIDE
+certification, penetration-test report, or independent security review.
 
 Controls are described only when they exist in the repository. Residual risks and consumer
 responsibilities are called out explicitly.
@@ -22,7 +22,7 @@ See also: [`SECURITY.md`](../../SECURITY.md), [security engineering](../how-we-b
 | Analytics / consent state         | `@atlas/consent` + analytics adapters; opt-in via env                               | Consent is **not** a legal CMP                                                               |
 | Telemetry / error data            | Web Vitals route, Sentry, logs                                                      | Redaction helpers exist; consumers must use them                                             |
 | CI credentials                    | GitHub Actions `GITHUB_TOKEN`, optional `TURBO_*`, `LHCI_GITHUB_APP_TOKEN`, Codecov | Least-privilege workflow `permissions` applied                                               |
-| Repository write credentials      | Version PR job (`contents: write`, `pull-requests: write`)                          | Publication still disabled (#24)                                                             |
+| Repository write credentials      | Version PR job (`contents: write`, `pull-requests: write`)                          | GitHub Release publication is not enabled                                                    |
 | Release / snapshot artifacts      | Workflow artifacts (Playwright, SBOM, audit JSON)                                   | 90-day SBOM retention for snapshots                                                          |
 | Self-hosted runner host state     | Persistent disk under `/var/cache/ci` when enabled                                  | Trusted-operator domain                                                                      |
 
@@ -148,5 +148,5 @@ Operators must treat the runner host as equivalent to **write access to the cano
 
 - Formal STRIDE certification
 - Paid SAST/DAST products
-- Independent penetration testing (#18/#20)
-- Public npm publication security (#24)
+- Independent penetration testing
+- Public npm publication security

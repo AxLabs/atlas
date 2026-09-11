@@ -225,8 +225,9 @@ Atlas builds accessibility into the platform:
 - **Linting** — `eslint-plugin-jsx-a11y` rules error in ESLint; Storybook a11y addon supports manual
   review
 
-Accessibility is a baseline orientation—not formal WCAG certification or dedicated CI enforcement
-yet (see [#16](https://github.com/blitzcraftlabs/atlas/issues/16)).
+Accessibility is a baseline orientation—not formal WCAG certification. ESLint `jsx-a11y` errors and
+the **UI Quality** workflow gate representative `critical` Storybook compositions. See
+[Accessibility](../how-we-build/accessibility.md).
 
 ### Why This Matters
 

@@ -8,12 +8,12 @@
 
 ### Is Atlas open source?
 
-Atlas is **licensed under Apache License 2.0** and is **preparing for public open-source
-distribution** ([#24](https://github.com/blitzcraftlabs/atlas/issues/24)). The repository may still
-be **private**; access today is engagement-based for clients and evaluators.
+Yes. Atlas is **open source under Apache License 2.0**. The canonical public repository is
+[`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas). Clone and fork are permitted
+under the license.
 
 See [Releases and Governance](../how-we-build/releases-and-governance.md) for licensing scope,
-versioning, and support expectations.
+versioning, and support expectations. Workspace packages are not independently published to npm.
 
 ### Is Atlas a framework or a platform?
 
@@ -28,15 +28,15 @@ Atlas is for:
 - Product teams who want to ship features, not build infrastructure
 - Organizations that value consistency over flexibility
 - Engineers who believe conventions reduce cognitive load
-- Teams building production applications through a client or evaluation relationship
+- Teams building production applications who want a documented, opinionated starter
 
-Atlas is **not for** teams seeking a publicly forkable, anonymously downloadable starter without an
-access relationship.
+Atlas is **not for** teams that need an unopinionated kit, independently published npm packages, or
+a contractual support SLA bundled with the repository.
 
 ### Can I use Atlas for my project?
 
-Atlas is available to **selected clients and authorized evaluators**, not as a general public
-offering. Contact the maintainer through the engagement or evaluation channel if you need access.
+Yes. You can clone or fork Atlas and use it under Apache License 2.0. Commercial engineering,
+support, or consulting is a separate matter and is not required to use the source.
 
 ---
 
@@ -187,8 +187,8 @@ Atlas uses a layered approach:
 - **E2E tests** — Playwright smoke coverage in CI
 
 `@atlas/ui` enforces Jest coverage thresholds in CI. Broader risk-based coverage for auth, API, and
-critical journeys is tracked in [#12](https://github.com/blitzcraftlabs/atlas/issues/12). Failing
-tests block merges.
+critical journeys is enforced by `pnpm test:risk-coverage` and `coverage-policy.json`. See
+[Testing](../how-we-build/testing.md). Failing tests block merges.
 
 ---
 
@@ -204,9 +204,9 @@ Accessibility affects more users than you think:
 - Power users who prefer keyboards
 
 Atlas provides an accessibility-oriented baseline: semantic components, `eslint-plugin-jsx-a11y`
-rules, Storybook a11y review, and documented keyboard checks. This is **not** the same as formal
-WCAG conformance or dedicated accessibility CI gates
-([#16](https://github.com/blitzcraftlabs/atlas/issues/16)).
+rules, Storybook a11y review, documented keyboard checks, and the **UI Quality** workflow for
+representative `critical` compositions. This is **not** the same as formal WCAG conformance or
+certification. See [Accessibility](../how-we-build/accessibility.md).
 
 ### Why are patterns so prescriptive?
 
@@ -215,26 +215,14 @@ the same, developers think about product problems instead of infrastructure choi
 
 Flexibility has a cost. Consistency has a value. Atlas optimizes for consistency.
 
-### Why isn't Atlas publicly available yet?
-
-Atlas has adopted **Apache-2.0** licensing in the repository, but **public repository availability**
-and the first canonical GitHub Release are tracked in
-[#24](https://github.com/blitzcraftlabs/atlas/issues/24). Until cutover, access remains
-engagement-based for selected clients and evaluators.
-
-Public distribution adds obligations—backward compatibility expectations, community processes, and
-broader support surface—that #24 will address deliberately rather than prematurely.
-
-### Why document a private platform publicly?
+### Why document Atlas this way?
 
 This documentation serves:
 
-- **Onboarding** — Engineers with repository access understand the platform
-- **Evaluation** — Decision-makers can assess fit before or during access
+- **Onboarding** — Contributors and consumers can understand the platform from a public clone
+- **Evaluation** — Decision-makers can assess fit before adopting Atlas
 - **Architecture reference** — Patterns are documented for recall
 - **Evidence discipline** — Claims map to inspectable behavior where possible
-
-The ideas and capabilities are shareable. Repository access is not universal.
 
 ---
 
@@ -259,8 +247,7 @@ documented configuration, and known limitations.
 
 Atlas has been **battle-tested** through named products (built from Atlas and migrated toward
 Atlas). That does not mean every subsystem has the same operational evidence or that no production
-defects occurred. Operational runbooks and expanded proof are tracked in Epic
-[#21](https://github.com/blitzcraftlabs/atlas/issues/21).
+defects occurred. Atlas does not currently publish production SLO or incident-response evidence.
 
 ---
 

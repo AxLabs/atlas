@@ -63,7 +63,7 @@ and no `undefined` values.
 
 The loader applies defaults, normalizes paths, validates schema version, and performs lightweight
 structural checks on required project surfaces. It does **not** perform full repository conformance
-diagnostics — that belongs to Atlas Doctor (#38).
+diagnostics — that belongs to Atlas Doctor.
 
 ### Structural validation semantics
 
@@ -94,14 +94,14 @@ whole workspace.
 The contract uses an independent **`schemaVersion`** (currently `1`). This is separate from Atlas
 release SemVer (`0.1.0` in `package.json`).
 
-| Topic                     | Behavior                                                              |
-| ------------------------- | --------------------------------------------------------------------- |
-| Supported versions        | `1` only                                                              |
-| Unknown future version    | Fail with `CONTRACT_UNSUPPORTED_VERSION` and a clear message          |
-| Older unsupported version | Fail clearly — no silent guessing                                     |
-| Unknown JSON keys         | Rejected (`strict` schema) — typos like `capabilties` fail validation |
-| Missing optional sections | Filled from `@atlas/project` defaults                                 |
-| Breaking schema change    | Increment `schemaVersion`; migration tooling belongs in #43           |
+| Topic                     | Behavior                                                                |
+| ------------------------- | ----------------------------------------------------------------------- |
+| Supported versions        | `1` only                                                                |
+| Unknown future version    | Fail with `CONTRACT_UNSUPPORTED_VERSION` and a clear message            |
+| Older unsupported version | Fail clearly — no silent guessing                                       |
+| Unknown JSON keys         | Rejected (`strict` schema) — typos like `capabilties` fail validation   |
+| Missing optional sections | Filled from `@atlas/project` defaults                                   |
+| Breaking schema change    | Increment `schemaVersion`; migration tooling belongs to `atlas upgrade` |
 
 Example unsupported-version error:
 
@@ -134,9 +134,9 @@ This installation supports contract schema version 1.
 
 ### Platform baseline (schema v1)
 
-Optional metadata for downstream upgrade planning (issue #17). Recorded by `atlas init` when the
-infrastructure manifest is present; init fails explicitly when baseline capture cannot complete.
-Refreshed after upgrades by #43.
+Optional metadata for downstream upgrade planning. Recorded by `atlas init` when the infrastructure
+manifest is present; init fails explicitly when baseline capture cannot complete. Refreshed after
+upgrades by `atlas upgrade`.
 
 ```json
 {
@@ -159,7 +159,7 @@ modifications — not enforce byte identity with the latest Atlas main branch.
 ### Capabilities
 
 Boolean flags only — no vendor configuration or secrets. A capability means the underlying
-architectural module exists in this project, not that future tooling (#36–#38) is implemented.
+architectural module exists in this project, not that CLI/Doctor/generator commands are implemented.
 
 | Capability      | When `true` in Atlas today                    |
 | --------------- | --------------------------------------------- |
@@ -171,7 +171,8 @@ architectural module exists in this project, not that future tooling (#36–#38)
 | `openApi`       | OpenAPI spec + generated contracts            |
 | `observability` | Sentry + web vitals telemetry conventions     |
 
-Authorization/permissions (#41) is intentionally **not** represented yet.
+Authorization/permissions is documented in [authorization.md](authorization.md) and is not a
+contract capability flag.
 
 ### OpenAPI generated schema (schema v1)
 
@@ -264,7 +265,7 @@ Property order in real output is stable but sorted alphabetically by the seriali
 | `docs/how-we-build/**`, ADRs           | Why architecture exists               |
 | `atlas.config.json` + `@atlas/project` | What machine-relevant architecture is |
 | ESLint / tests                         | What is enforced and how              |
-| Atlas Doctor (#38)                     | Whether the repo currently conforms   |
+| Atlas Doctor                           | Whether the repo currently conforms   |
 
 ---
 
@@ -289,16 +290,16 @@ Property order in real output is stable but sorted alphabetically by the seriali
 
 ---
 
-## Future consumers
+## Tooling consumers
 
-| Issue               | Uses contract for                                                  |
-| ------------------- | ------------------------------------------------------------------ |
-| #36 CLI / bootstrap | Discover repo, load one authoritative project definition           |
-| #37 generators      | Product feature destination, reference avoidance, capabilities     |
-| #38 Doctor          | Capabilities, boundaries, generated paths, structural expectations |
-| #43 migrations      | Contract schema version upgrades; baseline refresh                 |
-| #17 upgrades        | Baseline metadata, conflict policy, rehearsal evidence             |
-| #44 agent workflows | Vendor-neutral resolved JSON architecture context                  |
+| Tooling          | Uses contract for                                                  |
+| ---------------- | ------------------------------------------------------------------ |
+| CLI / bootstrap  | Discover repo, load one authoritative project definition           |
+| Generators       | Product feature destination, reference avoidance, capabilities     |
+| Doctor           | Capabilities, boundaries, generated paths, structural expectations |
+| `atlas upgrade`  | Contract schema version upgrades; baseline refresh                 |
+| Upgrade contract | Baseline metadata, conflict policy, rehearsal evidence             |
+| Agent workflows  | Vendor-neutral resolved JSON architecture context                  |
 
 All future tooling should import `@atlas/project` rather than reimplementing config discovery.
 

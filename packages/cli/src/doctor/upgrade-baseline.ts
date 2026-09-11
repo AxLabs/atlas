@@ -60,7 +60,7 @@ export function runUpgradeBaselineCheck(context: DoctorContext): DoctorCheckResu
         {
           path: "atlas.config.json",
           suggestedFix:
-            "Review docs/how-we-build/upgrades.md and update platform.baseline after completing a supported upgrade path (#43 will automate this).",
+            "Review docs/how-we-build/upgrades.md and update platform.baseline after completing a supported upgrade path (`atlas upgrade` automates this).",
         }
       )
     );

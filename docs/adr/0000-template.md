@@ -80,5 +80,5 @@ Brief description of this alternative.
 ## References
 
 - [Relevant documentation](https://example.com)
-- [Related PR](https://github.com/org/repo/pull/123)
-- [Original discussion](https://slack.com/...)
+- Related PR: `https://github.com/org/repo/pull/123`
+- Original discussion: `https://slack.com/...`

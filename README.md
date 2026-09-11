@@ -5,15 +5,16 @@ Enterprise-grade frontend platform built with Next.js, TypeScript, and Tailwind 
 ## What is Atlas?
 
 Atlas is a **forkable frontend platform template** for building production-ready web applications.
-Selected clients, invited collaborators, and authorized evaluators receive repository access under
-engagement or evaluation terms. It is not a general public open-source offering.
+It is **open source under Apache License 2.0**. The canonical repository is
+[`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas). Anyone can clone, fork, and
+evaluate it.
 
 The platform provides opinionated patterns for authentication, data fetching, validation, theming,
 accessibility, and observability—so teams can focus on shipping product.
 
-Authorized clients fork or branch the repository, start from the clean `apps/web` starter, and
-explore `apps/reference` to see a finished product built with Atlas. Minimal `/examples` pages in
-the starter demonstrate isolated patterns; delete them when building your product.
+Start from the clean `apps/web` starter, and explore `apps/reference` to see a finished product
+built with Atlas. Minimal `/examples` pages in the starter demonstrate isolated patterns; delete
+them when building your product.
 
 ```bash
 # Starter app (consumer starting point)
@@ -30,7 +31,7 @@ pnpm --filter @atlas/reference dev  # http://localhost:3001
 | Audience                                               | Documentation                                                                                                                           |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
 | **External** (evaluation, onboarding, architecture)    | **[Public Docs](docs/public/README.md)**                                                                                                |
-| **Contributors** (maintainers, clients, collaborators) | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [How We Build](docs/how-we-build/README.md), [ADRs](docs/adr/README.md) |
+| **Contributors** (maintainers and public contributors) | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [How We Build](docs/how-we-build/README.md), [ADRs](docs/adr/README.md) |
 
 ### Public Documentation
 
@@ -51,20 +52,18 @@ pnpm --filter @atlas/reference dev  # http://localhost:3001
 | `/examples/form` | Zod validation and server field error mapping   |
 
 Delete these when you start building your product. The interactive showcase lives at
-[shipwithatlas.com](https://shipwithatlas.com)
-([blitzcraftlabs/atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
+[shipwithatlas.com](https://shipwithatlas.com).
 
 ---
 
 ## Quick Start
 
-Requires repository access. See [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ```bash
+git clone https://github.com/blitzcraftlabs/atlas.git
+cd atlas
+
 # Prerequisites: Node.js >= 22, pnpm >= 10
 corepack enable
-
-# Install dependencies
 pnpm install
 
 # Setup environment
@@ -75,7 +74,9 @@ pnpm validate:env
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor workflow.
 
 ## Project Structure
 
@@ -156,16 +157,19 @@ pnpm storybook      # UI component explorer
 
 ## Contributing
 
-See **[CONTRIBUTING.md](CONTRIBUTING.md)** for access model, branch practices, validation, and PR
-expectations.
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the public contribution model, branch practices,
+validation, and PR expectations.
 
 ---
 
 ## License and access
 
-Atlas is **licensed under Apache License 2.0** ([`LICENSE`](LICENSE)). Public repository
-availability and the first canonical GitHub Release are part of issue
-[#24](https://github.com/blitzcraftlabs/atlas/issues/24). Repository access today remains
-engagement-based for clients and collaborators.
+Atlas is **open source under Apache License 2.0** ([`LICENSE`](LICENSE)). The canonical public
+repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas). Clone and fork are
+permitted under the license.
+
+Workspace packages remain internal (`private: true` in npm metadata) and are **not** independently
+published to npm. Canonical GitHub Release publication is not enabled yet; versioning still uses
+Changesets Version PRs.
 
 Release governance: [Releases and Governance](docs/how-we-build/releases-and-governance.md).

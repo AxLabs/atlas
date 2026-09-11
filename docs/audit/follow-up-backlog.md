@@ -52,8 +52,8 @@ include in the initial PR.
 
 ### 3. Stale Docs Cleanup
 
-**Type:** Documentation **Effort:** 1 hour **Risk:** None **Status:** Partially addressed in
-[#13](https://github.com/blitzcraftlabs/atlas/issues/13)
+**Type:** Documentation **Effort:** 1 hour **Risk:** None **Status:** Partially addressed via the
+claims register and `pnpm docs:check`
 
 **Current State:**
 

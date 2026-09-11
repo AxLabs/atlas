@@ -1,11 +1,11 @@
 {
   "sourceAtlasCommit": "8ce8fa39fd5c3ec497d7319e2f8ed046ddbfbaa4",
   "sourceAtlasDate": "2026-08-21T14:56:13+05:30",
-  "sourceAtlasDescription": "fix(web): keep roles reference-only and document harness in Quickstart (PR #50 reference harness era)",
+  "sourceAtlasDescription": "fix(web): keep roles reference-only and document harness in Quickstart (reference harness era)",
   "targetAtlasCommit": "34400006d93f0e3d86de4f4e4cc5ec4b3cc62524",
   "targetAtlasState": "feat(platform): define upgrade contract and downstream propagation (#17)",
   "targetAtlasDate": "2026-08-25",
-  "whyThisBaselineWasChosen": "The source predates the reference application split (#55), UI foundation reset (#42), template infrastructure manifest (#57), and upgrade baseline work (#17). Between source and target, real synced infrastructure changed in API client hooks, API config, and session presentation wiring while OpenAPI artifacts remained stable — enough distance to rehearse the ownership contract on actual Atlas code rather than miniature abstractions.",
+  "whyThisBaselineWasChosen": "The source predates the reference application split, UI foundation reset, template infrastructure manifest, and upgrade baseline work. Between source and target, real synced infrastructure changed in API client hooks, API config, and session presentation wiring while OpenAPI artifacts remained stable — enough distance to rehearse the ownership contract on actual Atlas code rather than miniature abstractions.",
   "rehearsalManifestSubset": {
     "syncedPaths": ["src/lib/api/hooks.ts", "src/lib/api/config.ts", "src/lib/auth/useSession.ts"],
     "generatedPaths": ["src/lib/api/contracts/schema.ts"],

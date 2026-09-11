@@ -6,17 +6,17 @@
 
 ## Context
 
-Atlas is a **source-owned** frontend platform. Consumers fork the monorepo (or a future public
-snapshot), customize product code, and often customize infrastructure wiring. Atlas continues to
-ship fixes to auth, API infrastructure, security, UI packages, generators, and conventions.
+Atlas is a **source-owned** frontend platform. Consumers fork the public monorepo, customize product
+code, and often customize infrastructure wiring. Atlas continues to ship fixes to auth, API
+infrastructure, security, UI packages, generators, and conventions.
 
-ADR-0009 (#57 / PR #58) established **ownership classification** and **monorepo template sync**
-between `apps/web` and `apps/reference`. It intentionally does not define how an external consumer
-six months behind receives fixes without overwriting product work.
+ADR-0009 established **ownership classification** and **monorepo template sync** between `apps/web`
+and `apps/reference`. It intentionally does not define how an external consumer six months behind
+receives fixes without overwriting product work.
 
-Issue #17 scopes the **upgrade contract**, conflict policy, baseline metadata, security propagation
+This ADR scopes the **upgrade contract**, conflict policy, baseline metadata, security propagation
 model, downstream→upstream lifecycle, and a reproducible upgrade rehearsal. Executable migration
-tooling belongs in #43 — not here.
+tooling belongs to `atlas upgrade` — not here.
 
 ## Decision
 
@@ -32,8 +32,8 @@ byte equality today.
 | Atlas-managed template        | Manifest `syncedPaths` under `apps/web`         | Selective replace when baseline checksums match |
 | Consumer-owned source         | Product features, routes, shell composition     | Never overwrite automatically                   |
 | Application-owned wiring      | Manifest `independentPaths`                     | Manual review; divergence allowed               |
-| Structural contract           | `atlas.config.json`, ESLint architecture policy | Doctor + migration guides (#43)                 |
-| Migration-managed             | Breaking directory/generator output changes     | Documented migration chain (#43)                |
+| Structural contract           | `atlas.config.json`, ESLint architecture policy | Doctor + migration guides (`atlas upgrade`)     |
+| Migration-managed             | Breaking directory/generator output changes     | Documented migration chain (`atlas upgrade`)    |
 | Documentation / procedure     | Conventions, ADRs                               | Upgrade guide only                              |
 | Reference-only / starter-only | `apps/reference`, `/examples`                   | Optional; out of consumer upgrade scope         |
 
@@ -50,16 +50,16 @@ byte equality today.
 
 `atlas init` records this metadata on first initialization when the infrastructure manifest is
 present. When the manifest exists, baseline capture is strict — init fails rather than recording
-incomplete evidence. #43 will refresh it after successful upgrades.
+incomplete evidence. `atlas upgrade` will refresh it after successful upgrades.
 
 **Version concepts (minimal):**
 
-| Concept                          | Source                              | Used for                           |
-| -------------------------------- | ----------------------------------- | ---------------------------------- |
-| Atlas release version            | Root `package.json` / git tag       | Primary consumer baseline identity |
-| Contract schema version          | `atlas.config.json` `schemaVersion` | Contract migrations (#43)          |
-| Template manifest schema version | Manifest `schemaVersion`            | Sync policy migrations             |
-| CLI snapshot version             | `@atlas/cli` package version        | Doctor tooling drift warnings      |
+| Concept                          | Source                              | Used for                              |
+| -------------------------------- | ----------------------------------- | ------------------------------------- |
+| Atlas release version            | Root `package.json` / git tag       | Primary consumer baseline identity    |
+| Contract schema version          | `atlas.config.json` `schemaVersion` | Contract migrations (`atlas upgrade`) |
+| Template manifest schema version | Manifest `schemaVersion`            | Sync policy migrations                |
+| CLI snapshot version             | `@atlas/cli` package version        | Doctor tooling drift warnings         |
 
 We do **not** introduce independent per-file or per-package baseline version numbers in v0.1.
 
@@ -75,19 +75,20 @@ At upgrade time for each synced path:
 3. If consumer file is **missing** → manual review; never auto-replace.
 4. If baseline proves **modified** → **merge-required** (consumer modified); never auto-replace.
 5. If baseline proves **unchanged** and Atlas target changed → **patch-safe replace** (or
-   **security-critical** when path is security-relevant per #14/#43 metadata).
+   **security-critical** when path is security-relevant per advisory metadata).
 6. If baseline proves unchanged and Atlas target unchanged → skip.
 
 **Rejected alternatives:**
 
-| Approach                    | Why rejected for v0.1                                               |
-| --------------------------- | ------------------------------------------------------------------- |
-| Git ancestry / merge-base   | Cannot assume clean fork topology or preserved upstream history     |
-| Byte-identical only         | Cannot distinguish consumer edits from Atlas edits                  |
-| Full three-way merge engine | Correct long-term; belongs in #43 with release snapshot artifacts   |
-| Separate checksum file      | Duplicates contract ownership; baseline belongs in project contract |
+| Approach                    | Why rejected for v0.1                                                         |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| Git ancestry / merge-base   | Cannot assume clean fork topology or preserved upstream history               |
+| Byte-identical only         | Cannot distinguish consumer edits from Atlas edits                            |
+| Full three-way merge engine | Correct long-term; belongs in `atlas upgrade` with release snapshot artifacts |
+| Separate checksum file      | Duplicates contract ownership; baseline belongs in project contract           |
 
-Release snapshot artifacts for true three-way merge are a #43 requirement, not a #17 deliverable.
+Release snapshot artifacts for true three-way merge are an `atlas upgrade` requirement, not an
+upgrade-contract deliverable in this ADR.
 
 ### 4. Conflict policy
 
@@ -98,19 +99,19 @@ Conflicts are **deterministic**, **machine-representable**, and surfaced before 
 
 ### 5. Upgrade change taxonomy (v0.1)
 
-| Category             | Meaning                                        | Typical action            |
-| -------------------- | ---------------------------------------------- | ------------------------- |
-| `patch-safe`         | Low-risk; consumer copy still matches baseline | Replace / regenerate      |
-| `merge-required`     | Atlas and consumer both changed same surface   | Manual review             |
-| `migration-required` | Contract/generator breaking change             | Run migration (#43)       |
-| `manual`             | Application-owned or architectural choice      | Human decision            |
-| `security-critical`  | Security fix on untouched synced path          | Urgent patch-safe replace |
+| Category             | Meaning                                        | Typical action                  |
+| -------------------- | ---------------------------------------------- | ------------------------------- |
+| `patch-safe`         | Low-risk; consumer copy still matches baseline | Replace / regenerate            |
+| `merge-required`     | Atlas and consumer both changed same surface   | Manual review                   |
+| `migration-required` | Contract/generator breaking change             | Run migration (`atlas upgrade`) |
+| `manual`             | Application-owned or architectural choice      | Human decision                  |
+| `security-critical`  | Security fix on untouched synced path          | Urgent patch-safe replace       |
 
-### 6. Security propagation (local contract; #14 owns advisories)
+### 6. Security propagation (local contract; advisories live in security engineering)
 
 When Atlas ships a security fix in template-owned infrastructure:
 
-1. **Identify affected versions** via release notes / future security advisories (#14).
+1. **Identify affected versions** via release notes / future security advisories.
 2. **Doctor** can compare `platform.baseline.atlasVersion` to patched release range.
 3. **Untouched synced paths** receive urgent patch-safe replacement.
 4. **Consumer-modified security paths** surface `merge-required` with security-critical severity —
@@ -129,14 +130,14 @@ Client-discovered bugs in Atlas-owned infrastructure follow:
 
 Consumers do not become the source of truth — they contribute fixes through Atlas canonical paths.
 
-### 8. Upgrade rehearsal (evidence for #43)
+### 8. Upgrade rehearsal (evidence for `atlas upgrade`)
 
 `packages/cli/src/upgrade/` provides an **internal** planner and safe-apply helper (test-only, not a
 public `atlas upgrade` command). Rehearsal evidence includes:
 
 - **Synthetic fixture** (`upgrade-rehearsal.test.ts`) — algorithm-focused miniature files.
 - **Historical fixture** (`upgrade-historical-rehearsal.test.ts`) — materialized files from Atlas
-  `8ce8fa3` → `#17` target with consumer billing/session customizations.
+  `8ce8fa3` → upgrade-contract target with consumer billing/session customizations.
 
 Historical rehearsal confirmed patch-safe replaces on real `hooks.ts` / `config.ts`, merge-required
 on customized `useSession.ts`, manual review for newly introduced independent `authz.ts`, and no
@@ -152,9 +153,9 @@ OpenAPI regeneration when the spec was unchanged across the snapshot window.
 | Migration retention           | While pre-1.0; at least one minor release notice before removal when practical |
 | Unsupported baselines         | Doctor warns; Atlas reports manual upgrade required                            |
 
-### 10. #43 boundary
+### 10. `atlas upgrade` boundary
 
-#17 defines **what** must be automated. #43 implements:
+This ADR defines **what** must be automated. `atlas upgrade` implements:
 
 - `atlas upgrade` / `atlas migrate` commands
 - release snapshot artifacts for three-way merge
@@ -165,8 +166,8 @@ OpenAPI regeneration when the spec was unchanged across the snapshot window.
 
 ### Single `atlas migrate` command now
 
-Rejected — duplicates #43 scope and risks shipping unsafe auto-overwrites before conflict policy is
-proven.
+Rejected — duplicates `atlas upgrade` scope and risks shipping unsafe auto-overwrites before
+conflict policy is proven.
 
 ### Store baseline only in git tags
 
@@ -183,21 +184,19 @@ Rejected in ADR-0009 — poor fit for forkable, editable source.
 
 - Clear, testable upgrade contract aligned with existing ownership model
 - Conflict detection without requiring git history
-- Evidence-backed requirements for #43
-- Security path defined without duplicating #14 advisory backend
+- Evidence-backed requirements for `atlas upgrade`
+- Security path defined without duplicating the advisory backend in
+  [security.md](../how-we-build/security.md)
 
 ### Negative
 
 - `platform.baseline.syncedPathChecksums` can be large — acceptable for machine metadata
-- Baseline must be refreshed after upgrades (#43)
-- Full three-way merge still manual until #43
+- Baseline must be refreshed after upgrades (`atlas upgrade`)
+- Full three-way merge still manual until `atlas upgrade` provides release snapshots
 
 ## References
 
 - [upgrades.md](../how-we-build/upgrades.md)
 - [architecture-ownership.md](../how-we-build/architecture-ownership.md)
+- [security.md](../how-we-build/security.md)
 - ADR-0007, ADR-0008, ADR-0009
-- Issue #17 — upgrade contract and rehearsal
-- Issue #43 — migration tooling
-- Issue #14 — security release artifacts
-- Issue #34 — platform epic

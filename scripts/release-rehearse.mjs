@@ -33,7 +33,7 @@ Align ESLint config with new UI export.`,
 "@atlas/web": patch
 ---
 
-Add release governance documentation and validation scripts for issue #19.`,
+Add release governance documentation and validation scripts.`,
 };
 
 const RSYNC_EXCLUDES = [

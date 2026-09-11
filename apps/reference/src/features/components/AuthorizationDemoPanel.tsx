@@ -1,5 +1,5 @@
 /**
- * Demonstrates permission-aware UI and server enforcement (#41).
+ * Demonstrates permission-aware UI and server enforcement.
  *
  * Client gating is presentation only — protected API calls enforce on the server.
  */

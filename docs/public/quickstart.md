@@ -18,11 +18,17 @@ Atlas is a complete frontend platform template. When you run it, you get:
 
 ## Prerequisites
 
-- **Repository access** (selected clients, collaborators, or evaluators)
 - **Node.js 22+**
 - **pnpm 10+**
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for access and setup expectations.
+```bash
+git clone https://github.com/blitzcraftlabs/atlas.git
+cd atlas
+corepack enable
+pnpm install
+```
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for contributor workflow.
 
 ---
 
@@ -32,7 +38,6 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for access and setup expectations.
 pages — use it when you want to build your own product on Atlas.
 
 ```bash
-pnpm install
 cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @atlas/web dev
 ```

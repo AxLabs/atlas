@@ -10,8 +10,7 @@ Atlas ships with a small `/examples` section so you can see core patterns workin
 These pages are **not** a full product demo — they are copy-friendly references meant to be removed
 once you start building.
 
-For a comprehensive live showcase, see [shipwithatlas.com](https://shipwithatlas.com) (hosted from
-[blitzcraftlabs/atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
+For a comprehensive live showcase, see [shipwithatlas.com](https://shipwithatlas.com).
 
 ---
 

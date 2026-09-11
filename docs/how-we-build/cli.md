@@ -61,13 +61,13 @@ The root `pnpm atlas` script runs the linked workspace binary via `pnpm exec atl
 
 ---
 
-## Future public distribution (#24)
+## Future public distribution
 
-Issue #24 owns the public OSS cutover. When distribution is activated, `@atlas/cli` may become a
-publishable artifact bundled with or alongside the public Atlas snapshot. Until then:
+`@atlas/cli` is an in-repo workspace package. It is **not** published to the public npm registry.
+When local invocation is needed:
 
+- Use `pnpm atlas` from a clone of this repository.
 - Do not assume `npx atlas` against a public registry.
-- Do not publish `@atlas/cli` merely to simplify local invocation.
 - Version numbers mirror the Atlas platform snapshot (`@atlas/monorepo` root `package.json`).
 
 ---
@@ -119,8 +119,7 @@ absent. Atlas never invent secrets or overwrite existing env files.
 `--reference remove` deletes canonical reference/example surfaces declared by the contract defaults.
 Reference removal requires an explicit flag; the default retains reference content.
 
-There is **no** `create-atlas` command in v0.1 — new-project bootstrap from a public snapshot
-remains coordinated with #24.
+There is **no** `create-atlas` command in v0.1 — bootstrap from this public repository clone.
 
 ### `atlas generate feature <name>`
 
@@ -389,17 +388,17 @@ Machine-readable `--json` output may include:
 
 ---
 
-## Deferred capabilities
+## Current CLI commands
 
-| Issue | Capability         | Status in v0.1                                    |
-| ----- | ------------------ | ------------------------------------------------- |
-| #37   | `atlas generate …` | Feature + page shells                             |
-| #38   | `atlas doctor`     | Initial diagnostics                               |
-| #43   | `atlas upgrade`    | Planning, dry-run, apply, JSON output             |
-| #17   | Upgrade contract   | Baseline + rehearsal; see [upgrades](upgrades.md) |
+| Command            | Capability                                        | Status in v0.1 |
+| ------------------ | ------------------------------------------------- | -------------- |
+| `atlas generate …` | Feature + page shells                             | Implemented    |
+| `atlas doctor`     | Diagnostics                                       | Implemented    |
+| `atlas upgrade`    | Planning, dry-run, apply, JSON output             | Implemented    |
+| Upgrade contract   | Baseline + rehearsal; see [upgrades](upgrades.md) | Implemented    |
 
 The CLI exposes explicit command registration, shared context loading, exit codes, and output
-conventions so these commands can be added without redesigning the foundation.
+conventions so additional commands can be added without redesigning the foundation.
 
 ---
 

@@ -79,22 +79,20 @@ Local `uses: ./…` actions are bound to the checked-out commit.
 
 ## Dependency review
 
-GitHub-native Dependency Review / Dependency Graph SBOM export is **not available** on this private
-repository's current GitHub plan (Dependency Graph SBOM API 404; Advanced Security 403; branch
-protection API 403). Atlas therefore enforces an equivalent PR-time gate:
+GitHub-native Dependency Review / Dependency Graph SBOM export is **not currently treated as Atlas
+evidence**. Atlas enforces an equivalent PR-time gate:
 
 - `.github/workflows/security-audit.yml` runs on every pull request
 - `pnpm security:check` evaluates the full `pnpm audit` document against Atlas policy
 
-License classification remains `pnpm licenses:check` (issues #27/#64). This workflow does not
-duplicate license policy.
+License classification remains `pnpm licenses:check` ([provenance.md](provenance.md)). This workflow
+does not duplicate license policy.
 
 ## SBOM
 
-Until public publication (#24), Atlas generates an SPDX 2.3 JSON snapshot from `pnpm-lock.yaml` on
-`main` pushes, version-tag-equivalent snapshots, and `workflow_dispatch` via the Release workflow.
-Artifacts are named `atlas-sbom-<sha>` and retained for 90 days. This is **not** a GitHub Dependency
-Graph export.
+Atlas generates an SPDX 2.3 JSON snapshot from `pnpm-lock.yaml` on `main` pushes,
+version-tag-equivalent snapshots, and `workflow_dispatch` via the Release workflow. Artifacts are
+named `atlas-sbom-<sha>` and retained for 90 days. This is **not** a GitHub Dependency Graph export.
 
 ```bash
 pnpm sbom:generate
@@ -120,38 +118,38 @@ or if `pull_request_target` is introduced.
 
 ## Branch protection / rulesets (expected)
 
-Inspected 2026-08-29 via GitHub API for `blitzcraftlabs/atlas`:
+Inspected 2026-08-29 via GitHub API for `blitzcraftlabs/atlas` while the repository was still
+private. The canonical repository is now **public**. Reproduce required checks on the public repo:
 
-| Setting                           | Result                                                |
-| --------------------------------- | ----------------------------------------------------- |
-| Visibility                        | Private                                               |
-| Branch protection API             | HTTP 403 — GitHub Pro (or public repository) required |
-| Repository rulesets API           | HTTP 403 — same plan limitation                       |
-| Dependency Graph SBOM             | HTTP 404                                              |
-| Advanced Security / code scanning | HTTP 403                                              |
-| `security_and_analysis`           | `null` (not returned for this token/plan)             |
+| Setting                           | Historical private-plan result             |
+| --------------------------------- | ------------------------------------------ |
+| Visibility                        | Private at inspection time; **public now** |
+| Branch protection API             | HTTP 403 on the then-private plan          |
+| Repository rulesets API           | HTTP 403 on the then-private plan          |
+| Dependency Graph SBOM             | HTTP 404                                   |
+| Advanced Security / code scanning | HTTP 403                                   |
+| `security_and_analysis`           | `null` (not returned for that token/plan)  |
 
-**No branch protection was modified** (the API cannot read or write it on this plan).
-
-For the future canonical public repository (#24), require at least:
+**That inspection did not modify branch protection.** On the public repository, require at least:
 
 - **CI / Governance**
 - **CI / CI**
 - **CI / Secrets Scan**
 - **Security Audit / Security Audit**
 
-Reproduce those required checks when the plan allows rulesets.
+Do not treat GitHub Dependency Graph, Advanced Security, or a formal penetration test as currently
+proven Atlas evidence.
 
 ## Security-fix propagation
 
-Documented in [`SECURITY.md`](../../SECURITY.md) and [upgrades.md](upgrades.md). Do not enable npm
-or GitHub Release publication before #24.
+Documented in [`SECURITY.md`](../../SECURITY.md) and [upgrades.md](upgrades.md). Workspace packages
+are not published to npm. Canonical GitHub Release publication is not enabled yet.
 
-## Residual programmes
+## Current limitations
 
-| Issue | Residual                                                                                             |
-| ----- | ---------------------------------------------------------------------------------------------------- |
-| #12   | Risk-based testing programme (auth gaps beyond #14, API client, forms, E2E browsers, coverage gates) |
-| #18   | Independent review / operational runbooks                                                            |
-| #20   | Formal certification claims remain out of scope                                                      |
-| #24   | Public repo cutover, GitHub Release publication, ruleset reproduction                                |
+| Topic                         | Current state                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| Risk-based testing            | Enforced via `pnpm test:risk-coverage` and [testing.md](testing.md)           |
+| Independent review / runbooks | Atlas does not currently publish production SLO or incident-response evidence |
+| Formal certification          | Out of scope — no WCAG, SOC, or pentest certification is claimed              |
+| GitHub Release publication    | Not enabled by current automation                                             |

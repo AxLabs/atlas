@@ -1,6 +1,6 @@
 # Upgrade rehearsal fixtures
 
-This directory provides static evidence for issue #17.
+This directory provides static evidence for the v0.1 upgrade contract.
 
 ## Synthetic miniature fixture
 
@@ -15,7 +15,7 @@ behavior.
 |        |                                                                                |
 | ------ | ------------------------------------------------------------------------------ |
 | Source | `8ce8fa39fd5c3ec497d7319e2f8ed046ddbfbaa4` (2026-08-21, reference harness era) |
-| Target | `34400006d93f0e3d86de4f4e4cc5ec4b3cc62524` (#17 upgrade contract)              |
+| Target | `34400006d93f0e3d86de4f4e4cc5ec4b3cc62524` (v0.1 upgrade contract)             |
 
 See `historical/metadata.json` for provenance and `upgrade-historical-rehearsal.test.ts` for
 expected planner outcomes on consumer customizations (billing feature, customized `useSession.ts`,

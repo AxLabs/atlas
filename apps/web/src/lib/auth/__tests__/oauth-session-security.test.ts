@@ -1,5 +1,5 @@
 /**
- * OAuth / session negative-path tests for Atlas issue #14.
+ * OAuth / session negative-path tests.
  *
  * @jest-environment node
  */

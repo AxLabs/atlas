@@ -46,7 +46,7 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "✓ Release rehearsal completed (dry run — no tag or GitHub Release created)"
           echo "  Current Atlas line: v${VERSION}"
-          echo "  GitHub Release publication remains deferred to issue #24"
+          echo "  GitHub Release publication is not enabled"
 
   sbom:
     name: SBOM snapshot
@@ -136,4 +136,4 @@ jobs:
           else
             echo "ℹ️ No pending changesets — no Version PR action required."
           fi
-          echo "ℹ️ GitHub Release publication is disabled until issue #24."
+          echo "ℹ️ GitHub Release publication is not enabled."

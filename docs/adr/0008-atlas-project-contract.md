@@ -7,9 +7,9 @@
 ## Context
 
 Atlas architectural decisions are documented across human-readable docs, ADRs, ESLint rules, and
-repository layout. Tooling (#36 CLI, #37 generators, #38 Doctor, #43 migrations, #44 agent
-workflows) cannot reliably consume all of those sources. Issue #35 requires a small, declarative,
-machine-readable contract with a single typed loader.
+repository layout. CLI, generators, Doctor, migrations, and agent workflows cannot reliably consume
+all of those sources. Atlas needs a small, declarative, machine-readable contract with a single
+typed loader.
 
 ## Decision
 
@@ -23,7 +23,7 @@ machine-readable contract with a single typed loader.
    implementations.
 
 Unsupported contract schema versions fail clearly. Unknown JSON keys are rejected via strict Zod
-parsing. Contract migrations belong in #43.
+parsing. Contract migrations belong to `atlas upgrade`.
 
 ## Alternatives Considered
 
@@ -46,10 +46,9 @@ parsing. Contract migrations belong in #43.
 ### Negative
 
 - Contract and human docs must stay aligned when architecture changes
-- Schema version bumps require coordinated loader updates (#43 for migrations)
+- Schema version bumps require coordinated loader updates (`atlas upgrade` for migrations)
 
 ## References
 
 - [atlas-contract.md](../how-we-build/atlas-contract.md)
-- Issue #35 — machine-readable architecture contract
 - ADR-0007 — architecture ownership model

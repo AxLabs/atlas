@@ -318,21 +318,15 @@ source import, and UI-internal alias rules.
 
 ---
 
-## Deferred to future issues
+## Related work
 
-The canonical shadcn/Base UI foundation (#42) is complete. Remaining roadmap ownership:
-
-| Issue   | Scope intentionally not in this document's implementation |
-| ------- | --------------------------------------------------------- |
-| #16     | Storybook, a11y, and visual-regression hardening          |
-| #43–#44 | Migration framework automation, agent workflow redesign   |
-
-Upgrade contract, baseline metadata, and rehearsal evidence are documented in
-[upgrades.md](upgrades.md) and [ADR-0010](../adr/0010-atlas-upgrades-downstream-propagation.md)
-(issue #17). #43 implements executable `atlas upgrade` / migration tooling on top of that contract.
+The canonical shadcn/Base UI foundation is complete. Storybook, accessibility, and visual-regression
+hardening is enforced by the **UI Quality** workflow. Executable `atlas upgrade` / migration tooling
+and agent workflow guidance are documented in [upgrades.md](upgrades.md), [cli.md](cli.md),
+[AGENTS.md](../../AGENTS.md), and [ADR-0010](../adr/0010-atlas-upgrades-downstream-propagation.md).
 
 Reusable application compositions should be extracted to shared packages only when proven across
-independent reference surfaces — see the #39 composition promotion audit.
+independent reference surfaces.
 
 ---
 

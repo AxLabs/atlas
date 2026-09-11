@@ -262,7 +262,7 @@ describe("semver utils", () => {
 });
 
 describe("release workflow policy", () => {
-  it("does not configure live publication before #24", () => {
+  it("does not configure live GitHub Release or npm publication", () => {
     const workflow = readFileSync(
       path.join(process.cwd(), ".github/workflows/release.yml"),
       "utf8",

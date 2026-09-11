@@ -129,12 +129,12 @@ Add those in your product repo when you have a real database and content pipelin
 
 ## Optional workflows
 
-| Workflow              | Purpose                                                   | Enable                                   |
-| --------------------- | --------------------------------------------------------- | ---------------------------------------- |
-| `security-audit.yml`  | Blocking Atlas vulnerability policy + workflow pin checks | On by default (PRs, `main`, weekly)      |
-| `perf-lighthouse.yml` | Lighthouse CI budgets                                     | `pnpm perf:enable`                       |
-| `perf-bundle.yml`     | Bundle size analysis                                      | `pnpm perf:enable`                       |
-| `release.yml`         | Atlas Version PR only (no GitHub Release before #24)      | On `main`; `workflow_dispatch` rehearsal |
+| Workflow              | Purpose                                                        | Enable                                   |
+| --------------------- | -------------------------------------------------------------- | ---------------------------------------- |
+| `security-audit.yml`  | Blocking Atlas vulnerability policy + workflow pin checks      | On by default (PRs, `main`, weekly)      |
+| `perf-lighthouse.yml` | Lighthouse CI budgets                                          | `pnpm perf:enable`                       |
+| `perf-bundle.yml`     | Bundle size analysis                                           | `pnpm perf:enable`                       |
+| `release.yml`         | Atlas Version PR only (GitHub Release publication not enabled) | On `main`; `workflow_dispatch` rehearsal |
 
 Performance budget details live in `tools/perf/README.md` when workflows are enabled.
 
@@ -189,9 +189,8 @@ Required status checks for `main` (when the GitHub plan allows branch protection
 - **CI / Secrets Scan** — Gitleaks scan
 - **Security Audit / Security Audit** — Atlas dependency vulnerability policy
 
-The private repository's current GitHub plan returned HTTP 403 for branch protection and ruleset
-APIs (inspected 2026-08-29). Reproduce the required checks on the future public canonical repo
-([#24](https://github.com/blitzcraftlabs/atlas/issues/24)). See [security engineering](security.md).
+The public repository should reproduce those required checks via branch protection or rulesets. See
+[security engineering](security.md).
 
 If branch protection still references retired job names (**Detect Changes**, **Quality**, **Build
 and E2E**), update them to **CI / CI**. Legacy names from the old **Gitleaks Secrets Scan**

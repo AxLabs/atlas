@@ -2,7 +2,8 @@
  * Deterministic reference auth personas.
  *
  * Stable fixture identities for local development and automated tests.
- * Reference persona metadata provides deterministic profiles for #41 to map
+ * Reference persona metadata provides deterministic profiles for the authorization
+ * model to map.
  * into the eventual authorization model.
  *
  * @module lib/reference/auth/personas

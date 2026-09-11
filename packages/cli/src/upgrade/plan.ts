@@ -10,8 +10,8 @@ import type { AtlasMigrationDefinition } from "./migrations/registry";
 import type { PlanUpgradeOptions, UpgradePlan, UpgradePlanItem, UpgradePlanSummary } from "./types";
 
 /**
- * Test-only security relevance heuristic for upgrade rehearsal evidence (#17).
- * Canonical security-critical classification belongs to #14 advisory metadata — not this planner.
+ * Test-only security relevance heuristic for upgrade rehearsal evidence.
+ * Canonical security-critical classification belongs to advisory metadata — not this planner.
  */
 function isSecurityRelevantSyncedPath(relativePath: string): boolean {
   return (
