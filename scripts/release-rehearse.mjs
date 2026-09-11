@@ -1,10 +1,11 @@
 import { execSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import { ATLAS_WORKSPACE_PACKAGES, readRootVersion } from "./atlas-workspaces.mjs";
 import { buildReleaseNotesPreview, extractChangelogSection } from "./extract-changelog-section.mjs";
+import { preparePublication } from "./publish-atlas-release.mjs";
 import { isGithubPrerelease } from "./semver-utils.mjs";
 
 const FIXTURE_CHANGES = {
@@ -65,14 +66,14 @@ function assertWorkspaceChangelogs(scenarioRoot, version, fixtureName) {
     const changelogPath = path.join(scenarioRoot, pkg.relativePath, "CHANGELOG.md");
     if (!existsSync(changelogPath)) {
       throw new Error(
-        `Scenario ${fixtureName}: missing workspace changelog at ${pkg.relativePath}/CHANGELOG.md`,
+        `Scenario ${fixtureName}: missing workspace changelog at ${pkg.relativePath}/CHANGELOG.md`
       );
     }
 
     const content = readFileSync(changelogPath, "utf8");
     if (!extractChangelogSection(content, version)) {
       throw new Error(
-        `Scenario ${fixtureName}: ${pkg.relativePath}/CHANGELOG.md missing section for ${version}`,
+        `Scenario ${fixtureName}: ${pkg.relativePath}/CHANGELOG.md missing section for ${version}`
       );
     }
   }
@@ -82,18 +83,31 @@ function assertAlignedVersions(scenarioRoot, version, fixtureName) {
   const rootVersion = readVersion(scenarioRoot);
   if (rootVersion !== version) {
     throw new Error(
-      `Scenario ${fixtureName}: root version ${rootVersion} does not match expected ${version}`,
+      `Scenario ${fixtureName}: root version ${rootVersion} does not match expected ${version}`
     );
   }
 
   for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
     const pkgVersion = JSON.parse(
-      readFileSync(path.join(scenarioRoot, pkg.relativePath, "package.json"), "utf8"),
+      readFileSync(path.join(scenarioRoot, pkg.relativePath, "package.json"), "utf8")
     ).version;
     if (pkgVersion !== version) {
       throw new Error(
-        `Scenario ${fixtureName}: ${pkg.relativePath} version ${pkgVersion} != ${version}`,
+        `Scenario ${fixtureName}: ${pkg.relativePath} version ${pkgVersion} != ${version}`
       );
+    }
+  }
+}
+
+function clearPendingChangesets(scenarioRoot) {
+  const changesetDir = path.join(scenarioRoot, ".changeset");
+  if (!existsSync(changesetDir)) {
+    return;
+  }
+
+  for (const name of readdirSync(changesetDir)) {
+    if (name.endsWith(".md") && name !== "README.md") {
+      rmSync(path.join(changesetDir, name), { force: true });
     }
   }
 }
@@ -101,12 +115,15 @@ function assertAlignedVersions(scenarioRoot, version, fixtureName) {
 function runScenario(baselineRoot, fixtureName, fixtureBody, expectations, options = {}) {
   const scenarioRoot = path.join(path.dirname(baselineRoot), `scenario-${fixtureName}`);
   copyWorkspace(baselineRoot, scenarioRoot);
+  // Fixture scenarios must not inherit pending repo changesets; those would
+  // change the expected bump (e.g. a real minor + fixture patch → 0.2.0).
+  clearPendingChangesets(scenarioRoot);
 
   if (options.extraChangeset) {
     writeFileSync(
       path.join(scenarioRoot, ".changeset", `rehearse-upstream-${fixtureName}.md`),
       options.extraChangeset,
-      "utf8",
+      "utf8"
     );
   }
 
@@ -120,7 +137,7 @@ function runScenario(baselineRoot, fixtureName, fixtureBody, expectations, optio
 
   if (expectations.expectedVersion && version !== expectations.expectedVersion) {
     throw new Error(
-      `Scenario ${fixtureName}: expected version ${expectations.expectedVersion}, got ${version}`,
+      `Scenario ${fixtureName}: expected version ${expectations.expectedVersion}, got ${version}`
     );
   }
 
@@ -230,26 +247,76 @@ function main() {
 
     for (const scenario of scenarios) {
       console.log(`  • scenario: ${scenario.name}`);
-      runScenario(
-        baselineRoot,
-        scenario.name,
-        scenario.fixture,
-        scenario.expectations,
-        { extraChangeset: scenario.extraChangeset },
-      );
+      runScenario(baselineRoot, scenario.name, scenario.fixture, scenario.expectations, {
+        extraChangeset: scenario.extraChangeset,
+      });
     }
 
-    const realStatus = execSync("git status --porcelain", { cwd: repoRoot, encoding: "utf8" }).trim();
+    console.log("  • scenario: publication-prerequisites");
+    rehearsePublication(baselineRoot, snapshotParent);
+
+    const realStatus = execSync("git status --porcelain", {
+      cwd: repoRoot,
+      encoding: "utf8",
+    }).trim();
     if (realStatus) {
       console.log("ℹ️ Real working tree has uncommitted changes (expected during development).");
     }
 
+    const tagsAfter = execSync("git tag --list", { cwd: repoRoot, encoding: "utf8" });
+    if (tagsAfter.trim()) {
+      console.log(
+        `ℹ️ Existing local tags (unchanged): ${tagsAfter.split("\n").filter(Boolean).join(", ")}`
+      );
+    }
+
     console.log(`  Tag preview (current line): v${startVersion}`);
-    console.log(`  GitHub prerelease flag for ${startVersion}: ${isGithubPrerelease(startVersion)}`);
+    console.log(
+      `  GitHub prerelease flag for ${startVersion}: ${isGithubPrerelease(startVersion)}`
+    );
     console.log("✓ Release rehearsal completed — real repo unchanged");
   } finally {
     rmSync(snapshotParent, { recursive: true, force: true });
   }
+}
+
+function rehearsePublication(baselineRoot, snapshotParent) {
+  const publishRoot = path.join(snapshotParent, "publication");
+  copyWorkspace(baselineRoot, publishRoot);
+  run("pnpm install --frozen-lockfile", publishRoot);
+  run("pnpm changeset:version", publishRoot);
+
+  const version = readVersion(publishRoot);
+  const prepared = preparePublication({
+    repoRoot: publishRoot,
+    skipGithub: true,
+    dryRun: true,
+    skipChecks: true,
+    outputDir: path.join(publishRoot, "artifacts"),
+    targetSha: "rehearse-publication-sha",
+  });
+
+  if (!existsSync(prepared.sbom.filePath)) {
+    throw new Error("Publication rehearsal did not write an SBOM artifact");
+  }
+  if (!existsSync(prepared.notesPath)) {
+    throw new Error("Publication rehearsal did not write release notes");
+  }
+  if (!prepared.notes.includes(`Atlas ${version}`)) {
+    throw new Error(`Publication rehearsal notes missing Atlas ${version}`);
+  }
+  if (prepared.decision.tag !== `v${version}`) {
+    throw new Error(
+      `Publication rehearsal tag ${prepared.decision.tag} does not match version ${version}`
+    );
+  }
+  if (version.startsWith("0.1.") === false && prepared.decision.action === "noop") {
+    throw new Error(`Publication rehearsal expected a publish decision for ${version}`);
+  }
+
+  console.log(
+    `    decision=${prepared.decision.action} tag=${prepared.decision.tag} sbom=${prepared.sbom.packageCount} packages`
+  );
 }
 
 function bumpPatch(version) {

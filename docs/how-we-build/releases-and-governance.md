@@ -19,7 +19,7 @@ Atlas is **open source under Apache License 2.0**. The canonical public reposito
 | **Third-party provenance**   | [provenance.md](provenance.md), [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)                   |
 
 The repository is public. Workspace packages remain unpublished npm internals (`private: true`).
-Canonical GitHub Release publication is not enabled yet.
+Canonical GitHub Releases are published automatically after a Version PR merges to `main`.
 
 ---
 
@@ -31,6 +31,7 @@ Canonical GitHub Release publication is not enabled yet.
 | ------------------------ | ---------------------------- | ----------------- | ------------------------ |
 | `@atlas/monorepo` (root) | Canonical Atlas version      | No                | This is Atlas            |
 | `@atlas/web`             | Template application         | No                | Part of Atlas snapshot   |
+| `@atlas/reference`       | Executable reference app     | No                | Part of Atlas snapshot   |
 | `@atlas/ui`              | Internal UI primitives       | No                | Part of Atlas snapshot   |
 | `@atlas/config`          | Internal tooling config      | No                | Part of Atlas snapshot   |
 | `@atlas/consent`         | Optional consent module      | No                | Part of Atlas snapshot   |
@@ -80,7 +81,8 @@ Do **not** select **major** for ordinary breaking changes while Atlas remains pr
 | `v0.1.0-pre-split` | Internal pre-split snapshot                         |
 | `v1.0.0-platform`  | Internal milestone — **not** a public `1.0` promise |
 
-Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v0.1.0`).
+Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v0.2.0`). `0.1.0` remains a historical
+internal snapshot and must not receive a public tag.
 
 ---
 
@@ -88,36 +90,35 @@ Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v0.1.0`).
 
 A deliberate tagged snapshot at one SemVer version. Intended contents:
 
-| Artifact            | Current           | Notes                                                  |
-| ------------------- | ----------------- | ------------------------------------------------------ |
-| Git tag `vX.Y.Z`    | Policy defined    | Canonical format; automation does not create tags yet  |
-| GitHub Release      | **Not published** | Not created by current automation                      |
-| Root `CHANGELOG.md` | Yes               | Canonical history                                      |
-| Migration notes     | When needed       | `docs/migrations/`                                     |
-| SPDX SBOM snapshot  | Yes               | Workflow artifact `atlas-sbom-<sha>`; 90-day retention |
-| CI evidence links   | When available    | Intended for future GitHub Release notes               |
+| Artifact            | Status                  | Notes                                                                 |
+| ------------------- | ----------------------- | --------------------------------------------------------------------- |
+| Git tag `vX.Y.Z`    | After Version PR merge  | Never retagged; never `v0.1.0`                                        |
+| GitHub Release      | After Version PR merge  | Fail-closed notes + SBOM; no npm publish                              |
+| Root `CHANGELOG.md` | Yes                     | Canonical history                                                     |
+| Migration notes     | When needed             | `docs/migrations/`                                                    |
+| SPDX SBOM snapshot  | Yes                     | Workflow artifact and GitHub Release asset; 90-day workflow retention |
+| CI evidence         | Required before publish | Publication waits for CI and Security Audit on the release commit     |
 
 ---
 
 ## Tag format
 
-| Item                         | Format            | Example       |
-| ---------------------------- | ----------------- | ------------- |
-| Canonical tag                | `vX.Y.Z`          | `v0.2.0`      |
-| GitHub Release name (future) | `Atlas {version}` | `Atlas 0.2.0` |
-| Not used                     | `@atlas/ui@x.y.z` | Misleading    |
+| Item                | Format            | Example       |
+| ------------------- | ----------------- | ------------- |
+| Canonical tag       | `vX.Y.Z`          | `v0.2.0`      |
+| GitHub Release name | `Atlas {version}` | `Atlas 0.2.0` |
+| Not used            | `@atlas/ui@x.y.z` | Misleading    |
 
 ### GitHub Release prerelease semantics
 
 - `0.2.0` is a **normal** SemVer release — **not** a GitHub prerelease.
 - Only versions with a SemVer **prerelease component** are GitHub prereleases, e.g. `0.2.0-rc.1`.
 
-Future GitHub Release publication must use the SemVer prerelease component, not the `0.x` major line
-alone.
+GitHub Release publication uses the SemVer prerelease component, not the `0.x` major line alone.
 
 ---
 
-## Release process (publication deferred)
+## Release process
 
 ### Day-to-day
 
@@ -134,24 +135,32 @@ When changesets merge to `main`, the Release workflow opens/updates a Version PR
 - Consolidates release notes into root [`CHANGELOG.md`](../../CHANGELOG.md)
 - Consumes changeset files
 
-**No Git tag or GitHub Release is created** by current automation.
+The Version PR must pass normal CI and Governance. It does not create a Git tag.
 
 ### GitHub Release publication
 
-Canonical GitHub Release publication is **not enabled yet**. When it is activated, it should:
+After the Version PR merges to `main`, the Release workflow publishes fail-closed:
 
-- tag `vX.Y.Z` at the release commit
-- create a GitHub Release with changelog content
-- use idempotent create-or-repair publication helpers
+1. Confirm root/workspace versions match and `CHANGELOG.md` contains that version
+2. Refuse historical `0.1.0` (never create `v0.1.0`)
+3. Refuse retagging or recreating a release for a different SHA
+4. Wait for required **CI** and **Security Audit** checks on the release commit
+5. Create `vX.Y.Z` at that SHA
+6. Create the GitHub Release with changelog-derived notes, SBOM, and license notice
+7. No-op when the current version is already published or is not a new releasable version
+
+Workspace packages are not published to npm. Publication does not claim signed provenance, SLSA, or
+a formal security audit.
 
 ### Rehearsal
 
 ```bash
 pnpm governance:check   # policy invariants
-pnpm release:rehearse   # isolated worktree; runs changeset:version mechanics
+pnpm release:rehearse   # isolated worktree; version transform + publication dry-run
 ```
 
-GitHub Actions: run the **Release** workflow via `workflow_dispatch` (dry run only).
+GitHub Actions: run the **Release** workflow via `workflow_dispatch`. That path generates SBOM and
+release notes and must not create a Git tag or GitHub Release.
 
 ### Commands
 
@@ -233,12 +242,12 @@ products. All workspace packages share one version via a **fixed** changeset gro
 
 ## Related documentation
 
-| Topic                      | Canonical source                                                   |
-| -------------------------- | ------------------------------------------------------------------ |
-| Security release artifacts | [security.md](security.md), `.github/workflows/security-audit.yml` |
-| Upgrade rehearsal          | [upgrades.md](upgrades.md)                                         |
-| Third-party provenance     | [provenance.md](provenance.md)                                     |
-| GitHub Release status      | Not published by current automation                                |
+| Topic                      | Canonical source                                                    |
+| -------------------------- | ------------------------------------------------------------------- |
+| Security release artifacts | [security.md](security.md), `.github/workflows/security-audit.yml`  |
+| Upgrade rehearsal          | [upgrades.md](upgrades.md)                                          |
+| Third-party provenance     | [provenance.md](provenance.md)                                      |
+| GitHub Release status      | Published after Version PR merge; rehearsal via `workflow_dispatch` |
 
 ---
 
@@ -252,4 +261,4 @@ products. All workspace packages share one version via a **fixed** changeset gro
 | Tag format?                     | `vX.Y.Z`                                                                |
 | Breaking change bump (pre-1.0)? | **minor** changeset                                                     |
 | npm publish?                    | No                                                                      |
-| GitHub Release today?           | No                                                                      |
+| GitHub Release today?           | After Version PR merge (`vX.Y.Z`); never `v0.1.0`                       |

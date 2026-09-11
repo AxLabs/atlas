@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Repository-level release governance: Apache-2.0 license, versioning policy, support expectations,
-  breaking-change process, and Version PR workflow. GitHub Release publication is not enabled yet.
+  breaking-change process, Version PR workflow, and fail-closed GitHub Release publication.
 - Public documentation aligned to the Apache-2.0 GitHub repository: clone/fork access, contribution
   model, and durable evidence in place of private-era issue numbers.
 

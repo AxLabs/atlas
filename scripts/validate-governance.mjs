@@ -58,9 +58,7 @@ function checkVersionAlignment() {
 
   for (const pkg of workspaces) {
     if (pkg.version !== rootVersion) {
-      fail(
-        `Version mismatch: root is ${rootVersion}, ${pkg.name} is ${pkg.version}`,
-      );
+      fail(`Version mismatch: root is ${rootVersion}, ${pkg.name} is ${pkg.version}`);
     }
   }
 
@@ -94,6 +92,24 @@ function checkPackageScripts() {
   }
 }
 
+function extractNamedJob(workflow, jobId) {
+  const lines = workflow.split("\n");
+  const start = lines.findIndex((line) => line === `  ${jobId}:`);
+  if (start === -1) {
+    return null;
+  }
+
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^  [A-Za-z0-9_-]+:\s*$/.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+
+  return lines.slice(start, end).join("\n");
+}
+
 function checkReleaseWorkflow() {
   const workflowPath = path.join(process.cwd(), ".github/workflows/release.yml");
   if (!existsSync(workflowPath)) {
@@ -107,20 +123,31 @@ function checkReleaseWorkflow() {
     fail("release.yml still references package-style @atlas/ui@ tags");
   }
 
-  if (workflow.includes("create-github-release")) {
-    fail("release.yml must not invoke create-github-release while GitHub Release publication is disabled");
-  }
-
-  if (/publish:\s*/.test(workflow)) {
-    fail("release.yml must not configure changesets/action publish while GitHub Release publication is disabled");
+  if (/changesets\/action[\s\S]{0,500}^\s+publish:\s+/m.test(workflow)) {
+    fail("release.yml must not configure changesets/action npm publish");
   }
 
   if (!workflow.includes("workflow_dispatch")) {
     fail("release.yml must support workflow_dispatch for release rehearsal");
   }
 
-  if (workflow.includes("createRelease") || workflow.includes("createRef")) {
-    fail("release.yml must not create Git tags or GitHub Releases while publication is disabled");
+  if (!workflow.includes("publish-atlas-release")) {
+    fail(
+      "release.yml must invoke publish-atlas-release for fail-closed GitHub Release publication"
+    );
+  }
+
+  if (workflow.includes("continue-on-error")) {
+    fail("release.yml must not use continue-on-error to mask release or SBOM failures");
+  }
+
+  const sbomJob = extractNamedJob(workflow, "sbom");
+  if (!sbomJob) {
+    fail("release.yml is missing the sbom job");
+  } else if (sbomJob.includes("cache: pnpm") && !sbomJob.includes("pnpm install")) {
+    fail(
+      "SBOM job must not configure setup-node cache: pnpm unless it installs dependencies (empty cache path fails the post-step)"
+    );
   }
 }
 
@@ -132,11 +159,7 @@ function checkGovernanceDocLinks() {
 }
 
 function checkOssWording() {
-  const files = [
-    "README.md",
-    "docs/public/faq.md",
-    "docs/how-we-build/releases-and-governance.md",
-  ];
+  const files = ["README.md", "docs/public/faq.md", "docs/how-we-build/releases-and-governance.md"];
 
   for (const file of files) {
     const content = readFileSync(path.join(process.cwd(), file), "utf8");

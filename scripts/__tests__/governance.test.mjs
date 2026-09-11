@@ -94,7 +94,7 @@ describe("updateRootChangelog lifecycle", () => {
 [0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0
 `;
 
-  function assertPatchRelease(updated, version, previousVersion) {
+  function assertFirstPublicRelease(updated, version) {
     assert.match(updated, /## \[Unreleased\]/);
     assert.doesNotMatch(extractUnreleasedBody(updated), /Pending release work/);
     assert.match(updated, new RegExp(`## \\[${version.replace(/\./g, "\\.")}\\]`));
@@ -104,11 +104,13 @@ describe("updateRootChangelog lifecycle", () => {
     assert.match(updated, new RegExp(`\\[Unreleased\\]: .*/v${version}\\.\\.\\.HEAD`));
     assert.match(
       updated,
-      new RegExp(
-        `\\[${version.replace(/\./g, "\\.")}\\]: .*/v${previousVersion}\\.\\.\\.v${version}`,
-      ),
+      new RegExp(`\\[${version.replace(/\./g, "\\.")}\\]: .*/releases/tag/v${version}`)
     );
-    assert.match(updated, /\[0\.1\.0\]: https:\/\/github\.com\/blitzcraftlabs\/atlas\/releases\/tag\/v0\.1\.0/);
+    assert.doesNotMatch(updated, /compare\/v0\.1\.0\.\.\./);
+    assert.match(
+      updated,
+      /\[0\.1\.0\]: https:\/\/github\.com\/blitzcraftlabs\/atlas\/releases\/tag\/v0\.1\.0/
+    );
   }
 
   it("performs a patch release (0.1.0 → 0.1.1)", () => {
@@ -116,9 +118,9 @@ describe("updateRootChangelog lifecycle", () => {
       rootAt010,
       "0.1.1",
       "### Fixed\n- Workspace patch entry",
-      "2026-08-20",
+      "2026-08-20"
     );
-    assertPatchRelease(updated, "0.1.1", "0.1.0");
+    assertFirstPublicRelease(updated, "0.1.1");
     assert.match(updated, /Workspace patch entry/);
   });
 
@@ -127,9 +129,9 @@ describe("updateRootChangelog lifecycle", () => {
       rootAt010,
       "0.2.0",
       "### Changed\n- Breaking platform change",
-      "2026-08-21",
+      "2026-08-21"
     );
-    assertPatchRelease(updated, "0.2.0", "0.1.0");
+    assertFirstPublicRelease(updated, "0.2.0");
     assert.match(updated, /Breaking platform change/);
   });
 
@@ -138,7 +140,7 @@ describe("updateRootChangelog lifecycle", () => {
       rootAt010,
       "0.1.1",
       "### Added\n- UI change\n\n### Added\n- Web change",
-      "2026-08-20",
+      "2026-08-20"
     );
     assert.match(updated, /UI change/);
     assert.match(updated, /Web change/);
@@ -151,13 +153,13 @@ describe("updateRootChangelog lifecycle", () => {
       rootAt010,
       "0.1.1",
       "### Added\n- First pass",
-      "2026-08-20",
+      "2026-08-20"
     );
     const refreshed = updateRootChangelog(
       withExisting,
       "0.1.1",
       "### Added\n- Revised release body",
-      "2026-08-20",
+      "2026-08-20"
     );
     assert.match(refreshed, /Revised release body/);
     assert.doesNotMatch(refreshed, /First pass/);
@@ -169,17 +171,10 @@ describe("updateRootChangelog lifecycle", () => {
       rootAt010,
       "0.1.1",
       "### Fixed\n- Stable entry",
-      "2026-08-20",
+      "2026-08-20"
     );
-    const authoritativeWorkspaceBody = extractSectionBody(
-      extractChangelogSection(first, "0.1.1"),
-    );
-    const second = updateRootChangelog(
-      first,
-      "0.1.1",
-      authoritativeWorkspaceBody,
-      "2026-08-20",
-    );
+    const authoritativeWorkspaceBody = extractSectionBody(extractChangelogSection(first, "0.1.1"));
+    const second = updateRootChangelog(first, "0.1.1", authoritativeWorkspaceBody, "2026-08-20");
     assert.equal(second, first);
   });
 });
@@ -219,7 +214,7 @@ describe("findPreviousReleaseVersion", () => {
 ## [0.1.0] - 2026-08-19
 `;
     assert.equal(findPreviousReleaseVersion(changelog, "0.2.1"), "0.2.0");
-    assert.equal(findPreviousReleaseVersion(changelog, "0.2.0"), "0.1.0");
+    assert.equal(findPreviousReleaseVersion(changelog, "0.2.0"), null);
   });
 });
 
@@ -229,7 +224,7 @@ describe("updateChangelogLinkReferences", () => {
       `[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0`,
       "0.1.1",
-      "0.1.0",
+      "0.1.0"
     );
     assert.match(updated, /\[Unreleased\]: .+\/v0\.1\.1\.\.\.HEAD/);
     assert.match(updated, /\[0\.1\.1\]: .+\/v0\.1\.0\.\.\.v0\.1\.1/);
@@ -262,14 +257,16 @@ describe("semver utils", () => {
 });
 
 describe("release workflow policy", () => {
-  it("does not configure live GitHub Release or npm publication", () => {
+  it("publishes GitHub Releases through the fail-closed helper, not changesets npm publish", () => {
     const workflow = readFileSync(
       path.join(process.cwd(), ".github/workflows/release.yml"),
-      "utf8",
+      "utf8"
     );
-    assert.doesNotMatch(workflow, /publish:\s*/);
-    assert.doesNotMatch(workflow, /create-github-release/);
-    assert.doesNotMatch(workflow, /createRelease/);
+    assert.match(workflow, /publish-atlas-release/);
+    assert.match(workflow, /workflow_dispatch/);
+    assert.doesNotMatch(workflow, /changesets\/action[\s\S]{0,500}^\s+publish:\s+/m);
+    assert.doesNotMatch(workflow, /continue-on-error/);
+    assert.doesNotMatch(workflow, /@atlas\/ui@/);
   });
 });
 
@@ -311,7 +308,7 @@ describe("collectPackageChangelogSections fixture", () => {
     const uiChangelog = path.join(dir, "packages/ui/CHANGELOG.md");
     writeFileSync(
       path.join(dir, "packages/ui/package.json"),
-      JSON.stringify({ name: "@atlas/ui", version: "0.1.1", private: true }),
+      JSON.stringify({ name: "@atlas/ui", version: "0.1.1", private: true })
     );
     writeFileSync(uiChangelog, "## [0.1.1]\n\n### Added\n- UI only\n", "utf8");
 
@@ -328,7 +325,7 @@ describe("preserves workspace changelogs required by changesets/action", () => {
 
     writeFileSync(
       path.join(dir, "package.json"),
-      JSON.stringify({ name: "@atlas/monorepo", version: "0.1.0", private: true }),
+      JSON.stringify({ name: "@atlas/monorepo", version: "0.1.0", private: true })
     );
     writeFileSync(
       path.join(dir, "CHANGELOG.md"),
@@ -347,19 +344,19 @@ describe("preserves workspace changelogs required by changesets/action", () => {
 [Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.1.0
 `,
-      "utf8",
+      "utf8"
     );
 
     for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
       mkdirSync(path.join(dir, pkg.relativePath), { recursive: true });
       writeFileSync(
         path.join(dir, pkg.relativePath, "package.json"),
-        JSON.stringify({ name: pkg.name, version, private: true }),
+        JSON.stringify({ name: pkg.name, version, private: true })
       );
       writeFileSync(
         path.join(dir, pkg.relativePath, "CHANGELOG.md"),
         `## [${version}]\n\n### Added\n- ${pkg.name} release entry\n`,
-        "utf8",
+        "utf8"
       );
     }
 
@@ -372,7 +369,7 @@ describe("preserves workspace changelogs required by changesets/action", () => {
       assert.match(
         content,
         new RegExp(`## \\[${version.replace(/\./g, "\\.")}\\]`),
-        `${pkg.name} changelog must contain version ${version}`,
+        `${pkg.name} changelog must contain version ${version}`
       );
     }
 

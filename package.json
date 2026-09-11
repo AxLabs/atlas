@@ -60,7 +60,9 @@
     "provenance:history": "node scripts/provenance-audit.mjs --history",
     "agents:check": "node --test scripts/__tests__/agent-discoverability.test.mjs",
     "docs:validate": "pnpm docs:check && pnpm governance:check",
-    "release:rehearse": "node scripts/release-rehearse.mjs"
+    "release:rehearse": "node scripts/release-rehearse.mjs",
+    "release:publish": "node scripts/publish-atlas-release.mjs",
+    "release:publish:dry-run": "node scripts/publish-atlas-release.mjs --dry-run --skip-checks"
   },
   "devDependencies": {
     "@atlas/cli": "workspace:*",
