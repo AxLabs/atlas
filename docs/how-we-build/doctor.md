@@ -150,7 +150,7 @@ Warnings do **not** fail CI in v0.1.
 | `ATLAS_TEMPLATE_SYNC_STRUCTURE`                | error    | Restore required module or update manifest ownership entries           |
 | `ATLAS_TEMPLATE_SYNC_MANIFEST_INVALID`         | error    | Fix `templates/app-infrastructure.manifest.json`                       |
 | `ATLAS_UPGRADE_BASELINE_MISSING`               | warning  | Record `platform.baseline` via `atlas init` or upgrade helpers         |
-| `ATLAS_UPGRADE_BASELINE_STALE`                 | warning  | Complete supported upgrade and refresh baseline metadata (#43)         |
+| `ATLAS_UPGRADE_BASELINE_STALE`                 | warning  | Complete supported upgrade and refresh baseline metadata               |
 | `ATLAS_UPGRADE_BASELINE_INCOMPLETE`            | error    | Re-capture baseline after restoring all manifest syncedPaths           |
 | `ATLAS_UPGRADE_BASELINE_CHECKSUM_INVALID`      | error    | Fix malformed checksum values or re-run baseline capture               |
 | `ATLAS_UPGRADE_BASELINE_MANIFEST_INCOMPATIBLE` | warning  | Refresh baseline after manifest schema migration                       |
@@ -188,10 +188,10 @@ or configuration execution failures fail the `architecture-boundaries` check wit
 
 ## Deferred scope
 
-| Issue | Deferred to                                  | Doctor behavior                                                                                                                                |
-| ----- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| #26   | Dependency normalization / version alignment | Doctor only checks high-confidence undeclared imports in the application workspace; test files and broader package cleanup remain out of scope |
-| #43   | Migrations                                   | Doctor may emit version drift warnings but does not mutate metadata or run migrations                                                          |
+| Topic                                        | Doctor behavior                                                                                                                                |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dependency normalization / version alignment | Doctor only checks high-confidence undeclared imports in the application workspace; test files and broader package cleanup remain out of scope |
+| Migrations                                   | Doctor may emit version drift warnings but does not mutate metadata or run migrations                                                          |
 
 ---
 

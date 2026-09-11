@@ -5,7 +5,7 @@
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "packageName": "extract-zip",
       "owner": "@atlas-maintainers",
-      "reason": "extract-zip@2.0.1 is pulled only through @lhci/cli → lighthouse → puppeteer-core → @puppeteer/browsers. The registry reports no patched extract-zip line (patched_versions <0.0.0). Upgrading Lighthouse/Puppeteer enough to drop 2.0.1 is a tooling major-line change outside issue #14.",
+      "reason": "extract-zip@2.0.1 is pulled only through @lhci/cli → lighthouse → puppeteer-core → @puppeteer/browsers. The registry reports no patched extract-zip line (patched_versions <0.0.0). Upgrading Lighthouse/Puppeteer enough to drop 2.0.1 is a tooling major-line change outside this security-hardening scope.",
       "compensatingControl": "Dev-only LHCI/Lighthouse path; Atlas never extracts attacker-supplied zip archives. Browser downloads are vendor artifacts on trusted CI/developer hosts, not a production request handler or client bundle.",
       "reviewedOn": "2026-08-29",
       "expiresOn": "2026-11-27"

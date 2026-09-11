@@ -26,8 +26,7 @@ Prefer GitHub's private vulnerability reporting on this repository (Security adv
 vulnerability reporting) when the GitHub plan and repository settings allow it.
 
 If private reporting is unavailable on the current GitHub plan, contact a repository maintainer
-through the existing private collaboration channel for this engagement. Do not invent or publish a
-new security-contact email address.
+through a private channel. Do not invent or publish a new security-contact email address.
 
 Include:
 

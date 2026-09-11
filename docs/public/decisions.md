@@ -226,26 +226,25 @@ Error tracking and performance monitoring uses Sentry across all runtimes (clien
 
 ---
 
-## Private Template, Client Access
+## Public Apache-2.0 Template
 
 ### Decision
 
-Atlas is a private repository template for selected clients and authorized evaluators—not a public
-open-source offering.
+Atlas is a public open-source repository template under Apache License 2.0. Anyone can clone, fork,
+and evaluate it.
 
 ### Why
 
-- Delivery through engagements with explicit access terms
-- Freedom to evolve without anonymous-consumer compatibility pressure
-- Focus on client outcomes rather than community management
-- Public docs explain capabilities; source access is controlled
+- The source is the product; inspectable behavior is the evidence model
+- Apache-2.0 is the license of record ([`LICENSE`](../../LICENSE))
+- Public contribution and downstream forks are first-class
+- Commercial engineering or support remains optional and separate
 
 ### Tradeoffs
 
-- **Accepted:** No anonymous public forks or inspections
-- **Accepted:** Licensing and public access model still being defined
-  ([#19](https://github.com/blitzcraftlabs/atlas/issues/19))
-- **Mitigated:** Forkable for authorized clients under engagement terms
+- **Accepted:** Public forks and inspections
+- **Accepted:** Workspace packages stay unpublished npm internals
+- **Mitigated:** Qualified claims and the claims register constrain overstatement
 
 ---
 
@@ -287,28 +286,29 @@ Storybook a11y review and documented keyboard checks.
 ### Tradeoffs
 
 - **Accepted:** Developers must fix jsx-a11y violations before merging
-- **Accepted:** Not equivalent to WCAG conformance or CI a11y gates
-- **Mitigated:** [#16](https://github.com/blitzcraftlabs/atlas/issues/16) tracks Storybook/a11y CI
+- **Accepted:** Not equivalent to WCAG conformance or certification
+- **Mitigated:** The **UI Quality** workflow gates representative Storybook axe, interaction, and
+  visual checks. See [Accessibility](../how-we-build/accessibility.md).
 
 ---
 
 ## Summary
 
-| Decision                  | Core Reasoning               |
-| ------------------------- | ---------------------------- |
-| Frontend-first            | Users interact with frontend |
-| Contract-driven APIs      | Type safety prevents drift   |
-| Cookie-based auth         | Security by architecture     |
-| Custom OAuth              | Full control over security   |
-| CSS-first theming         | Native browser mechanism     |
-| React Query               | Consistent data patterns     |
-| Build-time env validation | Fail early                   |
-| No magic frameworks       | Debuggable behavior          |
-| Feature modules           | Clear boundaries             |
-| Sentry observability      | Cross-runtime visibility     |
-| Private client template   | Controlled access model      |
-| Soft monorepo             | Shared code without publish  |
-| Accessibility linting     | Baseline, not full WCAG CI   |
+| Decision                   | Core Reasoning                      |
+| -------------------------- | ----------------------------------- |
+| Frontend-first             | Users interact with frontend        |
+| Contract-driven APIs       | Type safety prevents drift          |
+| Cookie-based auth          | Security by architecture            |
+| Custom OAuth               | Full control over security          |
+| CSS-first theming          | Native browser mechanism            |
+| React Query                | Consistent data patterns            |
+| Build-time env validation  | Fail early                          |
+| No magic frameworks        | Debuggable behavior                 |
+| Feature modules            | Clear boundaries                    |
+| Sentry observability       | Cross-runtime visibility            |
+| Public Apache-2.0 template | Inspectable source under Apache-2.0 |
+| Soft monorepo              | Shared code without publish         |
+| Accessibility linting      | Baseline, not full WCAG CI          |
 
 Each decision reflects a belief about what makes production applications reliable, maintainable, and
 secure.

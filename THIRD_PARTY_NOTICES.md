@@ -59,8 +59,8 @@ MIT notice.
 
 Before commit `3099c4b` (`feat(ui): reset @atlas/ui onto shadcn Base UI Vega preset (#42)`), many UI
 primitives under `packages/ui/src/components/ui/` imported `@radix-ui/*` via shadcn's Radix-era
-templates. Current HEAD uses `@base-ui/react` instead. If public cutover preserves full Git history
-([#24](https://github.com/blitzcraftlabs/atlas/issues/24)), historical blobs remain recoverable.
+templates. Current HEAD uses `@base-ui/react` instead. If public Git history includes that period,
+historical blobs remain recoverable.
 
 | Upstream                                                   | License | Period                    | Notice                                                                              |
 | ---------------------------------------------------------- | ------- | ------------------------- | ----------------------------------------------------------------------------------- |

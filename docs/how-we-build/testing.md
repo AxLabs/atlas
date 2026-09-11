@@ -283,7 +283,7 @@ HIGH-risk subsystem below threshold exits non-zero (`pnpm test:scripts`).
 Full failure-mode table: [testing-risk-matrix.md](testing-risk-matrix.md). Auth/session tests
 intersect [security.md](security.md); do not duplicate the threat model.
 
-## Storybook UI quality (issue #16)
+## Storybook UI quality
 
 Storybook complements Jest and application E2E — it does not replace them.
 

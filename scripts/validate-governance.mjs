@@ -108,11 +108,11 @@ function checkReleaseWorkflow() {
   }
 
   if (workflow.includes("create-github-release")) {
-    fail("release.yml must not invoke create-github-release before #24");
+    fail("release.yml must not invoke create-github-release while GitHub Release publication is disabled");
   }
 
   if (/publish:\s*/.test(workflow)) {
-    fail("release.yml must not configure changesets/action publish before #24");
+    fail("release.yml must not configure changesets/action publish while GitHub Release publication is disabled");
   }
 
   if (!workflow.includes("workflow_dispatch")) {
@@ -120,7 +120,7 @@ function checkReleaseWorkflow() {
   }
 
   if (workflow.includes("createRelease") || workflow.includes("createRef")) {
-    fail("release.yml must not create Git tags or GitHub Releases before #24");
+    fail("release.yml must not create Git tags or GitHub Releases while publication is disabled");
   }
 }
 
@@ -141,7 +141,7 @@ function checkOssWording() {
   for (const file of files) {
     const content = readFileSync(path.join(process.cwd(), file), "utf8");
     if (/Atlas is open source(?!\s+under)/i.test(content)) {
-      fail(`${file} must not claim unqualified open-source status before #24`);
+      fail(`${file} must not claim unqualified open-source status; qualify with Apache-2.0`);
     }
   }
 }

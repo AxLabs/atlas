@@ -15,8 +15,8 @@ alone:
 - What is generated vs hand-written
 - Whether Google OAuth is the universal auth model
 
-Issue #25 established a canonical taxonomy to unblock the architecture contract (#35), generators
-(#37), reference application (#39), and the `@atlas/ui` shadcn/Base UI foundation (#42, completed).
+This ADR established a canonical taxonomy to unblock the architecture contract, generators, the
+reference application, and the `@atlas/ui` shadcn/Base UI foundation.
 
 ## Decision
 
@@ -33,21 +33,21 @@ We adopt a six-class ownership model documented in
 
 ### Key boundary decisions
 
-| Surface                                         | Decision                                                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `apps/reference/src/features/users`             | Retained as canonical OpenAPI hook + UI reference in the executable reference application         |
-| `components/layout/AppShell`                    | Removed — unused; ExamplesShell owns reference layout                                             |
-| `lib/telemetry/sentry.*`                        | Removed — duplicated root Sentry config                                                           |
-| `lib/i18n`                                      | Kept minimal — typed key convention, not a localization framework                                 |
-| `lib/feature-flags`                             | Kept — runtime config + kill switches; PostHog adapter is optional                                |
-| Google OAuth                                    | Classified as reference IdP, separate from session security core                                  |
-| `tsconfig` broad `@/*` UI fallback              | Removed — app code must use `@atlas/ui` public API                                                |
-| `tsconfig` narrow `@/lib/*` / `@/hooks/*` shims | Removed — `@atlas/ui` uses relative package-local imports; apps consume public exports only (#42) |
+| Surface                                         | Decision                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/reference/src/features/users`             | Retained as canonical OpenAPI hook + UI reference in the executable reference application   |
+| `components/layout/AppShell`                    | Removed — unused; ExamplesShell owns reference layout                                       |
+| `lib/telemetry/sentry.*`                        | Removed — duplicated root Sentry config                                                     |
+| `lib/i18n`                                      | Kept minimal — typed key convention, not a localization framework                           |
+| `lib/feature-flags`                             | Kept — runtime config + kill switches; PostHog adapter is optional                          |
+| Google OAuth                                    | Classified as reference IdP, separate from session security core                            |
+| `tsconfig` broad `@/*` UI fallback              | Removed — app code must use `@atlas/ui` public API                                          |
+| `tsconfig` narrow `@/lib/*` / `@/hooks/*` shims | Removed — `@atlas/ui` uses relative package-local imports; apps consume public exports only |
 
 ## Alternatives Considered
 
 1. **Remove `features/users` entirely** — Rejected. The hook-level OpenAPI pattern is valuable for
-   future `atlas generate feature` (#37) without requiring a fake UI.
+   `atlas generate feature` without requiring a fake UI.
 2. **Promote AppShell to platform** — Rejected. No consumers; ExamplesShell already demonstrates
    layout composition.
 3. **Build full i18n framework** — Rejected. Out of scope; English-only `t()` suffices as
@@ -59,16 +59,15 @@ We adopt a six-class ownership model documented in
 ### Positive
 
 - Clear keep/delete/replace guidance for consumers
-- Stable foundation for #35–#44 without implementing them early
+- Stable foundation for later CLI, Doctor, generators, and upgrade tooling
 - ESLint + tsconfig enforce package boundaries; apps do not alias into `packages/ui/src/**`
 
 ### Negative
 
-- Reference modules add repo surface area until #39 consumes them
+- Reference modules add repo surface area (the executable reference application now consumes them)
 - Docs must stay synchronized with classification table
 
 ## References
 
 - [architecture-ownership.md](../how-we-build/architecture-ownership.md)
-- Issue #25 — architecture classification before OSS launch
 - ADR-0004 (auth), ADR-0003 (data fetching), ADR-0005 (observability), ADR-0006 (consent)

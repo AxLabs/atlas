@@ -301,4 +301,4 @@ time — not persisted in the encrypted session cookie.
 
 - [Reference harness](./reference-harness.md) — deterministic personas and scenarios
 - [API & data fetching](./api.md) — client API patterns
-- Architecture ownership — #41 authorization vs #40 auth harness
+- Architecture ownership — authorization vs the reference auth harness

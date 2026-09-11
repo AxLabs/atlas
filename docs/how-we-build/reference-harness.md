@@ -32,8 +32,7 @@ AUTH_SESSION_SECRET=local-reference-session-secret-32chars
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
-Open [http://localhost:3001](http://localhost:3001) for the reference application or `/harness` for
-developer controls.
+Open `http://localhost:3001` for the reference application or `/harness` for developer controls.
 
 Product routes (`/`, `/users`, `/profile`, `/settings`, `/authorization`, `/platform`) demonstrate
 runtime capabilities. `/harness` remains the developer simulation layer — persona selection, API

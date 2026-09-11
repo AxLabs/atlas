@@ -7,17 +7,17 @@
 
 ## What is Atlas?
 
-Atlas is a **forkable frontend platform template** for selected clients and authorized evaluators.
-Repository access is provided under engagement or evaluation terms; it is not anonymously
-downloadable or publicly inspectable.
+Atlas is a **forkable frontend platform template**. It is **open source under Apache License 2.0**.
+The canonical repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas).
+Anyone can clone, fork, and evaluate it.
 
 The platform provides opinionated patterns so teams can ship production applications without
 reinventing infrastructure for authentication, data fetching, validation, theming, accessibility,
 and observability.
 
-Authorized recipients start from the clean starter (`apps/web`), explore the executable reference
-application (`apps/reference`), then delete `/examples` and build on the platform primitives in
-`lib/`, `providers/`, and `packages/ui`.
+Start from the clean starter (`apps/web`), explore the executable reference application
+(`apps/reference`), then delete `/examples` and build on the platform primitives in `lib/`,
+`providers/`, and `packages/ui`.
 
 ### Two applications
 
@@ -42,9 +42,10 @@ Reference application URL: `http://localhost:3001` (developer harness at `/harne
 
 - **Product teams** who want to ship features, not build infrastructure
 - **Frontend engineers** who value type safety and consistent patterns
-- **Organizations** adopting Atlas through a client engagement or technical evaluation
+- **Organizations** adopting Atlas as a public Apache-2.0 template
 
-Atlas is **not** a general public open-source starter for arbitrary visitors without access.
+Atlas is a public open-source starter. Commercial engineering or support is optional and separate
+from using the source.
 
 ---
 
@@ -65,8 +66,7 @@ Atlas is **not** a general public open-source starter for arbitrary visitors wit
 ## Reference examples
 
 The template includes `/examples` — thin pages for data states and forms. Delete them when you start
-building. The interactive showcase is maintained at [shipwithatlas.com](https://shipwithatlas.com)
-([atlas-showcase](https://github.com/blitzcraftlabs/atlas-showcase)).
+building. The interactive showcase is maintained at [shipwithatlas.com](https://shipwithatlas.com).
 
 See [Examples](examples.md).
 

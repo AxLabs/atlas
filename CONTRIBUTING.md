@@ -1,24 +1,24 @@
 # Contributing to Atlas
 
-Atlas is a **forkable frontend platform template** for selected clients, invited collaborators, and
-authorized evaluators. The source repository is private; access and usage terms are provided as part
-of an engagement or evaluation—not as a general public open-source offering.
+Atlas is a **forkable frontend platform template**. It is **open source under Apache License 2.0**.
+The canonical repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas).
+Anyone can clone, fork, and propose changes.
 
-This guide is for Atlas maintainers, invited collaborators, client engineers, and future public
-contributors if the access model changes.
+This guide is for Atlas maintainers, external contributors, and downstream consumers who fork Atlas
+into a product.
 
 ## Repository purpose and access
 
 - **Maintainers** own platform direction, releases, and canonical documentation.
-- **Invited collaborators** contribute through agreed scopes (features, fixes, reviews).
-- **Client engineers** fork or branch under engagement terms and may upstream fixes with provenance.
-- **Evaluators** may receive read access for technical due diligence; public docs at `docs/public/`
-  describe behavior without granting source access.
+- **External contributors** open pull requests against this public repository for features, fixes,
+  docs, and reviews.
+- **Downstream consumers** fork or clone Atlas into a product codebase and may upstream fixes with
+  provenance.
 
-Licensing and permanent public-access policy are tracked in
-[Releases and Governance](docs/how-we-build/releases-and-governance.md) and issue
-[#24](https://github.com/blitzcraftlabs/atlas/issues/24) (public cutover). Atlas is **licensed under
-Apache-2.0**; the repository may remain private until #24 completes.
+Licensing, versioning, and support expectations are in
+[Releases and Governance](docs/how-we-build/releases-and-governance.md). Atlas is **licensed under
+Apache-2.0**; the source is public. Workspace packages are npm-`private` and are not independent npm
+products.
 
 Canonical engineering guidance:
 
@@ -40,6 +40,9 @@ Canonical engineering guidance:
 - pnpm **>= 10** (`corepack enable`)
 
 ```bash
+git clone https://github.com/blitzcraftlabs/atlas.git
+cd atlas
+corepack enable
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
 pnpm validate:env
@@ -75,12 +78,13 @@ chore: update pnpm lockfile
 
 ## Pull request expectations
 
-1. Link the relevant GitHub issue.
+1. Link a GitHub issue when one exists in this public repository. Do not cite private-era issue
+   numbers as if they belonged here.
 2. Update documentation when behavior, capabilities, or CI gates change.
 3. Update [claims register](docs/audit/claims-register.md) when public claims change.
 4. Add or update an ADR for significant architectural decisions (see below).
 5. Describe validation commands run and their results.
-6. Note downstream-fix provenance when porting a fix from a client product fork.
+6. Note downstream-fix provenance when porting a fix from a product fork.
 
 Use the [pull request template](.github/pull_request_template.md) and
 [review checklist](.github/PULL_REQUEST_REVIEW_CHECKLIST.md).
@@ -116,17 +120,19 @@ locally: `pnpm docs:check --external`.
 - Canonical docs must not link into `docs/_archive/` except from audit notes that explicitly discuss
   history.
 - Planned work belongs in issues and ADRs—not as if it were shipped.
+- Cite durable implementation, tests, workflows, and docs — not historical project-management
+  numbers from Atlas's private development period.
 
 ## Changesets and release impact
 
 Atlas versions the **repository/platform snapshot** as one pre-1.0 line. Changesets collect release
-metadata and open **Version PRs** — they do **not** publish npm packages or create GitHub Releases
-until [#24](https://github.com/blitzcraftlabs/atlas/issues/24).
+metadata and open **Version PRs**. They do **not** publish npm packages. Canonical GitHub Release
+publication is not enabled yet.
 
 Canonical policy: [Releases and Governance](docs/how-we-build/releases-and-governance.md).
 
 - Add a changeset when your change should appear in the Atlas changelog or receive a version bump.
-- Workspace packages are `private`; they share the Atlas version and are not independent npm
+- Workspace packages are npm-`private`; they share the Atlas version and are not independent npm
   products.
 - **Pre-1.0 bump convention:**
   - **patch** — bug fixes and small non-breaking work (`0.1.0 → 0.1.1`)
@@ -145,8 +151,8 @@ pnpm release:rehearse     # optional; isolated version transformation dry-run
 ## Security reporting
 
 - **Do not** open public issues for unpatched security vulnerabilities.
-- Report suspected vulnerabilities to the repository maintainer through the agreed engagement or
-  security channel.
+- Prefer GitHub's private vulnerability reporting on this repository (Security advisories) when
+  available. See [SECURITY.md](SECURITY.md).
 - Do not commit secrets, `.env.local`, or credentials. Gitleaks runs in CI.
 - Consumer applications own their deployment hardening, WAF rules, and data classification.
 
@@ -155,8 +161,9 @@ pnpm release:rehearse     # optional; isolated version transformation dry-run
 - Use semantic HTML, labels, keyboard support, and visible `focus-visible` styles.
 - Fix `eslint-plugin-jsx-a11y` violations before merge.
 - Manually exercise keyboard flows for interactive UI; use Storybook a11y addon for components.
-- Formal WCAG conformance and CI enforcement are tracked in
-  [#16](https://github.com/blitzcraftlabs/atlas/issues/16).
+- Representative `critical` Storybook compositions are gated by the **UI Quality** workflow (axe,
+  interaction, and visual checks). This is **not** formal WCAG certification. See
+  [Accessibility](docs/how-we-build/accessibility.md) and [Testing](docs/how-we-build/testing.md).
 
 ## ADR requirements
 
@@ -172,14 +179,15 @@ same PR when possible.
 
 ## Downstream fixes and upstreaming
 
-Client forks may land fixes before the platform template. When upstreaming:
+Product forks may land fixes before the platform template. When upstreaming:
 
 1. Record the originating product and symptom in the PR description.
 2. Prefer platform-level fixes over product-specific workarounds.
-3. Link related issues in Atlas and the client repository when available.
-4. Do not include client secrets, proprietary URLs, or private customer data.
+3. Link related public Atlas issues when available.
+4. Do not include secrets, proprietary URLs, or private customer data.
 
-Upgrade and propagation policy: [#17](https://github.com/blitzcraftlabs/atlas/issues/17).
+Upgrade and propagation policy: [Upgrades](docs/how-we-build/upgrades.md) and
+[ADR-0010](docs/adr/0010-atlas-upgrades-downstream-propagation.md).
 
 ## Coding agents
 
@@ -193,17 +201,17 @@ Agents must:
 
 If agent instructions conflict with `docs/_archive/`, **AGENTS.md and current docs win**.
 
-## Maintainer vs client differences
+## Maintainer vs contributor differences
 
-| Topic         | Maintainers                          | Client engineers                                               |
-| ------------- | ------------------------------------ | -------------------------------------------------------------- |
-| Merge rights  | Yes, per CODEOWNERS                  | Via PR to client fork; upstream by agreement                   |
-| Public claims | Must update claims register          | Should not change public positioning without maintainer review |
-| ADRs          | Required for platform decisions      | Optional in fork; upstream significant decisions               |
-| Release tags  | Own platform releases                | Own product release cadence                                    |
-| Showcase copy | Coordinate via atlas-showcase issues | N/A                                                            |
+| Topic         | Maintainers                                                   | External contributors / downstream forks                       |
+| ------------- | ------------------------------------------------------------- | -------------------------------------------------------------- |
+| Merge rights  | Yes, per CODEOWNERS                                           | Via PR to this repository, or via the product fork             |
+| Public claims | Must update claims register                                   | Should not change public positioning without maintainer review |
+| ADRs          | Required for platform decisions                               | Optional in a fork; upstream significant decisions             |
+| Release tags  | Own platform releases                                         | Own product release cadence                                    |
+| Showcase copy | Coordinate via [shipwithatlas.com](https://shipwithatlas.com) | N/A                                                            |
 
 ## Questions
 
-Open a discussion with the maintainer through the engagement channel, or file a GitHub issue for
-non-sensitive platform work.
+Open a GitHub issue for non-sensitive platform work. Do not disclose security vulnerabilities in
+public issues — see [SECURITY.md](SECURITY.md).

@@ -1,5 +1,5 @@
 /**
- * SPDX-oriented dependency license policy for Atlas (#27).
+ * SPDX-oriented dependency license policy for Atlas.
  * Engineering policy only — not legal advice.
  *
  * Multi-license expressions are classified conservatively: Atlas policy is stricter than

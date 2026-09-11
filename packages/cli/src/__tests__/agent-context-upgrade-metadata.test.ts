@@ -32,7 +32,7 @@ describe("agent context upgrade metadata", () => {
   });
 });
 
-describe("upgrade planner blocking semantics (authoritative #43 behavior)", () => {
+describe("upgrade planner blocking semantics (authoritative atlas upgrade behavior)", () => {
   const baselineChecksums = {
     "src/lib/api/errors.ts": computeBaselineChecksum(SOURCE["src/lib/api/errors.ts"]!),
     "src/lib/auth/session.ts": computeBaselineChecksum(SOURCE["src/lib/auth/session.ts"]!),

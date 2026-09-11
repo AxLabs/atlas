@@ -1,10 +1,10 @@
 # Provenance and redistribution audit
 
-Engineering evidence for Atlas issue **#27** — third-party code and asset provenance before public
-OSS cutover. This is **not legal advice** or a compliance certification.
+Engineering evidence for third-party code and asset provenance. This is **not legal advice** or a
+compliance certification.
 
-**Related:** [#19](https://github.com/blitzcraftlabs/atlas/issues/19) (Apache-2.0 license decision),
-[#24](https://github.com/blitzcraftlabs/atlas/issues/24) (public history cutover / purge execution),
+**Related:** Apache-2.0 [`LICENSE`](../../LICENSE),
+[Releases and Governance](releases-and-governance.md),
 [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md),
 [`license-exceptions.json`](../../license-exceptions.json).
 
@@ -102,20 +102,19 @@ after the preset reset.
 duplicated across every component (not required for MIT when a central notice is maintained — legal
 review may confirm for your distribution model).
 
-**Apache-2.0 compatibility:** MIT upstream source is compatible with Atlas's Apache-2.0 license
-(#19).
+**Apache-2.0 compatibility:** MIT upstream source is compatible with Atlas's Apache-2.0 license.
 
 ### Historical Radix-era source
 
 | Item                        | Detail                                                                                             |
 | --------------------------- | -------------------------------------------------------------------------------------------------- |
 | First Radix-era UI commit   | `abbc212` (`feat: add new UI components and utilities`)                                            |
-| Migration to Base UI preset | `3099c4b` (#42)                                                                                    |
+| Migration to Base UI preset | `3099c4b`                                                                                          |
 | Evidence                    | Pre-migration `dialog.tsx` imported `@radix-ui/react-dialog`; current uses `@base-ui/react/dialog` |
 | Classification              | historical-only copied source (shadcn Radix templates)                                             |
 | License                     | MIT (Radix + shadcn ecosystem)                                                                     |
 | HEAD action                 | None — replaced at source level                                                                    |
-| History (#24)               | Blobs remain recoverable if full history is published; MIT-compatible                              |
+| Git history                 | Blobs remain recoverable; MIT-compatible                                                           |
 
 **Stale documentation:** `docs/how-we-build/accessibility.md` previously claimed Radix primitives at
 HEAD — corrected to Base UI. Archived docs under `docs/_archive/` still mention Radix-era setup.
@@ -236,9 +235,9 @@ in JavaScript only after successful Git output. Expected empty filtered results 
 
 ---
 
-## 7. History purge candidates (#24)
+## 7. History purge candidates
 
-| Path                                                     | History location                     | Reason                                                                                  | Required #24 action                                               |
+| Path                                                     | History location                     | Reason                                                                                  | History action                                                    |
 | -------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `packages/ui/design-system-screenshots/*.png` (10 files) | Committed then deleted; blobs remain | Low risk (Atlas UI captures) but optional noise for public history                      | **Optional** — purge only if clean history desired; not a blocker |
 | —                                                        | —                                    | No proprietary client assets, credentials, or commercial fonts found in sampled history | **`none` required**                                               |
@@ -252,7 +251,7 @@ client code or assets.
 
 | Artifact                                                   | Purpose                                             |
 | ---------------------------------------------------------- | --------------------------------------------------- |
-| [`LICENSE`](../../LICENSE)                                 | Atlas Apache-2.0 (#19)                              |
+| [`LICENSE`](../../LICENSE)                                 | Atlas Apache-2.0                                    |
 | [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)   | shadcn MIT + historical Radix note + generated code |
 | This document                                              | Audit methodology, classifications, purge list      |
 | [`license-exceptions.json`](../../license-exceptions.json) | Reviewed dependency license dispositions            |
@@ -346,13 +345,13 @@ All review-required packages at HEAD have explicit entries in
 | Missing Apache-2.0 `LICENSE`                | **Blocker** — resolved at HEAD                                              |
 | Unreviewed dependency licenses              | **Blocker** — gated by `pnpm licenses:check`                                |
 | shadcn copied source without notice         | **Blocker** — resolved via `THIRD_PARTY_NOTICES.md`                         |
-| Historical Radix MIT blobs in history       | **Non-blocker** (MIT-compatible) — document for #24                         |
-| Design-system PNGs in history               | **Non-blocker** — optional #24 purge                                        |
+| Historical Radix MIT blobs in history       | **Non-blocker** (MIT-compatible) — documented in this audit                 |
+| Design-system PNGs in history               | **Non-blocker** — optional history purge                                    |
 | Private npm/git dependencies in lockfile    | **Blocker** — none found (`dependencies:check`)                             |
 | Committed proprietary fonts/binaries        | **Blocker** — none at HEAD                                                  |
 | Trademark/logo files (GitHub, Vercel, etc.) | **Non-blocker** — none committed; names in docs only                        |
-| Final notice wording vs #19                 | **Legal-review item** — Apache-2.0 aligned; counsel may refine NOTICE scope |
-| Full history purge of client material       | **#24 cutover item** — none required from this audit                        |
+| Final notice wording vs Apache-2.0          | **Legal-review item** — Apache-2.0 aligned; counsel may refine NOTICE scope |
+| Full history purge of client material       | **None required** from this audit                                           |
 
 ---
 
@@ -365,8 +364,8 @@ All review-required packages at HEAD have explicit entries in
 | `node scripts/audit-licenses.mjs --report --json` | Stable machine-readable inventory                                                    |
 | `pnpm provenance:check`                           | HEAD: reviewed assets gate, required docs, no stale Radix deps                       |
 | `pnpm provenance:history`                         | Print historical audit commands/output; **fails on shallow clone or command errors** |
-| `pnpm dependencies:check`                         | Private/git/file dependency sources (#26)                                            |
-| `pnpm governance:check`                           | Apache-2.0 governance (#19)                                                          |
+| `pnpm dependencies:check`                         | Private/git/file dependency sources                                                  |
+| `pnpm governance:check`                           | Apache-2.0 governance                                                                |
 
 Tests: `scripts/__tests__/audit-licenses.test.mjs`, `scripts/__tests__/provenance-audit.test.mjs`
 
@@ -387,7 +386,7 @@ Tests: `scripts/__tests__/audit-licenses.test.mjs`, `scripts/__tests__/provenanc
 - Whether built-application Inter/OFL notice handling is sufficient for your deployment packaging
 - FSL / LGPL / MPL dispositions for specific deployment scenarios
 - Trademark use of third-party names in public docs/marketing
-- Final public-history strategy (#24) if any engagement-specific commits exist outside this sample
+- Whether remaining Git history contains any engagement-specific commits outside this sample
 
 ---
 
@@ -404,7 +403,7 @@ explicit redistribution basis.
 
 ---
 
-## 15. #27 acceptance checklist
+## 15. Provenance acceptance checklist
 
 | Criterion                                             | Status                                               |
 | ----------------------------------------------------- | ---------------------------------------------------- |
@@ -416,8 +415,8 @@ explicit redistribution basis.
 | History purge candidates identified                   | **PASS** (`none` required; optional PNG purge noted) |
 | Dependency licenses reproducibly enumerable           | **PASS**                                             |
 | Unknown/incompatible license disposition explicit     | **PASS**                                             |
-| LICENSE/notices consistent with #19                   | **PASS** (Apache-2.0)                                |
+| LICENSE/notices consistent with Apache-2.0            | **PASS** (Apache-2.0)                                |
 | Closing report includes unresolved legal-review items | **PASS** (§13)                                       |
 
-**Merge recommendation:** Safe to merge engineering artifacts; #27 can close after review. #24 still
-owns public cutover and any optional history surgery.
+**Merge recommendation:** Engineering artifacts are in tree. Optional history surgery remains a
+maintainer decision and is not required by this audit.

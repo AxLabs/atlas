@@ -1,5 +1,5 @@
 /**
- * Runtime accessibility policy for the critical Storybook test-runner (#16 / #67 review).
+ * Runtime accessibility policy for the critical Storybook test-runner.
  *
  * `scripts/storybook-critical-policy.mjs` inspects story source text as an early structural
  * check, but source text cannot see accessibility parameters inherited from Storybook's global

@@ -12,15 +12,18 @@ Atlas ships two independent Next.js applications in the monorepo:
 - `apps/reference` — an executable reference application that must behave like an independent
   downstream consumer
 
-PR #55 (#39) intentionally separated these applications. Both duplicate Atlas platform template
-infrastructure under `src/lib/**`, providers, config glue, and related application plumbing.
+The starter and reference applications were intentionally separated. Both duplicate Atlas platform
+template infrastructure under `src/lib/**`, providers, config glue, and related application
+plumbing.
 
 Some duplication is desirable: the reference application demonstrates how an external consumer
 composes Atlas conventions without importing starter application internals. Unmanaged duplication
 drifts and forces duplicate fixes.
 
-Issue #57 scoped the synchronization strategy and tooling shape. It does **not** define the complete
-downstream upgrade model for external Atlas consumers — that remains follow-up work in issue #17.
+The synchronization strategy and tooling shape are defined here. This ADR does **not** define the
+complete downstream upgrade model for external Atlas consumers — that is documented in
+[upgrades.md](../how-we-build/upgrades.md) and
+[ADR-0010](0010-atlas-upgrades-downstream-propagation.md).
 
 ## Decision
 
@@ -115,7 +118,7 @@ Doctor fails when any duplicated file diverges; maintainers copy manually.
 
 **Cons:**
 
-- No deterministic propagation path for #17 upgrade rehearsals
+- No deterministic propagation path for upgrade rehearsals
 - High friction for bulk infrastructure fixes
 
 **Why not chosen:** Explicit sync tooling documents ownership and enables safe propagation without
@@ -143,7 +146,7 @@ Regenerate all `lib/**` from templates on every change.
 - Every duplicated infrastructure surface has documented ownership and update mechanism
 - Reference app continues to simulate an independent consumer
 - Doctor and CI catch drift without brittle whole-tree equality checks
-- Provides concrete evidence for #17 upgrade propagation design
+- Provides concrete evidence for upgrade propagation design
 
 ### Negative
 
@@ -155,10 +158,10 @@ Regenerate all `lib/**` from templates on every change.
 - OpenAPI generation model unchanged
 - ESLint architecture policy remains per-application
 
-## Implications for #17
+## Implications for upgrades
 
-Issue #57 and this ADR establish **ownership classification and monorepo repair tooling** — not a
-full external consumer upgrade path. Evidence for #17 includes:
+This ADR establishes **ownership classification and monorepo repair tooling** — not a full external
+consumer upgrade path. Evidence for the upgrade contract includes:
 
 - **Synced template paths** are the primary bulk-propagation surface; repair is deterministic copy
   from the canonical starter when consumers have not customized those files.
@@ -174,6 +177,4 @@ full external consumer upgrade path. Evidence for #17 includes:
 
 - [Architecture ownership](../how-we-build/architecture-ownership.md)
 - [Atlas project contract](../how-we-build/atlas-contract.md)
-- Issue #57 — synchronization strategy
-- Issue #17 — upgrade rehearsal programme (follow-up)
-- PR #55 / Issue #39 — starter/reference application separation
+- [Upgrades](../how-we-build/upgrades.md)

@@ -7,19 +7,19 @@
 
 ## Licensing
 
-Atlas is **licensed under Apache License 2.0** and is **preparing for public open-source
-distribution** ([#24](https://github.com/blitzcraftlabs/atlas/issues/24)).
+Atlas is **open source under Apache License 2.0**. The canonical public repository is
+[`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas).
 
-| Item                             | Policy                                                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **License file**                 | Root [`LICENSE`](../../LICENSE)                                                                            |
-| **Scope**                        | In-repository source, documentation, configuration, and other materials unless explicitly marked otherwise |
-| **Workspace packages**           | `@atlas/ui`, `@atlas/config`, `@atlas/consent`, `@atlas/web` are **internal workspace packages**           |
-| **Third-party dependencies**     | Retain their own licenses                                                                                  |
-| **Third-party provenance audit** | Issue [#27](https://github.com/blitzcraftlabs/atlas/issues/27)                                             |
+| Item                         | Policy                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **License file**             | Root [`LICENSE`](../../LICENSE)                                                                            |
+| **Scope**                    | In-repository source, documentation, configuration, and other materials unless explicitly marked otherwise |
+| **Workspace packages**       | `@atlas/ui`, `@atlas/config`, `@atlas/consent`, `@atlas/web` are **internal workspace packages**           |
+| **Third-party dependencies** | Retain their own licenses                                                                                  |
+| **Third-party provenance**   | [provenance.md](provenance.md), [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)                   |
 
-**License decision ≠ repository currently public.** The repository may remain private until the OSS
-cutover in #24.
+The repository is public. Workspace packages remain unpublished npm internals (`private: true`).
+Canonical GitHub Release publication is not enabled yet.
 
 ---
 
@@ -88,14 +88,14 @@ Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v0.1.0`).
 
 A deliberate tagged snapshot at one SemVer version. Intended contents:
 
-| Artifact            | In #19             | Notes                                                  |
-| ------------------- | ------------------ | ------------------------------------------------------ |
-| Git tag `vX.Y.Z`    | Prepared           | Publication in #24                                     |
-| GitHub Release      | **Deferred (#24)** | Not created by current automation                      |
-| Root `CHANGELOG.md` | Yes                | Canonical history                                      |
-| Migration notes     | When needed        | `docs/migrations/`                                     |
-| SPDX SBOM snapshot  | Yes (#14)          | Workflow artifact `atlas-sbom-<sha>`; 90-day retention |
-| CI evidence links   | When available     | In release notes when #24 publishes                    |
+| Artifact            | Current           | Notes                                                  |
+| ------------------- | ----------------- | ------------------------------------------------------ |
+| Git tag `vX.Y.Z`    | Policy defined    | Canonical format; automation does not create tags yet  |
+| GitHub Release      | **Not published** | Not created by current automation                      |
+| Root `CHANGELOG.md` | Yes               | Canonical history                                      |
+| Migration notes     | When needed       | `docs/migrations/`                                     |
+| SPDX SBOM snapshot  | Yes               | Workflow artifact `atlas-sbom-<sha>`; 90-day retention |
+| CI evidence links   | When available    | Intended for future GitHub Release notes               |
 
 ---
 
@@ -112,12 +112,12 @@ A deliberate tagged snapshot at one SemVer version. Intended contents:
 - `0.2.0` is a **normal** SemVer release — **not** a GitHub prerelease.
 - Only versions with a SemVer **prerelease component** are GitHub prereleases, e.g. `0.2.0-rc.1`.
 
-Future publication logic ([#24](https://github.com/blitzcraftlabs/atlas/issues/24)) must use the
-SemVer prerelease component, not the `0.x` major line alone.
+Future GitHub Release publication must use the SemVer prerelease component, not the `0.x` major line
+alone.
 
 ---
 
-## Release process (#19 — publication deferred)
+## Release process (publication deferred)
 
 ### Day-to-day
 
@@ -134,15 +134,15 @@ When changesets merge to `main`, the Release workflow opens/updates a Version PR
 - Consolidates release notes into root [`CHANGELOG.md`](../../CHANGELOG.md)
 - Consumes changeset files
 
-**No Git tag or GitHub Release is created** by automation in #19.
+**No Git tag or GitHub Release is created** by current automation.
 
-### Publication (#24)
+### GitHub Release publication
 
-Issue #24 will activate:
+Canonical GitHub Release publication is **not enabled yet**. When it is activated, it should:
 
 - tag `vX.Y.Z` at the release commit
-- GitHub Release with changelog content
-- idempotent create-or-repair publication helpers
+- create a GitHub Release with changelog content
+- use idempotent create-or-repair publication helpers
 
 ### Rehearsal
 
@@ -161,7 +161,7 @@ pnpm changeset:status
 pnpm changeset:version   # local only; CI uses this in Version PR
 pnpm governance:check
 pnpm release:rehearse
-pnpm docs:check          # documentation links (#13)
+pnpm docs:check          # documentation links
 ```
 
 ---
@@ -231,25 +231,25 @@ products. All workspace packages share one version via a **fixed** changeset gro
 
 ---
 
-## Related issues
+## Related documentation
 
-| Issue   | Topic                                       | #19 status                       |
-| ------- | ------------------------------------------- | -------------------------------- |
-| **#24** | Public cutover + GitHub Release publication | Deferred                         |
-| **#14** | Security release artifacts                  | SBOM snapshots + blocking policy |
-| **#17** | Upgrade rehearsal programme                 | See [upgrades.md](upgrades.md)   |
-| **#27** | Third-party provenance                      | Separate                         |
+| Topic                      | Canonical source                                                   |
+| -------------------------- | ------------------------------------------------------------------ |
+| Security release artifacts | [security.md](security.md), `.github/workflows/security-audit.yml` |
+| Upgrade rehearsal          | [upgrades.md](upgrades.md)                                         |
+| Third-party provenance     | [provenance.md](provenance.md)                                     |
+| GitHub Release status      | Not published by current automation                                |
 
 ---
 
 ## Quick reference
 
-| Question                        | Answer                                  |
-| ------------------------------- | --------------------------------------- |
-| License?                        | Apache-2.0 ([`LICENSE`](../../LICENSE)) |
-| Public repo today?              | No — #24                                |
-| Versioned product?              | Atlas repository snapshot               |
-| Tag format?                     | `vX.Y.Z`                                |
-| Breaking change bump (pre-1.0)? | **minor** changeset                     |
-| npm publish?                    | No                                      |
-| GitHub Release today?           | No — #24                                |
+| Question                        | Answer                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| License?                        | Apache-2.0 ([`LICENSE`](../../LICENSE))                                 |
+| Public repo today?              | Yes — [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas) |
+| Versioned product?              | Atlas repository snapshot                                               |
+| Tag format?                     | `vX.Y.Z`                                                                |
+| Breaking change bump (pre-1.0)? | **minor** changeset                                                     |
+| npm publish?                    | No                                                                      |
+| GitHub Release today?           | No                                                                      |
