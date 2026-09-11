@@ -17,8 +17,11 @@ import {
   REQUIRED_RELEASE_CHECK_WORKFLOWS,
   buildCanonicalReleaseNotes,
   evaluatePublicationDecision,
+  evaluateRequiredReleaseChecks,
   isFirstCanonicalPublicRelease,
+  publicationSideEffects,
   readPublicationInputs,
+  sbomAssetNameForCommit,
   tagNameForVersion,
 } from "./release-publication.mjs";
 
@@ -100,23 +103,39 @@ function loadGithubState(options) {
   const tags = JSON.parse(tagsJson || "[]");
   const releases = JSON.parse(releasesJson || "[]");
   const main = JSON.parse(mainJson);
+  const existingTags = tags.map((tag) => ({
+    name: tag.name,
+    sha: tag.commit?.sha ?? null,
+  }));
 
   return {
-    existingTags: tags.map((tag) => ({
-      name: tag.name,
-      sha: tag.commit?.sha ?? null,
-    })),
+    existingTags,
     existingReleases: releases.map((release) => ({
       tagName: release.tag_name,
-      sha: release.target_commitish ?? null,
+      sha: resolveReleaseSha(release, existingTags),
+      assets: (release.assets ?? []).map((asset) => asset.name).filter(Boolean),
     })),
     canonicalMainSha: main.sha,
   };
 }
 
+function isGitCommitSha(value) {
+  return typeof value === "string" && /^[0-9a-f]{40}$/i.test(value);
+}
+
+function resolveReleaseSha(release, existingTags) {
+  const target = release.target_commitish ?? null;
+  if (isGitCommitSha(target)) {
+    return target;
+  }
+
+  const matchingTag = existingTags.find((entry) => entry.name === release.tag_name);
+  return matchingTag?.sha ?? null;
+}
+
 function writeSbom(repoRoot, commitSha, outputDir) {
   const sbom = generateSpdxSbom({ root: repoRoot, commitSha });
-  const fileName = `atlas-sbom-${commitSha}.spdx.json`;
+  const fileName = sbomAssetNameForCommit(commitSha);
   const filePath = path.join(outputDir, fileName);
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(sbom, null, 2)}\n`);
@@ -139,13 +158,15 @@ function waitForRequiredChecks(options, sha) {
         "--commit",
         sha,
         "--json",
-        "name,conclusion,status",
+        "name,conclusion,status,headSha,workflowName",
       ],
       options
     );
     const runs = JSON.parse(raw || "[]");
-    const relevant = runs.filter((run) => required.has(run.name));
-    const failed = relevant.filter((run) => run.conclusion && run.conclusion !== "success");
+    const { failed, pending } = evaluateRequiredReleaseChecks(runs, {
+      requiredWorkflows: [...required],
+      commitSha: sha,
+    });
     if (failed.length > 0) {
       throw new PublicationError(
         `Required checks failed: ${failed.map((run) => `${run.name}=${run.conclusion}`).join(", ")}`,
@@ -153,10 +174,6 @@ function waitForRequiredChecks(options, sha) {
       );
     }
 
-    const successful = new Set(
-      relevant.filter((run) => run.conclusion === "success").map((run) => run.name)
-    );
-    const pending = [...required].filter((name) => !successful.has(name));
     if (pending.length === 0) {
       return;
     }
@@ -173,6 +190,23 @@ function waitForRequiredChecks(options, sha) {
 function createGitTag(options, tag, sha) {
   runGit(["tag", "-a", tag, sha, "-m", `Atlas ${tag.slice(1)}`], options);
   runGit(["push", "origin", tag], options);
+}
+
+function uploadCanonicalReleaseAssets(options, tag, sbomPath, { clobber }) {
+  const sbomArgs = ["release", "upload", tag, sbomPath, "--repo", options.ownerRepo];
+  if (clobber) {
+    sbomArgs.push("--clobber");
+  }
+  runGh(sbomArgs, options);
+
+  const licensePath = path.join(options.repoRoot, "LICENSE");
+  if (existsSync(licensePath)) {
+    const licenseArgs = ["release", "upload", tag, licensePath, "--repo", options.ownerRepo];
+    if (clobber) {
+      licenseArgs.push("--clobber");
+    }
+    runGh(licenseArgs, options);
+  }
 }
 
 function createGithubRelease(options, decision, notesPath, sbomPath) {
@@ -193,18 +227,7 @@ function createGithubRelease(options, decision, notesPath, sbomPath) {
     args.push("--prerelease");
   }
   runGh(args, options);
-  runGh(
-    ["release", "upload", decision.tag, sbomPath, "--repo", options.ownerRepo, "--clobber"],
-    options
-  );
-
-  const licensePath = path.join(options.repoRoot, "LICENSE");
-  if (existsSync(licensePath)) {
-    runGh(
-      ["release", "upload", decision.tag, licensePath, "--repo", options.ownerRepo, "--clobber"],
-      options
-    );
-  }
+  uploadCanonicalReleaseAssets(options, decision.tag, sbomPath, { clobber: false });
 }
 
 export function preparePublication(options) {
@@ -282,11 +305,17 @@ function main(argv = process.argv.slice(2)) {
       waitForRequiredChecks(options, targetSha);
     }
 
-    if (decision.action === "publish") {
+    const effects = publicationSideEffects(decision.action);
+    if (effects.createTag) {
       createGitTag(options, decision.tag, targetSha);
     }
-
-    createGithubRelease(options, decision, notesPath, sbom.filePath);
+    if (effects.createRelease) {
+      createGithubRelease(options, decision, notesPath, sbom.filePath);
+    } else if (effects.uploadAssets) {
+      uploadCanonicalReleaseAssets(options, decision.tag, sbom.filePath, {
+        clobber: effects.clobberExactAssets,
+      });
+    }
     process.stdout.write(`✓ Published ${decision.tag}\n`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -90,14 +90,14 @@ internal snapshot and must not receive a public tag.
 
 A deliberate tagged snapshot at one SemVer version. Intended contents:
 
-| Artifact            | Status                  | Notes                                                                 |
-| ------------------- | ----------------------- | --------------------------------------------------------------------- |
-| Git tag `vX.Y.Z`    | After Version PR merge  | Never retagged; never `v0.1.0`                                        |
-| GitHub Release      | After Version PR merge  | Fail-closed notes + SBOM; no npm publish                              |
-| Root `CHANGELOG.md` | Yes                     | Canonical history                                                     |
-| Migration notes     | When needed             | `docs/migrations/`                                                    |
-| SPDX SBOM snapshot  | Yes                     | Workflow artifact and GitHub Release asset; 90-day workflow retention |
-| CI evidence         | Required before publish | Publication waits for CI and Security Audit on the release commit     |
+| Artifact            | Status                  | Notes                                                                          |
+| ------------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| Git tag `vX.Y.Z`    | After Version PR merge  | Never retagged; never `v0.1.0`                                                 |
+| GitHub Release      | After Version PR merge  | Fail-closed notes + SBOM; no npm publish                                       |
+| Root `CHANGELOG.md` | Yes                     | Canonical history                                                              |
+| Migration notes     | When needed             | `docs/migrations/`                                                             |
+| SPDX SBOM snapshot  | Yes                     | Workflow artifact and GitHub Release asset; 90-day workflow retention          |
+| CI evidence         | Required before publish | Publication waits for CI, Security Audit, and UI Quality on the release commit |
 
 ---
 
@@ -137,17 +137,29 @@ When changesets merge to `main`, the Release workflow opens/updates a Version PR
 
 The Version PR must pass normal CI and Governance. It does not create a Git tag.
 
+Changesets Version PRs are created by GitHub Actions. Depending on repository or GitHub organization
+policy, GitHub may require a maintainer to approve workflow execution on an automation-created pull
+request. If checks do not start on the Version PR, review the generated PR and use **Approve
+workflows to run** when GitHub presents that option. This is not guaranteed on every repository — it
+depends on your settings.
+
+Publication still waits for required checks on the release commit before creating the canonical tag
+or GitHub Release.
+
 ### GitHub Release publication
 
 After the Version PR merges to `main`, the Release workflow publishes fail-closed:
 
 1. Confirm root/workspace versions match and `CHANGELOG.md` contains that version
-2. Refuse historical `0.1.0` (never create `v0.1.0`)
-3. Refuse retagging or recreating a release for a different SHA
-4. Wait for required **CI** and **Security Audit** checks on the release commit
-5. Create `vX.Y.Z` at that SHA
-6. Create the GitHub Release with changelog-derived notes, SBOM, and license notice
-7. No-op when the current version is already published or is not a new releasable version
+2. Refuse historical `0.1.0` (never create `v0.1.0`; pending changesets are a safe no-op)
+3. Refuse publication when release-bearing `.changeset/*.md` files remain after a Version PR
+4. Refuse retagging or recreating a release for a different SHA
+5. Wait for required **CI**, **Security Audit**, and **UI Quality** checks on the release commit
+6. Create `vX.Y.Z` at that SHA
+7. Create the GitHub Release with changelog-derived notes, SBOM, and license notice
+8. No-op when the current version is already published with required assets, or is not a new
+   releasable version
+9. Repair a missing Release or missing required SBOM at the same SHA without retagging
 
 Workspace packages are not published to npm. Publication does not claim signed provenance, SLSA, or
 a formal security audit.

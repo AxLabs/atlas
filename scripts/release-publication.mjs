@@ -15,7 +15,13 @@ import { assertPreOnePointZero, isGithubPrerelease, parseSemver } from "./semver
 /** Internal snapshot that must never receive a public tag or GitHub Release. */
 export const HISTORICAL_UNPUBLISHED_VERSIONS = Object.freeze(["0.1.0"]);
 
-export const REQUIRED_RELEASE_CHECK_WORKFLOWS = Object.freeze(["CI", "Security Audit"]);
+export const REQUIRED_RELEASE_CHECK_WORKFLOWS = Object.freeze([
+  "CI",
+  "Security Audit",
+  "UI Quality",
+]);
+
+export const REQUIRED_RELEASE_ASSET_LICENSE = "LICENSE";
 
 export class PublicationError extends Error {
   /**
@@ -31,6 +37,103 @@ export class PublicationError extends Error {
 
 export function tagNameForVersion(version) {
   return `v${version}`;
+}
+
+export function sbomAssetNameForCommit(commitSha) {
+  return `atlas-sbom-${commitSha}.spdx.json`;
+}
+
+/**
+ * Canonical Release assets that must exist before publication is complete.
+ * SBOM is mandatory; LICENSE is uploaded with every canonical Release.
+ *
+ * @param {string} commitSha
+ * @returns {string[]}
+ */
+export function requiredReleaseAssetNames(commitSha) {
+  return [sbomAssetNameForCommit(commitSha), REQUIRED_RELEASE_ASSET_LICENSE];
+}
+
+/**
+ * @param {{ assets?: string[] } | null | undefined} release
+ * @param {string} commitSha
+ * @returns {string[]}
+ */
+export function missingRequiredReleaseAssets(release, commitSha) {
+  const assets = new Set(release?.assets ?? []);
+  return [sbomAssetNameForCommit(commitSha)].filter((name) => !assets.has(name));
+}
+
+/**
+ * Live side effects for a publication decision. Repair never creates a new tag.
+ *
+ * @param {"publish" | "repair-release" | "repair-assets" | "noop"} action
+ */
+export function publicationSideEffects(action) {
+  return {
+    createTag: action === "publish",
+    createRelease: action === "publish" || action === "repair-release",
+    uploadAssets: action === "publish" || action === "repair-release" || action === "repair-assets",
+    clobberExactAssets: action === "repair-assets",
+  };
+}
+
+/**
+ * Evaluate required workflow runs for one exact commit.
+ * `--commit <sha>` is the primary filter; `headSha` is a defense-in-depth check.
+ *
+ * A workflow is successful when at least one completed run on this SHA succeeded.
+ * Prior unsuccessful completed runs on the same SHA are treated as resolved by that retry.
+ * Cancelled, failed, or other unsuccessful conclusions without a later success fail closed.
+ *
+ * @param {Array<{ name?: string, workflowName?: string, conclusion?: string | null, status?: string | null, headSha?: string | null }>} runs
+ * @param {{ requiredWorkflows?: readonly string[], commitSha: string }} options
+ * @returns {{ failed: Array<{ name: string, conclusion: string }>, pending: string[] }}
+ */
+export function evaluateRequiredReleaseChecks(runs, options) {
+  const requiredWorkflows = [...(options.requiredWorkflows ?? REQUIRED_RELEASE_CHECK_WORKFLOWS)];
+  const commitSha = options.commitSha;
+  const relevant = (runs ?? []).filter((run) => {
+    const name = run.name ?? run.workflowName;
+    if (!name || !requiredWorkflows.includes(name)) {
+      return false;
+    }
+    if (run.headSha && run.headSha !== commitSha) {
+      return false;
+    }
+    return true;
+  });
+
+  const failed = [];
+  const pending = [];
+
+  for (const name of requiredWorkflows) {
+    const workflowRuns = relevant.filter((run) => (run.name ?? run.workflowName) === name);
+    const completed = workflowRuns.filter(
+      (run) => run.status === "completed" || Boolean(run.conclusion)
+    );
+    const successful = completed.filter((run) => run.conclusion === "success");
+    const unsuccessful = completed.filter(
+      (run) => run.conclusion && run.conclusion !== "success"
+    );
+
+    if (successful.length > 0) {
+      continue;
+    }
+    if (unsuccessful.length > 0) {
+      failed.push(
+        ...unsuccessful.map((run) => ({
+          name,
+          conclusion: run.conclusion ?? "unknown",
+        }))
+      );
+      continue;
+    }
+
+    pending.push(name);
+  }
+
+  return { failed, pending };
 }
 
 export function isHistoricalUnpublishedVersion(version) {
@@ -100,7 +203,7 @@ export function collectVersionConsistencyErrors(input) {
  *   workspaceVersions: Array<{ name: string, version: string }>,
  *   changelog: string,
  *   existingTags?: Array<{ name: string, sha?: string | null }>,
- *   existingReleases?: Array<{ tagName: string, sha?: string | null }>,
+ *   existingReleases?: Array<{ tagName: string, sha?: string | null, assets?: string[] }>,
  *   proposedTag?: string | null,
  *   targetSha?: string | null,
  *   canonicalMainSha?: string | null,
@@ -119,6 +222,7 @@ export function evaluatePublicationDecision(input) {
   const existingReleases = input.existingReleases ?? [];
   const existingTag = existingTags.find((entry) => entry.name === tag);
   const existingRelease = existingReleases.find((entry) => entry.tagName === tag);
+  const pendingChangesetFiles = input.pendingChangesetFiles ?? [];
 
   if (isHistoricalUnpublishedVersion(rootVersion)) {
     return {
@@ -128,6 +232,15 @@ export function evaluatePublicationDecision(input) {
       prerelease: isGithubPrerelease(rootVersion),
       reason: `${rootVersion} is a historical internal snapshot and must not receive a public tag or GitHub Release`,
     };
+  }
+
+  if (pendingChangesetFiles.length > 0) {
+    throw new PublicationError(
+      `Cannot publish ${tag} while pending changesets remain:\n${pendingChangesetFiles
+        .map((name) => `- ${name}`)
+        .join("\n")}`,
+      { code: "PENDING_CHANGESETS" }
+    );
   }
 
   if (input.targetSha && input.canonicalMainSha && input.targetSha !== input.canonicalMainSha) {
@@ -151,20 +264,32 @@ export function evaluatePublicationDecision(input) {
     );
   }
 
+  if (!existingTag && existingRelease) {
+    throw new PublicationError(`GitHub Release ${tag} exists without a matching git tag`, {
+      code: "RELEASE_WITHOUT_TAG",
+    });
+  }
+
   if (existingTag && existingRelease) {
+    const missingAssets = missingRequiredReleaseAssets(existingRelease, input.targetSha ?? "");
+    if (missingAssets.length > 0) {
+      return {
+        action: "repair-assets",
+        version: rootVersion,
+        tag,
+        prerelease: isGithubPrerelease(rootVersion),
+        missingAssets,
+        reason: `GitHub Release ${tag} exists at the release commit but is missing required assets: ${missingAssets.join(", ")}`,
+      };
+    }
+
     return {
       action: "noop",
       version: rootVersion,
       tag,
       prerelease: isGithubPrerelease(rootVersion),
-      reason: `Tag ${tag} and GitHub Release already exist for this version`,
+      reason: `Tag ${tag} and GitHub Release already exist with required assets for this version`,
     };
-  }
-
-  if (!existingTag && existingRelease) {
-    throw new PublicationError(`GitHub Release ${tag} exists without a matching git tag`, {
-      code: "RELEASE_WITHOUT_TAG",
-    });
   }
 
   if (existingTag && !existingRelease) {

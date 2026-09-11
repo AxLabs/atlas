@@ -267,6 +267,17 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(workflow, /changesets\/action[\s\S]{0,500}^\s+publish:\s+/m);
     assert.doesNotMatch(workflow, /continue-on-error/);
     assert.doesNotMatch(workflow, /@atlas\/ui@/);
+
+    const publishJobStart = workflow.indexOf("  github-release:");
+    const nextJob = workflow.slice(publishJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+    const publishJob =
+      nextJob === -1
+        ? workflow.slice(publishJobStart)
+        : workflow.slice(publishJobStart, publishJobStart + 1 + nextJob);
+    assert.match(publishJob, /contents:\s*write/);
+    assert.match(publishJob, /actions:\s*read/);
+    assert.doesNotMatch(publishJob, /packages:\s*write/);
+    assert.doesNotMatch(publishJob, /id-token:\s*write/);
   });
 });
 

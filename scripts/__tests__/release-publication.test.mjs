@@ -8,11 +8,15 @@ import { generateSpdxSbom } from "../generate-sbom.mjs";
 import { preparePublication } from "../publish-atlas-release.mjs";
 import {
   PublicationError,
+  REQUIRED_RELEASE_CHECK_WORKFLOWS,
   buildCanonicalReleaseNotes,
   collectVersionConsistencyErrors,
   evaluatePublicationDecision,
+  evaluateRequiredReleaseChecks,
   isFirstCanonicalPublicRelease,
   isHistoricalUnpublishedVersion,
+  publicationSideEffects,
+  sbomAssetNameForCommit,
   tagNameForVersion,
 } from "../release-publication.mjs";
 
@@ -86,6 +90,54 @@ describe("publication decision", () => {
     assert.equal(isHistoricalUnpublishedVersion("0.1.0"), true);
   });
 
+  it("no-ops historical 0.1.0 even when pending changesets remain", () => {
+    const decision = evaluatePublicationDecision({
+      rootVersion: "0.1.0",
+      workspaceVersions: [
+        { name: "@atlas/web", version: "0.1.0" },
+        { name: "@atlas/ui", version: "0.1.0" },
+      ],
+      changelog: "## 0.1.0 - 2026-08-19\n\n### Added\n- Historical snapshot\n",
+      pendingChangesetFiles: ["public-release-automation.md"],
+      targetSha: "abc",
+      canonicalMainSha: "abc",
+    });
+    assert.equal(decision.action, "noop");
+  });
+
+  it("fails when a non-historical version still has pending changesets", () => {
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          pendingChangesetFiles: ["foo.md", "bar.md"],
+          targetSha: "abc",
+          canonicalMainSha: "abc",
+        }),
+      (error) =>
+        error instanceof PublicationError &&
+        error.code === "PENDING_CHANGESETS" &&
+        /Cannot publish v0\.2\.0 while pending changesets remain/.test(error.message) &&
+        /- foo\.md/.test(error.message) &&
+        /- bar\.md/.test(error.message)
+    );
+  });
+
+  it("publishes 0.2.0 when no pending changesets remain", () => {
+    const decision = evaluatePublicationDecision({
+      rootVersion: "0.2.0",
+      workspaceVersions: alignedWorkspaces,
+      changelog: changelog020,
+      pendingChangesetFiles: [],
+      targetSha: "abc",
+      canonicalMainSha: "abc",
+    });
+    assert.equal(decision.action, "publish");
+    assert.equal(decision.tag, "v0.2.0");
+  });
+
   it("fails when the target tag already exists at a different SHA", () => {
     assert.throws(
       () =>
@@ -117,18 +169,76 @@ describe("publication decision", () => {
     );
   });
 
-  it("no-ops when the current version is already published at this SHA", () => {
+  it("no-ops when tag, Release, and required SBOM exist at this SHA", () => {
     const decision = evaluatePublicationDecision({
       rootVersion: "0.2.0",
       workspaceVersions: alignedWorkspaces,
       changelog: changelog020,
       existingTags: [{ name: "v0.2.0", sha: "abc" }],
-      existingReleases: [{ tagName: "v0.2.0", sha: "abc" }],
+      existingReleases: [
+        {
+          tagName: "v0.2.0",
+          sha: "abc",
+          assets: [sbomAssetNameForCommit("abc"), "LICENSE"],
+        },
+      ],
       targetSha: "abc",
       canonicalMainSha: "abc",
     });
     assert.equal(decision.action, "noop");
     assert.match(decision.reason, /already exist/);
+  });
+
+  it("repairs assets when the Release exists but the required SBOM is missing", () => {
+    const decision = evaluatePublicationDecision({
+      rootVersion: "0.2.0",
+      workspaceVersions: alignedWorkspaces,
+      changelog: changelog020,
+      existingTags: [{ name: "v0.2.0", sha: "abc" }],
+      existingReleases: [{ tagName: "v0.2.0", sha: "abc", assets: ["LICENSE"] }],
+      targetSha: "abc",
+      canonicalMainSha: "abc",
+    });
+    assert.equal(decision.action, "repair-assets");
+    assert.deepEqual(decision.missingAssets, [sbomAssetNameForCommit("abc")]);
+    assert.equal(publicationSideEffects(decision.action).createTag, false);
+  });
+
+  it("repairs the Release when only the tag exists at the correct SHA", () => {
+    const decision = evaluatePublicationDecision({
+      rootVersion: "0.2.0",
+      workspaceVersions: alignedWorkspaces,
+      changelog: changelog020,
+      existingTags: [{ name: "v0.2.0", sha: "abc" }],
+      existingReleases: [],
+      targetSha: "abc",
+      canonicalMainSha: "abc",
+    });
+    assert.equal(decision.action, "repair-release");
+    assert.equal(publicationSideEffects(decision.action).createTag, false);
+    assert.equal(publicationSideEffects(decision.action).createRelease, true);
+  });
+
+  it("fails when a GitHub Release exists without a matching tag", () => {
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          existingTags: [],
+          existingReleases: [
+            {
+              tagName: "v0.2.0",
+              sha: "abc",
+              assets: [sbomAssetNameForCommit("abc")],
+            },
+          ],
+          targetSha: "abc",
+          canonicalMainSha: "abc",
+        }),
+      (error) => error instanceof PublicationError && error.code === "RELEASE_WITHOUT_TAG"
+    );
   });
 
   it("publishes when a non-historical version has no tag or release", () => {
@@ -167,6 +277,98 @@ describe("publication decision", () => {
         }),
       (error) => error instanceof PublicationError && error.code === "STALE_SHA"
     );
+  });
+
+  it("never creates a tag on repair actions", () => {
+    assert.equal(publicationSideEffects("publish").createTag, true);
+    assert.equal(publicationSideEffects("repair-release").createTag, false);
+    assert.equal(publicationSideEffects("repair-assets").createTag, false);
+    assert.equal(publicationSideEffects("repair-assets").clobberExactAssets, true);
+    assert.equal(publicationSideEffects("publish").clobberExactAssets, false);
+  });
+});
+
+describe("required release checks", () => {
+  const sha = "abc123def456abc123def456abc123def456abcd";
+
+  it("requires CI, Security Audit, and UI Quality", () => {
+    assert.deepEqual([...REQUIRED_RELEASE_CHECK_WORKFLOWS], ["CI", "Security Audit", "UI Quality"]);
+  });
+
+  it("accepts success only for the exact target SHA", () => {
+    const result = evaluateRequiredReleaseChecks(
+      [
+        {
+          name: "CI",
+          conclusion: "success",
+          status: "completed",
+          headSha: "ffffffffffffffffffffffffffffffffffffffff",
+        },
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha },
+        { name: "Security Audit", conclusion: "success", status: "completed", headSha: sha },
+        { name: "UI Quality", conclusion: "success", status: "completed", headSha: sha },
+      ],
+      { commitSha: sha }
+    );
+    assert.deepEqual(result.failed, []);
+    assert.deepEqual(result.pending, []);
+  });
+
+  it("ignores a successful run from another SHA", () => {
+    const result = evaluateRequiredReleaseChecks(
+      [
+        {
+          name: "CI",
+          conclusion: "success",
+          status: "completed",
+          headSha: "ffffffffffffffffffffffffffffffffffffffff",
+        },
+        { name: "Security Audit", conclusion: "success", status: "completed", headSha: sha },
+        { name: "UI Quality", conclusion: "success", status: "completed", headSha: sha },
+      ],
+      { commitSha: sha }
+    );
+    assert.deepEqual(result.pending, ["CI"]);
+  });
+
+  it("fails closed on cancelled or failed required runs without a successful retry", () => {
+    const cancelled = evaluateRequiredReleaseChecks(
+      [{ name: "CI", conclusion: "cancelled", status: "completed", headSha: sha }],
+      { commitSha: sha }
+    );
+    assert.equal(cancelled.failed[0]?.conclusion, "cancelled");
+
+    const failed = evaluateRequiredReleaseChecks(
+      [{ name: "UI Quality", conclusion: "failure", status: "completed", headSha: sha }],
+      { commitSha: sha }
+    );
+    assert.equal(failed.failed[0]?.conclusion, "failure");
+  });
+
+  it("treats a later successful retry on the same SHA as resolved", () => {
+    const result = evaluateRequiredReleaseChecks(
+      [
+        { name: "CI", conclusion: "failure", status: "completed", headSha: sha },
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha },
+        { name: "Security Audit", conclusion: "success", status: "completed", headSha: sha },
+        { name: "UI Quality", conclusion: "success", status: "completed", headSha: sha },
+      ],
+      { commitSha: sha }
+    );
+    assert.deepEqual(result.failed, []);
+    assert.deepEqual(result.pending, []);
+  });
+
+  it("keeps waiting when a required workflow is still pending", () => {
+    const result = evaluateRequiredReleaseChecks(
+      [
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha },
+        { name: "Security Audit", conclusion: null, status: "in_progress", headSha: sha },
+      ],
+      { commitSha: sha }
+    );
+    assert.deepEqual(result.failed, []);
+    assert.deepEqual(result.pending, ["Security Audit", "UI Quality"]);
   });
 });
 

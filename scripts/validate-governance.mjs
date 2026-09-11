@@ -141,6 +141,23 @@ function checkReleaseWorkflow() {
     fail("release.yml must not use continue-on-error to mask release or SBOM failures");
   }
 
+  const publishJob = extractNamedJob(workflow, "github-release");
+  if (!publishJob) {
+    fail("release.yml is missing the github-release job");
+  } else {
+    if (!/permissions:[\s\S]*contents:\s*write/.test(publishJob)) {
+      fail("github-release job must request contents: write to create the tag and Release");
+    }
+    if (!/permissions:[\s\S]*actions:\s*read/.test(publishJob)) {
+      fail(
+        "github-release job must request actions: read so publication can inspect required workflow runs"
+      );
+    }
+    if (/packages:\s*write/.test(publishJob) || /id-token:\s*write/.test(publishJob)) {
+      fail("github-release job must not request npm publish or provenance permissions");
+    }
+  }
+
   const sbomJob = extractNamedJob(workflow, "sbom");
   if (!sbomJob) {
     fail("release.yml is missing the sbom job");
