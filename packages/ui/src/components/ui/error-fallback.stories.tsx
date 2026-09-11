@@ -17,7 +17,10 @@ type Story = StoryObj<typeof ErrorFallback>;
 export const Default: Story = {
   tags: ["critical"],
   render: () => (
-    <div style={{ width: "500px" }}>
+    // Responsive container: renders at full viewport width (up to 640px) so mobile visual
+    // baselines capture actual responsive layout rather than an intentionally-overflowing 500px
+    // fixed-width wrapper.
+    <div style={{ width: "100%", maxWidth: "640px" }}>
       <ErrorFallback
         title="Unable to load data"
         description="We could not fetch the latest records. Try again in a moment."

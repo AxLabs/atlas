@@ -97,7 +97,7 @@ test.describe("Select keyboard composition", () => {
 });
 
 test.describe("Dialog keyboard composition", () => {
-  test("opens, keeps keyboard focus inside, closes, and restores focus", async ({
+  test("opens, keeps keyboard focus inside (boundary probe), closes, and restores focus", async ({
     page,
     baseURL,
   }) => {
@@ -123,6 +123,13 @@ test.describe("Dialog keyboard composition", () => {
 
     await page.keyboard.press("Shift+Tab");
     await expect(cancel).toBeFocused();
+    await expectFocusInside(dialog);
+
+    // Boundary probe: Tab past the last known control. Focus must remain inside the dialog
+    // (Base UI may cycle to its own focus-guard sentinel elements rather than the first visible
+    // control). We accept that outcome — the intent is that focus cannot escape to the host page.
+    // Do not assert the exact first/last wrap element to avoid cross-engine flakiness.
+    await page.keyboard.press("Tab");
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Escape");
@@ -177,6 +184,38 @@ test.describe("Form accessibility composition", () => {
     await expect(password).toHaveAttribute("aria-invalid", "true");
     await expect(password).toHaveAccessibleDescription(/at least 8 characters/i);
     await expect(story(page).getByRole("alert")).toBeVisible();
+  });
+});
+
+test.describe("Form keyboard/focus coverage", () => {
+  test("Tab reaches the enabled input; error state survives keyboard interaction", async ({
+    page,
+    baseURL,
+  }) => {
+    await gotoStory(page, baseURL!, "ui-form--with-error");
+
+    const password = story(page).getByLabel("Password");
+    // Tab from a non-focused state until the password input is reached (max 6 attempts).
+    await focusByTabbing(password, page, 6);
+    await expect(password).toBeFocused();
+    // Keyboard focus must not clear the error state — aria-invalid and the accessible description
+    // must survive Tab-in.
+    await expect(password).toHaveAttribute("aria-invalid", "true");
+    await expect(password).toHaveAccessibleDescription(/at least 8 characters/i);
+  });
+
+  test("disabled form field is not keyboard-focusable via Tab", async ({ page, baseURL }) => {
+    await gotoStory(page, baseURL!, "ui-form--disabled-field");
+
+    const email = story(page).getByLabel("Email");
+    await expect(email).toBeDisabled();
+
+    // Tab up to 8 times: the disabled input must never become the active element.
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      await page.keyboard.press("Tab");
+      const isEmailFocused = await email.evaluate((element) => element === document.activeElement);
+      expect(isEmailFocused, "Disabled field received Tab focus").toBe(false);
+    }
   });
 });
 

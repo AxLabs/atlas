@@ -11,7 +11,9 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   workers: 1,
-  reporter: "list",
+  reporter: process.env.CI
+    ? [["list"], ["html", { outputFolder: "playwright-report-storybook", open: "never" }]]
+    : "list",
   use: {
     baseURL,
     reducedMotion: "reduce",

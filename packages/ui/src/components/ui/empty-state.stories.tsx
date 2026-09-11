@@ -18,7 +18,10 @@ type Story = StoryObj<typeof EmptyState>;
 export const Default: Story = {
   tags: ["critical"],
   render: () => (
-    <div style={{ width: "500px" }}>
+    // Responsive container: renders at full viewport width (up to 640px) so mobile visual
+    // baselines capture actual responsive layout rather than an intentionally-overflowing 500px
+    // fixed-width wrapper.
+    <div style={{ width: "100%", maxWidth: "640px" }}>
       <EmptyState
         title="No projects yet"
         description="Create a project to start organizing your work."

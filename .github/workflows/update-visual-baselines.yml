@@ -1,0 +1,62 @@
+name: Update Visual Baselines
+
+# Manually triggered only. A maintainer runs this workflow to produce candidate visual baselines on
+# the canonical ubuntu-24.04 GitHub-hosted runner, downloads and reviews the artifact, then commits
+# the reviewed PNGs so regular UI Quality CI can verify them.
+#
+# Procedure:
+#   1. Trigger this workflow via "Run workflow" in the GitHub Actions UI.
+#   2. Wait for it to complete, then download the "candidate-visual-baselines-*" artifact.
+#   3. Review every PNG carefully (open a PR diff or preview them locally).
+#   4. Copy the reviewed PNGs into packages/ui/visual-tests/__snapshots__/visual.spec.ts/.
+#   5. Commit the reviewed PNG changes on a branch and open a PR.
+#   6. Let the regular UI Quality CI job verify the new baselines.
+#
+# This workflow does NOT auto-commit or auto-approve visual changes.
+# Do NOT capture baselines locally or in Docker — font rasterisation differs even with the same
+# Playwright version. The only canonical source of truth is this workflow's ubuntu-24.04 runner.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-baselines:
+    name: Generate candidate visual baselines
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 10.19.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @atlas/ui exec playwright install --with-deps chromium
+
+      - name: Build Storybook
+        run: pnpm --filter @atlas/ui build-storybook
+
+      - name: Generate candidate visual baselines
+        run: pnpm --filter @atlas/ui test:visual:update
+
+      - name: Upload candidate baselines (review before committing)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-visual-baselines-${{ github.run_id }}
+          path: packages/ui/visual-tests/__snapshots__/
+          retention-days: 30

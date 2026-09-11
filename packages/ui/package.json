@@ -59,7 +59,7 @@
   "devDependencies": {
     "@atlas/config": "workspace:*",
     "@jest/globals": "29.7.0",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "1.62.1",
     "@storybook/addon-a11y": "8.6.18",
     "@storybook/addon-essentials": "8.6.18",
     "@storybook/addon-interactions": "8.6.18",

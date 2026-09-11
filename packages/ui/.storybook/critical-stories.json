@@ -10,11 +10,27 @@
       "requiresCriticalTag": true
     },
     {
+      "id": "ui-select--axe-open-listbox",
+      "component": "Select",
+      "file": "packages/ui/src/components/ui/select.stories.tsx",
+      "exportName": "AxeOpenListbox",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
       "id": "ui-dialog--keyboard-interaction",
       "component": "Dialog",
       "file": "packages/ui/src/components/ui/dialog.stories.tsx",
       "exportName": "KeyboardInteraction",
       "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-dialog--axe-open-dialog",
+      "component": "Dialog",
+      "file": "packages/ui/src/components/ui/dialog.stories.tsx",
+      "exportName": "AxeOpenDialog",
+      "requiresPlay": false,
       "requiresCriticalTag": true
     },
     {
@@ -26,10 +42,26 @@
       "requiresCriticalTag": true
     },
     {
+      "id": "ui-dropdownmenu--axe-open-menu",
+      "component": "DropdownMenu",
+      "file": "packages/ui/src/components/ui/dropdown-menu.stories.tsx",
+      "exportName": "AxeOpenMenu",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
       "id": "ui-tooltip--keyboard-accessibility",
       "component": "Tooltip",
       "file": "packages/ui/src/components/ui/tooltip.stories.tsx",
       "exportName": "KeyboardAccessibility",
+      "requiresPlay": true,
+      "requiresCriticalTag": true
+    },
+    {
+      "id": "ui-tooltip--axe-open-tooltip",
+      "component": "Tooltip",
+      "file": "packages/ui/src/components/ui/tooltip.stories.tsx",
+      "exportName": "AxeOpenTooltip",
       "requiresPlay": true,
       "requiresCriticalTag": true
     },

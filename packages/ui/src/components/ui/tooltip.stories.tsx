@@ -110,3 +110,31 @@ export const KeyboardAccessibility: Story = {
     await expect(trigger).toHaveFocus();
   },
 };
+
+/**
+ * Dedicated axe story: tooltip is visible when postVisit runs so axe scans the full portal surface.
+ *
+ * KeyboardAccessibility dismisses the tooltip before postVisit — axe there only audits the closed
+ * trigger state. This story focuses the trigger via its play function and leaves it focused (and
+ * the tooltip visible) so axe can audit the tooltip portal rendered into document.body.
+ */
+export const AxeOpenTooltip: Story = {
+  tags: ["critical"],
+  render: () => (
+    <Tooltip>
+      <TooltipTrigger render={<button type="button" style={triggerButtonStyle} />}>
+        Show tooltip
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Keyboard accessible tooltip</p>
+      </TooltipContent>
+    </Tooltip>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Show tooltip" });
+    trigger.focus();
+    await waitFor(() => expect(screen.getByRole("tooltip")).toBeVisible());
+    // Intentionally leave the tooltip open so postVisit/axe audits the portal surface.
+  },
+};

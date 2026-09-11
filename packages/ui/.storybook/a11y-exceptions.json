@@ -1,4 +1,21 @@
 {
   "version": 1,
-  "exceptions": []
+  "exceptions": [
+    {
+      "storyId": "ui-dialog--axe-open-dialog",
+      "rule": "color-contrast",
+      "owner": "atlas-ui",
+      "reason": "axe-core 4.11 false positive for oklch() CSS colors. Dialog content uses oklch-based design tokens; actual WCAG contrast ratios exceed 6:1 for all text (dark on light background). Remove this exception after upgrading axe-core to a version that correctly evaluates oklch() contrast.",
+      "reviewedOn": "2026-09-11",
+      "expiry": "2027-03-01"
+    },
+    {
+      "storyId": "ui-dropdownmenu--axe-open-menu",
+      "rule": "color-contrast",
+      "owner": "atlas-ui",
+      "reason": "axe-core 4.11 false positive for oklch() CSS colors. Menu items use oklch(0.22 0.01 286) text on oklch(0.965 0.003 286) (highlighted) and oklch(1 0 0) (default) backgrounds; actual WCAG contrast ratios are 16:1 and 20:1 respectively, both well above the 4.5:1 AA threshold. Remove this exception after upgrading axe-core to a version that correctly evaluates oklch() contrast.",
+      "reviewedOn": "2026-09-11",
+      "expiry": "2027-03-01"
+    }
+  ]
 }

@@ -31,7 +31,7 @@ describe("storybook critical policy", () => {
   it("passes the repository manifest against current stories", () => {
     const result = evaluateCriticalStoryPolicy();
     assert.equal(result.ok, true, result.failures.join("\n"));
-    assert.equal(result.storyCount, 10);
+    assert.equal(result.storyCount, 14);
   });
 
   it("fails when a required critical tag is removed", () => {
@@ -174,5 +174,46 @@ describe("storybook critical policy", () => {
     ]);
     assert.equal(result.status, 1);
     assert.match(result.stderr + result.stdout, /FAILED/);
+  });
+
+  // Issue 1: no-tests bypass prevention
+  it("fails when a manifest-protected story has no-tests at story level (via built index)", () => {
+    // The story source has `tags: ["critical", "no-tests"]` and the index reflects this.
+    // Even though the source check passes (the story has critical), the index check must fail
+    // because "no-tests" would cause the test runner to silently skip execution.
+    const result = evaluateCriticalStoryPolicy({
+      repoRoot: fixtures,
+      manifestPath: path.join(fixtures, "manifest-no-tests-story.json"),
+      exceptionsPath: path.join(fixtures, "a11y-exceptions.json"),
+      storybookIndexPath: path.join(
+        fixtures,
+        "packages/ui/storybook-static/index-no-tests-story.json"
+      ),
+    });
+    assert.equal(result.ok, false);
+    assert.match(
+      result.failures.join("\n"),
+      /"no-tests" tag in the built Storybook index/
+    );
+  });
+
+  it("fails when a manifest-protected story inherits no-tests from component meta (via built index)", () => {
+    // The story source has `tags: ["autodocs"]` (no "no-tests"), but the built Storybook index
+    // shows "no-tests" because the component meta or global preview contributes it. The policy
+    // must catch this via the index, not source text, because source text cannot see inherited tags.
+    const result = evaluateCriticalStoryPolicy({
+      repoRoot: fixtures,
+      manifestPath: path.join(fixtures, "manifest-no-tests-inherited.json"),
+      exceptionsPath: path.join(fixtures, "a11y-exceptions.json"),
+      storybookIndexPath: path.join(
+        fixtures,
+        "packages/ui/storybook-static/index-no-tests-inherited.json"
+      ),
+    });
+    assert.equal(result.ok, false);
+    assert.match(
+      result.failures.join("\n"),
+      /"no-tests" tag in the built Storybook index/
+    );
   });
 });

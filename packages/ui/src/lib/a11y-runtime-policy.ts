@@ -46,6 +46,14 @@ export interface EffectiveA11yParameters {
   config?: {
     rules?: A11yRuleMap | A11yRuleArrayEntry[];
   };
+  /**
+   * Axe run-time options (passed to axe.run()). Any value here can narrow the axe scan scope
+   * (e.g. `runOnly`, `rules` as run options) on a protected story, so the policy forbids it
+   * unless a valid exception is registered. Currently no options are whitelisted — the only
+   * supported coverage-narrowing mechanisms are `config.rules` disable exceptions in
+   * a11y-exceptions.json.
+   */
+  options?: Record<string, unknown>;
 }
 
 export interface A11yRuntimeCheckInput {
@@ -218,6 +226,18 @@ export function evaluateA11yRuntimePolicy(input: A11yRuntimeCheckInput): A11yRun
   if (a11y.disable === true) {
     failures.push(
       `${input.storyId}: effective parameters.a11y.disable=true is not allowed on protected stories (global, meta, and story parameters are merged before this check runs)`
+    );
+  }
+
+  // Forbid a11y.options on protected stories. Storybook a11y run options (e.g. runOnly, per-run
+  // rules config) can narrow the axe scan scope in ways that are just as dangerous as disabling
+  // individual rules. No whitelisted options exist — any a11y.options on a critical story is an
+  // unsupported narrowing attempt and must fail the policy.
+  if (a11y.options && typeof a11y.options === "object" && Object.keys(a11y.options).length > 0) {
+    failures.push(
+      `${input.storyId}: effective parameters.a11y.options is not allowed on protected stories — ` +
+        `axe run options can narrow scan scope (e.g. runOnly, rules). Remove a11y.options or ` +
+        `move this story out of the protected matrix.`
     );
   }
 

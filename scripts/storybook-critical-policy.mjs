@@ -320,6 +320,23 @@ export function evaluateCriticalStoryPolicy({
       );
     }
 
+    // Fail closed: if the effective (merged) Storybook index shows "no-tests" on a protected
+    // story, it would cause the test runner to skip the story entirely regardless of the "critical"
+    // tag. This catches both story-level and meta/globally-inherited "no-tests".
+    if (
+      storybookIndex.entries &&
+      story.id in storybookIndex.entries &&
+      Array.isArray(storybookIndex.entries[story.id].tags) &&
+      storybookIndex.entries[story.id].tags.includes("no-tests")
+    ) {
+      failures.push(
+        `${story.id}: story has "no-tests" tag in the built Storybook index (effective tags: ` +
+          `${JSON.stringify(storybookIndex.entries[story.id].tags)}). A protected story must ` +
+          `never be silently omitted from test execution. Remove "no-tests" from this story, ` +
+          `its component meta, or any inherited tag source.`
+      );
+    }
+
     const disabledRules = extractA11yConfigRules(block);
     for (const rule of disabledRules) {
       const key = `${story.id}::${rule}`;

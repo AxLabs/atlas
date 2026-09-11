@@ -62,10 +62,16 @@ Proven in CI for both browsers:
 
 - **Select** — keyboard open, typeahead navigation, keyboard selection, and focus return to the
   trigger
-- **Dialog** — keyboard focus stays on dialog controls, Escape close, and focus return to the
-  trigger. CI does **not** assert wrap-around across Chromium and WebKit.
-- **DropdownMenu / Tooltip / Form / Button** — the keyboard and association checks in
-  `visual-tests/cross-browser.spec.ts`
+- **Dialog** — keyboard navigation between dialog controls (Cancel → Continue → boundary probe),
+  Escape close, and focus return to the trigger. The boundary probe confirms focus cannot escape the
+  modal; it accepts Base UI focus-guard sentinel elements and does not require a strict first/last
+  wrap assertion (to avoid cross-engine flakiness).
+- **DropdownMenu** — keyboard open, item navigation, activation of the intended item (proven via
+  observable `onSelect` state), and focus return to the trigger
+- **Tooltip** — keyboard focus shows the tooltip; Escape dismisses it and returns focus to trigger
+- **Form** — Tab reaches the enabled input in expected order; error state (aria-invalid, accessible
+  description) survives keyboard interaction; disabled fields are not keyboard-focusable via Tab
+- **Button** — native button semantics and disabled state
 
 ```bash
 pnpm --filter @atlas/ui test:storybook:cross-browser
@@ -87,10 +93,21 @@ baselines are Chromium-only** and committed under `packages/ui/visual-tests/__sn
 Comparison uses a tight `maxDiffPixelRatio` of `0.005` after canonical GitHub-hosted `ubuntu-24.04`
 Chromium capture.
 
-Element-scoped baselines prove pixel stability of the captured element only, not full-page layout:
-`dialog-open` captures the dialog surface itself (not the backdrop/overlay dimming behind it), and
-`select-open` captures only the listbox, so its desktop and mobile baselines can be pixel-identical
-when the listbox content doesn't resize between viewports — that is expected, not a coverage gap.
+Element-scoped baselines prove pixel stability of the captured element only, not full-page layout.
+Coverage notes:
+
+- `dialog-open` captures the dialog surface itself (not the backdrop/overlay dimming behind it).
+- `select-open` captures only the listbox; its desktop and mobile baselines can be pixel-identical
+  when the listbox content doesn't resize between viewports — that is expected.
+- `empty-state` and `error-fallback` use a responsive container (`width: 100%; max-width: 640px`) so
+  mobile baselines capture actual responsive rendering at 390 px rather than overflow from a fixed
+  500 px wrapper.
+- `Select`, `Dialog`, `DropdownMenu`, and `Tooltip` visual screenshots capture the trigger or
+  overlay element individually. Full-composition screenshots (trigger + open overlay in one frame)
+  are not included because the backdrop/portal z-stacking makes them layout-sensitive and prone to
+  flakiness; this is a documented coverage boundary, not a gap — the open portal surface is
+  exercised by the `AxeOpen*` Storybook interaction stories (axe audit) and the cross-browser
+  Playwright tests (keyboard interaction).
 
 ```bash
 pnpm --filter @atlas/ui build-storybook
@@ -100,38 +117,29 @@ pnpm --filter @atlas/ui test:visual
 #### Updating baselines (maintainers only)
 
 Never update baselines to silence CI. Review the diff, confirm the visual change is intentional,
-then:
+then follow the canonical procedure below.
 
-```bash
-pnpm --filter @atlas/ui build-storybook
-pnpm --filter @atlas/ui test:visual:update
-```
+**Canonical baseline-update procedure** (the only accepted source of truth):
 
-**Canonical environment:** the only source of truth for committed baselines is the GitHub-hosted
-`ubuntu-24.04` runner used by the `ui-quality` workflow (`playwright install --with-deps chromium`).
-Element-scoped baselines are captured from Storybook static iframes with `locale: en-US`,
-`timezoneId: UTC`, and `reducedMotion: reduce`.
+1. Trigger the **Update Visual Baselines** workflow manually via the GitHub Actions UI
+   (`Actions → Update Visual Baselines → Run workflow`). This runs on the same `ubuntu-24.04`
+   GitHub-hosted runner as regular UI Quality CI.
+2. Wait for the workflow to complete. Download the `candidate-visual-baselines-<run-id>` artifact
+   from the workflow run summary.
+3. **Review every PNG carefully.** Confirm each visual change is intentional.
+4. Copy the reviewed PNGs into `packages/ui/visual-tests/__snapshots__/visual.spec.ts/`.
+5. Commit the reviewed PNGs on a branch and open a PR.
+6. The regular `ui-quality` workflow verifies the new baselines on that PR.
 
-Docker (including the Noble container below) is a **close Linux reproduction for local debugging
-only** — it is not equivalent to the GitHub-hosted runner. Font hinting and other rasterization
-details can still differ even with a matching Playwright version, which can produce baselines that
-pass locally but diff in CI (or vice versa):
+The update workflow does **not** auto-commit or auto-approve visual changes — a human review step is
+required before any baseline lands on `main`.
 
-```bash
-pw_version=$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')
-docker run --rm \
-  --user "$(id -u):$(id -g)" \
-  -v "$PWD:/work" -w /work/packages/ui \
-  "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-  bash -lc 'corepack enable && pnpm build-storybook && pnpm test:visual:update'
-```
-
-**Do not commit baselines generated locally or in Docker.** Open a draft PR and let the `ui-quality`
-workflow regenerate and confirm the diff on the canonical GitHub-hosted runner first; a committed
-baseline update must ultimately match what that runner produces.
+**Do not capture baselines locally or in Docker.** Font hinting and other rasterization details
+differ from the GitHub-hosted runner even with the same Playwright version; locally-captured
+baselines can pass locally but diff in CI (or vice versa).
 
 CI uploads `test-results/`, `playwright-report-visual/`, and `playwright-report-storybook/` when
-visual tests fail.
+visual tests fail (HTML reports are generated only in CI via the `CI=true` environment variable).
 
 ## Writing critical stories
 

@@ -325,4 +325,39 @@ describe("runtime policy against Storybook's real composed parameters", () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  // Issue 3: a11y.options narrowing detection
+  it("6. fails when story-level a11y.options is set (can narrow scan scope)", () => {
+    const storyWithOptions = {
+      ...CRITICAL_STORY_NO_A11Y,
+      parameters: { a11y: { options: { runOnly: { type: "tag", values: ["wcag2a"] } } } },
+    };
+    const { id, parameters } = composedA11yParameters(
+      storyWithOptions,
+      META_NO_A11Y,
+      undefined,
+      "StoryLevelOptions"
+    );
+    const result = evaluateWithRawExceptions(id, parameters, { version: 1, exceptions: [] });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/a11y\.options is not allowed/);
+  });
+
+  it("7. fails when meta-level a11y.options is inherited by a protected story", () => {
+    const metaWithOptions = {
+      ...META_NO_A11Y,
+      parameters: { a11y: { options: { runOnly: { type: "rule", values: ["color-contrast"] } } } },
+    };
+    const { id, parameters } = composedA11yParameters(
+      CRITICAL_STORY_NO_A11Y,
+      metaWithOptions,
+      undefined,
+      "InheritsMetaOptions"
+    );
+    // Prove the inheritance actually happened before asserting on the policy decision.
+    expect(parameters.a11y?.options).toBeDefined();
+    const result = evaluateWithRawExceptions(id, parameters, { version: 1, exceptions: [] });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/a11y\.options is not allowed/);
+  });
 });

@@ -11,7 +11,9 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   workers: 1,
-  reporter: "list",
+  reporter: process.env.CI
+    ? [["list"], ["html", { outputFolder: "playwright-report-visual", open: "never" }]]
+    : "list",
   snapshotPathTemplate: "{testDir}/__snapshots__/{testFilePath}/{arg}{-projectName}{ext}",
   expect: {
     toHaveScreenshot: {

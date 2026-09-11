@@ -30,3 +30,11 @@ export const KeyboardInteractionRuleDisable: Story = {
   },
   play: async () => {},
 };
+
+// Negative-test fixture: story-level "no-tests" on a protected story.
+// The static policy detects this via the built Storybook index (where Storybook records effective
+// tags). The runtime policy (test-runner.ts) detects it via storyContext.tags in postVisit.
+export const KeyboardInteractionWithNoTests: Story = {
+  tags: ["critical", "no-tests"],
+  play: async () => {},
+};
