@@ -50,6 +50,20 @@ async function highlightedSelectOption(page: Page) {
   });
 }
 
+// Strictly `document.activeElement`, unlike `highlightedSelectOption`'s `data-highlighted`/
+// `aria-activedescendant` fallbacks: this is the exact element a subsequent
+// `page.keyboard.press("Enter")` will target, so polling this specifically (rather than the
+// broader visual-highlight signal) proves real DOM focus reached the matched option before commit.
+async function focusedOptionLabel(page: Page) {
+  return page.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.getAttribute("role") === "option") {
+      return (active.textContent || "").replace(/\s+/g, " ").trim();
+    }
+    return null;
+  });
+}
+
 test.describe("Select keyboard composition", () => {
   test("opens, navigates, selects, and restores focus", async ({ page, baseURL }) => {
     await gotoStory(page, baseURL!, "ui-select--keyboard-interaction");
@@ -65,6 +79,13 @@ test.describe("Select keyboard composition", () => {
     // focus stays on the combobox does not move the highlighted option in WebKit.
     await page.keyboard.press("r");
     await expect.poll(async () => highlightedSelectOption(page)).toBe("React");
+
+    // Base UI moves real DOM focus to the matched option on a scheduled animation frame rather
+    // than synchronously with the typeahead match, so the visual highlight above can settle
+    // before focus itself lands. Wait for focus specifically — not just the highlight signal —
+    // so Enter (which only commits when it targets the highlighted option directly) is
+    // dispatched to "React" in every engine instead of racing a still-in-flight focus move.
+    await expect.poll(async () => focusedOptionLabel(page)).toBe("React");
 
     // Select from the existing keyboard state (no option `.click()`/`.press()`), so this proves a
     // genuine end-to-end keyboard action rather than a locator-focused synthetic key dispatch.
