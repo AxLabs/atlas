@@ -8,6 +8,7 @@ import {
   extractSectionBody,
   extractSectionDate,
 } from "./extract-changelog-section.mjs";
+import { buildPlatformReleaseBody, parseChangelogEntries } from "./root-release-changelog.mjs";
 import { assertPreOnePointZero, parseSemver } from "./semver-utils.mjs";
 
 const ATLAS_REPO_COMPARE = "https://github.com/blitzcraftlabs/atlas/compare";
@@ -47,17 +48,20 @@ export function collectPackageChangelogSections(version, repoRoot = process.cwd(
 }
 
 export function mergeChangelogSectionBodies(sections) {
-  const bodies = sections.map((entry) => extractSectionBody(entry.section).trim()).filter(Boolean);
-
-  const uniqueBodies = [...new Set(bodies)];
-  return uniqueBodies.join("\n\n").trim();
+  return buildPlatformReleaseBody({
+    workspaceBodies: sections.map((entry) => ({
+      packageName: entry.name,
+      body: extractSectionBody(entry.section),
+    })),
+  });
 }
 
-/** Merge root [Unreleased] content with workspace-generated release bodies, deduplicating identical text. */
-export function mergeReleaseBodies(...bodies) {
-  const parts = bodies.map((body) => body.trim()).filter(Boolean);
-  const unique = [...new Set(parts)];
-  return unique.join("\n\n").trim();
+/** Merge root [Unreleased] content with workspace-generated release bodies. */
+export function mergeReleaseBodies(unreleasedBody, workspaceBody) {
+  return buildPlatformReleaseBody({
+    unreleasedBody,
+    workspaceBodies: [{ body: workspaceBody ?? "" }],
+  });
 }
 
 export function extractUnreleasedBody(rootContent) {
@@ -197,7 +201,7 @@ export function updateChangelogLinkReferences(rootContent, version, previousVers
 
 function insertOrUpdateVersionSection(rootContent, version, releaseBody, dateLine) {
   const header = dateLine ? `## [${version}] - ${dateLine}` : `## [${version}]`;
-  const newSection = `${header}\n${releaseBody.trim()}\n`;
+  const newSection = `${header}\n\n${releaseBody.trim()}\n`;
   const escaped = version.replace(/\./g, "\\.");
   const headerPattern = new RegExp(
     `^##\\s+(?:\\[${escaped}\\]|${escaped})(?:\\s+-\\s+.+)?\\s*$`,
@@ -236,9 +240,30 @@ function insertOrUpdateVersionSection(rootContent, version, releaseBody, dateLin
   return `${before}\n\n${newSection.trim()}\n\n${after}`;
 }
 
-export function updateRootChangelog(rootContent, version, workspaceBody, dateLine) {
+function workspaceBodiesFromInput(workspaceInput) {
+  if (!workspaceInput) {
+    return [];
+  }
+
+  if (Array.isArray(workspaceInput)) {
+    return workspaceInput.map((entry) => ({
+      packageName: entry.name,
+      body: extractSectionBody(entry.section),
+    }));
+  }
+
+  return [{ body: String(workspaceInput) }];
+}
+
+export function updateRootChangelog(rootContent, version, workspaceInput, dateLine) {
   const unreleasedBody = extractUnreleasedBody(rootContent);
-  const releaseBody = mergeReleaseBodies(unreleasedBody, workspaceBody);
+  const existingSection = extractChangelogSection(rootContent, version);
+  const existingBody = existingSection ? extractSectionBody(existingSection) : "";
+  const releaseBody = buildPlatformReleaseBody({
+    existingBody,
+    unreleasedBody,
+    workspaceBodies: workspaceBodiesFromInput(workspaceInput),
+  });
 
   let content = resetUnreleasedSection(rootContent);
   content = insertOrUpdateVersionSection(content, version, releaseBody, dateLine);
@@ -259,8 +284,11 @@ export function consolidateAtlasRelease(repoRoot = process.cwd()) {
 
   const packageSections = collectPackageChangelogSections(version, repoRoot);
   const workspaceBody = mergeChangelogSectionBodies(packageSections);
+  const hasWorkspaceEntries = packageSections.some(
+    (entry) => parseChangelogEntries(extractSectionBody(entry.section)).length > 0,
+  );
 
-  if (!workspaceBody && packageSections.length === 0) {
+  if (!hasWorkspaceEntries && packageSections.length === 0) {
     throw new Error(
       `No workspace changelog sections found for Atlas version ${version}. Was changeset version run?`,
     );
@@ -272,7 +300,7 @@ export function consolidateAtlasRelease(repoRoot = process.cwd()) {
 
   const rootChangelogPath = path.join(repoRoot, "CHANGELOG.md");
   const rootContent = readFileSync(rootChangelogPath, "utf8");
-  const updatedRoot = updateRootChangelog(rootContent, version, workspaceBody, dateLine);
+  const updatedRoot = updateRootChangelog(rootContent, version, packageSections, dateLine);
   writeFileSync(rootChangelogPath, updatedRoot.endsWith("\n") ? updatedRoot : `${updatedRoot}\n`, "utf8");
 
   syncWorkspaceVersions(version, repoRoot);

@@ -207,13 +207,17 @@ returns. They are not independently supported package release histories.
 After `changeset version`, `scripts/consolidate-atlas-release.mjs`:
 
 1. Reads workspace package changelogs written by Changesets
-2. Moves everything currently under root `[Unreleased]` into the new release section (then resets
-   `[Unreleased]` to empty)
-3. Merges workspace release bodies into that section, deduplicating identical content
-4. Updates root `CHANGELOG.md` **without discarding prior release sections or link references**
-5. Advances the `[Unreleased]` compare link and adds/updates the new version link reference
-6. Syncs versions across root and workspaces
-7. **Does not delete** workspace package changelogs (required by `changesets/action`)
+2. Parses those sections into structured entries instead of concatenating raw Markdown bodies
+3. Drops dependency-only and package-version-propagation bullets (workspace changelogs keep them)
+4. Maps remaining descriptions to Keep a Changelog categories (`Added`, `Changed`, `Fixed`,
+   `Security`, …) rather than Changesets bump headings
+5. Moves root `[Unreleased]` into the new release section, merging with workspace entries and
+   dropping near-duplicate bullets, then resets `[Unreleased]` to empty
+6. Replaces an existing same-version root section in place so a second run is idempotent
+7. Updates root `CHANGELOG.md` **without discarding prior release sections or link references**
+8. Advances the `[Unreleased]` compare link and adds/updates the new version link reference
+9. Syncs versions across root and workspaces
+10. **Does not delete** workspace package changelogs (required by `changesets/action`)
 
 ---
 
