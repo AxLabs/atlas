@@ -146,9 +146,10 @@ describe("updateRootChangelog lifecycle", () => {
     assert.match(updated, /Web change/);
     const section = extractChangelogSection(updated, "0.1.1");
     assert.doesNotMatch(section, /## \[0\.1\.0\]/);
+    assert.equal((section.match(/### Added/g) ?? []).length, 1);
   });
 
-  it("replaces an existing version section in place", () => {
+  it("replaces an existing version section in place without duplicating the header", () => {
     const withExisting = updateRootChangelog(
       rootAt010,
       "0.1.1",
@@ -158,23 +159,19 @@ describe("updateRootChangelog lifecycle", () => {
     const refreshed = updateRootChangelog(
       withExisting,
       "0.1.1",
-      "### Added\n- Revised release body",
+      "### Added\n- Additional workspace note",
       "2026-08-20"
     );
-    assert.match(refreshed, /Revised release body/);
-    assert.doesNotMatch(refreshed, /First pass/);
+    assert.match(refreshed, /First pass/);
+    assert.match(refreshed, /Additional workspace note/);
+    assert.match(refreshed, /Pending release work/);
     assert.equal((refreshed.match(/## \[0\.1\.1\]/g) ?? []).length, 1);
   });
 
   it("is idempotent when run twice with equivalent workspace state", () => {
-    const first = updateRootChangelog(
-      rootAt010,
-      "0.1.1",
-      "### Fixed\n- Stable entry",
-      "2026-08-20"
-    );
-    const authoritativeWorkspaceBody = extractSectionBody(extractChangelogSection(first, "0.1.1"));
-    const second = updateRootChangelog(first, "0.1.1", authoritativeWorkspaceBody, "2026-08-20");
+    const workspaceBody = "### Fixed\n- Stable entry";
+    const first = updateRootChangelog(rootAt010, "0.1.1", workspaceBody, "2026-08-20");
+    const second = updateRootChangelog(first, "0.1.1", workspaceBody, "2026-08-20");
     assert.equal(second, first);
   });
 });
@@ -185,7 +182,7 @@ describe("mergeChangelogSectionBodies", () => {
       { name: "@atlas/ui", section: "## [0.1.1]\n\n### Added\n- Shared entry" },
       { name: "@atlas/web", section: "## [0.1.1]\n\n### Added\n- Shared entry" },
     ]);
-    assert.equal(body, "### Added\n- Shared entry");
+    assert.equal(body, "### Added\n\n- Shared entry");
   });
 
   it("merges distinct package section bodies", () => {
@@ -201,7 +198,7 @@ describe("mergeChangelogSectionBodies", () => {
 describe("mergeReleaseBodies", () => {
   it("deduplicates identical unreleased and workspace content", () => {
     const body = mergeReleaseBodies("### Added\n- Shared entry", "### Added\n- Shared entry");
-    assert.equal(body, "### Added\n- Shared entry");
+    assert.equal(body, "### Added\n\n- Shared entry");
   });
 });
 
