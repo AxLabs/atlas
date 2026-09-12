@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-12
+
+### Fixed
+
+- Fix release publication after an existing canonical release so post-release `main` commits no-op
+  when the published tag is a proven ancestor instead of attempting to retag it.
+
 ## [0.2.0] - 2026-09-12
 
 ### Added
@@ -43,5 +50,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.2.0
