@@ -159,14 +159,15 @@ After the Version PR merges to `main`, the Release workflow publishes fail-close
 1. Confirm root/workspace versions match and `CHANGELOG.md` contains that version
 2. Refuse historical `0.1.0` (never create `v0.1.0`; pending changesets are a safe no-op)
 3. Refuse publication when release-bearing `.changeset/*.md` files remain after a Version PR
-4. Refuse retagging or recreating a release for a different SHA
+4. Refuse retagging or recreating a release when an existing `vX.Y.Z` tag is not the target SHA and
+   is not a proven ancestor of current `main`
 5. Wait for required **CI**, **Security Audit**, and **UI Quality** checks on the release commit
 6. Reload GitHub tags, Releases, assets, and current `main`, then re-evaluate the original target
    SHA
 7. Create `vX.Y.Z` at that SHA only when the fresh decision is still `publish`
 8. Create the GitHub Release with changelog-derived notes, SBOM, and license notice
-9. No-op when the current version is already published with required assets, or is not a new
-   releasable version
+9. No-op when the current version is already published with required assets at this SHA, or at a
+   proven ancestor of current `main` after post-release commits
 10. Repair a missing Release or missing required SBOM at the same SHA without retagging
 
 Workspace packages are not published to npm. Publication does not claim signed provenance, SLSA, or

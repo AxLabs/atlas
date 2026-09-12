@@ -20,6 +20,7 @@ import {
   evaluateCurrentPublicationState,
   evaluateRequiredReleaseChecks,
   isFirstCanonicalPublicRelease,
+  isGitAncestor,
   publicationSideEffects,
   readPublicationInputs,
   sbomAssetNameForCommit,
@@ -245,20 +246,25 @@ function createGithubRelease(options, decision, notesPath, sbomPath) {
   uploadCanonicalReleaseAssets(options, decision.tag, sbomPath, { clobber: false });
 }
 
-function resolvePublicationState(options, targetSha, loadState) {
+function resolvePublicationState(options, targetSha, loadState, dependencies = {}) {
   const inputs = readPublicationInputs(options.repoRoot);
   const githubState = loadState(options);
   const resolvedSha = targetSha ?? options.targetSha ?? githubState.canonicalMainSha;
+  const isCommitAncestor =
+    dependencies.isCommitAncestor ??
+    ((ancestorSha, descendantSha) =>
+      isGitAncestor(ancestorSha, descendantSha, { repoRoot: options.repoRoot }));
   return evaluateCurrentPublicationState({
     inputs,
     githubState,
     targetSha: resolvedSha,
+    isCommitAncestor,
   });
 }
 
 export function preparePublication(options, dependencies = {}) {
   const loadState = dependencies.loadGithubState ?? loadGithubState;
-  const evaluated = resolvePublicationState(options, options.targetSha, loadState);
+  const evaluated = resolvePublicationState(options, options.targetSha, loadState, dependencies);
   const { decision, inputs, githubState, targetSha } = evaluated;
 
   const outputDir = options.outputDir ?? path.join(options.repoRoot, "artifacts");
@@ -327,7 +333,7 @@ export function runPublication(options, dependencies = {}) {
   const wait = dependencies.waitForRequiredChecks ?? waitForRequiredChecks;
   const apply = dependencies.applyPublication ?? applyPublication;
 
-  const prepared = preparePublication(options, { loadGithubState: loadState });
+  const prepared = preparePublication(options, dependencies);
   writeDecision(prepared, options);
 
   if (prepared.decision.action === "noop") {
@@ -344,7 +350,7 @@ export function runPublication(options, dependencies = {}) {
     wait(options, prepared.targetSha);
   }
 
-  const fresh = resolvePublicationState(options, prepared.targetSha, loadState);
+  const fresh = resolvePublicationState(options, prepared.targetSha, loadState, dependencies);
   if (fresh.decision.action !== prepared.decision.action) {
     process.stdout.write(
       `Release decision after revalidation: ${fresh.decision.action}\n  Reason: ${fresh.decision.reason}\n`
