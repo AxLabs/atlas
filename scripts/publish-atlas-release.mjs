@@ -15,14 +15,14 @@ import { generateSpdxSbom } from "./generate-sbom.mjs";
 import {
   PublicationError,
   REQUIRED_RELEASE_CHECK_WORKFLOWS,
+  REQUIRED_WORKFLOW_RUN_JSON_FIELDS,
   buildCanonicalReleaseNotes,
-  evaluatePublicationDecision,
+  evaluateCurrentPublicationState,
   evaluateRequiredReleaseChecks,
   isFirstCanonicalPublicRelease,
   publicationSideEffects,
   readPublicationInputs,
   sbomAssetNameForCommit,
-  tagNameForVersion,
 } from "./release-publication.mjs";
 
 function parseArgs(argv) {
@@ -147,6 +147,7 @@ function waitForRequiredChecks(options, sha) {
   const pollMs = Number(process.env.ATLAS_RELEASE_CHECK_POLL_MS ?? 30_000);
   const started = Date.now();
   const required = new Set(REQUIRED_RELEASE_CHECK_WORKFLOWS);
+  // JSON fields include databaseId and attempt so the evaluator can order runs.
 
   while (Date.now() - started < timeoutMs) {
     const raw = runGh(
@@ -158,7 +159,7 @@ function waitForRequiredChecks(options, sha) {
         "--commit",
         sha,
         "--json",
-        "name,conclusion,status,headSha,workflowName",
+        REQUIRED_WORKFLOW_RUN_JSON_FIELDS.join(","),
       ],
       options
     );
@@ -230,22 +231,21 @@ function createGithubRelease(options, decision, notesPath, sbomPath) {
   uploadCanonicalReleaseAssets(options, decision.tag, sbomPath, { clobber: false });
 }
 
-export function preparePublication(options) {
+function resolvePublicationState(options, targetSha, loadState) {
   const inputs = readPublicationInputs(options.repoRoot);
-  const githubState = loadGithubState(options);
-  const targetSha = options.targetSha ?? githubState.canonicalMainSha;
-  if (!targetSha) {
-    throw new PublicationError("Missing target SHA for publication", { code: "MISSING_SHA" });
-  }
-
-  const decision = evaluatePublicationDecision({
-    ...inputs,
-    proposedTag: tagNameForVersion(inputs.rootVersion),
-    existingTags: githubState.existingTags,
-    existingReleases: githubState.existingReleases,
-    targetSha,
-    canonicalMainSha: githubState.canonicalMainSha ?? targetSha,
+  const githubState = loadState(options);
+  const resolvedSha = targetSha ?? options.targetSha ?? githubState.canonicalMainSha;
+  return evaluateCurrentPublicationState({
+    inputs,
+    githubState,
+    targetSha: resolvedSha,
   });
+}
+
+export function preparePublication(options, dependencies = {}) {
+  const loadState = dependencies.loadGithubState ?? loadGithubState;
+  const evaluated = resolvePublicationState(options, options.targetSha, loadState);
+  const { decision, inputs, githubState, targetSha } = evaluated;
 
   const outputDir = options.outputDir ?? path.join(options.repoRoot, "artifacts");
   const sbom = writeSbom(options.repoRoot, targetSha, outputDir);
@@ -268,55 +268,94 @@ export function preparePublication(options) {
   };
 }
 
+function writeDecision(prepared, options) {
+  const { decision, targetSha, sbom, notesPath } = prepared;
+  process.stdout.write(
+    [
+      `Release decision: ${decision.action}`,
+      `  Version: ${decision.version}`,
+      `  Tag: ${decision.tag}`,
+      `  SHA: ${targetSha}`,
+      `  Reason: ${decision.reason}`,
+      `  SBOM: ${sbom.filePath} (${sbom.packageCount} packages)`,
+      `  Notes: ${notesPath}`,
+      options.dryRun
+        ? "  Mode: dry-run (no tag or GitHub Release will be created)"
+        : "  Mode: live",
+      "",
+    ].join("\n")
+  );
+}
+
+export function applyPublication(options, prepared) {
+  const { decision, targetSha, sbom, notesPath } = prepared;
+  const effects = publicationSideEffects(decision.action);
+  if (effects.createTag) {
+    createGitTag(options, decision.tag, targetSha);
+  }
+  if (effects.createRelease) {
+    createGithubRelease(options, decision, notesPath, sbom.filePath);
+  } else if (effects.uploadAssets) {
+    uploadCanonicalReleaseAssets(options, decision.tag, sbom.filePath, {
+      clobber: effects.clobberExactAssets,
+    });
+  }
+  process.stdout.write(`✓ Published ${decision.tag}\n`);
+}
+
+/**
+ * Live publication. After required checks succeed, GitHub state is reloaded
+ * and the original target SHA is re-evaluated. Mutation uses only that fresh
+ * decision. Workflow concurrency (`cancel-in-progress`) is not a substitute.
+ */
+export function runPublication(options, dependencies = {}) {
+  const loadState = dependencies.loadGithubState ?? loadGithubState;
+  const wait = dependencies.waitForRequiredChecks ?? waitForRequiredChecks;
+  const apply = dependencies.applyPublication ?? applyPublication;
+
+  const prepared = preparePublication(options, { loadGithubState: loadState });
+  writeDecision(prepared, options);
+
+  if (prepared.decision.action === "noop") {
+    process.stdout.write("✓ No publication required\n");
+    return prepared;
+  }
+
+  if (options.dryRun) {
+    process.stdout.write("✓ Publication prerequisites satisfied (dry-run)\n");
+    return prepared;
+  }
+
+  if (!options.skipChecks) {
+    wait(options, prepared.targetSha);
+  }
+
+  const fresh = resolvePublicationState(options, prepared.targetSha, loadState);
+  if (fresh.decision.action !== prepared.decision.action) {
+    process.stdout.write(
+      `Release decision after revalidation: ${fresh.decision.action}\n  Reason: ${fresh.decision.reason}\n`
+    );
+  }
+
+  if (fresh.decision.action === "noop") {
+    process.stdout.write("✓ No publication required\n");
+    return { ...prepared, decision: fresh.decision, githubState: fresh.githubState };
+  }
+
+  const toApply = {
+    ...prepared,
+    decision: fresh.decision,
+    githubState: fresh.githubState,
+  };
+  apply(options, toApply);
+  return toApply;
+}
+
 function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
 
   try {
-    const prepared = preparePublication(options);
-    const { decision, targetSha, sbom, notesPath } = prepared;
-
-    process.stdout.write(
-      [
-        `Release decision: ${decision.action}`,
-        `  Version: ${decision.version}`,
-        `  Tag: ${decision.tag}`,
-        `  SHA: ${targetSha}`,
-        `  Reason: ${decision.reason}`,
-        `  SBOM: ${sbom.filePath} (${sbom.packageCount} packages)`,
-        `  Notes: ${notesPath}`,
-        options.dryRun
-          ? "  Mode: dry-run (no tag or GitHub Release will be created)"
-          : "  Mode: live",
-        "",
-      ].join("\n")
-    );
-
-    if (decision.action === "noop") {
-      process.stdout.write("✓ No publication required\n");
-      return;
-    }
-
-    if (options.dryRun) {
-      process.stdout.write("✓ Publication prerequisites satisfied (dry-run)\n");
-      return;
-    }
-
-    if (!options.skipChecks) {
-      waitForRequiredChecks(options, targetSha);
-    }
-
-    const effects = publicationSideEffects(decision.action);
-    if (effects.createTag) {
-      createGitTag(options, decision.tag, targetSha);
-    }
-    if (effects.createRelease) {
-      createGithubRelease(options, decision, notesPath, sbom.filePath);
-    } else if (effects.uploadAssets) {
-      uploadCanonicalReleaseAssets(options, decision.tag, sbom.filePath, {
-        clobber: effects.clobberExactAssets,
-      });
-    }
-    process.stdout.write(`✓ Published ${decision.tag}\n`);
+    runPublication(options);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`Publication failed: ${message}\n`);

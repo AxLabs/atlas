@@ -5,17 +5,20 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { generateSpdxSbom } from "../generate-sbom.mjs";
-import { preparePublication } from "../publish-atlas-release.mjs";
+import { preparePublication, runPublication } from "../publish-atlas-release.mjs";
 import {
   PublicationError,
   REQUIRED_RELEASE_CHECK_WORKFLOWS,
+  REQUIRED_WORKFLOW_RUN_JSON_FIELDS,
   buildCanonicalReleaseNotes,
   collectVersionConsistencyErrors,
+  evaluateCurrentPublicationState,
   evaluatePublicationDecision,
   evaluateRequiredReleaseChecks,
   isFirstCanonicalPublicRelease,
   isHistoricalUnpublishedVersion,
   publicationSideEffects,
+  readPublicationInputs,
   sbomAssetNameForCommit,
   tagNameForVersion,
 } from "../release-publication.mjs";
@@ -290,24 +293,55 @@ describe("publication decision", () => {
 
 describe("required release checks", () => {
   const sha = "abc123def456abc123def456abc123def456abcd";
+  const otherSha = "ffffffffffffffffffffffffffffffffffffffff";
+
+  function passingOthers(extra = []) {
+    return [
+      {
+        name: "Security Audit",
+        conclusion: "success",
+        status: "completed",
+        headSha: sha,
+        databaseId: 1,
+      },
+      {
+        name: "UI Quality",
+        conclusion: "success",
+        status: "completed",
+        headSha: sha,
+        databaseId: 2,
+      },
+      ...extra,
+    ];
+  }
 
   it("requires CI, Security Audit, and UI Quality", () => {
     assert.deepEqual([...REQUIRED_RELEASE_CHECK_WORKFLOWS], ["CI", "Security Audit", "UI Quality"]);
   });
 
+  it("queries GitHub with the evaluator ordering fields", () => {
+    assert.equal(REQUIRED_WORKFLOW_RUN_JSON_FIELDS.includes("databaseId"), true);
+    assert.equal(REQUIRED_WORKFLOW_RUN_JSON_FIELDS.includes("attempt"), true);
+  });
+
   it("accepts success only for the exact target SHA", () => {
     const result = evaluateRequiredReleaseChecks(
-      [
+      passingOthers([
         {
           name: "CI",
           conclusion: "success",
           status: "completed",
-          headSha: "ffffffffffffffffffffffffffffffffffffffff",
+          headSha: otherSha,
+          databaseId: 200,
         },
-        { name: "CI", conclusion: "success", status: "completed", headSha: sha },
-        { name: "Security Audit", conclusion: "success", status: "completed", headSha: sha },
-        { name: "UI Quality", conclusion: "success", status: "completed", headSha: sha },
-      ],
+        {
+          name: "CI",
+          conclusion: "success",
+          status: "completed",
+          headSha: sha,
+          databaseId: 100,
+        },
+      ]),
       { commitSha: sha }
     );
     assert.deepEqual(result.failed, []);
@@ -316,54 +350,125 @@ describe("required release checks", () => {
 
   it("ignores a successful run from another SHA", () => {
     const result = evaluateRequiredReleaseChecks(
-      [
+      passingOthers([
         {
           name: "CI",
           conclusion: "success",
           status: "completed",
-          headSha: "ffffffffffffffffffffffffffffffffffffffff",
+          headSha: otherSha,
+          databaseId: 101,
         },
-        { name: "Security Audit", conclusion: "success", status: "completed", headSha: sha },
-        { name: "UI Quality", conclusion: "success", status: "completed", headSha: sha },
-      ],
+      ]),
       { commitSha: sha }
     );
     assert.deepEqual(result.pending, ["CI"]);
   });
 
+  it("does not let a newer other-SHA success mask the target SHA", () => {
+    const result = evaluateRequiredReleaseChecks(
+      passingOthers([
+        {
+          name: "CI",
+          conclusion: "failure",
+          status: "completed",
+          headSha: sha,
+          databaseId: 100,
+        },
+        {
+          name: "CI",
+          conclusion: "success",
+          status: "completed",
+          headSha: otherSha,
+          databaseId: 101,
+        },
+      ]),
+      { commitSha: sha }
+    );
+    assert.equal(result.failed[0]?.name, "CI");
+    assert.equal(result.failed[0]?.conclusion, "failure");
+  });
+
   it("fails closed on cancelled or failed required runs without a successful retry", () => {
     const cancelled = evaluateRequiredReleaseChecks(
-      [{ name: "CI", conclusion: "cancelled", status: "completed", headSha: sha }],
+      [{ name: "CI", conclusion: "cancelled", status: "completed", headSha: sha, databaseId: 10 }],
       { commitSha: sha }
     );
     assert.equal(cancelled.failed[0]?.conclusion, "cancelled");
 
     const failed = evaluateRequiredReleaseChecks(
-      [{ name: "UI Quality", conclusion: "failure", status: "completed", headSha: sha }],
+      [
+        {
+          name: "UI Quality",
+          conclusion: "failure",
+          status: "completed",
+          headSha: sha,
+          databaseId: 11,
+        },
+      ],
       { commitSha: sha }
     );
     assert.equal(failed.failed[0]?.conclusion, "failure");
   });
 
-  it("treats a later successful retry on the same SHA as resolved", () => {
+  it("treats failure then a later successful retry as success", () => {
     const result = evaluateRequiredReleaseChecks(
-      [
-        { name: "CI", conclusion: "failure", status: "completed", headSha: sha },
-        { name: "CI", conclusion: "success", status: "completed", headSha: sha },
-        { name: "Security Audit", conclusion: "success", status: "completed", headSha: sha },
-        { name: "UI Quality", conclusion: "success", status: "completed", headSha: sha },
-      ],
+      passingOthers([
+        { name: "CI", conclusion: "failure", status: "completed", headSha: sha, databaseId: 100 },
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha, databaseId: 101 },
+      ]),
       { commitSha: sha }
     );
     assert.deepEqual(result.failed, []);
     assert.deepEqual(result.pending, []);
   });
 
+  it("treats success then a later failure as failed", () => {
+    const result = evaluateRequiredReleaseChecks(
+      passingOthers([
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha, databaseId: 100 },
+        { name: "CI", conclusion: "failure", status: "completed", headSha: sha, databaseId: 101 },
+      ]),
+      { commitSha: sha }
+    );
+    assert.equal(result.failed[0]?.conclusion, "failure");
+    assert.deepEqual(result.pending, []);
+  });
+
+  it("treats failure then an in-progress retry as pending", () => {
+    const result = evaluateRequiredReleaseChecks(
+      passingOthers([
+        { name: "CI", conclusion: "failure", status: "completed", headSha: sha, databaseId: 100 },
+        { name: "CI", conclusion: null, status: "in_progress", headSha: sha, databaseId: 101 },
+      ]),
+      { commitSha: sha }
+    );
+    assert.deepEqual(result.failed, []);
+    assert.deepEqual(result.pending, ["CI"]);
+  });
+
+  it("treats success then an in-progress retry as pending", () => {
+    const result = evaluateRequiredReleaseChecks(
+      passingOthers([
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha, databaseId: 100 },
+        { name: "CI", conclusion: null, status: "in_progress", headSha: sha, databaseId: 101 },
+      ]),
+      { commitSha: sha }
+    );
+    assert.deepEqual(result.failed, []);
+    assert.deepEqual(result.pending, ["CI"]);
+  });
+
   it("keeps waiting when a required workflow is still pending", () => {
     const result = evaluateRequiredReleaseChecks(
       [
-        { name: "CI", conclusion: "success", status: "completed", headSha: sha },
-        { name: "Security Audit", conclusion: null, status: "in_progress", headSha: sha },
+        { name: "CI", conclusion: "success", status: "completed", headSha: sha, databaseId: 1 },
+        {
+          name: "Security Audit",
+          conclusion: null,
+          status: "in_progress",
+          headSha: sha,
+          databaseId: 2,
+        },
       ],
       { commitSha: sha }
     );
@@ -411,68 +516,17 @@ describe("SBOM generation failures", () => {
 
 describe("preparePublication dry-run", () => {
   it("writes notes and SBOM without requiring GitHub when state is provided", () => {
-    const dir = mkdtempSync(path.join(os.tmpdir(), "atlas-publish-dry-"));
-    const outputDir = path.join(dir, "artifacts");
-    writeFileSync(
-      path.join(dir, "package.json"),
-      JSON.stringify({ name: "@atlas/monorepo", version: "0.2.0", private: true })
-    );
-    mkdirSync(path.join(dir, "apps/web"), { recursive: true });
-    mkdirSync(path.join(dir, "packages/ui"), { recursive: true });
-    mkdirSync(path.join(dir, "packages/config"), { recursive: true });
-    mkdirSync(path.join(dir, "packages/consent"), { recursive: true });
-    mkdirSync(path.join(dir, "packages/project"), { recursive: true });
-    mkdirSync(path.join(dir, "packages/cli"), { recursive: true });
-    mkdirSync(path.join(dir, "apps/reference"), { recursive: true });
-    writeFileSync(
-      path.join(dir, "apps/web/package.json"),
-      JSON.stringify({ name: "@atlas/web", version: "0.2.0", private: true })
-    );
-    writeFileSync(
-      path.join(dir, "packages/ui/package.json"),
-      JSON.stringify({ name: "@atlas/ui", version: "0.2.0", private: true })
-    );
-    writeFileSync(
-      path.join(dir, "packages/config/package.json"),
-      JSON.stringify({ name: "@atlas/config", version: "0.2.0", private: true })
-    );
-    writeFileSync(
-      path.join(dir, "packages/consent/package.json"),
-      JSON.stringify({ name: "@atlas/consent", version: "0.2.0", private: true })
-    );
-    writeFileSync(
-      path.join(dir, "packages/project/package.json"),
-      JSON.stringify({ name: "@atlas/project", version: "0.2.0", private: true })
-    );
-    writeFileSync(
-      path.join(dir, "packages/cli/package.json"),
-      JSON.stringify({ name: "@atlas/cli", version: "0.2.0", private: true })
-    );
-    writeFileSync(
-      path.join(dir, "apps/reference/package.json"),
-      JSON.stringify({ name: "@atlas/reference", version: "0.2.0", private: true })
-    );
-    writeFileSync(path.join(dir, "CHANGELOG.md"), changelog020);
-    writeFileSync(
-      path.join(dir, "pnpm-lock.yaml"),
-      `lockfileVersion: '9.0'\npackages:\n  'example@1.0.0':\n    resolution: {integrity: sha512-test}\n`
-    );
-    const stateFile = path.join(dir, "state.json");
-    writeFileSync(
-      stateFile,
-      JSON.stringify({
+    const fixture = writePublicationFixture();
+    const prepared = preparePublication({
+      repoRoot: fixture.dir,
+      stateFile: fixture.writeState({
         existingTags: [],
         existingReleases: [],
         canonicalMainSha: "abc123",
-      })
-    );
-
-    const prepared = preparePublication({
-      repoRoot: dir,
-      stateFile,
+      }),
       skipGithub: false,
       dryRun: true,
-      outputDir,
+      outputDir: fixture.outputDir,
       targetSha: "abc123",
     });
 
@@ -482,3 +536,294 @@ describe("preparePublication dry-run", () => {
     assert.equal(prepared.sbom.packageCount > 0, true);
   });
 });
+
+describe("pre-mutation publication revalidation", () => {
+  const targetSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const movedMainSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+  function emptyGithubState(mainSha = targetSha) {
+    return {
+      existingTags: [],
+      existingReleases: [],
+      canonicalMainSha: mainSha,
+    };
+  }
+
+  function evaluateFresh(githubState) {
+    const fixture = writePublicationFixture();
+    return evaluateCurrentPublicationState({
+      inputs: readPublicationInputs(fixture.dir),
+      githubState,
+      targetSha,
+    });
+  }
+
+  it("fails closed with STALE_SHA when main moved while waiting", () => {
+    assert.equal(evaluateFresh(emptyGithubState(targetSha)).decision.action, "publish");
+    assert.throws(
+      () => evaluateFresh(emptyGithubState(movedMainSha)),
+      (error) => error instanceof PublicationError && error.code === "STALE_SHA"
+    );
+  });
+
+  it("becomes repair-release when the tag appears while waiting", () => {
+    const fresh = evaluateFresh({
+      existingTags: [{ name: "v0.2.0", sha: targetSha }],
+      existingReleases: [],
+      canonicalMainSha: targetSha,
+    });
+    assert.equal(fresh.decision.action, "repair-release");
+    assert.equal(publicationSideEffects(fresh.decision.action).createTag, false);
+  });
+
+  it("becomes noop when a complete Release appears while waiting", () => {
+    const fresh = evaluateFresh({
+      existingTags: [{ name: "v0.2.0", sha: targetSha }],
+      existingReleases: [
+        {
+          tagName: "v0.2.0",
+          sha: targetSha,
+          assets: [sbomAssetNameForCommit(targetSha), "LICENSE"],
+        },
+      ],
+      canonicalMainSha: targetSha,
+    });
+    assert.equal(fresh.decision.action, "noop");
+  });
+
+  it("fails closed with TAG_EXISTS when a conflicting tag appears while waiting", () => {
+    assert.throws(
+      () =>
+        evaluateFresh({
+          existingTags: [{ name: "v0.2.0", sha: movedMainSha }],
+          existingReleases: [],
+          canonicalMainSha: targetSha,
+        }),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+  });
+
+  it("reloads GitHub state after waiting and does not mutate from the pre-wait decision", () => {
+    const fixture = writePublicationFixture();
+    const events = [];
+    const applied = [];
+    const states = [
+      emptyGithubState(targetSha),
+      emptyGithubState(movedMainSha),
+    ];
+
+    assert.throws(
+      () =>
+        runPublication(
+          {
+            repoRoot: fixture.dir,
+            dryRun: false,
+            skipChecks: false,
+            outputDir: fixture.outputDir,
+            targetSha,
+          },
+          {
+            loadGithubState() {
+              events.push("load");
+              return states[events.filter((event) => event === "load").length - 1];
+            },
+            waitForRequiredChecks() {
+              events.push("wait");
+            },
+            applyPublication(_options, prepared) {
+              applied.push(prepared.decision.action);
+            },
+          }
+        ),
+      (error) => error instanceof PublicationError && error.code === "STALE_SHA"
+    );
+
+    assert.deepEqual(events, ["load", "wait", "load"]);
+    assert.deepEqual(applied, []);
+  });
+
+  it("does not create a second tag when the fresh decision is repair-release", () => {
+    const fixture = writePublicationFixture();
+    const applied = [];
+    const states = [
+      emptyGithubState(targetSha),
+      {
+        existingTags: [{ name: "v0.2.0", sha: targetSha }],
+        existingReleases: [],
+        canonicalMainSha: targetSha,
+      },
+    ];
+    let loadCount = 0;
+
+    const result = runPublication(
+      {
+        repoRoot: fixture.dir,
+        dryRun: false,
+        skipChecks: false,
+        outputDir: fixture.outputDir,
+        targetSha,
+      },
+      {
+        loadGithubState() {
+          const state = states[loadCount];
+          loadCount += 1;
+          return state;
+        },
+        waitForRequiredChecks() {},
+        applyPublication(_options, prepared) {
+          applied.push(prepared.decision);
+        },
+      }
+    );
+
+    assert.equal(result.decision.action, "repair-release");
+    assert.equal(applied[0]?.action, "repair-release");
+    assert.equal(publicationSideEffects(applied[0].action).createTag, false);
+    assert.equal(publicationSideEffects(applied[0].action).createRelease, true);
+  });
+
+  it("does not mutate when the fresh decision is noop", () => {
+    const fixture = writePublicationFixture();
+    const applied = [];
+    const states = [
+      emptyGithubState(targetSha),
+      {
+        existingTags: [{ name: "v0.2.0", sha: targetSha }],
+        existingReleases: [
+          {
+            tagName: "v0.2.0",
+            sha: targetSha,
+            assets: [sbomAssetNameForCommit(targetSha), "LICENSE"],
+          },
+        ],
+        canonicalMainSha: targetSha,
+      },
+    ];
+    let loadCount = 0;
+
+    const result = runPublication(
+      {
+        repoRoot: fixture.dir,
+        dryRun: false,
+        skipChecks: false,
+        outputDir: fixture.outputDir,
+        targetSha,
+      },
+      {
+        loadGithubState() {
+          const state = states[loadCount];
+          loadCount += 1;
+          return state;
+        },
+        waitForRequiredChecks() {},
+        applyPublication() {
+          applied.push("applied");
+        },
+      }
+    );
+
+    assert.equal(result.decision.action, "noop");
+    assert.deepEqual(applied, []);
+  });
+
+  it("does not mutate when a conflicting tag appears while waiting", () => {
+    const fixture = writePublicationFixture();
+    const applied = [];
+    const states = [
+      emptyGithubState(targetSha),
+      {
+        existingTags: [{ name: "v0.2.0", sha: movedMainSha }],
+        existingReleases: [],
+        canonicalMainSha: targetSha,
+      },
+    ];
+    let loadCount = 0;
+
+    assert.throws(
+      () =>
+        runPublication(
+          {
+            repoRoot: fixture.dir,
+            dryRun: false,
+            skipChecks: false,
+            outputDir: fixture.outputDir,
+            targetSha,
+          },
+          {
+            loadGithubState() {
+              const state = states[loadCount];
+              loadCount += 1;
+              return state;
+            },
+            waitForRequiredChecks() {},
+            applyPublication() {
+              applied.push("applied");
+            },
+          }
+        ),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+
+    assert.deepEqual(applied, []);
+    assert.equal(loadCount, 2);
+  });
+});
+
+function writePublicationFixture() {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "atlas-publish-dry-"));
+  const outputDir = path.join(dir, "artifacts");
+  writeFileSync(
+    path.join(dir, "package.json"),
+    JSON.stringify({ name: "@atlas/monorepo", version: "0.2.0", private: true })
+  );
+  mkdirSync(path.join(dir, "apps/web"), { recursive: true });
+  mkdirSync(path.join(dir, "packages/ui"), { recursive: true });
+  mkdirSync(path.join(dir, "packages/config"), { recursive: true });
+  mkdirSync(path.join(dir, "packages/consent"), { recursive: true });
+  mkdirSync(path.join(dir, "packages/project"), { recursive: true });
+  mkdirSync(path.join(dir, "packages/cli"), { recursive: true });
+  mkdirSync(path.join(dir, "apps/reference"), { recursive: true });
+  writeFileSync(
+    path.join(dir, "apps/web/package.json"),
+    JSON.stringify({ name: "@atlas/web", version: "0.2.0", private: true })
+  );
+  writeFileSync(
+    path.join(dir, "packages/ui/package.json"),
+    JSON.stringify({ name: "@atlas/ui", version: "0.2.0", private: true })
+  );
+  writeFileSync(
+    path.join(dir, "packages/config/package.json"),
+    JSON.stringify({ name: "@atlas/config", version: "0.2.0", private: true })
+  );
+  writeFileSync(
+    path.join(dir, "packages/consent/package.json"),
+    JSON.stringify({ name: "@atlas/consent", version: "0.2.0", private: true })
+  );
+  writeFileSync(
+    path.join(dir, "packages/project/package.json"),
+    JSON.stringify({ name: "@atlas/project", version: "0.2.0", private: true })
+  );
+  writeFileSync(
+    path.join(dir, "packages/cli/package.json"),
+    JSON.stringify({ name: "@atlas/cli", version: "0.2.0", private: true })
+  );
+  writeFileSync(
+    path.join(dir, "apps/reference/package.json"),
+    JSON.stringify({ name: "@atlas/reference", version: "0.2.0", private: true })
+  );
+  writeFileSync(path.join(dir, "CHANGELOG.md"), changelog020);
+  writeFileSync(
+    path.join(dir, "pnpm-lock.yaml"),
+    `lockfileVersion: '9.0'\npackages:\n  'example@1.0.0':\n    resolution: {integrity: sha512-test}\n`
+  );
+
+  return {
+    dir,
+    outputDir,
+    writeState(state) {
+      const stateFile = path.join(dir, "state.json");
+      writeFileSync(stateFile, JSON.stringify(state));
+      return stateFile;
+    },
+  };
+}

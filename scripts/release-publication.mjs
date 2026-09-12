@@ -21,6 +21,31 @@ export const REQUIRED_RELEASE_CHECK_WORKFLOWS = Object.freeze([
   "UI Quality",
 ]);
 
+/**
+ * Fields requested from `gh run list --json`. `databaseId` is GitHub's
+ * monotonically assigned workflow-run ID and is the primary ordering key.
+ * `attempt` is the re-run counter for that same run.
+ */
+export const REQUIRED_WORKFLOW_RUN_JSON_FIELDS = Object.freeze([
+  "name",
+  "conclusion",
+  "status",
+  "headSha",
+  "workflowName",
+  "databaseId",
+  "attempt",
+  "createdAt",
+  "updatedAt",
+]);
+
+const INCOMPLETE_WORKFLOW_STATUSES = new Set([
+  "queued",
+  "in_progress",
+  "waiting",
+  "requested",
+  "pending",
+]);
+
 export const REQUIRED_RELEASE_ASSET_LICENSE = "LICENSE";
 
 export class PublicationError extends Error {
@@ -79,58 +104,101 @@ export function publicationSideEffects(action) {
 }
 
 /**
+ * Normalize a `gh run list` row. Ordering uses `databaseId` then `runAttempt`,
+ * never `gh run list` array position (GitHub does not document that order).
+ *
+ * @param {Record<string, unknown>} run
+ */
+export function normalizeWorkflowRun(run) {
+  return {
+    name: String(run.name ?? run.workflowName ?? ""),
+    status: run.status ?? null,
+    conclusion: run.conclusion ?? null,
+    headSha: run.headSha ?? null,
+    databaseId: Number(run.databaseId ?? run.database_id ?? 0),
+    createdAt: run.createdAt ?? run.created_at ?? null,
+    runAttempt: Number(run.runAttempt ?? run.attempt ?? 0),
+    updatedAt: run.updatedAt ?? run.updated_at ?? null,
+  };
+}
+
+/**
+ * Compare two normalized runs. Later is greater.
+ *
+ * Rule: `databaseId` (monotonic GitHub workflow-run ID), then `runAttempt`
+ * (re-run of that same run), then `createdAt` as a last resort.
+ *
+ * @param {ReturnType<typeof normalizeWorkflowRun>} left
+ * @param {ReturnType<typeof normalizeWorkflowRun>} right
+ */
+export function compareWorkflowRunOrder(left, right) {
+  if (left.databaseId !== right.databaseId) {
+    return left.databaseId - right.databaseId;
+  }
+  if (left.runAttempt !== right.runAttempt) {
+    return left.runAttempt - right.runAttempt;
+  }
+  const leftCreated = Date.parse(String(left.createdAt ?? "")) || 0;
+  const rightCreated = Date.parse(String(right.createdAt ?? "")) || 0;
+  return leftCreated - rightCreated;
+}
+
+export function selectLatestWorkflowRun(runs) {
+  if (!runs || runs.length === 0) {
+    return null;
+  }
+  return [...runs].sort(compareWorkflowRunOrder).at(-1) ?? null;
+}
+
+function isIncompleteWorkflowStatus(status) {
+  return !status || status !== "completed" || INCOMPLETE_WORKFLOW_STATUSES.has(status);
+}
+
+/**
  * Evaluate required workflow runs for one exact commit.
  * `--commit <sha>` is the primary filter; `headSha` is a defense-in-depth check.
  *
- * A workflow is successful when at least one completed run on this SHA succeeded.
- * Prior unsuccessful completed runs on the same SHA are treated as resolved by that retry.
- * Cancelled, failed, or other unsuccessful conclusions without a later success fail closed.
+ * For each required workflow, only the latest run/attempt on this SHA counts.
+ * An older success does not mask a later failure; a later in-progress retry
+ * stays pending even if an older run failed.
  *
- * @param {Array<{ name?: string, workflowName?: string, conclusion?: string | null, status?: string | null, headSha?: string | null }>} runs
+ * @param {Array<Record<string, unknown>>} runs
  * @param {{ requiredWorkflows?: readonly string[], commitSha: string }} options
  * @returns {{ failed: Array<{ name: string, conclusion: string }>, pending: string[] }}
  */
 export function evaluateRequiredReleaseChecks(runs, options) {
   const requiredWorkflows = [...(options.requiredWorkflows ?? REQUIRED_RELEASE_CHECK_WORKFLOWS)];
   const commitSha = options.commitSha;
-  const relevant = (runs ?? []).filter((run) => {
-    const name = run.name ?? run.workflowName;
-    if (!name || !requiredWorkflows.includes(name)) {
-      return false;
-    }
-    if (run.headSha && run.headSha !== commitSha) {
-      return false;
-    }
-    return true;
-  });
+  const relevant = (runs ?? [])
+    .map((run) => normalizeWorkflowRun(run))
+    .filter((run) => {
+      if (!run.name || !requiredWorkflows.includes(run.name)) {
+        return false;
+      }
+      if (run.headSha && run.headSha !== commitSha) {
+        return false;
+      }
+      return true;
+    });
 
   const failed = [];
   const pending = [];
 
   for (const name of requiredWorkflows) {
-    const workflowRuns = relevant.filter((run) => (run.name ?? run.workflowName) === name);
-    const completed = workflowRuns.filter(
-      (run) => run.status === "completed" || Boolean(run.conclusion)
-    );
-    const successful = completed.filter((run) => run.conclusion === "success");
-    const unsuccessful = completed.filter(
-      (run) => run.conclusion && run.conclusion !== "success"
-    );
-
-    if (successful.length > 0) {
-      continue;
-    }
-    if (unsuccessful.length > 0) {
-      failed.push(
-        ...unsuccessful.map((run) => ({
-          name,
-          conclusion: run.conclusion ?? "unknown",
-        }))
-      );
+    const latest = selectLatestWorkflowRun(relevant.filter((run) => run.name === name));
+    if (!latest || isIncompleteWorkflowStatus(latest.status)) {
+      pending.push(name);
       continue;
     }
 
-    pending.push(name);
+    if (latest.conclusion === "success") {
+      continue;
+    }
+
+    failed.push({
+      name,
+      conclusion: latest.conclusion ?? "unknown",
+    });
   }
 
   return { failed, pending };
@@ -308,6 +376,44 @@ export function evaluatePublicationDecision(input) {
     tag,
     prerelease: isGithubPrerelease(rootVersion),
     reason: `Canonical public release ${tag} does not exist yet`,
+  };
+}
+
+/**
+ * Re-evaluate publication against freshly loaded GitHub state for a fixed
+ * target SHA. Call this immediately before mutation; do not reuse a decision
+ * computed before the required-check wait.
+ *
+ * @param {{
+ *   inputs: ReturnType<typeof readPublicationInputs>,
+ *   githubState: {
+ *     existingTags?: Array<{ name: string, sha?: string | null }>,
+ *     existingReleases?: Array<{ tagName: string, sha?: string | null, assets?: string[] }>,
+ *     canonicalMainSha?: string | null,
+ *   },
+ *   targetSha: string,
+ * }} options
+ */
+export function evaluateCurrentPublicationState(options) {
+  const { inputs, githubState, targetSha } = options;
+  if (!targetSha) {
+    throw new PublicationError("Missing target SHA for publication", { code: "MISSING_SHA" });
+  }
+
+  const decision = evaluatePublicationDecision({
+    ...inputs,
+    proposedTag: tagNameForVersion(inputs.rootVersion),
+    existingTags: githubState.existingTags,
+    existingReleases: githubState.existingReleases,
+    targetSha,
+    canonicalMainSha: githubState.canonicalMainSha ?? targetSha,
+  });
+
+  return {
+    decision,
+    inputs,
+    githubState,
+    targetSha,
   };
 }
 

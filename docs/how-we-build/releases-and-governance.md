@@ -144,7 +144,13 @@ workflows to run** when GitHub presents that option. This is not guaranteed on e
 depends on your settings.
 
 Publication still waits for required checks on the release commit before creating the canonical tag
-or GitHub Release.
+or GitHub Release. After those checks succeed, the publisher reloads GitHub state and re-evaluates
+the same target SHA immediately before mutation, so a moved `main` or a tag/Release that appeared
+while waiting cannot publish a stale decision. Workflow concurrency settings are not a substitute
+for that revalidation.
+
+Required checks use the latest workflow run/attempt on the exact SHA. A later successful retry
+passes; a later failure or in-progress retry overrides an older success.
 
 ### GitHub Release publication
 
@@ -155,11 +161,13 @@ After the Version PR merges to `main`, the Release workflow publishes fail-close
 3. Refuse publication when release-bearing `.changeset/*.md` files remain after a Version PR
 4. Refuse retagging or recreating a release for a different SHA
 5. Wait for required **CI**, **Security Audit**, and **UI Quality** checks on the release commit
-6. Create `vX.Y.Z` at that SHA
-7. Create the GitHub Release with changelog-derived notes, SBOM, and license notice
-8. No-op when the current version is already published with required assets, or is not a new
+6. Reload GitHub tags, Releases, assets, and current `main`, then re-evaluate the original target
+   SHA
+7. Create `vX.Y.Z` at that SHA only when the fresh decision is still `publish`
+8. Create the GitHub Release with changelog-derived notes, SBOM, and license notice
+9. No-op when the current version is already published with required assets, or is not a new
    releasable version
-9. Repair a missing Release or missing required SBOM at the same SHA without retagging
+10. Repair a missing Release or missing required SBOM at the same SHA without retagging
 
 Workspace packages are not published to npm. Publication does not claim signed provenance, SLSA, or
 a formal security audit.

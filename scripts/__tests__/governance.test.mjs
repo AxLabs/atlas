@@ -279,6 +279,16 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(publishJob, /packages:\s*write/);
     assert.doesNotMatch(publishJob, /id-token:\s*write/);
   });
+
+  it("keeps ordered workflow-run fields and post-wait revalidation in the publisher", () => {
+    const publisher = readFileSync(
+      path.join(process.cwd(), "scripts/publish-atlas-release.mjs"),
+      "utf8"
+    );
+    assert.match(publisher, /evaluateCurrentPublicationState/);
+    assert.match(publisher, /REQUIRED_WORKFLOW_RUN_JSON_FIELDS/);
+    assert.match(publisher, /databaseId/);
+  });
 });
 
 describe("package scripts", () => {

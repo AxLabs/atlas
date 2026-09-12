@@ -8,6 +8,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
+  # Do not treat this as the mutation-safety lock. The publisher reloads GitHub
+  # state after required checks and re-evaluates the original target SHA.
   cancel-in-progress: false
 
 permissions:
