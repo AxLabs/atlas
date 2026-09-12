@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 
 import { generateSpdxSbom } from "../generate-sbom.mjs";
-import { preparePublication, runPublication } from "../publish-atlas-release.mjs";
+import { createGitTag, preparePublication, runPublication } from "../publish-atlas-release.mjs";
 import {
   PublicationError,
   REQUIRED_RELEASE_CHECK_WORKFLOWS,
@@ -607,10 +608,7 @@ describe("pre-mutation publication revalidation", () => {
     const fixture = writePublicationFixture();
     const events = [];
     const applied = [];
-    const states = [
-      emptyGithubState(targetSha),
-      emptyGithubState(movedMainSha),
-    ];
+    const states = [emptyGithubState(targetSha), emptyGithubState(movedMainSha)];
 
     assert.throws(
       () =>
@@ -768,6 +766,121 @@ describe("pre-mutation publication revalidation", () => {
     assert.equal(loadCount, 2);
   });
 });
+
+describe("annotated tag identity", () => {
+  it("does not require global Git identity", () => {
+    const publisher = readFileSync(
+      new URL("../publish-atlas-release.mjs", import.meta.url),
+      "utf8"
+    );
+    assert.doesNotMatch(publisher, /git config --global/);
+    assert.doesNotMatch(publisher, /config --global/);
+    assert.match(publisher, /-c[\s\S]*user\.name=github-actions\[bot\]/);
+    assert.match(
+      publisher,
+      /-c[\s\S]*user\.email=41898282\+github-actions\[bot\]@users\.noreply\.github\.com/
+    );
+  });
+
+  it("creates an annotated tag without ambient Git identity", () => {
+    const repoRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-release-tag-"));
+    const originRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-release-tag-origin-"));
+    const emptyConfig = path.join(repoRoot, "empty.gitconfig");
+    writeFileSync(emptyConfig, "");
+
+    const isolatedEnv = {
+      ...process.env,
+      GIT_CONFIG_GLOBAL: emptyConfig,
+      GIT_CONFIG_SYSTEM: emptyConfig,
+      GIT_CONFIG_NOSYSTEM: "1",
+    };
+    delete isolatedEnv.GIT_AUTHOR_NAME;
+    delete isolatedEnv.GIT_AUTHOR_EMAIL;
+    delete isolatedEnv.GIT_COMMITTER_NAME;
+    delete isolatedEnv.GIT_COMMITTER_EMAIL;
+    delete isolatedEnv.EMAIL;
+
+    const runIsolatedGit = (cwd, args) =>
+      execFileSync("git", args, {
+        cwd,
+        encoding: "utf8",
+        env: isolatedEnv,
+      }).trim();
+
+    try {
+      runIsolatedGit(repoRoot, ["init", "-b", "main"]);
+      runIsolatedGit(originRoot, ["init", "--bare"]);
+      runIsolatedGit(repoRoot, ["remote", "add", "origin", originRoot]);
+      runIsolatedGit(repoRoot, [
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "fixture",
+      ]);
+      const sha = runIsolatedGit(repoRoot, ["rev-parse", "HEAD"]);
+
+      const previous = {
+        GIT_CONFIG_GLOBAL: process.env.GIT_CONFIG_GLOBAL,
+        GIT_CONFIG_SYSTEM: process.env.GIT_CONFIG_SYSTEM,
+        GIT_CONFIG_NOSYSTEM: process.env.GIT_CONFIG_NOSYSTEM,
+        GIT_AUTHOR_NAME: process.env.GIT_AUTHOR_NAME,
+        GIT_AUTHOR_EMAIL: process.env.GIT_AUTHOR_EMAIL,
+        GIT_COMMITTER_NAME: process.env.GIT_COMMITTER_NAME,
+        GIT_COMMITTER_EMAIL: process.env.GIT_COMMITTER_EMAIL,
+        EMAIL: process.env.EMAIL,
+      };
+
+      process.env.GIT_CONFIG_GLOBAL = emptyConfig;
+      process.env.GIT_CONFIG_SYSTEM = emptyConfig;
+      process.env.GIT_CONFIG_NOSYSTEM = "1";
+      delete process.env.GIT_AUTHOR_NAME;
+      delete process.env.GIT_AUTHOR_EMAIL;
+      delete process.env.GIT_COMMITTER_NAME;
+      delete process.env.GIT_COMMITTER_EMAIL;
+      delete process.env.EMAIL;
+
+      try {
+        createGitTag({ repoRoot }, "v0.2.0", sha);
+      } finally {
+        restoreEnv(previous);
+      }
+
+      const pointedSha = runIsolatedGit(repoRoot, ["rev-parse", "v0.2.0^{commit}"]);
+      const tagger = runIsolatedGit(repoRoot, [
+        "for-each-ref",
+        "refs/tags/v0.2.0",
+        "--format=%(taggername) %(taggeremail)",
+      ]);
+      const originSha = runIsolatedGit(originRoot, ["rev-parse", "v0.2.0^{commit}"]);
+      const objectType = runIsolatedGit(repoRoot, ["cat-file", "-t", "v0.2.0"]);
+
+      assert.equal(objectType, "tag");
+      assert.equal(pointedSha, sha);
+      assert.equal(originSha, sha);
+      assert.equal(
+        tagger,
+        "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(originRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+function restoreEnv(previous) {
+  for (const [key, value] of Object.entries(previous)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+}
 
 function writePublicationFixture() {
   const dir = mkdtempSync(path.join(os.tmpdir(), "atlas-publish-dry-"));
