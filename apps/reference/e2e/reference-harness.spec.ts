@@ -1,8 +1,15 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ request }) => {
   await request.post("/api/reset");
 });
+
+async function openMobileNavAndGoTo(page: Page, linkName: string) {
+  await page.getByRole("button", { name: "Open navigation menu" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("link", { name: linkName }).click();
+}
 
 test.describe("Reference harness", () => {
   test("exercises authenticated reference flow without external credentials", async ({ page }) => {
@@ -96,11 +103,7 @@ test.describe("Reference application", () => {
     await expect(page.getByText(/Scenario set to success/)).toBeVisible();
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page
-      .getByRole("navigation", { name: "Reference application" })
-      .getByRole("link", { name: "Users" })
-      .click();
+    await openMobileNavAndGoTo(page, "Users");
 
     await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
     await expect(page.getByRole("link", { name: "Reference User", exact: true })).toBeVisible();
@@ -236,18 +239,10 @@ test.describe("Reference application", () => {
     await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page
-      .getByRole("navigation", { name: "Reference application" })
-      .getByRole("link", { name: "Settings" })
-      .click();
+    await openMobileNavAndGoTo(page, "Settings");
     await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
 
-    await page.getByRole("button", { name: "Open navigation menu" }).click();
-    await page
-      .getByRole("navigation", { name: "Reference application" })
-      .getByRole("link", { name: "Platform" })
-      .click();
+    await openMobileNavAndGoTo(page, "Platform");
     await expect(
       page.getByRole("heading", { name: "Platform diagnostics", level: 1 })
     ).toBeVisible();
