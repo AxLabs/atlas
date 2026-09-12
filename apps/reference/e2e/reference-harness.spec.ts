@@ -5,9 +5,20 @@ test.beforeEach(async ({ request }) => {
 });
 
 async function openMobileNavAndGoTo(page: Page, linkName: string) {
-  await page.getByRole("button", { name: "Open navigation menu" }).click();
+  const menuButton = page.getByRole("button", { name: "Open navigation menu" });
+  await expect(menuButton).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeHidden();
+
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
+  // WebKit in CI can click the SSR button before the client handler hydrates.
+  // Retry until the sheet is actually open instead of treating a lost click as failure.
+  await expect(async () => {
+    if (!(await dialog.isVisible())) {
+      await menuButton.click();
+    }
+    await expect(dialog).toBeVisible();
+  }).toPass();
+
   await dialog.getByRole("link", { name: linkName }).click();
 }
 
