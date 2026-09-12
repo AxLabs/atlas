@@ -1,0 +1,9 @@
+# @atlas/reference
+
+## 0.2.0
+
+### Patch Changes
+
+- Updated dependencies [dbafd6b]
+  - @atlas/ui@0.2.0
+  - @atlas/consent@0.2.0
