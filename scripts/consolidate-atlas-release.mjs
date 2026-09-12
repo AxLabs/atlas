@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { ATLAS_WORKSPACE_PACKAGES, readJson } from "./atlas-workspaces.mjs";
+import { HISTORICAL_UNPUBLISHED_VERSIONS } from "./release-publication.mjs";
 import {
   extractChangelogSection,
   extractSectionBody,
@@ -139,6 +140,10 @@ export function findPreviousReleaseVersion(rootContent, newVersion) {
 
   for (const version of findReleaseVersions(rootContent)) {
     if (version === newVersion) {
+      continue;
+    }
+
+    if (HISTORICAL_UNPUBLISHED_VERSIONS.includes(version)) {
       continue;
     }
 

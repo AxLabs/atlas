@@ -10,21 +10,21 @@ See also: [`SECURITY.md`](../../SECURITY.md), [security engineering](../how-we-b
 
 ## Assets
 
-| Asset                             | Where it lives                                                                      | Notes                                                                                        |
-| --------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| OAuth client ID / secret          | Server env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)                             | Never in client bundles if consumers keep them in `serverEnv`                                |
-| Access tokens                     | Encrypted `atlas_session` cookie                                                    | Server-side only; `/api/auth/me` must not return them                                        |
-| Refresh tokens                    | Same session cookie                                                                 | Google may omit on re-auth; rotation is **opportunistic**, not Atlas-owned                   |
-| Session ciphertext                | `atlas_session` httpOnly cookie                                                     | AES-GCM with key derived from `AUTH_SESSION_SECRET` (PBKDF2, static salt `atlas-session-v1`) |
-| OAuth PKCE verifier + state       | `atlas_oauth_tmp` cookie (JSON, **not** encrypted)                                  | 5-minute TTL; httpOnly                                                                       |
-| User identity / profile           | Session payload; `/api/auth/me` returns email/name/avatar + authz permissions       | Tokens excluded from the public session response                                             |
-| Backend API authorization context | Server uses `session.accessToken`; UI uses resolved permissions                     | Backend remains a separate trust domain                                                      |
-| Analytics / consent state         | `@atlas/consent` + analytics adapters; opt-in via env                               | Consent is **not** a legal CMP                                                               |
-| Telemetry / error data            | Web Vitals route, Sentry, logs                                                      | Redaction helpers exist; consumers must use them                                             |
-| CI credentials                    | GitHub Actions `GITHUB_TOKEN`, optional `TURBO_*`, `LHCI_GITHUB_APP_TOKEN`, Codecov | Least-privilege workflow `permissions` applied                                               |
-| Repository write credentials      | Version PR job (`contents: write`, `pull-requests: write`)                          | GitHub Release publication is not enabled                                                    |
-| Release / snapshot artifacts      | Workflow artifacts (Playwright, SBOM, audit JSON)                                   | 90-day SBOM retention for snapshots                                                          |
-| Self-hosted runner host state     | Persistent disk under `/var/cache/ci` when enabled                                  | Trusted-operator domain                                                                      |
+| Asset                             | Where it lives                                                                                               | Notes                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| OAuth client ID / secret          | Server env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)                                                      | Never in client bundles if consumers keep them in `serverEnv`                                |
+| Access tokens                     | Encrypted `atlas_session` cookie                                                                             | Server-side only; `/api/auth/me` must not return them                                        |
+| Refresh tokens                    | Same session cookie                                                                                          | Google may omit on re-auth; rotation is **opportunistic**, not Atlas-owned                   |
+| Session ciphertext                | `atlas_session` httpOnly cookie                                                                              | AES-GCM with key derived from `AUTH_SESSION_SECRET` (PBKDF2, static salt `atlas-session-v1`) |
+| OAuth PKCE verifier + state       | `atlas_oauth_tmp` cookie (JSON, **not** encrypted)                                                           | 5-minute TTL; httpOnly                                                                       |
+| User identity / profile           | Session payload; `/api/auth/me` returns email/name/avatar + authz permissions                                | Tokens excluded from the public session response                                             |
+| Backend API authorization context | Server uses `session.accessToken`; UI uses resolved permissions                                              | Backend remains a separate trust domain                                                      |
+| Analytics / consent state         | `@atlas/consent` + analytics adapters; opt-in via env                                                        | Consent is **not** a legal CMP                                                               |
+| Telemetry / error data            | Web Vitals route, Sentry, logs                                                                               | Redaction helpers exist; consumers must use them                                             |
+| CI credentials                    | GitHub Actions `GITHUB_TOKEN`, optional `TURBO_*`, `LHCI_GITHUB_APP_TOKEN`, Codecov                          | Least-privilege workflow `permissions` applied                                               |
+| Repository write credentials      | Version PR job (`contents: write`, `pull-requests: write`); publish job (`contents: write`, `actions: read`) | Fail-closed tag/Release publication; no npm publish; no retag                                |
+| Release / snapshot artifacts      | Workflow artifacts (Playwright, SBOM, audit JSON)                                                            | 90-day SBOM retention for snapshots                                                          |
+| Self-hosted runner host state     | Persistent disk under `/var/cache/ci` when enabled                                                           | Trusted-operator domain                                                                      |
 
 ## Trust boundaries
 

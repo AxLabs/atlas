@@ -143,7 +143,8 @@ proven Atlas evidence.
 ## Security-fix propagation
 
 Documented in [`SECURITY.md`](../../SECURITY.md) and [upgrades.md](upgrades.md). Workspace packages
-are not published to npm. Canonical GitHub Release publication is not enabled yet.
+are not published to npm. Canonical GitHub Releases are published after a Version PR merges; they do
+not include signed provenance or npm publication.
 
 ## Current limitations
 

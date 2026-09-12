@@ -126,8 +126,8 @@ locally: `pnpm docs:check --external`.
 ## Changesets and release impact
 
 Atlas versions the **repository/platform snapshot** as one pre-1.0 line. Changesets collect release
-metadata and open **Version PRs**. They do **not** publish npm packages. Canonical GitHub Release
-publication is not enabled yet.
+metadata and open **Version PRs**. They do **not** publish npm packages. After a Version PR merges,
+automation publishes the canonical Git tag and GitHub Release.
 
 Canonical policy: [Releases and Governance](docs/how-we-build/releases-and-governance.md).
 

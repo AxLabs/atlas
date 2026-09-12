@@ -169,7 +169,8 @@ repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas).
 permitted under the license.
 
 Workspace packages remain internal (`private: true` in npm metadata) and are **not** independently
-published to npm. Canonical GitHub Release publication is not enabled yet; versioning still uses
-Changesets Version PRs.
+published to npm. Changesets open a Version PR; after that PR merges, automation publishes the
+canonical `vX.Y.Z` Git tag and GitHub Release. `0.1.0` is a historical internal snapshot and has no
+public tag.
 
 Release governance: [Releases and Governance](docs/how-we-build/releases-and-governance.md).

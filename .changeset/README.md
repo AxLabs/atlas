@@ -1,8 +1,8 @@
 # Changesets
 
 Atlas uses [Changesets](https://github.com/changesets/changesets) to collect per-PR change metadata
-and open **Version PRs**. Changesets do **not** publish npm packages or create GitHub Releases in
-this repository.
+and open **Version PRs**. Changesets do **not** publish npm packages. After a Version PR merges,
+separate fail-closed automation creates the canonical Git tag and GitHub Release.
 
 See [Releases and Governance](../docs/how-we-build/releases-and-governance.md).
 

@@ -4,6 +4,7 @@ import path from "node:path";
 /** Workspace packages that share the Atlas release version (not independent products). */
 export const ATLAS_WORKSPACE_PACKAGES = [
   { name: "@atlas/web", relativePath: "apps/web" },
+  { name: "@atlas/reference", relativePath: "apps/reference" },
   { name: "@atlas/ui", relativePath: "packages/ui" },
   { name: "@atlas/config", relativePath: "packages/config" },
   { name: "@atlas/consent", relativePath: "packages/consent" },

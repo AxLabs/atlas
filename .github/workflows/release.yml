@@ -8,6 +8,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
+  # Do not treat this as the mutation-safety lock. The publisher reloads GitHub
+  # state after required checks and re-evaluates the original target SHA.
   cancel-in-progress: false
 
 permissions:
@@ -31,6 +33,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -46,7 +49,6 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "✓ Release rehearsal completed (dry run — no tag or GitHub Release created)"
           echo "  Current Atlas line: v${VERSION}"
-          echo "  GitHub Release publication is not enabled"
 
   sbom:
     name: SBOM snapshot
@@ -60,11 +62,13 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
+      # Do not enable cache: pnpm here. This job never runs `pnpm install`, so the
+      # setup-node post-step would fail with:
+      # "Path(s) specified in the action for caching do(es) not exist".
       - name: Setup Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
-          cache: pnpm
 
       - name: Generate SPDX SBOM
         env:
@@ -114,6 +118,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -125,6 +130,7 @@ jobs:
           title: "chore(release): atlas version"
           commit: "chore(release): atlas version"
           version: pnpm changeset:version
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -136,4 +142,40 @@ jobs:
           else
             echo "ℹ️ No pending changesets — no Version PR action required."
           fi
-          echo "ℹ️ GitHub Release publication is not enabled."
+
+  github-release:
+    name: Publish GitHub Release
+    if: github.event_name == 'push'
+    needs:
+      - sbom
+      - version-pr
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish canonical tag and GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/publish-atlas-release.mjs --target-sha "${GITHUB_SHA}"

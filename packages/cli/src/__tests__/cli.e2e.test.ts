@@ -359,10 +359,18 @@ describe("atlas init bootstrap", () => {
 
   it("reports checkout atlas version during init", () => {
     const fixture = createMinimalAtlasFixture();
+    const checkoutVersion = JSON.parse(
+      readFileSync(path.join(fixture.root, "package.json"), "utf8")
+    ).version as string;
     const result = runAtlasCli(["init", "--cwd", fixture.root, "--dry-run"], fixture.root);
 
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
-    expect(result.stdout).toContain(`Atlas version: ${cliVersion}`);
+    // init reports the target checkout version, not the installed CLI package version.
+    // Fixtures stay on a synthetic 0.1.0 consumer snapshot when Atlas itself moves forward.
+    expect(result.stdout).toContain(`Atlas version: ${checkoutVersion}`);
+    if (checkoutVersion !== cliVersion) {
+      expect(result.stdout).not.toContain(`Atlas version: ${cliVersion}`);
+    }
   });
 });
 

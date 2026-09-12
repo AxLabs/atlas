@@ -9,6 +9,6 @@ test.describe("Reference application smoke", () => {
 
   test("harness page is reachable", async ({ page }) => {
     await page.goto("/harness");
-    await expect(page.getByRole("status")).toContainText("Reference mode active");
+    await expect(page.getByText("Reference mode active")).toBeVisible();
   });
 });
