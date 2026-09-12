@@ -135,7 +135,9 @@ When changesets merge to `main`, the Release workflow opens/updates a Version PR
 - Consolidates release notes into root [`CHANGELOG.md`](../../CHANGELOG.md)
 - Consumes changeset files
 
-The Version PR must pass normal CI and Governance. It does not create a Git tag.
+The Version PR must pass normal CI and Governance. It does not create a Git tag. While the Version
+PR job reports pending changesets, the Publish GitHub Release job is skipped. Publication still
+refuses `PENDING_CHANGESETS` if the publisher is invoked against unconsumed changeset state.
 
 Changesets Version PRs are created by GitHub Actions. Depending on repository or GitHub organization
 policy, GitHub may require a maintainer to approve workflow execution on an automation-created pull
