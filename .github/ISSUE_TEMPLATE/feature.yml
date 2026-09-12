@@ -1,0 +1,50 @@
+name: Feature or improvement
+description: Suggest an Atlas platform improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for Atlas platform improvements. Keep the request focused — this is not a
+        product-spec template.
+
+        **Do not report security vulnerabilities in a public GitHub issue.** Use
+        [private vulnerability reporting](https://github.com/blitzcraftlabs/atlas/security/advisories/new).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem being solved
+      description: What is hard, missing, or confusing in Atlas today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Optional. A sketch of the change is enough.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected Atlas surface
+      multiple: true
+      options:
+        - apps/web (starter)
+        - apps/reference
+        - packages/ui
+        - packages/cli
+        - packages/project
+        - Generators / atlas.config
+        - CI / GitHub Actions
+        - Documentation
+        - Other
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+      description: Optional. What do you do today instead?
+  - type: textarea
+    id: impact
+    attributes:
+      label: Downstream or user impact
+      description: Optional. Who benefits if Atlas changes, and who might be disrupted?

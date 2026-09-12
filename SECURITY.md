@@ -22,11 +22,12 @@ support policy. Do not assume older tagged snapshots receive patches.
 
 **Do not disclose suspected vulnerabilities through a public GitHub issue.**
 
-Prefer GitHub's private vulnerability reporting on this repository (Security advisories / private
-vulnerability reporting) when the GitHub plan and repository settings allow it.
+Report privately using GitHub Private Vulnerability Reporting on this repository:
 
-If private reporting is unavailable on the current GitHub plan, contact a repository maintainer
-through a private channel. Do not invent or publish a new security-contact email address.
+[https://github.com/blitzcraftlabs/atlas/security/advisories/new](https://github.com/blitzcraftlabs/atlas/security/advisories/new)
+
+If that form is temporarily unavailable, contact a repository maintainer through a private channel.
+Do not invent or publish a security-contact email address.
 
 Include:
 

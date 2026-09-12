@@ -30,28 +30,29 @@ These rules apply to all code in Atlas:
 
 ## Documentation Index
 
-| Document                                            | What It Covers                                   |
-| --------------------------------------------------- | ------------------------------------------------ |
-| [Architecture ownership](architecture-ownership.md) | Platform vs reference vs consumer vs generated   |
-| [Dependency ownership](dependencies.md)             | Manifest rules, UI/form/MSW ownership            |
-| [Agent workflow](agents.md)                         | Coding agent discover → validate workflow        |
-| [Upgrades](upgrades.md)                             | Downstream upgrade contract and ownership matrix |
-| [Atlas project contract](atlas-contract.md)         | Machine-readable architecture for tooling        |
-| [Atlas CLI](cli.md)                                 | Atlas-specific CLI workflows and boundaries      |
-| [Folder Structure](folder-structure.md)             | Where code lives and why                         |
-| [Environment Variables](env.md)                     | How to add and use env vars                      |
-| [API & Data Fetching](api.md)                       | React Query, API client, contracts               |
-| [Authorization](authorization.md)                   | Typed permissions, server enforcement, UI gating |
-| [Testing](testing.md)                               | Test setup, patterns, utilities                  |
-| [Testing risk matrix](testing-risk-matrix.md)       | Owned failure modes, gates, exclusions           |
-| [Continuous Integration](ci.md)                     | CI layout, self-hosted overlay                   |
-| [Security](security.md)                             | Blocking audit, pins, SBOM, runner trust         |
-| [Accessibility](accessibility.md)                   | a11y rules and patterns                          |
-| [Local Dev Composition](local-dev-composition.md)   | Docker Compose patterns (opt-in)                 |
-| [Documentation Policy](documentation-policy.md)     | How we maintain docs                             |
-| [Releases & Governance](releases-and-governance.md) | Licensing, versioning, releases, support         |
-| [Provenance & redistribution](provenance.md)        | Third-party source, assets, dependency licenses  |
-| [Claims register](../audit/claims-register.md)      | Material claims and evidence                     |
+| Document                                              | What It Covers                                   |
+| ----------------------------------------------------- | ------------------------------------------------ |
+| [Architecture ownership](architecture-ownership.md)   | Platform vs reference vs consumer vs generated   |
+| [Dependency ownership](dependencies.md)               | Manifest rules, UI/form/MSW ownership            |
+| [Agent workflow](agents.md)                           | Coding agent discover → validate workflow        |
+| [Upgrades](upgrades.md)                               | Downstream upgrade contract and ownership matrix |
+| [Atlas project contract](atlas-contract.md)           | Machine-readable architecture for tooling        |
+| [Atlas CLI](cli.md)                                   | Atlas-specific CLI workflows and boundaries      |
+| [Folder Structure](folder-structure.md)               | Where code lives and why                         |
+| [Environment Variables](env.md)                       | How to add and use env vars                      |
+| [API & Data Fetching](api.md)                         | React Query, API client, contracts               |
+| [Authorization](authorization.md)                     | Typed permissions, server enforcement, UI gating |
+| [Testing](testing.md)                                 | Test setup, patterns, utilities                  |
+| [Testing risk matrix](testing-risk-matrix.md)         | Owned failure modes, gates, exclusions           |
+| [Continuous Integration](ci.md)                       | CI layout, self-hosted overlay                   |
+| [Repository integrations](repository-integrations.md) | GitHub Apps, Codecov, security-setting inventory |
+| [Security](security.md)                               | Blocking audit, pins, SBOM, runner trust         |
+| [Accessibility](accessibility.md)                     | a11y rules and patterns                          |
+| [Local Dev Composition](local-dev-composition.md)     | Docker Compose patterns (opt-in)                 |
+| [Documentation Policy](documentation-policy.md)       | How we maintain docs                             |
+| [Releases & Governance](releases-and-governance.md)   | Licensing, versioning, releases, support         |
+| [Provenance & redistribution](provenance.md)          | Third-party source, assets, dependency licenses  |
+| [Claims register](../audit/claims-register.md)        | Material claims and evidence                     |
 
 ## Quick Reference
 

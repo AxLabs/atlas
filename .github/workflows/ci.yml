@@ -234,13 +234,13 @@ jobs:
         env:
           CI: true
 
+      # Reporting only. Coverage floors are enforced by test:risk-coverage above.
+      # Uploads need the Codecov GitHub App or CODECOV_TOKEN on this repository.
       - name: Upload coverage report to Codecov
         if: success() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
-          files: |
-            ./packages/ui/coverage/coverage-final.json
-            ./apps/web/coverage/coverage-final.json
+          files: ./packages/ui/coverage/coverage-final.json,./apps/web/coverage/coverage-final.json
           fail_ci_if_error: false
 
       - name: Skip application checks (docs-only change)

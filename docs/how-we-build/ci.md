@@ -182,23 +182,25 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 ## Branch protection
 
-Required status checks for `main` (when the GitHub plan allows branch protection / rulesets):
+Required status checks for `main` (verified 2026-09-12 on public `blitzcraftlabs/atlas`):
 
-- **CI / Governance** — licensing, versioning, and release policy validation
-- **CI / CI** — consolidated application pipeline
-- **CI / Secrets Scan** — Gitleaks scan
-- **Security Audit / Security Audit** — Atlas dependency vulnerability policy
+- **Governance** — licensing, provenance, and dependency-ownership gates
+- **CI** — consolidated application pipeline
+- **Secrets Scan** — Gitleaks scan
+- **Security Audit** — Atlas dependency vulnerability policy
+- **UI Quality** — Storybook axe, interaction, and visual gates
 
-The public repository should reproduce those required checks via branch protection or rulesets. See
+Do not remove or rename those checks. See [repository integrations](repository-integrations.md) and
 [security engineering](security.md).
 
 If branch protection still references retired job names (**Detect Changes**, **Quality**, **Build
-and E2E**), update them to **CI / CI**. Legacy names from the old **Gitleaks Secrets Scan**
-standalone workflow should point to **CI / Secrets Scan**.
+and E2E**), update them to **CI**. Legacy names from the old **Gitleaks Secrets Scan** standalone
+workflow should point to **Secrets Scan**.
 
 ## Related
 
 - [Environment validation in CI](env.md#cicd-integration)
 - [Testing](testing.md)
+- [Repository integrations](repository-integrations.md)
 - [Documentation link checking](documentation-policy.md#link-checking)
 - [Performance tooling](../../tools/perf/README.md)
