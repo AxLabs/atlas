@@ -265,6 +265,18 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(workflow, /continue-on-error/);
     assert.doesNotMatch(workflow, /@atlas\/ui@/);
 
+    const versionPrJobStart = workflow.indexOf("  version-pr:");
+    const versionPrNext = workflow.slice(versionPrJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+    const versionPrJob =
+      versionPrNext === -1
+        ? workflow.slice(versionPrJobStart)
+        : workflow.slice(versionPrJobStart, versionPrJobStart + 1 + versionPrNext);
+    assert.match(versionPrJob, /id:\s*changesets/);
+    assert.match(
+      versionPrJob,
+      /has-changesets:\s*\$\{\{\s*steps\.changesets\.outputs\.hasChangesets\s*\}\}/
+    );
+
     const publishJobStart = workflow.indexOf("  github-release:");
     const nextJob = workflow.slice(publishJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
     const publishJob =
@@ -275,6 +287,18 @@ describe("release workflow policy", () => {
     assert.match(publishJob, /actions:\s*read/);
     assert.doesNotMatch(publishJob, /packages:\s*write/);
     assert.doesNotMatch(publishJob, /id-token:\s*write/);
+    assert.match(publishJob, /needs:[\s\S]*\bsbom\b/);
+    assert.match(publishJob, /needs:[\s\S]*\bversion-pr\b/);
+    assert.match(publishJob, /github\.event_name\s*==\s*'push'/);
+    assert.match(publishJob, /needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/);
+  });
+
+  it("keeps publisher PENDING_CHANGESETS rejection as a backstop", () => {
+    const publisher = readFileSync(
+      path.join(process.cwd(), "scripts/release-publication.mjs"),
+      "utf8"
+    );
+    assert.match(publisher, /PENDING_CHANGESETS/);
   });
 
   it("keeps ordered workflow-run fields and post-wait revalidation in the publisher", () => {

@@ -141,6 +141,24 @@ function checkReleaseWorkflow() {
     fail("release.yml must not use continue-on-error to mask release or SBOM failures");
   }
 
+  const versionPrJob = extractNamedJob(workflow, "version-pr");
+  if (!versionPrJob) {
+    fail("release.yml is missing the version-pr job");
+  } else {
+    if (!/id:\s*changesets/.test(versionPrJob)) {
+      fail("version-pr job must keep the Changesets Action step id `changesets`");
+    }
+    if (
+      !/has-changesets:\s*\$\{\{\s*steps\.changesets\.outputs\.hasChangesets\s*\}\}/.test(
+        versionPrJob
+      )
+    ) {
+      fail(
+        "version-pr job must expose steps.changesets.outputs.hasChangesets as the has-changesets job output"
+      );
+    }
+  }
+
   const publishJob = extractNamedJob(workflow, "github-release");
   if (!publishJob) {
     fail("release.yml is missing the github-release job");
@@ -155,6 +173,28 @@ function checkReleaseWorkflow() {
     }
     if (/packages:\s*write/.test(publishJob) || /id-token:\s*write/.test(publishJob)) {
       fail("github-release job must not request npm publish or provenance permissions");
+    }
+    if (
+      !/needs:[\s\S]*\bsbom\b/.test(publishJob) ||
+      !/needs:[\s\S]*\bversion-pr\b/.test(publishJob)
+    ) {
+      fail("github-release job must depend on both sbom and version-pr");
+    }
+    if (!/github\.event_name\s*==\s*'push'/.test(publishJob)) {
+      fail("github-release job must remain push-gated");
+    }
+    if (!/needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/.test(publishJob)) {
+      fail("github-release job must skip publication when version-pr reports pending changesets");
+    }
+  }
+
+  const publisherPath = path.join(process.cwd(), "scripts/release-publication.mjs");
+  if (!existsSync(publisherPath)) {
+    fail("Missing scripts/release-publication.mjs");
+  } else {
+    const publisher = readFileSync(publisherPath, "utf8");
+    if (!publisher.includes("PENDING_CHANGESETS")) {
+      fail("publisher must keep PENDING_CHANGESETS rejection as a safety backstop");
     }
   }
 
