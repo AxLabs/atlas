@@ -1,10 +1,12 @@
 /**
  * Fail-closed Atlas GitHub Release publication decisions.
  *
- * Pure functions — no Git or GitHub side effects. The CLI wrapper
- * (`publish-atlas-release.mjs`) applies these decisions.
+ * Decision evaluation is pure given explicit inputs (including proven ancestry).
+ * `isGitAncestor` is the Git primitive used by the CLI wrapper to prove that
+ * an existing tag target is an ancestor of the current publication SHA.
  */
 
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -87,6 +89,44 @@ export function requiredReleaseAssetNames(commitSha) {
 export function missingRequiredReleaseAssets(release, commitSha) {
   const assets = new Set(release?.assets ?? []);
   return [sbomAssetNameForCommit(commitSha)].filter((name) => !assets.has(name));
+}
+
+/**
+ * True when `ancestorSha` is an ancestor of `descendantSha`.
+ * Uses `git merge-base --is-ancestor`. Unproven ancestry is false.
+ *
+ * @param {string} ancestorSha
+ * @param {string} descendantSha
+ * @param {{ repoRoot: string }} options
+ * @returns {boolean}
+ */
+export function isGitAncestor(ancestorSha, descendantSha, options) {
+  if (!ancestorSha || !descendantSha || !options?.repoRoot) {
+    return false;
+  }
+
+  try {
+    execFileSync("git", ["merge-base", "--is-ancestor", ancestorSha, descendantSha], {
+      cwd: options.repoRoot,
+      encoding: "utf8",
+      stdio: "ignore",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {{ sha?: string | null, assets?: string[] } | null | undefined} release
+ * @param {string} commitSha
+ */
+function isCompleteCanonicalRelease(release, commitSha) {
+  if (!release || !commitSha || release.sha !== commitSha) {
+    return false;
+  }
+
+  return missingRequiredReleaseAssets(release, commitSha).length === 0;
 }
 
 /**
@@ -276,6 +316,7 @@ export function collectVersionConsistencyErrors(input) {
  *   targetSha?: string | null,
  *   canonicalMainSha?: string | null,
  *   pendingChangesetFiles?: string[],
+ *   isCommitAncestor?: (ancestorSha: string, descendantSha: string) => boolean,
  * }} input
  */
 export function evaluatePublicationDecision(input) {
@@ -319,6 +360,18 @@ export function evaluatePublicationDecision(input) {
   }
 
   if (existingTag?.sha && input.targetSha && existingTag.sha !== input.targetSha) {
+    const tagIsAncestorOfTarget =
+      input.isCommitAncestor?.(existingTag.sha, input.targetSha) === true;
+    if (tagIsAncestorOfTarget && isCompleteCanonicalRelease(existingRelease, existingTag.sha)) {
+      return {
+        action: "noop",
+        version: rootVersion,
+        tag,
+        prerelease: isGithubPrerelease(rootVersion),
+        reason: `Atlas ${rootVersion} is already published; current main contains post-release commits.`,
+      };
+    }
+
     throw new PublicationError(
       `Tag ${tag} already exists at ${existingTag.sha}; refusing to retag ${input.targetSha}`,
       { code: "TAG_EXISTS" }
@@ -392,10 +445,11 @@ export function evaluatePublicationDecision(input) {
  *     canonicalMainSha?: string | null,
  *   },
  *   targetSha: string,
+ *   isCommitAncestor?: (ancestorSha: string, descendantSha: string) => boolean,
  * }} options
  */
 export function evaluateCurrentPublicationState(options) {
-  const { inputs, githubState, targetSha } = options;
+  const { inputs, githubState, targetSha, isCommitAncestor } = options;
   if (!targetSha) {
     throw new PublicationError("Missing target SHA for publication", { code: "MISSING_SHA" });
   }
@@ -407,6 +461,7 @@ export function evaluateCurrentPublicationState(options) {
     existingReleases: githubState.existingReleases,
     targetSha,
     canonicalMainSha: githubState.canonicalMainSha ?? targetSha,
+    isCommitAncestor,
   });
 
   return {

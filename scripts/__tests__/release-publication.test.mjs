@@ -17,6 +17,7 @@ import {
   evaluatePublicationDecision,
   evaluateRequiredReleaseChecks,
   isFirstCanonicalPublicRelease,
+  isGitAncestor,
   isHistoricalUnpublishedVersion,
   publicationSideEffects,
   readPublicationInputs,
@@ -191,6 +192,169 @@ describe("publication decision", () => {
     });
     assert.equal(decision.action, "noop");
     assert.match(decision.reason, /already exist/);
+    assert.equal(publicationSideEffects(decision.action).createTag, false);
+    assert.equal(publicationSideEffects(decision.action).createRelease, false);
+    assert.equal(publicationSideEffects(decision.action).uploadAssets, false);
+  });
+
+  it("no-ops when a complete release tag is a proven ancestor of current main", () => {
+    const releaseSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const mainSha = "cccccccccccccccccccccccccccccccccccccccc";
+    const decision = evaluatePublicationDecision({
+      rootVersion: "0.2.0",
+      workspaceVersions: alignedWorkspaces,
+      changelog: changelog020,
+      existingTags: [{ name: "v0.2.0", sha: releaseSha }],
+      existingReleases: [
+        {
+          tagName: "v0.2.0",
+          sha: releaseSha,
+          assets: [sbomAssetNameForCommit(releaseSha), "LICENSE"],
+        },
+      ],
+      targetSha: mainSha,
+      canonicalMainSha: mainSha,
+      isCommitAncestor: (ancestorSha, descendantSha) =>
+        ancestorSha === releaseSha && descendantSha === mainSha,
+    });
+    assert.equal(decision.action, "noop");
+    assert.match(
+      decision.reason,
+      /Atlas 0\.2\.0 is already published; current main contains post-release commits/
+    );
+    assert.equal(publicationSideEffects(decision.action).createTag, false);
+    assert.equal(publicationSideEffects(decision.action).createRelease, false);
+    assert.equal(publicationSideEffects(decision.action).uploadAssets, false);
+  });
+
+  it("does not noop an ancestor tag without a complete Release", () => {
+    const releaseSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const mainSha = "cccccccccccccccccccccccccccccccccccccccc";
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          existingTags: [{ name: "v0.2.0", sha: releaseSha }],
+          existingReleases: [],
+          targetSha: mainSha,
+          canonicalMainSha: mainSha,
+          isCommitAncestor: () => true,
+        }),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+  });
+
+  it("does not repair assets against current main when the complete tag is only an ancestor", () => {
+    const releaseSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const mainSha = "cccccccccccccccccccccccccccccccccccccccc";
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          existingTags: [{ name: "v0.2.0", sha: releaseSha }],
+          existingReleases: [{ tagName: "v0.2.0", sha: releaseSha, assets: ["LICENSE"] }],
+          targetSha: mainSha,
+          canonicalMainSha: mainSha,
+          isCommitAncestor: () => true,
+        }),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+  });
+
+  it("fails closed when the existing tag is not a proven ancestor of the target", () => {
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          existingTags: [{ name: "v0.2.0", sha: "unrelated" }],
+          existingReleases: [
+            {
+              tagName: "v0.2.0",
+              sha: "unrelated",
+              assets: [sbomAssetNameForCommit("unrelated"), "LICENSE"],
+            },
+          ],
+          targetSha: "mainsha",
+          canonicalMainSha: "mainsha",
+          isCommitAncestor: () => false,
+        }),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+  });
+
+  it("fails closed when ancestry is not proven", () => {
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          existingTags: [{ name: "v0.2.0", sha: "oldsha" }],
+          existingReleases: [
+            {
+              tagName: "v0.2.0",
+              sha: "oldsha",
+              assets: [sbomAssetNameForCommit("oldsha"), "LICENSE"],
+            },
+          ],
+          targetSha: "newsha",
+          canonicalMainSha: "newsha",
+        }),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+  });
+
+  it("fails when the tag target is a descendant of the requested publication SHA", () => {
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          existingTags: [{ name: "v0.2.0", sha: "later" }],
+          existingReleases: [
+            {
+              tagName: "v0.2.0",
+              sha: "later",
+              assets: [sbomAssetNameForCommit("later"), "LICENSE"],
+            },
+          ],
+          targetSha: "earlier",
+          canonicalMainSha: "earlier",
+          isCommitAncestor: () => false,
+        }),
+      (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+    );
+  });
+
+  it("still refuses pending changesets when a complete ancestor release already exists", () => {
+    assert.throws(
+      () =>
+        evaluatePublicationDecision({
+          rootVersion: "0.2.0",
+          workspaceVersions: alignedWorkspaces,
+          changelog: changelog020,
+          pendingChangesetFiles: ["next-minor.md"],
+          existingTags: [{ name: "v0.2.0", sha: "oldsha" }],
+          existingReleases: [
+            {
+              tagName: "v0.2.0",
+              sha: "oldsha",
+              assets: [sbomAssetNameForCommit("oldsha"), "LICENSE"],
+            },
+          ],
+          targetSha: "newsha",
+          canonicalMainSha: "newsha",
+          isCommitAncestor: () => true,
+        }),
+      (error) => error instanceof PublicationError && error.code === "PENDING_CHANGESETS"
+    );
   });
 
   it("repairs assets when the Release exists but the required SBOM is missing", () => {
@@ -680,6 +844,55 @@ describe("pre-mutation publication revalidation", () => {
     assert.equal(publicationSideEffects(applied[0].action).createRelease, true);
   });
 
+  it("does not mutate when a complete ancestor release is already published", () => {
+    const fixture = writePublicationFixture();
+    const releaseSha = "cccccccccccccccccccccccccccccccccccccccc";
+    const applied = [];
+    const githubState = {
+      existingTags: [{ name: "v0.2.0", sha: releaseSha }],
+      existingReleases: [
+        {
+          tagName: "v0.2.0",
+          sha: releaseSha,
+          assets: [sbomAssetNameForCommit(releaseSha), "LICENSE"],
+        },
+      ],
+      canonicalMainSha: targetSha,
+    };
+
+    const runOnce = () =>
+      runPublication(
+        {
+          repoRoot: fixture.dir,
+          dryRun: false,
+          skipChecks: false,
+          outputDir: fixture.outputDir,
+          targetSha,
+        },
+        {
+          loadGithubState() {
+            return githubState;
+          },
+          waitForRequiredChecks() {
+            throw new Error("ancestor no-op must not wait for required checks");
+          },
+          applyPublication() {
+            applied.push("applied");
+          },
+          isCommitAncestor: (ancestorSha, descendantSha) =>
+            ancestorSha === releaseSha && descendantSha === targetSha,
+        }
+      );
+
+    const first = runOnce();
+    const second = runOnce();
+
+    assert.equal(first.decision.action, "noop");
+    assert.equal(second.decision.action, "noop");
+    assert.match(first.decision.reason, /already published/);
+    assert.deepEqual(applied, []);
+  });
+
   it("does not mutate when the fresh decision is noop", () => {
     const fixture = writePublicationFixture();
     const applied = [];
@@ -764,6 +977,170 @@ describe("pre-mutation publication revalidation", () => {
 
     assert.deepEqual(applied, []);
     assert.equal(loadCount, 2);
+  });
+});
+
+describe("git ancestry publication", () => {
+  function git(cwd, args) {
+    return execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+    }).trim();
+  }
+
+  function commit(cwd, message) {
+    git(cwd, [
+      "-c",
+      "user.name=Fixture",
+      "-c",
+      "user.email=fixture@example.invalid",
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--allow-empty",
+      "-m",
+      message,
+    ]);
+    return git(cwd, ["rev-parse", "HEAD"]);
+  }
+
+  function annotatedTag(cwd, tag, sha) {
+    git(cwd, [
+      "-c",
+      "user.name=Fixture",
+      "-c",
+      "user.email=fixture@example.invalid",
+      "-c",
+      "tag.gpgsign=false",
+      "tag",
+      "-a",
+      tag,
+      sha,
+      "-m",
+      `Atlas ${tag.slice(1)}`,
+    ]);
+  }
+
+  it("no-ops a complete annotated tag that is an ancestor of later main commits", () => {
+    const repoRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-release-ancestor-"));
+
+    try {
+      git(repoRoot, ["init", "-b", "main"]);
+      const commitA = commit(repoRoot, "A");
+      annotatedTag(repoRoot, "v0.2.0", commitA);
+      commit(repoRoot, "B");
+      const commitC = commit(repoRoot, "C");
+
+      assert.equal(isGitAncestor(commitA, commitC, { repoRoot }), true);
+      assert.equal(isGitAncestor(commitC, commitA, { repoRoot }), false);
+
+      const decision = evaluatePublicationDecision({
+        rootVersion: "0.2.0",
+        workspaceVersions: alignedWorkspaces,
+        changelog: changelog020,
+        existingTags: [{ name: "v0.2.0", sha: commitA }],
+        existingReleases: [
+          {
+            tagName: "v0.2.0",
+            sha: commitA,
+            assets: [sbomAssetNameForCommit(commitA), "LICENSE"],
+          },
+        ],
+        targetSha: commitC,
+        canonicalMainSha: commitC,
+        isCommitAncestor: (ancestorSha, descendantSha) =>
+          isGitAncestor(ancestorSha, descendantSha, { repoRoot }),
+      });
+
+      assert.equal(decision.action, "noop");
+      assert.match(decision.reason, /already published/);
+      assert.equal(publicationSideEffects(decision.action).createTag, false);
+      assert.equal(publicationSideEffects(decision.action).createRelease, false);
+      assert.equal(publicationSideEffects(decision.action).uploadAssets, false);
+      assert.equal(git(repoRoot, ["rev-parse", "v0.2.0^{commit}"]), commitA);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when the tag points at a divergent commit", () => {
+    const repoRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-release-divergent-"));
+
+    try {
+      git(repoRoot, ["init", "-b", "main"]);
+      const commitA = commit(repoRoot, "A");
+      commit(repoRoot, "B");
+      const commitC = commit(repoRoot, "C");
+      git(repoRoot, ["checkout", "-B", "other", commitA]);
+      const commitX = commit(repoRoot, "X");
+      annotatedTag(repoRoot, "v0.2.0", commitX);
+      git(repoRoot, ["checkout", "main"]);
+
+      assert.equal(isGitAncestor(commitX, commitC, { repoRoot }), false);
+      assert.equal(isGitAncestor(commitA, commitC, { repoRoot }), true);
+
+      assert.throws(
+        () =>
+          evaluatePublicationDecision({
+            rootVersion: "0.2.0",
+            workspaceVersions: alignedWorkspaces,
+            changelog: changelog020,
+            existingTags: [{ name: "v0.2.0", sha: commitX }],
+            existingReleases: [
+              {
+                tagName: "v0.2.0",
+                sha: commitX,
+                assets: [sbomAssetNameForCommit(commitX), "LICENSE"],
+              },
+            ],
+            targetSha: commitC,
+            canonicalMainSha: commitC,
+            isCommitAncestor: (ancestorSha, descendantSha) =>
+              isGitAncestor(ancestorSha, descendantSha, { repoRoot }),
+          }),
+        (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when the tag target is a descendant of the publication SHA", () => {
+    const repoRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-release-descendant-"));
+
+    try {
+      git(repoRoot, ["init", "-b", "main"]);
+      const commitA = commit(repoRoot, "A");
+      commit(repoRoot, "B");
+      const commitC = commit(repoRoot, "C");
+      annotatedTag(repoRoot, "v0.2.0", commitC);
+
+      assert.equal(isGitAncestor(commitC, commitA, { repoRoot }), false);
+
+      assert.throws(
+        () =>
+          evaluatePublicationDecision({
+            rootVersion: "0.2.0",
+            workspaceVersions: alignedWorkspaces,
+            changelog: changelog020,
+            existingTags: [{ name: "v0.2.0", sha: commitC }],
+            existingReleases: [
+              {
+                tagName: "v0.2.0",
+                sha: commitC,
+                assets: [sbomAssetNameForCommit(commitC), "LICENSE"],
+              },
+            ],
+            targetSha: commitA,
+            canonicalMainSha: commitA,
+            isCommitAncestor: (ancestorSha, descendantSha) =>
+              isGitAncestor(ancestorSha, descendantSha, { repoRoot }),
+          }),
+        (error) => error instanceof PublicationError && error.code === "TAG_EXISTS"
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
   });
 });
 
