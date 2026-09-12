@@ -188,8 +188,22 @@ function waitForRequiredChecks(options, sha) {
   });
 }
 
-function createGitTag(options, tag, sha) {
-  runGit(["tag", "-a", tag, sha, "-m", `Atlas ${tag.slice(1)}`], options);
+export function createGitTag(options, tag, sha) {
+  runGit(
+    [
+      "-c",
+      "user.name=github-actions[bot]",
+      "-c",
+      "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+      "tag",
+      "-a",
+      tag,
+      sha,
+      "-m",
+      `Atlas ${tag.slice(1)}`,
+    ],
+    options
+  );
   runGit(["push", "origin", tag], options);
 }
 
