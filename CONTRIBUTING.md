@@ -148,11 +148,23 @@ pnpm governance:check   # when touching release/licensing files
 pnpm release:rehearse     # optional; isolated version transformation dry-run
 ```
 
+## Issue reports
+
+Use the public issue forms for non-sensitive work:
+
+- **Bug report** — defects in Atlas itself
+- **Feature or improvement** — focused platform requests
+- **Documentation issue** — unclear, incorrect, or missing docs
+
+Do not use a blank issue. Product-specific support for an app built from Atlas belongs in that
+product's tracker.
+
 ## Security reporting
 
 - **Do not** open public issues for unpatched security vulnerabilities.
-- Prefer GitHub's private vulnerability reporting on this repository (Security advisories) when
-  available. See [SECURITY.md](SECURITY.md).
+- Use
+  [GitHub Private Vulnerability Reporting](https://github.com/blitzcraftlabs/atlas/security/advisories/new)
+  on this repository. See [SECURITY.md](SECURITY.md).
 - Do not commit secrets, `.env.local`, or credentials. Gitleaks runs in CI.
 - Consumer applications own their deployment hardening, WAF rules, and data classification.
 
@@ -213,5 +225,5 @@ If agent instructions conflict with `docs/_archive/`, **AGENTS.md and current do
 
 ## Questions
 
-Open a GitHub issue for non-sensitive platform work. Do not disclose security vulnerabilities in
-public issues — see [SECURITY.md](SECURITY.md).
+Open a GitHub issue with the Bug, Feature, or Documentation form for non-sensitive platform work. Do
+not disclose security vulnerabilities in public issues — see [SECURITY.md](SECURITY.md).

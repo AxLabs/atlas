@@ -11,6 +11,7 @@
 | **Public capabilities**     | `docs/public/`       | FAQ, architecture, capabilities               |
 | **Claims and evidence**     | `docs/audit/`        | claims-register, showcase follow-up           |
 | **Contributing**            | `CONTRIBUTING.md`    | Access model, PRs, validation                 |
+| **Security reporting**      | `SECURITY.md`        | Private vulnerability reporting               |
 | **Agent rules**             | `AGENTS.md`          | Coding agent authority                        |
 | **Component docs**          | Storybook            | UI components with examples                   |
 | **API contracts**           | `openapi/`           | OpenAPI specification                         |

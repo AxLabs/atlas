@@ -118,27 +118,36 @@ or if `pull_request_target` is introduced.
 
 ## Branch protection / rulesets (expected)
 
-Inspected 2026-08-29 via GitHub API for `blitzcraftlabs/atlas` while the repository was still
-private. The canonical repository is now **public**. Reproduce required checks on the public repo:
+Canonical inventory: [repository integrations](repository-integrations.md). Inspected **2026-09-12**
+on public `blitzcraftlabs/atlas` (ID `1366318006`).
 
-| Setting                           | Historical private-plan result             |
-| --------------------------------- | ------------------------------------------ |
-| Visibility                        | Private at inspection time; **public now** |
-| Branch protection API             | HTTP 403 on the then-private plan          |
-| Repository rulesets API           | HTTP 403 on the then-private plan          |
-| Dependency Graph SBOM             | HTTP 404                                   |
-| Advanced Security / code scanning | HTTP 403                                   |
-| `security_and_analysis`           | `null` (not returned for that token/plan)  |
+| Setting                           | Public-repo result                                       |
+| --------------------------------- | -------------------------------------------------------- |
+| Visibility                        | Public                                                   |
+| Branch protection API             | Enabled on `main` (classic protection; no rulesets)      |
+| Required status checks            | Governance, CI, Secrets Scan, Security Audit, UI Quality |
+| Require branches up to date       | Yes (`strict: true`)                                     |
+| Required conversation resolution  | Enabled                                                  |
+| Force pushes / deleting `main`    | Disabled                                                 |
+| Enforce admins                    | Disabled                                                 |
+| Required pull request reviews     | Unset (single maintainer)                                |
+| Private vulnerability reporting   | Enabled                                                  |
+| Secret scanning + push protection | Enabled                                                  |
+| Secret scanning validity checks   | Intentionally disabled                                   |
+| Secret scanning non-provider      | Intentionally disabled                                   |
+| Dependabot security updates       | Enabled                                                  |
+| GitHub code scanning              | Not configured; not Atlas evidence                       |
 
-**That inspection did not modify branch protection.** On the public repository, require at least:
+**Do not remove or rename the required checks.** On the public repository, require:
 
-- **CI / Governance**
-- **CI / CI**
-- **CI / Secrets Scan**
-- **Security Audit / Security Audit**
+- **Governance**
+- **CI**
+- **Secrets Scan**
+- **Security Audit**
+- **UI Quality**
 
-Do not treat GitHub Dependency Graph, Advanced Security, or a formal penetration test as currently
-proven Atlas evidence.
+Do not treat GitHub Dependency Graph, Advanced Security code scanning, or a formal penetration test
+as currently proven Atlas evidence.
 
 ## Security-fix propagation
 
@@ -153,4 +162,4 @@ not include signed provenance or npm publication.
 | Risk-based testing            | Enforced via `pnpm test:risk-coverage` and [testing.md](testing.md)           |
 | Independent review / runbooks | Atlas does not currently publish production SLO or incident-response evidence |
 | Formal certification          | Out of scope — no WCAG, SOC, or pentest certification is claimed              |
-| GitHub Release publication    | Not enabled by current automation                                             |
+| GitHub Release publication    | Enabled after Version PR merge — first canonical public release is `v0.2.0`   |

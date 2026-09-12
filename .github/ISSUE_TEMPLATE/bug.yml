@@ -1,0 +1,90 @@
+name: Bug report
+description: Report a defect in Atlas itself
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for defects in the Atlas platform template
+        ([`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas)).
+
+        If the problem is in a product built from Atlas, report it in that product's tracker unless
+        you believe Atlas itself is at fault.
+
+        **Do not report security vulnerabilities in a public GitHub issue.** Use
+        [private vulnerability reporting](https://github.com/blitzcraftlabs/atlas/security/advisories/new)
+        or see [SECURITY.md](https://github.com/blitzcraftlabs/atlas/blob/main/SECURITY.md).
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A concise summary of what went wrong.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Affected Atlas version or commit
+      description: Release tag (for example `v0.2.0`) or commit SHA if known.
+      placeholder: v0.2.0
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected app or package
+      multiple: true
+      options:
+        - apps/web (starter)
+        - apps/reference
+        - packages/ui
+        - packages/cli
+        - packages/project
+        - CI / GitHub Actions
+        - Documentation
+        - Other
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Numbered steps that trigger the bug.
+      placeholder: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include whatever is relevant. None of these are required.
+      placeholder: |
+        Node:
+        pnpm:
+        OS:
+        Browser (if relevant):
+  - type: input
+    id: reproduction-link
+    attributes:
+      label: Minimal reproduction or repository link
+      description: Optional. A small repo, gist, or fork that demonstrates the issue.
+  - type: textarea
+    id: extras
+    attributes:
+      label: Logs or screenshots
+      description: Optional. Paste logs or attach screenshots. Redact secrets.
+  - type: checkboxes
+    id: not-security
+    attributes:
+      label: Security confirmation
+      options:
+        - label:
+            This is not a security vulnerability, and I have not included secrets that should stay
+            private.
+          required: true

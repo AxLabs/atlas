@@ -275,7 +275,8 @@ Update floors in `coverage-policy.json` only with an explicit residual-risk note
 [testing-risk-matrix.md](testing-risk-matrix.md).
 
 Codecov upload is **reporting**. Local CI already enforced the floors. `fail_ci_if_error: false` on
-the Codecov step must not be treated as the coverage policy.
+the Codecov step must not be treated as the coverage policy. Current Codecov GitHub App / token
+status lives in [repository integrations](repository-integrations.md).
 
 The failure fixture `scripts/__fixtures__/coverage-policy/below-threshold-web-api.json` proves a
 HIGH-risk subsystem below threshold exits non-zero (`pnpm test:scripts`).
