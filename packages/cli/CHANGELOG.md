@@ -1,0 +1,15 @@
+# @atlas/cli
+
+## 0.2.0
+
+### Minor Changes
+
+- 95b0be9: Repair release automation so Version PRs validate at the new Atlas line and fail-closed
+  GitHub Release publication can create the first canonical public `vX.Y.Z` tag after the Version PR
+  merges.
+- 96cc938: Make Atlas security checks blocking: HIGH/CRITICAL dependency policy, pinned Actions and
+  Gitleaks, SPDX snapshots, and a published threat model.
+
+### Patch Changes
+
+- @atlas/project@0.2.0
