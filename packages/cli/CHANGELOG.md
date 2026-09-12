@@ -1,5 +1,13 @@
 # @atlas/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- c5b6e82: Fix release publication after an existing canonical release so post-release `main`
+  commits no-op when the published tag is a proven ancestor instead of attempting to retag it.
+  - @atlas/project@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
