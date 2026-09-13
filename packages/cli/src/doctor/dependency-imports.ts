@@ -179,6 +179,11 @@ function walkSourceFiles(root: string, scanMode: DependencyScanMode): string[] {
           continue;
         }
 
+        // Packaged bootstrap assets live at <cli-package>/assets and are not CLI source.
+        if (current === root && entry === "assets") {
+          continue;
+        }
+
         if (scanMode === "application" && APPLICATION_ONLY_IGNORED_DIRS.has(entry)) {
           continue;
         }

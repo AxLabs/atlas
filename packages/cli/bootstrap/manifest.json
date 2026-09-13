@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAtInit": [
+    {
+      "destination": "atlas.config.json",
+      "reason": "Records project identity, capability defaults, and platform.baseline checksums for this consumer."
+    },
+    {
+      "destination": "package.json",
+      "reason": "Root workspace name, scripts, and dependency graph are consumer-specific; the Atlas monorepo package.json is maintainer-only."
+    },
+    {
+      "destination": "pnpm-lock.yaml",
+      "reason": "The Atlas lockfile pins the full maintainer graph including CLI, project, and reference workspaces."
+    },
+    {
+      "destination": "README.md",
+      "reason": "Consumer quickstart is generated when atlas init materializes a project; the repository README is clone-first onboarding."
+    },
+    {
+      "destination": "jest.config.js",
+      "reason": "Root Jest project list currently includes apps/reference and must be rewritten for the generated workspace."
+    },
+    {
+      "destination": "apps/web/.env.local",
+      "reason": "User-specific secrets are never packaged; atlas init may copy .env.example later."
+    }
+  ],
+  "entries": [
+    {
+      "source": "apps/web",
+      "destination": "apps/web"
+    },
+    {
+      "source": "packages/ui",
+      "destination": "packages/ui",
+      "exclude": [
+        ".storybook/**",
+        "visual-tests/**",
+        ".husky/**",
+        "scripts/**",
+        "playwright.storybook.config.ts",
+        "playwright.visual.config.ts"
+      ]
+    },
+    {
+      "source": "packages/consent",
+      "destination": "packages/consent"
+    },
+    {
+      "source": "packages/config",
+      "destination": "packages/config"
+    },
+    {
+      "source": "openapi",
+      "destination": "openapi"
+    },
+    {
+      "source": "templates/app-infrastructure.manifest.json",
+      "destination": "templates/app-infrastructure.manifest.json"
+    },
+    {
+      "source": "pnpm-workspace.yaml",
+      "destination": "pnpm-workspace.yaml"
+    },
+    {
+      "source": "turbo.json",
+      "destination": "turbo.json"
+    },
+    {
+      "source": ".npmrc",
+      "destination": ".npmrc"
+    },
+    {
+      "source": ".nvmrc",
+      "destination": ".nvmrc"
+    },
+    {
+      "source": ".gitignore",
+      "destination": ".gitignore"
+    },
+    {
+      "source": ".prettierrc.json",
+      "destination": ".prettierrc.json"
+    },
+    {
+      "source": ".prettierignore",
+      "destination": ".prettierignore"
+    },
+    {
+      "source": "eslint.config.mjs",
+      "destination": "eslint.config.mjs"
+    },
+    {
+      "source": "LICENSE",
+      "destination": "LICENSE"
+    },
+    {
+      "source": "THIRD_PARTY_NOTICES.md",
+      "destination": "THIRD_PARTY_NOTICES.md"
+    },
+    {
+      "source": "AGENTS.md",
+      "destination": "AGENTS.md"
+    },
+    {
+      "source": "CONTRIBUTING.md",
+      "destination": "CONTRIBUTING.md"
+    },
+    {
+      "source": "scripts/ensure-pnpm.js",
+      "destination": "scripts/ensure-pnpm.js"
+    },
+    {
+      "source": "docs/how-we-build/agents.md",
+      "destination": "docs/how-we-build/agents.md"
+    },
+    {
+      "source": "docs/how-we-build/architecture-ownership.md",
+      "destination": "docs/how-we-build/architecture-ownership.md"
+    },
+    {
+      "source": "docs/how-we-build/atlas-contract.md",
+      "destination": "docs/how-we-build/atlas-contract.md"
+    },
+    {
+      "source": "docs/how-we-build/cli.md",
+      "destination": "docs/how-we-build/cli.md"
+    },
+    {
+      "source": "docs/how-we-build/doctor.md",
+      "destination": "docs/how-we-build/doctor.md"
+    },
+    {
+      "source": "docs/how-we-build/upgrades.md",
+      "destination": "docs/how-we-build/upgrades.md"
+    },
+    {
+      "source": "docs/how-we-build/api.md",
+      "destination": "docs/how-we-build/api.md"
+    },
+    {
+      "source": "docs/how-we-build/authorization.md",
+      "destination": "docs/how-we-build/authorization.md"
+    },
+    {
+      "source": "docs/how-we-build/testing.md",
+      "destination": "docs/how-we-build/testing.md"
+    },
+    {
+      "source": "docs/how-we-build/folder-structure.md",
+      "destination": "docs/how-we-build/folder-structure.md"
+    },
+    {
+      "source": "docs/how-we-build/examples.md",
+      "destination": "docs/how-we-build/examples.md"
+    },
+    {
+      "source": "docs/how-we-build/security.md",
+      "destination": "docs/how-we-build/security.md"
+    },
+    {
+      "source": "docs/security/threat-model.md",
+      "destination": "docs/security/threat-model.md"
+    },
+    {
+      "source": "docs/adr/0007-architecture-ownership-model.md",
+      "destination": "docs/adr/0007-architecture-ownership-model.md"
+    },
+    {
+      "source": "docs/adr/0008-atlas-project-contract.md",
+      "destination": "docs/adr/0008-atlas-project-contract.md"
+    },
+    {
+      "source": "docs/adr/0009-starter-reference-template-sync.md",
+      "destination": "docs/adr/0009-starter-reference-template-sync.md"
+    },
+    {
+      "source": "docs/adr/0010-atlas-upgrades-downstream-propagation.md",
+      "destination": "docs/adr/0010-atlas-upgrades-downstream-propagation.md"
+    }
+  ]
+}

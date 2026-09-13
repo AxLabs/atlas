@@ -43,7 +43,15 @@ await Promise.all([
     entryPoints: [path.join(packageRoot, "src/dependency-validation.ts")],
     outfile: path.join(distDir, "dependency-validation.js"),
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: [path.join(packageRoot, "src/bootstrap-assets.ts")],
+    outfile: path.join(distDir, "bootstrap-assets.js"),
+  }),
 ]);
 
 chmodSync(path.join(distDir, "cli.js"), 0o755);
 copyFileSync(path.join(repoRoot, "LICENSE"), path.join(packageRoot, "LICENSE"));
+
+const { runBootstrapAssetBuild } = await import("./build-bootstrap-assets.mjs");
+await runBootstrapAssetBuild();

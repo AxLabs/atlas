@@ -13,10 +13,13 @@
   },
   "files": [
     "dist/**/*.js",
-    "LICENSE"
+    "LICENSE",
+    "assets/bootstrap/manifest.json",
+    "assets/bootstrap/files/**"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/bundle-cli.mjs",
+    "build": "rm -rf dist assets && tsc -p tsconfig.build.json && node scripts/bundle-cli.mjs",
+    "build:bootstrap": "node scripts/build-bootstrap-assets.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check \"src/**/*.{ts,tsx}\"",
@@ -24,7 +27,7 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && jest",
     "test:watch": "jest --watch",
-    "clean": "rm -rf .turbo node_modules coverage dist LICENSE"
+    "clean": "rm -rf .turbo node_modules coverage dist LICENSE assets scripts/.cache"
   },
   "dependencies": {
     "minimatch": "10.2.5",

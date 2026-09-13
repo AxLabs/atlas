@@ -63,6 +63,9 @@ lerna-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Generated CLI distribution assets
+packages/cli/assets
+
 # Turbo
 .turbo
 
