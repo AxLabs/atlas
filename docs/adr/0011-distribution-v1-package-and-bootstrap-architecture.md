@@ -500,8 +500,7 @@ After this ADR is accepted, Distribution v1 should proceed in dependency order:
 9. **Public quickstart**
    - replace clone-first onboarding with the real `pnpm dlx ... init` path once a package is live.
 10. **Selective package review**
-
-- separately evaluate whether any source-owned workspace deserves a public npm API.
+    - separately evaluate whether any source-owned workspace deserves a public npm API.
 
 ## References
 
