@@ -52,7 +52,7 @@ third-party primitive (@base-ui/react, cmdk, sonner, …)
 | --------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `react-hook-form`     | `@atlas/ui` (runtime); apps that import RHF types directly also declare it | Reference `UserForm` imports `Control`, `FieldValues`, etc. |
 | `@hookform/resolvers` | `@atlas/ui` only                                                           | Used by `useZodForm`; apps use the hook, not the resolver   |
-| `zod`                 | Every workspace that defines or validates schemas                          | Apps and `@atlas/project` both use Zod 3.24.1               |
+| `zod`                 | Every workspace that defines or validates schemas                          | Apps, `@atlas/project`, and `@atlas/cli` use Zod 3.24.1     |
 
 Atlas keeps `@hookform/resolvers` v4 because Atlas currently standardizes on Zod 3.24.1. Resolver
 v5.2.x expects the `zod/v4/core` compatibility subpath introduced in Zod 3.25+, so upgrading the
@@ -103,13 +103,13 @@ migrating handlers.
 
 ## Intentionally retained duplication (audit baseline)
 
-| Dependency        | Workspaces                          | Why                                                                   |
-| ----------------- | ----------------------------------- | --------------------------------------------------------------------- |
-| `zod`             | apps, `@atlas/ui`, `@atlas/project` | Each defines or validates schemas locally                             |
-| `lucide-react`    | apps, `@atlas/ui`                   | App shells and UI primitives both import icons                        |
-| `sonner`          | apps, `@atlas/ui`                   | App `notify()` helpers and UI `Toaster` primitive                     |
-| `react-hook-form` | `@atlas/ui`, `apps/reference`       | UI owns form primitives; reference imports RHF types in feature forms |
-| Testing stack     | apps, `@atlas/ui`, `@atlas/consent` | Each workspace runs its own Jest suite                                |
+| Dependency        | Workspaces                                        | Why                                                                                                           |
+| ----------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `zod`             | apps, `@atlas/ui`, `@atlas/project`, `@atlas/cli` | Each defines or validates schemas locally; CLI ships Zod because it internalizes the project-contract runtime |
+| `lucide-react`    | apps, `@atlas/ui`                                 | App shells and UI primitives both import icons                                                                |
+| `sonner`          | apps, `@atlas/ui`                                 | App `notify()` helpers and UI `Toaster` primitive                                                             |
+| `react-hook-form` | `@atlas/ui`, `apps/reference`                     | UI owns form primitives; reference imports RHF types in feature forms                                         |
+| Testing stack     | apps, `@atlas/ui`, `@atlas/consent`               | Each workspace runs its own Jest suite                                                                        |
 
 ---
 

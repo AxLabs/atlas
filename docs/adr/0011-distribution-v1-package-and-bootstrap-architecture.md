@@ -6,10 +6,10 @@
 
 ## Context
 
-Atlas is now a public, source-owned frontend platform, but its supported adoption path still assumes a
-repository checkout. The CLI is implemented as the private `@atlas/cli` workspace and is invoked
-through the root workspace. `atlas init` initializes metadata in an **existing compatible checkout**;
-it does not create a project from an empty directory.
+Atlas is now a public, source-owned frontend platform, but its supported adoption path still assumes
+a repository checkout. The CLI is implemented as the private `@atlas/cli` workspace and is invoked
+through the root workspace. `atlas init` initializes metadata in an **existing compatible
+checkout**; it does not create a project from an empty directory.
 
 Distribution v1 needs a real external entry point without changing Atlas into a conventional runtime
 framework or publishing every internal workspace as a stable npm API.
@@ -22,16 +22,16 @@ The current repository establishes several constraints:
   dependency is development-only.
 - The starter application depends on local workspace packages such as `@atlas/ui` and
   `@atlas/consent`, and uses `@atlas/config` for repository/tooling configuration.
-- `@atlas/ui`, `@atlas/consent`, and `@atlas/config` are currently designed as source-owned workspace
-  packages. Their package identities are part of Atlas ownership/update metadata, but this does not
-  by itself make them justified public npm APIs.
-- The existing `atlas init` discovers an Atlas-compatible repository by `atlas.config.json` or by the
-  structural presence of `package.json`, `apps/web`, and `packages/ui`. It then initializes the
+- `@atlas/ui`, `@atlas/consent`, and `@atlas/config` are currently designed as source-owned
+  workspace packages. Their package identities are part of Atlas ownership/update metadata, but this
+  does not by itself make them justified public npm APIs.
+- The existing `atlas init` discovers an Atlas-compatible repository by `atlas.config.json` or by
+  the structural presence of `package.json`, `apps/web`, and `packages/ui`. It then initializes the
   contract/baseline inside that checkout.
-- Generators render source from code and operate against paths resolved from `atlas.config.json`; they
-  do not require external template files for feature/page generation.
-- Template synchronization and baseline capture read
-  `templates/app-infrastructure.manifest.json` from the consumer repository.
+- Generators render source from code and operate against paths resolved from `atlas.config.json`;
+  they do not require external template files for feature/page generation.
+- Template synchronization and baseline capture read `templates/app-infrastructure.manifest.json`
+  from the consumer repository.
 - `atlas upgrade` currently loads release snapshots from `releases/<version>` under the consumer
   repository (or an explicitly supplied fixture directory). A package-installed CLI cannot assume a
   newly generated consumer carries Atlas's entire release-history repository structure forever.
@@ -72,9 +72,9 @@ The intended user experience is:
 pnpm dlx @blitzcraftlabs/atlas init my-app
 ```
 
-The exact npm scope/package availability is an **external account/registry prerequisite** and must be
-verified before implementation treats this name as reserved. If the `blitzcraftlabs` npm scope cannot
-be used, the fallback naming decision should remain BlitzCraft-owned (for example
+The exact npm scope/package availability is an **external account/registry prerequisite** and must
+be verified before implementation treats this name as reserved. If the `blitzcraftlabs` npm scope
+cannot be used, the fallback naming decision should remain BlitzCraft-owned (for example
 `@blitzcraftlabs/atlas-cli`) rather than publishing under an unrelated generic `atlas` scope.
 
 Internal workspace names may remain `@atlas/*` inside generated source. This ADR does not claim or
@@ -82,16 +82,16 @@ reserve the public npm `@atlas` scope.
 
 ### 2. `@atlas/project` remains an implementation package, not a v1 public API
 
-`@atlas/project` is required by the CLI at runtime today, but external users do not need to import it
-to use Atlas. Distribution v1 will therefore **internalize it into the published CLI artifact** rather
-than publish it as a second npm package.
+`@atlas/project` is required by the CLI at runtime today, but external users do not need to import
+it to use Atlas. Distribution v1 will therefore **internalize it into the published CLI artifact**
+rather than publish it as a second npm package.
 
 Implementation may use a bundler or another build-time internalization strategy, provided the packed
 CLI has no unresolved `workspace:*` runtime dependency. The source workspace remains separate in the
 monorepo for maintainability and testing.
 
-The public package must not expose `@atlas/project` as a stable import contract in v1. Its schema and
-resolved project model remain Atlas implementation details surfaced through:
+The public package must not expose `@atlas/project` as a stable import contract in v1. Its schema
+and resolved project model remain Atlas implementation details surfaced through:
 
 - `atlas.config.json`;
 - CLI commands and JSON output;
@@ -123,9 +123,9 @@ This preserves Atlas's existing ownership model:
 - package versions can remain part of Atlas baseline/upgrade metadata;
 - no premature stable npm API is promised for UI/config/consent.
 
-`@atlas/project` and the CLI source workspace are **not required** in a generated consumer repository
-unless a later implementation proves a consumer-side source copy is necessary. The installed public
-CLI owns contract parsing/Doctor/generator/upgrade execution.
+`@atlas/project` and the CLI source workspace are **not required** in a generated consumer
+repository unless a later implementation proves a consumer-side source copy is necessary. The
+installed public CLI owns contract parsing/Doctor/generator/upgrade execution.
 
 ### 4. `atlas init <project>` becomes a real bootstrap command
 
@@ -176,8 +176,8 @@ The exact file manifest belongs in implementation code/tests, not only prose.
 ### 5. Bootstrap assets are versioned package assets, not repository-relative lookups
 
 Feature/page generator templates are already code-generated and should stay compiled into the CLI.
-Distribution v1 adds a **versioned bootstrap asset manifest** inside the public package for the files
-that must be materialized into a new project.
+Distribution v1 adds a **versioned bootstrap asset manifest** inside the public package for the
+files that must be materialized into a new project.
 
 The CLI must locate packaged assets relative to its installed package root, never relative to the
 Atlas source-repository root or the caller's current directory.
@@ -289,14 +289,14 @@ The test must fail on:
 
 Distribution v1 supports only what Atlas already validates confidently:
 
-| Surface | Initial support |
-| --- | --- |
-| Node | `>=22` |
-| Package manager | pnpm `>=10`; documented/tested path is `pnpm dlx` + pnpm workspace |
-| OS | Linux and macOS |
-| CPU | x64 and arm64 |
-| CLI module format | CommonJS artifact is acceptable for v1; no public module-format API promise |
-| Atlas API stability | pre-1.0 SemVer; CLI commands/JSON schemas are versioned deliberately |
+| Surface             | Initial support                                                             |
+| ------------------- | --------------------------------------------------------------------------- |
+| Node                | `>=22`                                                                      |
+| Package manager     | pnpm `>=10`; documented/tested path is `pnpm dlx` + pnpm workspace          |
+| OS                  | Linux and macOS                                                             |
+| CPU                 | x64 and arm64                                                               |
+| CLI module format   | CommonJS artifact is acceptable for v1; no public module-format API promise |
+| Atlas API stability | pre-1.0 SemVer; CLI commands/JSON schemas are versioned deliberately        |
 
 Windows may work in individual code paths but is not a Distribution-v1 support claim until it is in
 the clean-room CI matrix.
@@ -450,7 +450,8 @@ baseline should be a manifest-selected asset tree derived from real source.
 
 ### Negative
 
-- CLI build becomes more sophisticated because `@atlas/project` and data assets must be internalized.
+- CLI build becomes more sophisticated because `@atlas/project` and data assets must be
+  internalized.
 - Bootstrap needs an explicit manifest and copy pipeline.
 - Existing `atlas init`, upgrade snapshot resolution, agent docs references, and some Doctor
   assumptions require refactoring.
@@ -477,8 +478,8 @@ After this ADR is accepted, Distribution v1 should proceed in dependency order:
    - define the exact generated source-owned project tree;
    - derive/copy assets from canonical Atlas source without copying the entire repository.
 3. **`atlas init <project>` bootstrap**
-   - support empty-directory creation while preserving existing checkout initialization semantics where
-     useful;
+   - support empty-directory creation while preserving existing checkout initialization semantics
+     where useful;
    - record Atlas baseline identity.
 4. **Distribution-owned upgrade assets**
    - resolve supported release snapshots/migrations from the installed CLI package;
@@ -494,11 +495,12 @@ After this ADR is accepted, Distribution v1 should proceed in dependency order:
    - configure least-privilege publication/provenance.
 8. **Release integration**
    - publish the CLI package only for a canonical Atlas release/version;
-   - fail closed on existing versions, missing provenance prerequisites, or failed clean-room checks.
+   - fail closed on existing versions, missing provenance prerequisites, or failed clean-room
+     checks.
 9. **Public quickstart**
    - replace clone-first onboarding with the real `pnpm dlx ... init` path once a package is live.
 10. **Selective package review**
-   - separately evaluate whether any source-owned workspace deserves a public npm API.
+    - separately evaluate whether any source-owned workspace deserves a public npm API.
 
 ## References
 

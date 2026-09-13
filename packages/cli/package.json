@@ -11,8 +11,12 @@
     ".": "./dist/index.js",
     "./dependency-validation": "./dist/dependency-validation.js"
   },
+  "files": [
+    "dist/**/*.js",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && chmod +x dist/cli.js",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/bundle-cli.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check \"src/**/*.{ts,tsx}\"",
@@ -20,18 +24,20 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && jest",
     "test:watch": "jest --watch",
-    "clean": "rm -rf .turbo node_modules coverage dist"
+    "clean": "rm -rf .turbo node_modules coverage dist LICENSE"
   },
   "dependencies": {
-    "@atlas/project": "workspace:*",
     "minimatch": "10.2.5",
     "typescript": "5.7.2",
-    "yaml": "2.5.1"
+    "yaml": "2.5.1",
+    "zod": "3.24.1"
   },
   "devDependencies": {
     "@atlas/config": "workspace:*",
+    "@atlas/project": "workspace:*",
     "@types/jest": "29.5.14",
     "@types/node": "22.10.2",
+    "esbuild": "0.28.2",
     "eslint": "9.17.0",
     "jest": "29.7.0",
     "prettier": "3.4.2",

@@ -63,12 +63,18 @@ The root `pnpm atlas` script runs the linked workspace binary via `pnpm exec atl
 
 ## Future public distribution
 
-`@atlas/cli` is an in-repo workspace package. It is **not** published to the public npm registry.
-When local invocation is needed:
+`@atlas/cli` remains a private workspace package and is **not** published to the public npm
+registry. Distribution v1 first makes that package independently packable: `pnpm pack` from
+`packages/cli` produces a tarball that installs and runs outside this repository. The packed
+artifact internalizes `@atlas/project` and must not depend on unpublished `@atlas/*` workspaces at
+runtime.
 
-- Use `pnpm atlas` from a clone of this repository.
+Until a later Distribution v1 slice publishes the package:
+
+- Maintainers still use `pnpm atlas` from a clone of this repository.
 - Do not assume `npx atlas` against a public registry.
-- Version numbers mirror the Atlas platform snapshot (`@atlas/monorepo` root `package.json`).
+- `atlas --version` reports the installed CLI package version, which is distinct from a target
+  checkout's Atlas version.
 
 ---
 

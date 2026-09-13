@@ -1,0 +1,78 @@
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import { LATEST_SCHEMA_VERSION } from "@atlas/project";
+
+import {
+  CLI_PACKAGE_NAME,
+  findCliPackageRoot,
+  readCheckoutAtlasVersion,
+  readCliAtlasVersion,
+  readCliVersionMetadata,
+} from "../version";
+
+const CLI_PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const CLI_PACKAGE_VERSION = (
+  JSON.parse(readFileSync(path.join(CLI_PACKAGE_ROOT, "package.json"), "utf8")) as {
+    version: string;
+  }
+).version;
+
+describe("CLI package version resolution", () => {
+  it("reads the installed CLI version from the @atlas/cli package, not the process cwd", () => {
+    expect(readCliAtlasVersion()).toBe(CLI_PACKAGE_VERSION);
+    expect(findCliPackageRoot(__dirname)).toBe(CLI_PACKAGE_ROOT);
+    expect(findCliPackageRoot(path.join(CLI_PACKAGE_ROOT, "dist"))).toBe(CLI_PACKAGE_ROOT);
+  });
+
+  it("does not treat an unrelated package.json as the CLI package", () => {
+    const outside = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-version-unrelated-"));
+    writeFileSync(
+      path.join(outside, "package.json"),
+      `${JSON.stringify({ name: "some-other-project", version: "99.0.0" }, null, 2)}\n`,
+      "utf8"
+    );
+
+    expect(readCliAtlasVersion()).toBe(CLI_PACKAGE_VERSION);
+    expect(readCliAtlasVersion()).not.toBe("99.0.0");
+    expect(() => findCliPackageRoot(outside)).toThrow(/Unable to locate @atlas\/cli package.json/);
+    rmSync(outside, { recursive: true, force: true });
+  });
+
+  it("finds the CLI package from a nested dist layout used by the packed artifact", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-version-layout-"));
+    writeFileSync(
+      path.join(root, "package.json"),
+      `${JSON.stringify({ name: CLI_PACKAGE_NAME, version: "9.9.9" }, null, 2)}\n`,
+      "utf8"
+    );
+    const nested = path.join(root, "dist", "nested");
+    mkdirSync(nested, { recursive: true });
+
+    expect(findCliPackageRoot(nested)).toBe(root);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("keeps checkout Atlas version separate from the installed CLI version", () => {
+    const checkout = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-checkout-version-"));
+    writeFileSync(
+      path.join(checkout, "package.json"),
+      `${JSON.stringify({ name: "@atlas/monorepo", version: "1.2.3" }, null, 2)}\n`,
+      "utf8"
+    );
+
+    expect(readCheckoutAtlasVersion(checkout)).toBe("1.2.3");
+    expect(readCliAtlasVersion()).toBe(CLI_PACKAGE_VERSION);
+    expect(readCliAtlasVersion()).not.toBe("1.2.3");
+    rmSync(checkout, { recursive: true, force: true });
+  });
+
+  it("reports CLI metadata from the installed package", () => {
+    expect(readCliVersionMetadata()).toEqual({
+      atlasVersion: CLI_PACKAGE_VERSION,
+      contractSchemaVersion: LATEST_SCHEMA_VERSION,
+      cliPackage: CLI_PACKAGE_NAME,
+    });
+  });
+});
