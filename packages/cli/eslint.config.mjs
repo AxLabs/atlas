@@ -39,6 +39,15 @@ export default [
     },
   },
   {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      sourceType: "module",
+      globals: {
+        process: "readonly",
+      },
+    },
+  },
+  {
     files: ["jest.config.js"],
     languageOptions: {
       globals: {
