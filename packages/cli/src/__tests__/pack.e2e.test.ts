@@ -112,6 +112,27 @@ describe("Atlas CLI pack and clean-room install", () => {
 
     expect(forbiddenExact).toEqual([]);
     expect(forbiddenPrefixed).toEqual([]);
+
+    const uiPackage = JSON.parse(
+      readTarballFile(tarballPath as string, packedBootstrapFilePath("packages/ui/package.json"))
+    ) as { scripts?: Record<string, string>; devDependencies?: Record<string, string> };
+    expect(uiPackage.scripts?.storybook).toBeUndefined();
+    expect(uiPackage.scripts?.["test:visual"]).toBeUndefined();
+    expect(uiPackage.scripts?.prepare).toBeUndefined();
+    expect(uiPackage.devDependencies?.["@playwright/test"]).toBeUndefined();
+    expect(uiPackage.devDependencies?.storybook).toBeUndefined();
+    expect(uiPackage.devDependencies?.husky).toBeUndefined();
+    expect(uiPackage.scripts?.test).toBeDefined();
+
+    const lighthouseConfig = readTarballFile(
+      tarballPath as string,
+      packedBootstrapFilePath("lighthouserc.json")
+    );
+    expect(lighthouseConfig).toContain("ci");
+    const webPackage = JSON.parse(
+      readTarballFile(tarballPath as string, packedBootstrapFilePath("apps/web/package.json"))
+    ) as { scripts?: Record<string, string> };
+    expect(webPackage.scripts?.["perf:lhci"]).toContain("../../lighthouserc.json");
   });
 
   it("does not leak workspace protocol or unpublished Atlas runtime dependencies", () => {

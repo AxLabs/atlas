@@ -38,6 +38,7 @@ export const REQUIRED_BOOTSTRAP_FILE_PATHS = [
   "packages/consent/package.json",
   "packages/config/package.json",
   "pnpm-workspace.yaml",
+  "lighthouserc.json",
 ] as const;
 
 export const FORBIDDEN_BOOTSTRAP_PATH_PREFIXES = [
@@ -48,12 +49,16 @@ export const FORBIDDEN_BOOTSTRAP_PATH_PREFIXES = [
   "releases/",
   "packages/ui/.storybook/",
   "packages/ui/visual-tests/",
+  "packages/ui/.husky/",
+  "packages/ui/scripts/",
 ] as const;
 
 export const FORBIDDEN_BOOTSTRAP_EXACT_PATHS = [
   "atlas.config.json",
   "pnpm-lock.yaml",
   "package.json",
+  "packages/ui/playwright.storybook.config.ts",
+  "packages/ui/playwright.visual.config.ts",
 ] as const;
 
 function isPackedCliNoisePath(entry: string): boolean {

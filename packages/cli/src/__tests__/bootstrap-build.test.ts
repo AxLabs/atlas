@@ -4,6 +4,12 @@ import path from "node:path";
 
 import { buildBootstrapAssets, readSourceBootstrapManifest } from "../bootstrap/build";
 import { SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH } from "../bootstrap/constants";
+import {
+  CONSUMER_UI_PACKAGE_JSON_DESTINATION,
+  shouldOmitConsumerUiDevDependency,
+  shouldOmitConsumerUiScript,
+  toConsumerUiPackageManifest,
+} from "../bootstrap/consumer-ui-manifest";
 import { verifyPackagedBootstrapTree } from "../bootstrap/integrity";
 import { serializePackagedBootstrapManifest } from "../bootstrap/schema";
 import {
@@ -135,6 +141,77 @@ describe("bootstrap asset build", () => {
     expect(destinations.has("AGENTS.md")).toBe(true);
   });
 
+  it(
+    "packages a consumer-safe UI manifest and the Lighthouse config the web script references",
+    () => {
+      const outputDir = mkdtempSync(path.join(os.tmpdir(), "atlas-bootstrap-coherence-"));
+      try {
+        const packaged = buildBootstrapAssets({
+          repoRoot,
+          packageRoot: CLI_PACKAGE_ROOT,
+          outputDir,
+        });
+        const destinations = new Set(packaged.entries.map((entry) => entry.destination));
+        const filesRoot = path.join(outputDir, "files");
+        const packagedUiPath = path.join(
+          filesRoot,
+          ...CONSUMER_UI_PACKAGE_JSON_DESTINATION.split("/")
+        );
+        const canonicalUiRaw = readFileSync(
+          path.join(repoRoot, CONSUMER_UI_PACKAGE_JSON_DESTINATION),
+          "utf8"
+        );
+        const packagedUiRaw = readFileSync(packagedUiPath, "utf8");
+        const packagedUi = JSON.parse(packagedUiRaw) as {
+          scripts?: Record<string, string>;
+          devDependencies?: Record<string, string>;
+        };
+
+        const canonicalUi = JSON.parse(canonicalUiRaw) as {
+          scripts?: Record<string, string>;
+        };
+        expect(packagedUiRaw).toBe(toConsumerUiPackageManifest(canonicalUiRaw));
+        expect(packagedUiRaw).not.toBe(canonicalUiRaw);
+        expect(canonicalUi.scripts?.storybook).toBeDefined();
+
+        for (const [name, value] of Object.entries(packagedUi.scripts ?? {})) {
+          expect(shouldOmitConsumerUiScript(name, value)).toBe(false);
+        }
+        expect(
+          Object.keys(packagedUi.devDependencies ?? {}).filter((name) =>
+            shouldOmitConsumerUiDevDependency(name)
+          )
+        ).toEqual([]);
+        expect(packagedUi.scripts?.lint).toBeDefined();
+        expect(packagedUi.scripts?.typecheck).toBeDefined();
+        expect(packagedUi.scripts?.test).toBeDefined();
+        expect(packagedUi.devDependencies?.["@playwright/test"]).toBeUndefined();
+        expect(packagedUi.devDependencies?.storybook).toBeUndefined();
+        expect(packagedUi.devDependencies?.husky).toBeUndefined();
+
+        expect(destinations.has("lighthouserc.json")).toBe(true);
+        expect(existsSync(path.join(filesRoot, "lighthouserc.json"))).toBe(true);
+
+        const webPackage = JSON.parse(
+          readFileSync(path.join(filesRoot, "apps", "web", "package.json"), "utf8")
+        ) as { scripts?: Record<string, string> };
+        const lhciScript = webPackage.scripts?.["perf:lhci"];
+        expect(lhciScript).toMatch(/--config=/);
+        const configMatch = lhciScript?.match(/--config=(\S+)/);
+        expect(configMatch?.[1]).toBeDefined();
+        const resolvedConfig = path.posix.normalize(
+          path.posix.join("apps/web", configMatch?.[1] as string)
+        );
+        expect(resolvedConfig.startsWith("../")).toBe(false);
+        expect(destinations.has(resolvedConfig)).toBe(true);
+        expect(existsSync(path.join(filesRoot, ...resolvedConfig.split("/")))).toBe(true);
+      } finally {
+        rmSync(outputDir, { recursive: true, force: true });
+      }
+    },
+    BUILD_TIMEOUT_MS
+  );
+
   it("does not package generated-at-init or repository-only surfaces", () => {
     const source = readSourceBootstrapManifest(
       path.join(CLI_PACKAGE_ROOT, SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH)
@@ -151,5 +228,6 @@ describe("bootstrap asset build", () => {
     expect(destinations.has("apps/reference")).toBe(false);
     expect(destinations.has("packages/cli")).toBe(false);
     expect(destinations.has("packages/project")).toBe(false);
+    expect(destinations.has("lighthouserc.json")).toBe(true);
   });
 });

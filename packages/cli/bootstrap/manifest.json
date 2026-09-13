@@ -68,6 +68,10 @@
       "destination": "turbo.json"
     },
     {
+      "source": "lighthouserc.json",
+      "destination": "lighthouserc.json"
+    },
+    {
       "source": ".npmrc",
       "destination": ".npmrc"
     },

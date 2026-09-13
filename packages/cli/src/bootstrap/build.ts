@@ -24,6 +24,10 @@ import {
   SKIP_DIRECTORY_NAMES,
   SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH,
 } from "./constants";
+import {
+  CONSUMER_UI_PACKAGE_JSON_DESTINATION,
+  toConsumerUiPackageManifest,
+} from "./consumer-ui-manifest";
 import { BootstrapAssetError } from "./errors";
 import { verifyPackagedBootstrapTree } from "./integrity";
 import {
@@ -293,7 +297,15 @@ function copyExpandedFile(
   );
   const destinationPath = resolveContainedPath(filesRoot, file.destination, "destination");
   mkdirSync(path.dirname(destinationPath), { recursive: true });
-  copyFileSync(realPath, destinationPath);
+  if (file.destination === CONSUMER_UI_PACKAGE_JSON_DESTINATION) {
+    writeFileSync(
+      destinationPath,
+      toConsumerUiPackageManifest(readFileSync(realPath, "utf8")),
+      "utf8"
+    );
+  } else {
+    copyFileSync(realPath, destinationPath);
+  }
   chmodSync(destinationPath, mode & 0o777);
 
   const bytes = readFileSync(destinationPath);
