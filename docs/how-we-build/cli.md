@@ -67,7 +67,52 @@ The root `pnpm atlas` script runs the linked workspace binary via `pnpm exec atl
 registry. Distribution v1 first makes that package independently packable: `pnpm pack` from
 `packages/cli` produces a tarball that installs and runs outside this repository. The packed
 artifact internalizes `@atlas/project` and must not depend on unpublished `@atlas/*` workspaces at
-runtime.
+runtime. It also contains a **versioned bootstrap asset tree** derived from canonical Atlas source:
+
+```text
+package/
+├── package.json
+├── LICENSE
+├── dist/
+└── assets/bootstrap/
+    ├── manifest.json
+    └── files/
+        ├── apps/web/...
+        ├── packages/ui/...
+        ├── packages/consent/...
+        ├── packages/config/...
+        └── selected root files
+```
+
+The Atlas repository remains the source of truth. The CLI does not maintain a second hand-copied
+starter tree. `packages/cli/bootstrap/manifest.json` is the Distribution v1 allowlist;
+`pnpm --filter @atlas/cli build` materializes `packages/cli/assets/bootstrap/` from those source
+paths, and that generated tree is packed inside the tarball.
+
+Installed CLI code locates the tree from the `@atlas/cli` package root — never from process cwd, Git
+metadata, or `../../..` into this monorepo.
+
+The bootstrap allowlist is not the same contract as `templates/app-infrastructure.manifest.json`:
+
+| Manifest                                                        | Responsibility                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Distribution bootstrap (`packages/cli/bootstrap/manifest.json`) | Which canonical files are packaged as the supported new-project starting surface           |
+| Template-sync (`templates/app-infrastructure.manifest.json`)    | How Atlas-owned application infrastructure is classified and synced after a project exists |
+
+Files listed in template-sync `syncedPaths`, `generatedPaths`, and `starterOnlyPaths` are included
+in the bootstrap tree. `apps/reference` stays out of the default starter; template-sync then skips
+when those consumers are absent. `atlas.config.json`, the root `package.json`, and `pnpm-lock.yaml`
+are generated later by `atlas init`, not copied from this repository.
+
+The packaged UI workspace omits Storybook, visual baselines, Husky, `packages/ui/scripts/**`, and
+`packages/ui/README.md` (canonical UI docs still describe those maintainer-only commands). Bootstrap
+generation derives a consumer-safe `packages/ui/package.json` from the maintainer manifest so
+scripts and unused Storybook/visual/Husky `devDependencies` match that trimmed tree. Root
+`CONTRIBUTING.md` is repository/maintainer-only and is not packaged. `lighthouserc.json` is packaged
+so `apps/web`'s `perf:lhci` script resolves.
+
+Empty-directory `atlas init <project>` is **not** implemented yet. This slice only packages and
+resolves the baseline.
 
 Until a later Distribution v1 slice publishes the package:
 

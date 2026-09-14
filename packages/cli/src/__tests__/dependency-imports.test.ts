@@ -272,6 +272,25 @@ describe("findUndeclaredDependenciesForWorkspace", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  it("skips workspace-root packaged asset trees", () => {
+    const root = createDependencyFixture([
+      {
+        relativeRoot: "packages/cli",
+        packageJson: { name: "@atlas/cli", version: "0.1.0", private: true, dependencies: {} },
+        files: {
+          "src/cli.ts": "export {};\n",
+          "assets/bootstrap/files/apps/web/src/example.ts": "import 'next';\n",
+        },
+      },
+    ]);
+
+    const findings = findUndeclaredDependenciesForWorkspace(root, "packages/cli", {
+      scanMode: "repository",
+    });
+    expect(findings).toEqual([]);
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it("skips test files in application scan mode", () => {
     const root = createDependencyFixture([
       {

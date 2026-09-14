@@ -4,6 +4,9 @@ import path from "node:path";
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "../doctor/static-imports";
 import { CLI_PACKAGE_NAME, readCliAtlasVersion } from "../version";
 import {
+  FORBIDDEN_BOOTSTRAP_EXACT_PATHS,
+  FORBIDDEN_BOOTSTRAP_PATH_PREFIXES,
+  REQUIRED_BOOTSTRAP_FILE_PATHS,
   REQUIRED_PACKED_PATHS,
   collectRuntimeAtlasDependencies,
   collectWorkspaceProtocolLeaks,
@@ -13,11 +16,15 @@ import {
   extractTarballJsFiles,
   findPackedTarball,
   isPackedPathForbidden,
+  listPackedBootstrapFiles,
   listTarballEntries,
+  packedBootstrapFilePath,
   readPackedManifest,
+  readTarballFile,
   runCommand,
 } from "./helpers/pack-artifact";
 import { getRepoRoot } from "./helpers/run-cli";
+import type { PackagedBootstrapManifest } from "../bootstrap/schema";
 
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 const PACK_TIMEOUT_MS = 180_000;
@@ -25,6 +32,12 @@ const PACK_TIMEOUT_MS = 180_000;
 function runInstalledAtlas(cleanRoom: string, args: string[], cwd = cleanRoom) {
   const bin = path.join(cleanRoom, "node_modules", ".bin", "atlas");
   return runCommand(bin, args, { cwd });
+}
+
+function readPackedBootstrapManifest(tarballPath: string): PackagedBootstrapManifest {
+  return JSON.parse(
+    readTarballFile(tarballPath, "package/assets/bootstrap/manifest.json")
+  ) as PackagedBootstrapManifest;
 }
 
 describe("Atlas CLI pack and clean-room install", () => {
@@ -73,6 +86,55 @@ describe("Atlas CLI pack and clean-room install", () => {
     expect(forbidden).toEqual([]);
   });
 
+  it("packs the bootstrap manifest and a manifest-driven asset tree", () => {
+    expect(tarballPath).toBeDefined();
+    const manifest = readPackedBootstrapManifest(tarballPath as string);
+    const bootstrapFiles = listPackedBootstrapFiles(packedEntries);
+
+    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.atlasVersion).toBe(cliVersion);
+    expect(manifest.entries.length).toBeGreaterThan(0);
+    expect(bootstrapFiles.sort()).toEqual(
+      manifest.entries.map((entry) => entry.destination).sort()
+    );
+
+    for (const required of REQUIRED_BOOTSTRAP_FILE_PATHS) {
+      expect(packedEntries).toContain(packedBootstrapFilePath(required));
+      expect(manifest.entries.some((entry) => entry.destination === required)).toBe(true);
+    }
+
+    const forbiddenExact = bootstrapFiles.filter((file) =>
+      (FORBIDDEN_BOOTSTRAP_EXACT_PATHS as readonly string[]).includes(file)
+    );
+    const forbiddenPrefixed = bootstrapFiles.filter((file) =>
+      FORBIDDEN_BOOTSTRAP_PATH_PREFIXES.some((prefix) => file.startsWith(prefix))
+    );
+
+    expect(forbiddenExact).toEqual([]);
+    expect(forbiddenPrefixed).toEqual([]);
+
+    const uiPackage = JSON.parse(
+      readTarballFile(tarballPath as string, packedBootstrapFilePath("packages/ui/package.json"))
+    ) as { scripts?: Record<string, string>; devDependencies?: Record<string, string> };
+    expect(uiPackage.scripts?.storybook).toBeUndefined();
+    expect(uiPackage.scripts?.["test:visual"]).toBeUndefined();
+    expect(uiPackage.scripts?.prepare).toBeUndefined();
+    expect(uiPackage.devDependencies?.["@playwright/test"]).toBeUndefined();
+    expect(uiPackage.devDependencies?.storybook).toBeUndefined();
+    expect(uiPackage.devDependencies?.husky).toBeUndefined();
+    expect(uiPackage.scripts?.test).toBeDefined();
+
+    const lighthouseConfig = readTarballFile(
+      tarballPath as string,
+      packedBootstrapFilePath("lighthouserc.json")
+    );
+    expect(lighthouseConfig).toContain("ci");
+    const webPackage = JSON.parse(
+      readTarballFile(tarballPath as string, packedBootstrapFilePath("apps/web/package.json"))
+    ) as { scripts?: Record<string, string> };
+    expect(webPackage.scripts?.["perf:lhci"]).toContain("../../lighthouserc.json");
+  });
+
   it("does not leak workspace protocol or unpublished Atlas runtime dependencies", () => {
     expect(tarballPath).toBeDefined();
     const manifest = readPackedManifest(tarballPath as string);
@@ -90,9 +152,12 @@ describe("Atlas CLI pack and clean-room install", () => {
 
   it("does not leave unresolved unpublished Atlas imports in packed runtime JS", () => {
     expect(tarballPath).toBeDefined();
-    const jsFiles = extractTarballJsFiles(tarballPath as string);
+    const jsFiles = extractTarballJsFiles(tarballPath as string).filter((file) =>
+      file.path.startsWith("package/dist/")
+    );
     expect(jsFiles.map((file) => file.path).sort()).toEqual(
       [
+        "package/dist/bootstrap-assets.js",
         "package/dist/cli.js",
         "package/dist/dependency-validation.js",
         "package/dist/index.js",
@@ -154,6 +219,60 @@ describe("Atlas CLI pack and clean-room install", () => {
       expect(generateList.status).toBe(0);
       expect(generateList.stdout).toContain("feature");
       expect(generateList.stdout).toContain("page");
+
+      const resolverPath = path.join(installedPackage, "dist", "bootstrap-assets.js");
+      expect(existsSync(resolverPath)).toBe(true);
+
+      const installedLookup = runCommand(
+        process.execPath,
+        [
+          "-e",
+          `
+const path = require("path");
+const resolver = require(${JSON.stringify(resolverPath)});
+const root = resolver.findBootstrapAssetRoot();
+const manifest = resolver.readBootstrapManifest(root);
+const web = resolver.resolveBootstrapAsset("apps/web/package.json", root);
+const ui = resolver.resolveBootstrapAsset("packages/ui/package.json", root);
+const consent = resolver.resolveBootstrapAsset("packages/consent/package.json", root);
+const config = resolver.resolveBootstrapAsset("packages/config/package.json", root);
+const workspace = resolver.resolveBootstrapAsset("pnpm-workspace.yaml", root);
+process.stdout.write(JSON.stringify({
+  root,
+  atlasVersion: manifest.atlasVersion,
+  entryCount: manifest.entries.length,
+  destinations: {
+    web: web.absolutePath,
+    ui: ui.absolutePath,
+    consent: consent.absolutePath,
+    config: config.absolutePath,
+    workspace: workspace.absolutePath
+  }
+}));
+`,
+        ],
+        { cwd: repoRoot }
+      );
+      expect(installedLookup.status).toBe(0);
+      const resolved = JSON.parse(installedLookup.stdout) as {
+        root: string;
+        atlasVersion: string;
+        entryCount: number;
+        destinations: Record<string, string>;
+      };
+
+      const installedRoot = realpathSync(installedPackage);
+      const repoReal = realpathSync(repoRoot);
+      expect(resolved.atlasVersion).toBe(cliVersion);
+      expect(resolved.entryCount).toBeGreaterThan(0);
+      expect(realpathSync(resolved.root).startsWith(installedRoot)).toBe(true);
+      expect(realpathSync(resolved.root).startsWith(`${repoReal}${path.sep}`)).toBe(false);
+
+      for (const absolutePath of Object.values(resolved.destinations)) {
+        expect(existsSync(absolutePath)).toBe(true);
+        expect(realpathSync(absolutePath).startsWith(installedRoot)).toBe(true);
+        expect(realpathSync(absolutePath).startsWith(`${repoReal}${path.sep}`)).toBe(false);
+      }
     },
     PACK_TIMEOUT_MS
   );

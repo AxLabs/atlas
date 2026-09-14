@@ -27,19 +27,77 @@ export const REQUIRED_PACKED_PATHS = [
   "package/dist/cli.js",
   "package/dist/index.js",
   "package/dist/dependency-validation.js",
+  "package/dist/bootstrap-assets.js",
   "package/LICENSE",
+  "package/assets/bootstrap/manifest.json",
 ] as const;
+
+export const REQUIRED_BOOTSTRAP_FILE_PATHS = [
+  "apps/web/package.json",
+  "packages/ui/package.json",
+  "packages/consent/package.json",
+  "packages/config/package.json",
+  "pnpm-workspace.yaml",
+  "lighthouserc.json",
+] as const;
+
+export const FORBIDDEN_BOOTSTRAP_PATH_PREFIXES = [
+  "apps/reference/",
+  "packages/cli/",
+  "packages/project/",
+  ".github/",
+  "releases/",
+  "packages/ui/.storybook/",
+  "packages/ui/visual-tests/",
+  "packages/ui/.husky/",
+  "packages/ui/scripts/",
+] as const;
+
+export const FORBIDDEN_BOOTSTRAP_EXACT_PATHS = [
+  "atlas.config.json",
+  "pnpm-lock.yaml",
+  "package.json",
+  "CONTRIBUTING.md",
+  "packages/ui/README.md",
+  "packages/ui/playwright.storybook.config.ts",
+  "packages/ui/playwright.visual.config.ts",
+] as const;
+
+function isPackedCliNoisePath(entry: string): boolean {
+  return (
+    entry.startsWith("package/") &&
+    !entry.startsWith("package/assets/") &&
+    !entry.startsWith("package/dist/")
+  );
+}
 
 export const FORBIDDEN_PACKED_PATH_PATTERNS: { id: string; test: (entry: string) => boolean }[] = [
   { id: "src", test: (entry) => entry === "package/src" || entry.startsWith("package/src/") },
-  { id: "jest-config", test: (entry) => /\/jest\.config\.[^/]+$/.test(entry) },
-  { id: "eslint-config", test: (entry) => /\/eslint\.config\.[^/]+$/.test(entry) },
-  { id: "tests", test: (entry) => entry.includes("/__tests__/") },
+  {
+    id: "jest-config",
+    test: (entry) => isPackedCliNoisePath(entry) && /\/jest\.config\.[^/]+$/.test(entry),
+  },
+  {
+    id: "eslint-config",
+    test: (entry) => isPackedCliNoisePath(entry) && /\/eslint\.config\.[^/]+$/.test(entry),
+  },
+  { id: "tests", test: (entry) => isPackedCliNoisePath(entry) && entry.includes("/__tests__/") },
   { id: "coverage", test: (entry) => entry.includes("/coverage/") },
   { id: "turbo", test: (entry) => entry.includes("/.turbo/") },
   { id: "node-modules", test: (entry) => entry.includes("/node_modules/") },
   { id: "scripts", test: (entry) => entry.startsWith("package/scripts/") },
 ];
+
+export function packedBootstrapFilePath(destination: string): string {
+  return `package/assets/bootstrap/files/${destination}`;
+}
+
+export function listPackedBootstrapFiles(entries: string[]): string[] {
+  const prefix = "package/assets/bootstrap/files/";
+  return entries
+    .filter((entry) => entry.startsWith(prefix) && !entry.endsWith("/"))
+    .map((entry) => entry.slice(prefix.length));
+}
 
 const RUNTIME_DEPENDENCY_SECTIONS = [
   "dependencies",
