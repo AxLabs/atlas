@@ -81,7 +81,10 @@ export const CONSUMER_BUILD_ENV = Object.freeze({
   LOG_LEVEL: "info",
 });
 
-const REPO_BIN_MARKERS = Object.freeze(["node_modules/.bin", "packages/cli/dist"]);
+// Substring markers for PATH entries that can alias the source CLI even when
+// they are not realpath-inside the checkout. Do not match `node_modules/.bin`
+// globally — GitHub Actions pnpm lives at `/home/runner/setup-pnpm/node_modules/.bin`.
+const REPO_BIN_MARKERS = Object.freeze(["packages/cli/dist"]);
 
 const STRIPPED_ENV_KEYS = Object.freeze([
   "NODE_PATH",

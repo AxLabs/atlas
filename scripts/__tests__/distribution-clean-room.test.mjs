@@ -84,6 +84,17 @@ describe("distribution clean-room helpers", () => {
     assert.match(filtered, /\/opt\/node\/bin/);
   });
 
+  it("keeps GitHub Actions pnpm home PATH entries outside the checkout", () => {
+    const pnpmHome = "/home/runner/setup-pnpm/node_modules/.bin";
+    const filtered = filterPathForCleanRoom(
+      ["/usr/bin", pnpmHome, path.join(repoRoot, "node_modules", ".bin")].join(path.delimiter),
+      repoRoot
+    );
+    assert.match(filtered, /\/home\/runner\/setup-pnpm\/node_modules\/\.bin/);
+    assert.equal(filtered.includes(path.join(repoRoot, "node_modules", ".bin")), false);
+    assert.match(filtered, /\/usr\/bin/);
+  });
+
   it("detects workspace protocol and unpublished Atlas package leaks across all manifests", () => {
     const generatedRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-clean-room-audit-"));
     writeManifest(generatedRoot, "package.json", {
