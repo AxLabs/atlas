@@ -57,6 +57,8 @@ export const FORBIDDEN_BOOTSTRAP_EXACT_PATHS = [
   "atlas.config.json",
   "pnpm-lock.yaml",
   "package.json",
+  "CONTRIBUTING.md",
+  "packages/ui/README.md",
   "packages/ui/playwright.storybook.config.ts",
   "packages/ui/playwright.visual.config.ts",
 ] as const;

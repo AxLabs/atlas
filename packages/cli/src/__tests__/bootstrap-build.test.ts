@@ -228,6 +228,39 @@ describe("bootstrap asset build", () => {
     expect(destinations.has("apps/reference")).toBe(false);
     expect(destinations.has("packages/cli")).toBe(false);
     expect(destinations.has("packages/project")).toBe(false);
+    expect(destinations.has("CONTRIBUTING.md")).toBe(false);
     expect(destinations.has("lighthouserc.json")).toBe(true);
   });
+
+  it(
+    "omits maintainer-only documentation that is invalid in the trimmed consumer starter",
+    () => {
+      const outputDir = mkdtempSync(path.join(os.tmpdir(), "atlas-bootstrap-docs-"));
+      try {
+        const packaged = buildBootstrapAssets({
+          repoRoot,
+          packageRoot: CLI_PACKAGE_ROOT,
+          outputDir,
+        });
+        const destinations = new Set(packaged.entries.map((entry) => entry.destination));
+        const source = readSourceBootstrapManifest(
+          path.join(CLI_PACKAGE_ROOT, SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH)
+        );
+        const sourceDestinations = new Set(source.entries.map((entry) => entry.destination));
+        const filesRoot = path.join(outputDir, "files");
+
+        expect(existsSync(path.join(repoRoot, "packages", "ui", "README.md"))).toBe(true);
+        expect(existsSync(path.join(repoRoot, "CONTRIBUTING.md"))).toBe(true);
+
+        expect(sourceDestinations.has("CONTRIBUTING.md")).toBe(false);
+        expect(destinations.has("CONTRIBUTING.md")).toBe(false);
+        expect(destinations.has("packages/ui/README.md")).toBe(false);
+        expect(existsSync(path.join(filesRoot, "CONTRIBUTING.md"))).toBe(false);
+        expect(existsSync(path.join(filesRoot, "packages", "ui", "README.md"))).toBe(false);
+      } finally {
+        rmSync(outputDir, { recursive: true, force: true });
+      }
+    },
+    BUILD_TIMEOUT_MS
+  );
 });

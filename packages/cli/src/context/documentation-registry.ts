@@ -41,7 +41,6 @@ export const AGENT_DOCUMENTATION_REFERENCES: DocumentationReference[] = [
     title: "Folder structure",
   },
   { id: "examples", path: "docs/how-we-build/examples.md", title: "Example patterns" },
-  { id: "contributing", path: "CONTRIBUTING.md", title: "Contributing" },
   { id: "security", path: "docs/how-we-build/security.md", title: "Security posture" },
   { id: "threat-model", path: "docs/security/threat-model.md", title: "Atlas threat model" },
 ];

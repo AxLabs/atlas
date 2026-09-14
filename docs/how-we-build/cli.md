@@ -104,10 +104,12 @@ in the bootstrap tree. `apps/reference` stays out of the default starter; templa
 when those consumers are absent. `atlas.config.json`, the root `package.json`, and `pnpm-lock.yaml`
 are generated later by `atlas init`, not copied from this repository.
 
-The packaged UI workspace omits Storybook, visual baselines, Husky, and `packages/ui/scripts/**`.
-Bootstrap generation derives a consumer-safe `packages/ui/package.json` from the maintainer manifest
-so scripts and unused Storybook/visual/Husky `devDependencies` match that trimmed tree.
-`lighthouserc.json` is packaged so `apps/web`'s `perf:lhci` script resolves.
+The packaged UI workspace omits Storybook, visual baselines, Husky, `packages/ui/scripts/**`, and
+`packages/ui/README.md` (canonical UI docs still describe those maintainer-only commands). Bootstrap
+generation derives a consumer-safe `packages/ui/package.json` from the maintainer manifest so
+scripts and unused Storybook/visual/Husky `devDependencies` match that trimmed tree. Root
+`CONTRIBUTING.md` is repository/maintainer-only and is not packaged. `lighthouserc.json` is packaged
+so `apps/web`'s `perf:lhci` script resolves.
 
 Empty-directory `atlas init <project>` is **not** implemented yet. This slice only packages and
 resolves the baseline.

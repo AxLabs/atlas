@@ -40,7 +40,8 @@
         ".husky/**",
         "scripts/**",
         "playwright.storybook.config.ts",
-        "playwright.visual.config.ts"
+        "playwright.visual.config.ts",
+        "README.md"
       ]
     },
     {
@@ -106,10 +107,6 @@
     {
       "source": "AGENTS.md",
       "destination": "AGENTS.md"
-    },
-    {
-      "source": "CONTRIBUTING.md",
-      "destination": "CONTRIBUTING.md"
     },
     {
       "source": "scripts/ensure-pnpm.js",
