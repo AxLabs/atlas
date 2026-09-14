@@ -62,6 +62,7 @@ describe("atlas CLI executable", () => {
     expect(result.exitCode).toBe(ExitCode.SUCCESS);
     expect(result.stdout).toContain("Atlas CLI");
     expect(result.stdout).toContain("init");
+    expect(result.stdout).toContain("init <project>");
     expect(result.stdout).toContain("generate");
     expect(result.stdout).toContain("doctor");
     expect(result.stdout).toContain("sync");

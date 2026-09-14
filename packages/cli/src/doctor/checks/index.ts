@@ -566,7 +566,7 @@ export function runAtlasVersionCheck(context: DoctorContext): DoctorCheckResult 
     id: "atlas-version",
     title: "Atlas version",
     rationale:
-      "The installed Atlas CLI snapshot should match the checkout version to avoid tooling/project drift during future migrations.",
+      "The installed Atlas CLI snapshot should match the project's Atlas version to avoid tooling/project drift during future migrations.",
   };
 
   if (context.checkoutVersionError || !context.checkoutAtlasVersion) {
@@ -576,7 +576,8 @@ export function runAtlasVersionCheck(context: DoctorContext): DoctorCheckResult 
       diagnostics: [
         createDiagnostic(
           DoctorDiagnosticCode.ROOT_PACKAGE_METADATA_INVALID,
-          context.checkoutVersionError ?? "Unable to read checkout version from root package.json.",
+          context.checkoutVersionError ??
+            "Unable to read the project Atlas version from platform.baseline or root package.json.",
           { path: "package.json" }
         ),
       ],
@@ -591,14 +592,20 @@ export function runAtlasVersionCheck(context: DoctorContext): DoctorCheckResult 
     };
   }
 
+  const baselineVersion = context.rawContract?.platform?.baseline?.atlasVersion;
+  const identityPath =
+    typeof baselineVersion === "string" && baselineVersion === context.checkoutAtlasVersion
+      ? "atlas.config.json"
+      : "package.json";
+
   return {
     ...base,
     status: "warn",
     diagnostics: [
       createDiagnostic(
         DoctorDiagnosticCode.VERSION_MISMATCH,
-        `Installed Atlas CLI version ${context.atlasVersion} differs from checkout version ${context.checkoutAtlasVersion}.`,
-        { path: "package.json" }
+        `Installed Atlas CLI version ${context.atlasVersion} differs from project Atlas version ${context.checkoutAtlasVersion}.`,
+        { path: identityPath }
       ),
     ],
   };

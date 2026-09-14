@@ -1,324 +1,76 @@
-import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import path from "node:path";
+import { runBootstrapInit } from "../init/bootstrap";
+import { runCheckoutInit } from "../init/checkout";
 
-import {
-  ATLAS_CONTRACT_FILENAME,
-  AtlasBaselineCaptureError,
-  DEFAULT_ATLAS_PROJECT_CONTRACT,
-  joinRepoPath,
-  LATEST_SCHEMA_VERSION,
-  type RawAtlasProjectContract,
-  resolveAtlasProject,
-} from "@atlas/project";
-
-import { CliError, CliErrorCode } from "../errors/cli-error";
-import { cliErrorFromContract } from "../errors/from-contract";
-import { validatePrerequisites } from "../init/prerequisites";
-import { findAtlasRepoRoot, findStructuralAtlasRoot } from "../project/find-root";
-import { loadAppInfrastructureManifest, resolveManifestPath } from "../template-sync/manifest";
-import {
-  captureConsumerPlatformBaseline,
-  mergePlatformBaselineIntoContract,
-} from "../upgrade/baseline";
-import { readCheckoutAtlasVersion } from "../version";
-
+import type { EnvPolicy, ReferencePolicy } from "../init/types";
 import type { CommandResult, PlannedAction } from "../types/result";
 
-export type ReferencePolicy = "keep" | "remove";
-export type EnvPolicy = "skip" | "copy";
+export type { EnvPolicy, ReferencePolicy };
 
 export interface InitOptions {
   cwd?: string;
   dryRun?: boolean;
   reference: ReferencePolicy;
   env: EnvPolicy;
-}
-
-const REFERENCE_PATHS = [
-  DEFAULT_ATLAS_PROJECT_CONTRACT.features.reference,
-  DEFAULT_ATLAS_PROJECT_CONTRACT.features.examples,
-  DEFAULT_ATLAS_PROJECT_CONTRACT.reference.components,
-  DEFAULT_ATLAS_PROJECT_CONTRACT.reference.routes,
-];
-
-function planContractCreation(): PlannedAction[] {
-  return [
-    {
-      kind: "create",
-      path: ATLAS_CONTRACT_FILENAME,
-      reason: "Create minimal Atlas project contract",
-    },
-  ];
-}
-
-function planReferenceActions(repoRoot: string, reference: ReferencePolicy): PlannedAction[] {
-  if (reference === "keep") {
-    return REFERENCE_PATHS.map((relativePath) => ({
-      kind: "skip" as const,
-      path: relativePath,
-      reason: "Reference content retained (--reference keep)",
-    }));
-  }
-
-  return REFERENCE_PATHS.map((relativePath) => {
-    const absolutePath = joinRepoPath(repoRoot, relativePath);
-    if (!existsSync(absolutePath)) {
-      return {
-        kind: "skip" as const,
-        path: relativePath,
-        reason: "Reference path already absent",
-      };
-    }
-
-    return {
-      kind: "remove" as const,
-      path: relativePath,
-      reason: "Remove reference content (--reference remove)",
-    };
-  });
-}
-
-function planEnvActions(repoRoot: string, env: EnvPolicy): PlannedAction[] {
-  const targetRelative = path.posix.join(
-    DEFAULT_ATLAS_PROJECT_CONTRACT.application.root,
-    ".env.local"
-  );
-  const exampleRelative = path.posix.join(
-    DEFAULT_ATLAS_PROJECT_CONTRACT.application.root,
-    ".env.example"
-  );
-  const examplePath = joinRepoPath(
-    repoRoot,
-    path.posix.join(DEFAULT_ATLAS_PROJECT_CONTRACT.application.root, ".env.example")
-  );
-  const targetPath = joinRepoPath(repoRoot, targetRelative);
-
-  if (env === "skip") {
-    return [
-      {
-        kind: "skip",
-        path: targetRelative,
-        reason: "Environment setup skipped (--env skip)",
-      },
-    ];
-  }
-
-  if (!existsSync(examplePath)) {
-    return [
-      {
-        kind: "skip",
-        path: targetRelative,
-        reason: `${exampleRelative} not found`,
-      },
-    ];
-  }
-
-  if (existsSync(targetPath)) {
-    return [
-      {
-        kind: "skip",
-        path: targetRelative,
-        reason: ".env.local already exists; not overwritten",
-      },
-    ];
-  }
-
-  return [
-    {
-      kind: "copy",
-      path: targetRelative,
-      reason: "Copy .env.example to .env.local",
-    },
-  ];
-}
-
-interface InitContext {
-  repoRoot: string;
-  hasExistingContract: boolean;
-}
-
-/**
- * Locate a candidate Atlas checkout for init.
- * Structural discovery only checks shallow layout markers; @atlas/project validates contracts.
- */
-function resolveInitContext(cwd?: string): InitContext {
-  const startDir = cwd ? path.resolve(cwd) : process.cwd();
-
-  const contractRoot = findAtlasRepoRoot(startDir);
-  if (contractRoot) {
-    return { repoRoot: contractRoot, hasExistingContract: true };
-  }
-
-  const structuralRoot = findStructuralAtlasRoot(startDir);
-  if (structuralRoot) {
-    return { repoRoot: structuralRoot, hasExistingContract: false };
-  }
-
-  throw new CliError(
-    CliErrorCode.PROJECT_NOT_FOUND,
-    "Atlas project not found. Run init from an Atlas-compatible checkout."
-  );
-}
-
-function readCheckoutAtlasVersionForInit(repoRoot: string): string {
-  try {
-    return readCheckoutAtlasVersion(repoRoot);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to resolve checkout Atlas version.";
-    throw new CliError(CliErrorCode.PREREQUISITE_ERROR, message, { cause: error });
-  }
-}
-
-function buildInitialContract(repoRoot: string): RawAtlasProjectContract {
-  const specPath = joinRepoPath(repoRoot, DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.spec);
-  const schemaPath = joinRepoPath(
-    repoRoot,
-    DEFAULT_ATLAS_PROJECT_CONTRACT.generated.openApi.schema
-  );
-  const hasOpenApi = existsSync(specPath) && existsSync(schemaPath);
-
-  const baseContract: RawAtlasProjectContract = hasOpenApi
-    ? { schemaVersion: LATEST_SCHEMA_VERSION }
-    : {
-        schemaVersion: LATEST_SCHEMA_VERSION,
-        capabilities: {
-          openApi: false,
-        },
-      };
-
-  const manifestPath = resolveManifestPath(repoRoot);
-  if (!existsSync(manifestPath)) {
-    return baseContract;
-  }
-
-  const manifest = loadAppInfrastructureManifest(repoRoot);
-  const atlasVersion = readCheckoutAtlasVersionForInit(repoRoot);
-
-  try {
-    const baseline = captureConsumerPlatformBaseline({
-      repoRoot,
-      applicationRoot: DEFAULT_ATLAS_PROJECT_CONTRACT.application.root,
-      atlasVersion,
-      contractSchemaVersion: LATEST_SCHEMA_VERSION,
-      manifest,
-    });
-
-    return mergePlatformBaselineIntoContract(baseContract, baseline);
-  } catch (error) {
-    if (error instanceof AtlasBaselineCaptureError) {
-      throw new CliError(CliErrorCode.PREREQUISITE_ERROR, error.message, { cause: error });
-    }
-
-    throw error;
-  }
-}
-
-function validateExistingContract(repoRoot: string): void {
-  try {
-    resolveAtlasProject(repoRoot);
-  } catch (error) {
-    throw cliErrorFromContract(error);
-  }
-}
-
-function validateProposedContract(
-  repoRoot: string,
-  proposedContract: RawAtlasProjectContract
-): void {
-  try {
-    resolveAtlasProject(repoRoot, proposedContract);
-  } catch (error) {
-    throw cliErrorFromContract(error);
-  }
-}
-
-function planInit(context: InitContext, options: InitOptions): CommandResult {
-  const { repoRoot, hasExistingContract } = context;
-  const warnings = validatePrerequisites(repoRoot);
-  const atlasVersion = readCheckoutAtlasVersionForInit(repoRoot);
-
-  if (hasExistingContract) {
-    validateExistingContract(repoRoot);
-
-    return {
-      repoRoot,
-      atlasVersion,
-      actions: [
-        {
-          kind: "skip",
-          path: ATLAS_CONTRACT_FILENAME,
-          reason: "Atlas project already initialized",
-        },
-      ],
-      warnings,
-      alreadyInitialized: true,
-      referencePolicy: options.reference,
-    };
-  }
-
-  const proposedContract = buildInitialContract(repoRoot);
-  validateProposedContract(repoRoot, proposedContract);
-
-  return {
-    repoRoot,
-    atlasVersion,
-    actions: [
-      ...planContractCreation(),
-      ...planReferenceActions(repoRoot, options.reference),
-      ...planEnvActions(repoRoot, options.env),
-    ],
-    warnings,
-    alreadyInitialized: false,
-    referencePolicy: options.reference,
-  };
-}
-
-function applyInitPlan(repoRoot: string, plan: CommandResult): void {
-  const initialContract = buildInitialContract(repoRoot);
-
-  for (const action of plan.actions) {
-    const absolutePath = joinRepoPath(repoRoot, action.path);
-
-    switch (action.kind) {
-      case "create":
-        if (action.path === ATLAS_CONTRACT_FILENAME) {
-          writeFileSync(absolutePath, `${JSON.stringify(initialContract, null, 2)}\n`, "utf8");
-        }
-        break;
-      case "copy":
-        mkdirSync(path.dirname(absolutePath), { recursive: true });
-        copyFileSync(
-          joinRepoPath(
-            repoRoot,
-            path.posix.join(DEFAULT_ATLAS_PROJECT_CONTRACT.application.root, ".env.example")
-          ),
-          absolutePath
-        );
-        break;
-      case "remove":
-        rmSync(absolutePath, { recursive: true, force: true });
-        break;
-      case "skip":
-        break;
-      default:
-        break;
-    }
-  }
+  project?: string;
+  assetRoot?: string;
+  beforePromote?: () => void;
 }
 
 export function runInit(options: InitOptions): CommandResult {
-  const context = resolveInitContext(options.cwd);
-  const plan = planInit(context, options);
-
-  if (!options.dryRun && !plan.alreadyInitialized) {
-    applyInitPlan(context.repoRoot, plan);
+  if (options.project !== undefined) {
+    return runBootstrapInit({
+      cwd: options.cwd,
+      project: options.project,
+      dryRun: options.dryRun,
+      env: options.env,
+      reference: options.reference,
+      assetRoot: options.assetRoot,
+      beforePromote: options.beforePromote,
+    });
   }
 
-  return plan;
+  return runCheckoutInit({
+    cwd: options.cwd,
+    dryRun: options.dryRun,
+    env: options.env,
+    reference: options.reference,
+  });
 }
 
 export function formatInitResult(result: CommandResult, dryRun: boolean): string[] {
+  if (result.initMode === "bootstrap") {
+    const header = dryRun ? "Atlas init dry run." : "Atlas project created.";
+    const lines = [
+      header,
+      `Project root: ${result.repoRoot}`,
+      `Atlas version: ${result.atlasVersion}`,
+      "Actions:",
+      ...result.actions.map(
+        (action: PlannedAction) =>
+          `- ${action.kind}: ${action.path}${action.reason ? ` (${action.reason})` : ""}`
+      ),
+    ];
+
+    if (!dryRun) {
+      lines.push(
+        "Next steps:",
+        `  cd ${result.repoRoot}`,
+        "  pnpm install",
+        "  pnpm dev",
+        "Atlas CLI validation will be documented once the package publication path is finalized."
+      );
+    }
+
+    if (result.warnings.length > 0) {
+      lines.push("Warnings:");
+      for (const warning of result.warnings) {
+        lines.push(`- ${warning.message}`);
+      }
+    }
+
+    return lines;
+  }
+
   if (result.alreadyInitialized) {
     return [
       "Atlas project already initialized.",
@@ -348,4 +100,52 @@ export function formatInitResult(result: CommandResult, dryRun: boolean): string
   }
 
   return lines;
+}
+
+export function writeInitHelp(
+  writer: { writeStdout: (line: string) => void },
+  json: boolean
+): void {
+  const lines = [
+    "Atlas init — create a project or initialize an existing checkout",
+    "",
+    "Usage:",
+    "  atlas init <project> [options]",
+    "  atlas init [options]",
+    "",
+    "atlas init <project> materializes a complete Atlas consumer project from the",
+    "bootstrap assets packaged inside the installed CLI. <project> is resolved",
+    "relative to the caller cwd. The destination must not exist, or must be empty.",
+    "",
+    "atlas init (no project argument) initializes Atlas metadata in an existing",
+    "compatible checkout. It does not create a directory.",
+    "",
+    "Options:",
+    "  --dry-run            Preview planned changes without writing files",
+    "  --json               Emit machine-readable JSON on stdout",
+    "  --cwd <path>         Resolve paths relative to this directory",
+    "  --env <mode>         skip (default) or copy (.env.example → .env.local)",
+    "  --reference <mode>   Checkout init only: keep (default) or remove",
+    "",
+    "Examples:",
+    "  atlas init my-app",
+    "  atlas init nested/my-app",
+    "  atlas init my-app --env copy",
+    "  atlas init --dry-run",
+  ];
+
+  if (json) {
+    writer.writeStdout(
+      JSON.stringify({
+        ok: true,
+        command: "init",
+        result: { summary: "Atlas init help", lines },
+      })
+    );
+    return;
+  }
+
+  for (const line of lines) {
+    writer.writeStdout(line);
+  }
 }

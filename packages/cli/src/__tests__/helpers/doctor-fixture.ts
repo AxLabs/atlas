@@ -32,6 +32,7 @@ export interface DoctorFixtureOptions {
   customProductFeaturesRoot?: string;
   externalProductFeaturesRoot?: string;
   checkoutVersion?: string;
+  baselineAtlasVersion?: string;
   invalidRootPackageJson?: boolean;
   missingRootPackageJson?: boolean;
   missingWorkspaceConfig?: boolean;
@@ -103,6 +104,12 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
       )}\n`,
       "utf8"
     );
+  }
+
+  if (options?.invalidRootPackageJson || options?.missingRootPackageJson) {
+    stripContractBaseline(fixture.root);
+  } else if (options?.baselineAtlasVersion) {
+    writeContractBaselineAtlasVersion(fixture.root, options.baselineAtlasVersion);
   }
 
   if (options?.missingWorkspaceConfig) {
@@ -193,6 +200,54 @@ export function createDoctorAtlasFixture(options?: DoctorFixtureOptions): Doctor
   }
 
   return fixture;
+}
+
+function stripContractBaseline(repoRoot: string): void {
+  const contractPath = path.join(repoRoot, "atlas.config.json");
+  if (!existsSync(contractPath)) {
+    return;
+  }
+
+  const parsed = JSON.parse(readFileSync(contractPath, "utf8")) as {
+    platform?: { baseline?: unknown; [key: string]: unknown };
+  };
+  if (!parsed.platform?.baseline) {
+    return;
+  }
+
+  delete parsed.platform.baseline;
+  if (Object.keys(parsed.platform).length === 0) {
+    delete parsed.platform;
+  }
+  writeFileSync(contractPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+}
+
+function writeContractBaselineAtlasVersion(repoRoot: string, atlasVersion: string): void {
+  const contractPath = path.join(repoRoot, "atlas.config.json");
+  if (!existsSync(contractPath)) {
+    return;
+  }
+
+  const parsed = JSON.parse(readFileSync(contractPath, "utf8")) as {
+    platform?: {
+      baseline?: {
+        atlasVersion?: string;
+        contractSchemaVersion?: number;
+        templateManifestSchemaVersion?: number;
+        syncedPathChecksums?: Record<string, string>;
+      };
+    };
+  };
+  parsed.platform = {
+    ...parsed.platform,
+    baseline: {
+      atlasVersion,
+      contractSchemaVersion: parsed.platform?.baseline?.contractSchemaVersion ?? 1,
+      templateManifestSchemaVersion: parsed.platform?.baseline?.templateManifestSchemaVersion ?? 1,
+      syncedPathChecksums: parsed.platform?.baseline?.syncedPathChecksums ?? {},
+    },
+  };
+  writeFileSync(contractPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
 }
 
 function createContractFixture(options: {

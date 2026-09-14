@@ -4,6 +4,8 @@ import {
   type AtlasContractErrorCode as AtlasContractErrorCodeType,
 } from "@atlas/project";
 
+import { BootstrapAssetError } from "../bootstrap/errors";
+
 import { CliError, CliErrorCode } from "./cli-error";
 
 const CONTRACT_TO_CLI_CODE: Record<AtlasContractErrorCodeType, CliErrorCode> = {
@@ -33,6 +35,10 @@ export function cliErrorFromUnknown(error: unknown, debug = false): CliError {
 
   if (error instanceof AtlasContractError) {
     return cliErrorFromContract(error);
+  }
+
+  if (error instanceof BootstrapAssetError) {
+    return new CliError(CliErrorCode.PREREQUISITE_ERROR, error.message, { cause: error });
   }
 
   if (error instanceof Error) {

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { LATEST_SCHEMA_VERSION } from "@atlas/project";
+import { ATLAS_CONTRACT_FILENAME, LATEST_SCHEMA_VERSION } from "@atlas/project";
 
 /** npm package name of the Atlas CLI. Distinct from a target checkout's Atlas version. */
 export const CLI_PACKAGE_NAME = "@atlas/cli";
@@ -60,9 +60,57 @@ export function readCliAtlasVersion(): string {
   );
 }
 
-/** Atlas source/checkout snapshot version from a target repository root. */
+/**
+ * Atlas version for a target repository root.
+ *
+ * Generated consumer projects keep an independent app `package.json` version and record the Atlas
+ * snapshot in `atlas.config.json` `platform.baseline.atlasVersion`. Platform/source checkouts that
+ * still vendor `@atlas/cli` continue to use root `package.json.version` so a historical baseline
+ * does not replace the checkout's current Atlas identity.
+ */
 export function readCheckoutAtlasVersion(repoRoot: string): string {
+  if (!isAtlasPlatformCheckout(repoRoot)) {
+    const baselineVersion = readBaselineAtlasVersion(repoRoot);
+    if (baselineVersion) {
+      return baselineVersion;
+    }
+  }
+
   return readPackageVersion(path.join(repoRoot, "package.json"), "checkout root package.json");
+}
+
+function isAtlasPlatformCheckout(repoRoot: string): boolean {
+  const cliPackageJsonPath = path.join(repoRoot, "packages", "cli", "package.json");
+  if (!existsSync(cliPackageJsonPath)) {
+    return false;
+  }
+
+  try {
+    return readPackageJson(cliPackageJsonPath).name === CLI_PACKAGE_NAME;
+  } catch {
+    return false;
+  }
+}
+
+function readBaselineAtlasVersion(repoRoot: string): string | undefined {
+  const contractPath = path.join(repoRoot, ATLAS_CONTRACT_FILENAME);
+  if (!existsSync(contractPath)) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(contractPath, "utf8")) as {
+      platform?: { baseline?: { atlasVersion?: unknown } };
+    };
+    const atlasVersion = parsed.platform?.baseline?.atlasVersion;
+    if (typeof atlasVersion === "string" && atlasVersion.length > 0) {
+      return atlasVersion;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
 }
 
 export function readCliVersionMetadata() {

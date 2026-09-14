@@ -13,6 +13,8 @@ export interface CommandWarning {
   message: string;
 }
 
+export type InitMode = "checkout" | "bootstrap";
+
 export interface CommandResult {
   repoRoot: string;
   atlasVersion: string;
@@ -20,6 +22,7 @@ export interface CommandResult {
   warnings: CommandWarning[];
   alreadyInitialized?: boolean;
   referencePolicy?: "keep" | "remove";
+  initMode?: InitMode;
 }
 
 export interface JsonErrorBody {

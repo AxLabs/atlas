@@ -12,15 +12,15 @@ See also: [Atlas project contract](atlas-contract.md), [Agent workflow](agents.m
 
 ## What the Atlas CLI owns
 
-| Concern                | Example                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| Atlas project contract | Load `atlas.config.json` through `@atlas/project`                                 |
-| Platform version       | `atlas --version` reports the installed `@atlas/cli` platform snapshot            |
-| Project bootstrap      | `atlas init` initializes Atlas metadata in a compatible checkout                  |
-| Atlas generators       | `atlas generate feature …`, `atlas generate page …`, `atlas generate list --json` |
-| Agent project context  | `atlas context` / `atlas context --json`                                          |
-| Architecture Doctor    | `atlas doctor` reports contract, boundary, and workspace drift                    |
-| Upgrade workflows      | `atlas upgrade --to <version>` plans and applies supported release upgrades       |
+| Concern                | Example                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| Atlas project contract | Load `atlas.config.json` through `@atlas/project`                                   |
+| Platform version       | `atlas --version` reports the installed `@atlas/cli` platform snapshot              |
+| Project bootstrap      | `atlas init <project>` creates a consumer repo; `atlas init` initializes a checkout |
+| Atlas generators       | `atlas generate feature …`, `atlas generate page …`, `atlas generate list --json`   |
+| Agent project context  | `atlas context` / `atlas context --json`                                            |
+| Architecture Doctor    | `atlas doctor` reports contract, boundary, and workspace drift                      |
+| Upgrade workflows      | `atlas upgrade --to <version>` plans and applies supported release upgrades         |
 
 ---
 
@@ -53,6 +53,7 @@ pnpm --filter @atlas/cli build
 pnpm atlas --help
 pnpm atlas --version
 pnpm atlas init --dry-run
+pnpm atlas init my-app --dry-run
 pnpm atlas generate feature users --dry-run
 pnpm atlas generate page settings/profile --json
 ```
@@ -111,8 +112,8 @@ scripts and unused Storybook/visual/Husky `devDependencies` match that trimmed t
 `CONTRIBUTING.md` is repository/maintainer-only and is not packaged. `lighthouserc.json` is packaged
 so `apps/web`'s `perf:lhci` script resolves.
 
-Empty-directory `atlas init <project>` is **not** implemented yet. This slice only packages and
-resolves the baseline.
+`atlas init <project>` materializes that packaged tree into a new directory. It does not clone
+GitHub, copy the canonical monorepo, or read starter files from the caller's Atlas checkout.
 
 Until a later Distribution v1 slice publishes the package:
 
@@ -140,6 +141,48 @@ Until a later Distribution v1 slice publishes the package:
 
 ### `atlas init`
 
+Atlas init has two explicit modes.
+
+#### Empty-directory bootstrap — `atlas init <project>`
+
+Create a new Atlas consumer project from the bootstrap assets packaged inside the installed CLI:
+
+```bash
+atlas init my-app
+cd my-app
+pnpm install
+pnpm dev
+```
+
+`<project>` is resolved relative to the caller cwd (or `--cwd`). Nested relative destinations such
+as `nested/my-app` are allowed when every segment is kebab-case. Absolute paths, parent segments,
+and symbolic-link destinations are rejected.
+
+The destination must not exist, or must already exist and be empty. Init never merges into a
+non-empty directory and never overwrites an already generated project.
+
+Bootstrap copies only manifest-declared packaged files, verifies checksums first, preserves recorded
+POSIX modes, and promotes a staging directory into place so a failure does not leave a convincing
+half-created project.
+
+Generated-at-init files are written deliberately rather than copied from the Atlas monorepo:
+
+| Path                  | Responsibility                                                                                 |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| `package.json`        | Consumer workspace manifest (`apps/web`, `packages/ui`, `packages/consent`, `packages/config`) |
+| `atlas.config.json`   | Project contract + `platform.baseline` checksums using the packaged Atlas version              |
+| `README.md`           | Short consumer quickstart                                                                      |
+| `jest.config.js`      | Jest projects for the generated workspace (no `apps/reference`)                                |
+| `pnpm-lock.yaml`      | Left absent until the consumer runs `pnpm install`                                             |
+| `apps/web/.env.local` | Absent by default; `--env copy` copies `.env.example` when present                             |
+
+`--reference` is checkout-init only. The generated project does not include `apps/reference`.
+
+This command does **not** publish to npm. Do not assume `pnpm dlx @blitzcraftlabs/atlas` works until
+a later Distribution v1 slice publishes the package.
+
+#### Checkout init — `atlas init`
+
 Initialize Atlas metadata in an **existing compatible checkout**. This command:
 
 - Validates Node/pnpm prerequisites from root `package.json` `engines`
@@ -149,28 +192,30 @@ Initialize Atlas metadata in an **existing compatible checkout**. This command:
 - Validates a proposed contract through `@atlas/project` before writing any files on first init
 - Creates `atlas.config.json` when absent (minimal contract with `openApi: false` when OpenAPI
   artifacts are absent)
-- Records `platform.baseline` (Atlas version + synced-path checksums) when the infrastructure
-  manifest is present — see [upgrades](upgrades.md). When the manifest is present, baseline capture
-  is **strict**: init fails rather than writing incomplete or silently absent upgrade evidence.
+- Records `platform.baseline` (checkout Atlas version + synced-path checksums) when the
+  infrastructure manifest is present — see [upgrades](upgrades.md). When the manifest is present,
+  baseline capture is **strict**: init fails rather than writing incomplete or silently absent
+  upgrade evidence.
 - Never silently overwrites an existing contract
 - Plans all actions before writing files
 
-Customization options (`--reference`, `--env`) apply **only during first initialization**.
+Customization options (`--reference`, `--env`) apply **only during first checkout initialization**.
 Re-running `atlas init` on an already initialized valid Atlas project performs no mutations, even
 when those flags are supplied.
 
-| Init option   | Values           | Default |
-| ------------- | ---------------- | ------- |
-| `--reference` | `keep`, `remove` | `keep`  |
-| `--env`       | `skip`, `copy`   | `skip`  |
+| Init option   | Values           | Default | Mode          |
+| ------------- | ---------------- | ------- | ------------- |
+| `--reference` | `keep`, `remove` | `keep`  | Checkout only |
+| `--env`       | `skip`, `copy`   | `skip`  | Both          |
 
 `--env copy` copies `apps/web/.env.example` → `apps/web/.env.local` only when `.env.local` is
-absent. Atlas never invent secrets or overwrite existing env files.
+absent. Atlas never invents secrets or overwrites existing env files.
 
 `--reference remove` deletes canonical reference/example surfaces declared by the contract defaults.
-Reference removal requires an explicit flag; the default retains reference content.
+Reference removal requires an explicit flag; the default retains reference content. It is rejected
+during empty-directory bootstrap because that starter does not include `apps/reference`.
 
-There is **no** `create-atlas` command in v0.1 — bootstrap from this public repository clone.
+There is **no** `create-atlas` command. Empty-directory creation is `atlas init <project>`.
 
 ### `atlas generate feature <name>`
 
@@ -289,6 +334,11 @@ Machine output includes:
 | `documentation`            | Workflow doc, ADR references, canonical doc links         |
 
 Reports are deterministic: stable `schemaVersion`, sorted paths, no timestamps.
+
+`atlasVersion` is the project's Atlas identity. Generated consumer projects use
+`platform.baseline.atlasVersion` from `atlas.config.json` so the application `package.json` version
+can stay independent. Source checkouts that still vendor `@atlas/cli` continue to use the root
+package version, including when a historical upgrade baseline is present.
 
 ### `atlas doctor`
 
@@ -423,9 +473,10 @@ and proposed contracts before `init` reports success or performs mutations.
 package metadata. It works outside an Atlas project and does not depend on the current working
 directory.
 
-During `atlas init`, the CLI separately reports the **checkout/source snapshot** version from the
-target repository root `package.json` (`@atlas/monorepo`). That value identifies the Atlas source
-used to bootstrap the project and is independent of contract `schemaVersion`.
+During **checkout** `atlas init`, the CLI reports the **checkout/source snapshot** version from the
+target repository root `package.json`. During **bootstrap** `atlas init <project>`, the recorded
+Atlas version is the packaged bootstrap/`@atlas/cli` version — not a checkout that did not exist
+yet. Those identities are independent of contract `schemaVersion`.
 
 Machine-readable `--json` output may include:
 
@@ -441,12 +492,14 @@ Machine-readable `--json` output may include:
 
 ## Current CLI commands
 
-| Command            | Capability                                        | Status in v0.1 |
-| ------------------ | ------------------------------------------------- | -------------- |
-| `atlas generate …` | Feature + page shells                             | Implemented    |
-| `atlas doctor`     | Diagnostics                                       | Implemented    |
-| `atlas upgrade`    | Planning, dry-run, apply, JSON output             | Implemented    |
-| Upgrade contract   | Baseline + rehearsal; see [upgrades](upgrades.md) | Implemented    |
+| Command                | Capability                                             | Status in v0.1 |
+| ---------------------- | ------------------------------------------------------ | -------------- |
+| `atlas init <project>` | Empty-directory bootstrap from packaged assets         | Implemented    |
+| `atlas init`           | Initialize metadata in an existing compatible checkout | Implemented    |
+| `atlas generate …`     | Feature + page shells                                  | Implemented    |
+| `atlas doctor`         | Diagnostics                                            | Implemented    |
+| `atlas upgrade`        | Planning, dry-run, apply, JSON output                  | Implemented    |
+| Upgrade contract       | Baseline + rehearsal; see [upgrades](upgrades.md)      | Implemented    |
 
 The CLI exposes explicit command registration, shared context loading, exit codes, and output
 conventions so additional commands can be added without redesigning the foundation.

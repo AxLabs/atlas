@@ -3,7 +3,7 @@
 import { runContextCommand, writeContextHelp } from "./commands/context";
 import { runDoctorCommand, writeDoctorHelp } from "./commands/doctor";
 import { parseGenerateArgs, runGenerateCommand, writeGenerateHelp } from "./commands/generate";
-import { formatInitResult, runInit } from "./commands/init";
+import { formatInitResult, runInit, writeInitHelp } from "./commands/init";
 import {
   formatSyncInfrastructureResult,
   runSyncInfrastructureCommand,
@@ -70,6 +70,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return ExitCode.SUCCESS;
       }
 
+      if (parsed.command === "init") {
+        writeInitHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
       writeHelp(writer, parsed.json);
       return ExitCode.SUCCESS;
     }
@@ -127,11 +132,19 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
 }
 
 function runInitCommand(parsed: ParsedCli, writer: ReturnType<typeof createOutputWriter>): number {
+  if (parsed.initArgs.length > 1) {
+    throw new CliError(
+      CliErrorCode.USAGE_ERROR,
+      `Unexpected arguments: ${parsed.initArgs.slice(1).join(" ")}. Usage: atlas init [project]`
+    );
+  }
+
   const result = runInit({
     cwd: parsed.cwd,
     dryRun: parsed.dryRun,
     env: parsed.env,
     reference: parsed.reference,
+    project: parsed.initArgs[0],
   });
 
   writeCommandSuccess(writer, "init", result, parsed.json, (value: CommandResult) =>

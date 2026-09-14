@@ -75,7 +75,7 @@ function readCheckoutVersionMetadata(repoRoot: string): { version?: string; erro
       error:
         error instanceof Error
           ? error.message
-          : "Unable to read checkout version from root package.json.",
+          : "Unable to read the project Atlas version from platform.baseline or root package.json.",
     };
   }
 }

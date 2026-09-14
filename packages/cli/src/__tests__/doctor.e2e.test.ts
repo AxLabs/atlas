@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { ExitCode } from "../exit-codes";
 import { DoctorDiagnosticCode } from "../doctor/diagnostics";
+import { ExitCode } from "../exit-codes";
+import { readCliAtlasVersion } from "../version";
 import {
   createDoctorAtlasFixture,
   createMissingContractFixture,
@@ -522,6 +523,7 @@ describe("atlas doctor version diagnostics", () => {
   it("warns without failing when checkout version differs from CLI version", () => {
     const fixture = createDoctorAtlasFixture({
       checkoutVersion: "9.9.9",
+      baselineAtlasVersion: "9.9.9",
       withApplicationTooling: true,
       withEslintBoundaryFixtures: false,
     });
@@ -549,6 +551,23 @@ describe("atlas doctor version diagnostics", () => {
     expect(metadataDiagnostics).toHaveLength(1);
     expect(versionCheck?.status).toBe("fail");
     expect(workspaceCheck?.status).not.toBe("fail");
+  });
+
+  it("does not treat a generated app version as an Atlas mismatch when baseline matches the CLI", () => {
+    const fixture = createDoctorAtlasFixture({
+      checkoutVersion: "0.1.0",
+      baselineAtlasVersion: readCliAtlasVersion(),
+      withApplicationTooling: true,
+      withEslintBoundaryFixtures: false,
+    });
+    const { exitCode, result } = runDoctorJson(fixture.root);
+    const versionCheck = result.checks.find((check) => check.id === "atlas-version");
+
+    expect(exitCode).toBe(ExitCode.SUCCESS);
+    expect(versionCheck?.status).toBe("pass");
+    expect(result.diagnostics.some((d) => d.code === DoctorDiagnosticCode.VERSION_MISMATCH)).toBe(
+      false
+    );
   });
 });
 
