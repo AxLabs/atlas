@@ -1,0 +1,296 @@
+#!/usr/bin/env node
+import { existsSync, realpathSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import {
+  CLEAN_ROOM_STAGE_PREFIX,
+  CLEAN_ROOM_STAGES,
+  CLEAN_ROOM_TIMEOUTS_MS,
+  CONSUMER_BUILD_ENV,
+  GENERATED_PROJECT_NAME,
+  GENERATOR_FEATURE_NAME,
+  GENERATOR_PAGE_ROUTE,
+  assertContextReport,
+  assertDoctorReport,
+  assertGeneratedProjectShape,
+  assertGeneratorOutput,
+  assertOutsideRepo,
+  auditGeneratedWorkspace,
+  collectWorkspaceResolutionIssues,
+  createCleanRoomLayout,
+  findPackedTarball,
+  isInsideDirectory,
+  parseJsonEnvelope,
+  readGeneratedBaseline,
+  removeDirectory,
+  resolveAtlasRepoRoot,
+  resolveCommandPath,
+  runStage,
+  sanitizeCleanRoomEnv,
+} from "./lib/distribution-clean-room.mjs";
+
+const scriptPath = fileURLToPath(import.meta.url);
+
+function parseArgs(argv) {
+  const options = {
+    keep: process.env.ATLAS_KEEP_CLEAN_ROOM === "1",
+  };
+
+  for (const arg of argv) {
+    if (arg === "--keep") {
+      options.keep = true;
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+
+  return options;
+}
+
+function writeHelp() {
+  process.stdout.write(`Usage: pnpm distribution:verify [--keep]
+
+Prove that a packed @atlas/cli tarball bootstraps a self-contained Atlas project
+outside this repository.
+
+This is a maintainer distribution check. It does not publish to npm.
+`);
+}
+
+function installedAtlasBinary(harness) {
+  return path.join(harness, "node_modules", ".bin", "atlas");
+}
+
+function installedCliPackage(harness) {
+  return path.join(harness, "node_modules", "@atlas", "cli");
+}
+
+function assertExecutable(filePath, label) {
+  if (!existsSync(filePath)) {
+    throw new Error(`${label} is missing: ${filePath}`);
+  }
+  if ((statSync(filePath).mode & 0o111) === 0) {
+    throw new Error(`${label} is not executable: ${filePath}`);
+  }
+}
+
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+  if (options.help) {
+    writeHelp();
+    return 0;
+  }
+
+  const repoRoot = resolveAtlasRepoRoot(path.dirname(scriptPath));
+  const pnpm = resolveCommandPath("pnpm");
+  const cliPackageRoot = path.join(repoRoot, "packages", "cli");
+  let layout;
+
+  try {
+    layout = createCleanRoomLayout(repoRoot);
+    const packEnv = {
+      ...process.env,
+      NO_COLOR: "1",
+      FORCE_COLOR: "0",
+    };
+
+    runStage(
+      CLEAN_ROOM_STAGES.packCli,
+      pnpm,
+      ["--filter", "@atlas/cli", "build"],
+      {
+        cwd: repoRoot,
+        env: packEnv,
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.packCli,
+      }
+    );
+    runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["pack", "--pack-destination", layout.artifacts], {
+      cwd: cliPackageRoot,
+      env: packEnv,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.packCli,
+    });
+
+    const tarballPath = findPackedTarball(layout.artifacts);
+    if (!existsSync(tarballPath)) {
+      throw new Error(`Packed CLI tarball was not created at ${tarballPath}`);
+    }
+
+    const harnessEnv = sanitizeCleanRoomEnv({ repoRoot, cwd: layout.harness });
+    runStage(CLEAN_ROOM_STAGES.installCli, pnpm, ["add", tarballPath], {
+      cwd: layout.harness,
+      env: harnessEnv,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.installCli,
+    });
+
+    const atlasBin = installedAtlasBinary(layout.harness);
+    const cliInstalled = installedCliPackage(layout.harness);
+    assertExecutable(atlasBin, "Installed Atlas binary");
+    assertOutsideRepo(repoRoot, layout.harness, "Clean-room harness");
+    assertOutsideRepo(repoRoot, atlasBin, "Installed Atlas binary");
+    assertOutsideRepo(repoRoot, cliInstalled, "Installed @atlas/cli");
+    if (isInsideDirectory(cliPackageRoot, cliInstalled)) {
+      throw new Error("Installed CLI resolved to the source-tree package");
+    }
+
+    const atlas = realpathSync(atlasBin);
+    const initEnv = sanitizeCleanRoomEnv({ repoRoot, cwd: layout.root });
+    runStage(CLEAN_ROOM_STAGES.init, atlas, ["init", GENERATED_PROJECT_NAME], {
+      cwd: layout.root,
+      env: initEnv,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.init,
+    });
+
+    const generatedRoot = layout.generatedRoot;
+    if (!existsSync(generatedRoot)) {
+      throw new Error(`atlas init did not create ${generatedRoot}`);
+    }
+    assertOutsideRepo(repoRoot, generatedRoot, "Generated project");
+    const generatedManifest = assertGeneratedProjectShape(generatedRoot, repoRoot);
+    const atlasVersion = readGeneratedBaseline(generatedRoot);
+    if (generatedManifest.version === atlasVersion) {
+      throw new Error("Generated app version must remain independent of the Atlas baseline");
+    }
+
+    const consumerToolingEnv = {
+      TURBO_CACHE_DIR: path.join(generatedRoot, "node_modules", ".cache", "turbo"),
+      TURBO_DAEMON: "false",
+    };
+    const consumerEnv = sanitizeCleanRoomEnv({
+      repoRoot,
+      cwd: generatedRoot,
+      extra: consumerToolingEnv,
+    });
+    runStage(CLEAN_ROOM_STAGES.installConsumer, pnpm, ["install"], {
+      cwd: generatedRoot,
+      env: consumerEnv,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.installConsumer,
+    });
+    if (!existsSync(path.join(generatedRoot, "pnpm-lock.yaml"))) {
+      throw new Error("pnpm install did not create pnpm-lock.yaml");
+    }
+    const workspaceIssues = auditGeneratedWorkspace(generatedRoot);
+    if (workspaceIssues.length > 0) {
+      throw new Error(`Generated workspace audit failed:\n${workspaceIssues.join("\n")}`);
+    }
+    const resolutionIssues = collectWorkspaceResolutionIssues(generatedRoot);
+    if (resolutionIssues.length > 0) {
+      throw new Error(`Generated workspace resolution failed:\n${resolutionIssues.join("\n")}`);
+    }
+
+    const buildEnv = sanitizeCleanRoomEnv({
+      repoRoot,
+      cwd: generatedRoot,
+      extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
+    });
+    runStage(CLEAN_ROOM_STAGES.build, pnpm, ["build"], {
+      cwd: generatedRoot,
+      env: buildEnv,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
+    });
+
+    const doctor = runStage(
+      CLEAN_ROOM_STAGES.doctor,
+      atlas,
+      ["doctor", "--json", "--cwd", generatedRoot],
+      {
+        cwd: layout.harness,
+        env: sanitizeCleanRoomEnv({ repoRoot, cwd: layout.harness }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.doctor,
+      }
+    );
+    const doctorEnvelope = parseJsonEnvelope(doctor.stdout, "atlas doctor --json");
+    const doctorIssues = assertDoctorReport(doctorEnvelope, {
+      atlasVersion,
+      appVersion: generatedManifest.version,
+      generatedRoot,
+      repoRoot,
+    });
+    if (doctorIssues.length > 0) {
+      throw new Error(`Doctor assertions failed:\n${doctorIssues.join("\n")}\n${doctor.stdout}`);
+    }
+
+    runStage(
+      CLEAN_ROOM_STAGES.generate,
+      atlas,
+      ["generate", "feature", GENERATOR_FEATURE_NAME, "--cwd", generatedRoot],
+      {
+        cwd: layout.harness,
+        env: sanitizeCleanRoomEnv({ repoRoot, cwd: layout.harness }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.generate,
+      }
+    );
+    runStage(
+      CLEAN_ROOM_STAGES.generate,
+      atlas,
+      ["generate", "page", GENERATOR_PAGE_ROUTE, "--cwd", generatedRoot],
+      {
+        cwd: layout.harness,
+        env: sanitizeCleanRoomEnv({ repoRoot, cwd: layout.harness }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.generate,
+      }
+    );
+    assertGeneratorOutput(generatedRoot, repoRoot);
+
+    runStage(CLEAN_ROOM_STAGES.typecheck, pnpm, ["typecheck"], {
+      cwd: generatedRoot,
+      env: sanitizeCleanRoomEnv({
+        repoRoot,
+        cwd: generatedRoot,
+        extra: consumerToolingEnv,
+      }),
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.typecheck,
+    });
+
+    const context = runStage(
+      CLEAN_ROOM_STAGES.context,
+      atlas,
+      ["context", "--json", "--cwd", generatedRoot],
+      {
+        cwd: layout.harness,
+        env: sanitizeCleanRoomEnv({ repoRoot, cwd: layout.harness }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.context,
+      }
+    );
+    const contextEnvelope = parseJsonEnvelope(context.stdout, "atlas context --json");
+    const contextIssues = assertContextReport(contextEnvelope, {
+      atlasVersion,
+      generatedRoot,
+      repoRoot,
+    });
+    if (contextIssues.length > 0) {
+      throw new Error(`Context assertions failed:\n${contextIssues.join("\n")}\n${context.stdout}`);
+    }
+
+    process.stdout.write(
+      `${CLEAN_ROOM_STAGE_PREFIX} ok ${GENERATED_PROJECT_NAME} @ Atlas ${atlasVersion}\n`
+    );
+
+    if (!options.keep) {
+      removeDirectory(layout.root);
+    } else {
+      process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} kept ${layout.root}\n`);
+    }
+    return 0;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`${message}\n`);
+    if (layout?.root) {
+      process.stderr.write(`${CLEAN_ROOM_STAGE_PREFIX} preserved ${layout.root}\n`);
+    }
+    return 1;
+  }
+}
+
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === pathToFileURL(scriptPath).href) {
+  main()
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((error) => {
+      process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+      process.exitCode = 1;
+    });
+}

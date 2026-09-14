@@ -14,17 +14,19 @@ pull_request / push to main
   └── Security Audit     (blocking Atlas vulnerability policy + workflow pins)
 ```
 
-| Job                | When it runs                                                        | What it does                                                                                                                                        |
-| ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Governance**     | Always                                                              | License, provenance, and dependency-ownership gates                                                                                                 |
-| **CI**             | Always (shell checks); full suite when `app=true` or push to `main` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, `test:risk-coverage`, Codecov report, build, Chromium+WebKit E2E |
-| **UI Quality**     | When UI-impacting paths change or push to `main`                    | Storybook build, critical-story policy, `test:storybook`, Chromium+WebKit keyboard checks, Playwright visual baselines (`ubuntu-24.04`)             |
-| **Secrets Scan**   | Always                                                              | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                          |
-| **Security Audit** | Always (also weekly cron)                                           | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                            |
+| Job                | When it runs                                                                                             | What it does                                                                                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Governance**     | Always                                                                                                   | License, provenance, and dependency-ownership gates                                                                                                                        |
+| **CI**             | Always (shell checks); full suite when `app=true` or push to `main`; clean-room when `distribution=true` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, `test:risk-coverage`, Codecov report, `distribution:verify`, build, Chromium+WebKit E2E |
+| **UI Quality**     | When UI-impacting paths change or push to `main`                                                         | Storybook build, critical-story policy, `test:storybook`, Chromium+WebKit keyboard checks, Playwright visual baselines (`ubuntu-24.04`)                                    |
+| **Secrets Scan**   | Always                                                                                                   | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                                                 |
+| **Security Audit** | Always (also weekly cron)                                                                                | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                                                   |
 
 **Docs-only PRs** still run Node setup and `pnpm docs:check` (via
 `node scripts/check-doc-links.mjs`). They skip install, lint, typecheck, tests, build, and E2E after
-the lightweight policy checks.
+the lightweight policy checks. Packaged bootstrap docs, CLI/runtime, starter app, and generated
+consumer sources set `distribution=true` and run `pnpm distribution:verify` inside the required
+**CI** job. That step is not skipped for affected Distribution v1 changes.
 
 **Push to `main`** always runs the full suite.
 
@@ -37,6 +39,7 @@ pnpm install --frozen-lockfile
 pnpm docs:check
 pnpm validate:env
 pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm test:risk-coverage
+pnpm distribution:verify
 pnpm build
 pnpm --filter @atlas/web test:e2e
 pnpm --filter @atlas/reference test:e2e

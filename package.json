@@ -62,7 +62,8 @@
     "docs:validate": "pnpm docs:check && pnpm governance:check",
     "release:rehearse": "node scripts/release-rehearse.mjs",
     "release:publish": "node scripts/publish-atlas-release.mjs",
-    "release:publish:dry-run": "node scripts/publish-atlas-release.mjs --dry-run --skip-checks"
+    "release:publish:dry-run": "node scripts/publish-atlas-release.mjs --dry-run --skip-checks",
+    "distribution:verify": "node scripts/verify-distribution-clean-room.mjs"
   },
   "devDependencies": {
     "@atlas/cli": "workspace:*",
