@@ -470,6 +470,20 @@ describe("application infrastructure manifest validation", () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
+  it("allows a generated consumer project with no template-sync consumers", () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-manifest-"));
+    writeManifest(
+      tempRoot,
+      baseFixtureManifest({
+        consumerApplications: [],
+        independentPaths: {},
+      })
+    );
+    const manifest = loadAppInfrastructureManifest(tempRoot);
+    expect(manifest.consumerApplications).toEqual([]);
+    rmSync(tempRoot, { recursive: true, force: true });
+  });
+
   it("rejects unknown independentPaths application keys", () => {
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-manifest-"));
     expectManifestError(

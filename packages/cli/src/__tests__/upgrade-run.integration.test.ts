@@ -263,7 +263,15 @@ describe("upgrade run integration", () => {
 
     const doctorContext = createDoctorContext({ cwd: tempRoot });
     const baselineCheck = runUpgradeBaselineCheck(doctorContext);
-    expect(baselineCheck.status).not.toBe("fail");
+    // Generated Atlas projects may have zero template-sync consumers. This fixture
+    // previously relied on an empty consumerApplications list being invalid so Doctor
+    // skipped checksum comparison against the 0.1.0 path list. Empty consumers are now
+    // valid; version identity still must match the upgraded checkout.
+    expect(
+      baselineCheck.diagnostics.some(
+        (diagnostic) => diagnostic.code === DoctorDiagnosticCode.TEMPLATE_SYNC_MANIFEST_INVALID
+      )
+    ).toBe(false);
     expect(
       baselineCheck.diagnostics.some(
         (diagnostic) => diagnostic.code === DoctorDiagnosticCode.UPGRADE_BASELINE_STALE

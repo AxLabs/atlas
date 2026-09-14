@@ -8,6 +8,7 @@ export interface ParsedCli {
   check: boolean;
   env: "skip" | "copy";
   generateArgs: string[];
+  initArgs: string[];
   syncArgs: string[];
   upgradeArgs: string[];
   help: boolean;
@@ -75,6 +76,7 @@ function createEmptyParsedCli(): ParsedCli {
     check: false,
     env: "skip",
     generateArgs: [],
+    initArgs: [],
     syncArgs: [],
     upgradeArgs: [],
     help: false,
@@ -267,6 +269,12 @@ export function parseCliArgs(argv: string[]): ParsedCli {
 
   if (parsed.positionals.length > 0) {
     parsed.command = parsed.positionals[0];
+  }
+
+  if (parsed.command === "init") {
+    parsed.initArgs = parsed.positionals.slice(1);
+    parsed.positionals = parsed.positionals.slice(0, 1);
+    return parsed;
   }
 
   if (parsed.positionals.length > 1) {

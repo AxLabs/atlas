@@ -1,4 +1,4 @@
-import { existsSync, realpathSync, rmSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "../doctor/static-imports";
@@ -273,6 +273,34 @@ process.stdout.write(JSON.stringify({
         expect(realpathSync(absolutePath).startsWith(installedRoot)).toBe(true);
         expect(realpathSync(absolutePath).startsWith(`${repoReal}${path.sep}`)).toBe(false);
       }
+
+      const init = runInstalledAtlas(cleanRoom, ["init", "test-app"], cleanRoom);
+      expect(init.status).toBe(0);
+      expect(init.stdout).toContain("Atlas project created");
+
+      const generatedRoot = path.join(cleanRoom, "test-app");
+      expect(existsSync(generatedRoot)).toBe(true);
+      expect(realpathSync(generatedRoot).startsWith(`${repoReal}${path.sep}`)).toBe(false);
+      expect(realpathSync(generatedRoot).startsWith(realpathSync(cleanRoom))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "apps/web/package.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "packages/ui/package.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "packages/consent/package.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "packages/config/package.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "atlas.config.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "package.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, "apps/reference"))).toBe(false);
+      expect(existsSync(path.join(generatedRoot, "packages/cli"))).toBe(false);
+      expect(existsSync(path.join(generatedRoot, "pnpm-lock.yaml"))).toBe(false);
+
+      const generatedContract = JSON.parse(
+        readFileSync(path.join(generatedRoot, "atlas.config.json"), "utf8")
+      ) as { platform?: { baseline?: { atlasVersion: string } } };
+      expect(generatedContract.platform?.baseline?.atlasVersion).toBe(cliVersion);
+
+      const generatedPackage = JSON.parse(
+        readFileSync(path.join(generatedRoot, "package.json"), "utf8")
+      ) as { name: string };
+      expect(generatedPackage.name).toBe("test-app");
     },
     PACK_TIMEOUT_MS
   );

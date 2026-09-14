@@ -76,7 +76,7 @@ function validateManifest(raw: unknown): AppInfrastructureManifest {
   const consumerApplications = readNonEmptyStringArray(
     record.consumerApplications,
     "consumerApplications",
-    { minLength: 1 }
+    { minLength: 0 }
   );
   for (const consumerApplication of consumerApplications) {
     validateApplicationPath(

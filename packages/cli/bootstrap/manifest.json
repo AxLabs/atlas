@@ -11,7 +11,7 @@
     },
     {
       "destination": "pnpm-lock.yaml",
-      "reason": "The Atlas lockfile pins the full maintainer graph including CLI, project, and reference workspaces."
+      "reason": "Left absent until the consumer runs pnpm install. Atlas does not copy or fabricate a maintainer lockfile."
     },
     {
       "destination": "README.md",
@@ -23,7 +23,7 @@
     },
     {
       "destination": "apps/web/.env.local",
-      "reason": "User-specific secrets are never packaged; atlas init may copy .env.example later."
+      "reason": "User-specific secrets are never packaged. atlas init leaves .env.local absent unless --env copy is requested, in which case .env.example is copied."
     }
   ],
   "entries": [
