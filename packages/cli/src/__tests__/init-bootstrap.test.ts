@@ -558,6 +558,7 @@ describe("atlas init bootstrap generated project", () => {
           readFileSync(path.join(destination, "package.json"), "utf8")
         ) as {
           name: string;
+          version: string;
           packageManager: string;
           engines: { node: string; pnpm: string };
           scripts: Record<string, string>;
@@ -565,6 +566,7 @@ describe("atlas init bootstrap generated project", () => {
           devDependencies?: Record<string, string>;
         };
         expect(packageJson.name).toBe("test-app");
+        expect(packageJson.version).toBe("0.1.0");
         expect(packageJson.packageManager).toBe("pnpm@10.19.0");
         expect(packageJson.engines.node).toBe(">=22.0.0");
         expect(packageJson.engines.pnpm).toBe(">=10.0.0");
@@ -575,7 +577,11 @@ describe("atlas init bootstrap generated project", () => {
         expect(packageJson.scripts.test).toBeDefined();
         expect(packageJson.scripts.format).toBeDefined();
         expect(packageJson.scripts["api:gen"]).toBeDefined();
-        expect(packageJson.scripts.atlas).toBe("atlas");
+        expect(packageJson.scripts.atlas).toBeUndefined();
+        expect(packageJson.scripts["template:check"]).toBeUndefined();
+        expect(packageJson.scripts["template:sync"]).toBeUndefined();
+        expect(packageJson.scripts["api:check"]).toBeUndefined();
+        expect(JSON.stringify(packageJson.scripts)).not.toContain("git diff");
         expect(packageJson.scripts["perf:lhci"]).toBeDefined();
         expect(packageJson.scripts.changeset).toBeUndefined();
         expect(packageJson.scripts.release).toBeUndefined();
@@ -589,7 +595,8 @@ describe("atlas init bootstrap generated project", () => {
         expect(readme).toContain(`generated from Atlas ${manifest.atlasVersion}`);
         expect(readme).toContain("pnpm install");
         expect(readme).toContain("pnpm dev");
-        expect(readme).toContain("pnpm atlas -- doctor");
+        expect(readme).not.toContain("pnpm atlas -- doctor");
+        expect(readme).not.toContain("pnpm atlas");
         expect(readme).not.toContain("Enterprise frontend platform monorepo");
 
         const jestConfig = readFileSync(path.join(destination, "jest.config.js"), "utf8");
@@ -616,6 +623,7 @@ describe("atlas init bootstrap generated project", () => {
         };
         expect(contract.schemaVersion).toBe(1);
         expect(contract.platform?.baseline?.atlasVersion).toBe(manifest.atlasVersion);
+        expect(packageJson.version).not.toBe(contract.platform?.baseline?.atlasVersion);
         expect(() => resolveAtlasProject(destination)).not.toThrow();
 
         const checksums = contract.platform?.baseline?.syncedPathChecksums ?? {};

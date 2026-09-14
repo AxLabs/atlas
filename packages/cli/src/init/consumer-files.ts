@@ -43,10 +43,6 @@ export function buildConsumerPackageManifest(options: {
     "test:e2e": "turbo run test:e2e",
     clean: "turbo run clean && rm -rf node_modules",
     "api:gen": "pnpm --filter @atlas/web api:gen",
-    "api:check": "pnpm api:gen && git diff --exit-code -- apps/web/src/lib/api/contracts/schema.ts",
-    "template:check": "atlas sync infrastructure --check",
-    "template:sync": "atlas sync infrastructure",
-    atlas: "atlas",
     "validate:env": "pnpm --filter @atlas/web validate:env",
   };
 
@@ -86,10 +82,9 @@ This project was generated from Atlas ${options.atlasVersion}.
 \`\`\`bash
 pnpm install
 pnpm dev
-pnpm atlas -- doctor
 \`\`\`
 
-\`pnpm atlas -- doctor\` uses the Atlas CLI on your \`PATH\` — the same installed CLI that created this project. Atlas is not published as a workspace package inside the generated repository.
+Atlas CLI validation for generated projects will be documented once the package publication path is finalized.
 `;
 }
 

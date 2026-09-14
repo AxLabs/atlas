@@ -68,6 +68,91 @@ describe("CLI package version resolution", () => {
     rmSync(checkout, { recursive: true, force: true });
   });
 
+  it("falls back to root package.json when a generated project has no baseline", () => {
+    const checkout = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-legacy-version-"));
+    writeFileSync(
+      path.join(checkout, "package.json"),
+      `${JSON.stringify({ name: "legacy-app", version: "0.1.0" }, null, 2)}\n`,
+      "utf8"
+    );
+    writeFileSync(
+      path.join(checkout, "atlas.config.json"),
+      `${JSON.stringify({ schemaVersion: 1 }, null, 2)}\n`,
+      "utf8"
+    );
+
+    expect(readCheckoutAtlasVersion(checkout)).toBe("0.1.0");
+    rmSync(checkout, { recursive: true, force: true });
+  });
+
+  it("resolves generated-project Atlas version from platform.baseline, not app package.json", () => {
+    const checkout = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-generated-version-"));
+    writeFileSync(
+      path.join(checkout, "package.json"),
+      `${JSON.stringify({ name: "consumer-app", version: "0.1.0" }, null, 2)}\n`,
+      "utf8"
+    );
+    writeFileSync(
+      path.join(checkout, "atlas.config.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          platform: {
+            baseline: {
+              atlasVersion: "0.3.0",
+              contractSchemaVersion: 1,
+              templateManifestSchemaVersion: 1,
+              syncedPathChecksums: {},
+            },
+          },
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    expect(readCheckoutAtlasVersion(checkout)).toBe("0.3.0");
+    rmSync(checkout, { recursive: true, force: true });
+  });
+
+  it("keeps platform checkout Atlas version on root package.json even when baseline differs", () => {
+    const checkout = mkdtempSync(path.join(os.tmpdir(), "atlas-cli-platform-version-"));
+    writeFileSync(
+      path.join(checkout, "package.json"),
+      `${JSON.stringify({ name: "@atlas/monorepo", version: "0.3.0" }, null, 2)}\n`,
+      "utf8"
+    );
+    mkdirSync(path.join(checkout, "packages/cli"), { recursive: true });
+    writeFileSync(
+      path.join(checkout, "packages/cli/package.json"),
+      `${JSON.stringify({ name: CLI_PACKAGE_NAME, version: "0.3.0" }, null, 2)}\n`,
+      "utf8"
+    );
+    writeFileSync(
+      path.join(checkout, "atlas.config.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          platform: {
+            baseline: {
+              atlasVersion: "0.1.0",
+              contractSchemaVersion: 1,
+              templateManifestSchemaVersion: 1,
+              syncedPathChecksums: {},
+            },
+          },
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    expect(readCheckoutAtlasVersion(checkout)).toBe("0.3.0");
+    rmSync(checkout, { recursive: true, force: true });
+  });
+
   it("reports CLI metadata from the installed package", () => {
     expect(readCliVersionMetadata()).toEqual({
       atlasVersion: CLI_PACKAGE_VERSION,

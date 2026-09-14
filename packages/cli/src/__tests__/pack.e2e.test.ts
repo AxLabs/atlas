@@ -299,8 +299,37 @@ process.stdout.write(JSON.stringify({
 
       const generatedPackage = JSON.parse(
         readFileSync(path.join(generatedRoot, "package.json"), "utf8")
-      ) as { name: string };
+      ) as { name: string; version: string; scripts: Record<string, string> };
       expect(generatedPackage.name).toBe("test-app");
+      expect(generatedPackage.version).toBe("0.1.0");
+      expect(generatedPackage.version).not.toBe(cliVersion);
+      expect(generatedPackage.scripts["api:gen"]).toBe("pnpm --filter @atlas/web api:gen");
+      expect(generatedPackage.scripts.atlas).toBeUndefined();
+      expect(generatedPackage.scripts["template:check"]).toBeUndefined();
+      expect(generatedPackage.scripts["template:sync"]).toBeUndefined();
+      expect(generatedPackage.scripts["api:check"]).toBeUndefined();
+
+      const generatedReadme = readFileSync(path.join(generatedRoot, "README.md"), "utf8");
+      expect(generatedReadme).toContain("pnpm install");
+      expect(generatedReadme).toContain("pnpm dev");
+      expect(generatedReadme).not.toContain("pnpm atlas -- doctor");
+
+      expect(init.stdout).toContain("pnpm install");
+      expect(init.stdout).toContain("pnpm dev");
+      expect(init.stdout).not.toContain("pnpm atlas -- doctor");
+
+      const context = runInstalledAtlas(
+        cleanRoom,
+        ["context", "--json", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(context.status).toBe(0);
+      const contextPayload = JSON.parse(context.stdout) as {
+        ok: boolean;
+        result: { atlasVersion: string };
+      };
+      expect(contextPayload.result.atlasVersion).toBe(cliVersion);
+      expect(contextPayload.result.atlasVersion).not.toBe(generatedPackage.version);
     },
     PACK_TIMEOUT_MS
   );

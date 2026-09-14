@@ -335,6 +335,11 @@ Machine output includes:
 
 Reports are deterministic: stable `schemaVersion`, sorted paths, no timestamps.
 
+`atlasVersion` is the project's Atlas identity. Generated consumer projects use
+`platform.baseline.atlasVersion` from `atlas.config.json` so the application `package.json` version
+can stay independent. Source checkouts that still vendor `@atlas/cli` continue to use the root
+package version, including when a historical upgrade baseline is present.
+
 ### `atlas doctor`
 
 Diagnose Atlas-specific architecture and configuration drift. Doctor validates the project contract,
