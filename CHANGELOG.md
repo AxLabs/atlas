@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-14
+
+### Changed
+
+- Package a versioned Atlas bootstrap asset tree inside the CLI so an installed tarball can locate
+  the supported starter baseline without the monorepo.
+- Make the Atlas CLI independently packable by internalizing the project-contract runtime so a
+  tarball can install and run outside the monorepo without unpublished workspace dependencies.
+
 ## [0.2.1] - 2026-09-12
 
 ### Fixed
@@ -50,6 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.2.0
