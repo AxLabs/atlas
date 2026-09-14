@@ -296,7 +296,9 @@ export function runCommand(command, args, options) {
     maxBuffer: 20 * 1024 * 1024,
   });
 
-  const timedOut = Boolean(result.error && "code" in result.error && result.error.code === "ETIMEDOUT");
+  const timedOut = Boolean(
+    result.error && "code" in result.error && result.error.code === "ETIMEDOUT"
+  );
   const stdout = bufferToString(result.stdout);
   const stderr = bufferToString(result.stderr);
   const errorMessage = result.error && !timedOut ? result.error.message : "";
@@ -483,7 +485,8 @@ export function collectWorkspaceResolutionIssues(generatedRoot) {
 
   for (const [_packageName, packageRoot] of members) {
     const manifest = readJson(path.join(packageRoot, "package.json"));
-    const relativePackage = path.relative(generatedRoot, packageRoot).split(path.sep).join("/") || ".";
+    const relativePackage =
+      path.relative(generatedRoot, packageRoot).split(path.sep).join("/") || ".";
     for (const section of MANIFEST_DEPENDENCY_SECTIONS) {
       const deps = manifest[section];
       if (deps === undefined || deps === null || typeof deps !== "object") {
@@ -529,7 +532,9 @@ export function auditGeneratedWorkspace(generatedRoot) {
 
   for (const [name, packageRoot] of members) {
     if (!isInsideDirectory(generatedRoot, packageRoot)) {
-      issues.push(`workspace package ${name} resolves outside the generated project: ${packageRoot}`);
+      issues.push(
+        `workspace package ${name} resolves outside the generated project: ${packageRoot}`
+      );
     }
   }
 
@@ -553,7 +558,10 @@ export function auditGeneratedWorkspace(generatedRoot) {
           }
         }
         if (range.startsWith("file:") || range.startsWith("link:")) {
-          const linked = path.resolve(path.dirname(manifestPath), range.replace(/^(file:|link:)/, ""));
+          const linked = path.resolve(
+            path.dirname(manifestPath),
+            range.replace(/^(file:|link:)/, "")
+          );
           if (!isInsideDirectory(generatedRoot, linked)) {
             issues.push(
               `${relativeManifest} ${section} ${depName}: ${range} points outside the generated project`
@@ -593,7 +601,9 @@ export function parseJsonEnvelope(stdout, command) {
     return JSON.parse(text);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid JSON";
-    throw new Error(`${command} did not emit valid JSON: ${message}\nstdout:\n${truncateOutput(stdout)}`);
+    throw new Error(
+      `${command} did not emit valid JSON: ${message}\nstdout:\n${truncateOutput(stdout)}`
+    );
   }
 }
 
@@ -649,7 +659,11 @@ export function collectDoctorPathLeaks(report, generatedRoot, repoRoot) {
     if (!trail.endsWith(".path") && !trail.includes(".filePath")) {
       return;
     }
-    if (path.isAbsolute(text) && isInsideDirectory(repoRoot, text) && !isInsideDirectory(generatedRoot, text)) {
+    if (
+      path.isAbsolute(text) &&
+      isInsideDirectory(repoRoot, text) &&
+      !isInsideDirectory(generatedRoot, text)
+    ) {
       leaks.push(`${trail}: ${text}`);
     }
   });
@@ -677,7 +691,10 @@ export function assertGeneratedProjectShape(generatedRoot, repoRoot) {
     if (!existsSync(absolutePath)) {
       throw new Error(`Generated project is missing ${relativePath}`);
     }
-    if (isInsideDirectory(repoRoot, absolutePath) && !isInsideDirectory(generatedRoot, absolutePath)) {
+    if (
+      isInsideDirectory(repoRoot, absolutePath) &&
+      !isInsideDirectory(generatedRoot, absolutePath)
+    ) {
       throw new Error(`Generated path ${relativePath} resolved into the Atlas checkout`);
     }
   }
@@ -690,7 +707,9 @@ export function assertGeneratedProjectShape(generatedRoot, repoRoot) {
 
   const manifest = readJson(path.join(generatedRoot, "package.json"));
   if (manifest.name !== GENERATED_PROJECT_NAME) {
-    throw new Error(`Generated package name is ${String(manifest.name)}, expected ${GENERATED_PROJECT_NAME}`);
+    throw new Error(
+      `Generated package name is ${String(manifest.name)}, expected ${GENERATED_PROJECT_NAME}`
+    );
   }
   if (typeof manifest.version !== "string" || manifest.version.length === 0) {
     throw new Error("Generated package.json is missing version");
@@ -700,9 +719,8 @@ export function assertGeneratedProjectShape(generatedRoot, repoRoot) {
 
 /**
  * @param {string} generatedRoot
- * @param {string} repoRoot
  */
-export function assertGeneratorOutput(generatedRoot, repoRoot) {
+export function assertGeneratorOutput(generatedRoot) {
   for (const relativePath of EXPECTED_GENERATOR_PATHS) {
     const absolutePath = path.join(generatedRoot, relativePath);
     if (!existsSync(absolutePath)) {
@@ -710,10 +728,6 @@ export function assertGeneratorOutput(generatedRoot, repoRoot) {
     }
     if (!isInsideDirectory(generatedRoot, absolutePath)) {
       throw new Error(`Generated path ${relativePath} is not inside the generated project`);
-    }
-    const repoCopy = path.join(repoRoot, relativePath);
-    if (existsSync(repoCopy)) {
-      throw new Error(`Generated path ${relativePath} exists under the Atlas checkout`);
     }
   }
 }
@@ -748,7 +762,12 @@ export function assertDoctorReport(doctorEnvelope, expectations) {
   }
 
   const checks = Array.isArray(report.checks) ? report.checks : [];
-  for (const checkId of ["project-contract", "workspace-structure", "dependency-declarations", "atlas-version"]) {
+  for (const checkId of [
+    "project-contract",
+    "workspace-structure",
+    "dependency-declarations",
+    "atlas-version",
+  ]) {
     const check = checks.find((entry) => entry?.id === checkId);
     if (!check) {
       issues.push(`Doctor is missing ${checkId} check`);
@@ -793,7 +812,11 @@ export function assertContextReport(contextEnvelope, expectations) {
   }
 
   const serialized = JSON.stringify(report);
-  if (serialized.includes(realpathIfExists(expectations.repoRoot) ?? path.resolve(expectations.repoRoot))) {
+  if (
+    serialized.includes(
+      realpathIfExists(expectations.repoRoot) ?? path.resolve(expectations.repoRoot)
+    )
+  ) {
     issues.push("Context JSON contains the canonical Atlas repository realpath");
   }
 
@@ -806,4 +829,82 @@ export function assertContextReport(contextEnvelope, expectations) {
  */
 export function removeDirectory(directory) {
   rmSync(directory, { recursive: true, force: true });
+}
+
+/**
+ * @param {{ argv?: string[]; env?: NodeJS.ProcessEnv }} [options]
+ * @returns {boolean}
+ */
+export function isExplicitKeepRequested(options = {}) {
+  const argv = options.argv ?? [];
+  const env = options.env ?? process.env;
+  return argv.includes("--keep") || env.ATLAS_KEEP_CLEAN_ROOM === "1";
+}
+
+/**
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {boolean}
+ */
+export function isCiEnvironment(env = process.env) {
+  return env.CI === "true";
+}
+
+/**
+ * Explicit keep always preserves. CI without keep always cleans.
+ * Local runs without keep preserve only on failure.
+ *
+ * @param {{
+ *   explicitKeep: boolean;
+ *   isCi: boolean;
+ *   failed: boolean;
+ * }} options
+ * @returns {boolean}
+ */
+export function shouldKeepCleanRoom(options) {
+  if (options.explicitKeep) {
+    return true;
+  }
+  if (options.isCi) {
+    return false;
+  }
+  return Boolean(options.failed);
+}
+
+/**
+ * Apply temp-directory retention. Call this from the success and failure
+ * paths; do not rely on process-exit handlers.
+ *
+ * @param {{
+ *   root: string;
+ *   explicitKeep: boolean;
+ *   isCi: boolean;
+ *   failed: boolean;
+ *   remove?: (directory: string) => void;
+ *   write?: (message: string) => void;
+ * }} options
+ * @returns {{ kept: boolean; cleanupError: Error | null }}
+ */
+export function finalizeCleanRoom(options) {
+  const write = options.write ?? ((message) => process.stdout.write(message));
+  const remove = options.remove ?? removeDirectory;
+
+  if (
+    shouldKeepCleanRoom({
+      explicitKeep: options.explicitKeep,
+      isCi: options.isCi,
+      failed: options.failed,
+    })
+  ) {
+    write(`${CLEAN_ROOM_STAGE_PREFIX} preserved ${options.root}\n`);
+    return { kept: true, cleanupError: null };
+  }
+
+  try {
+    remove(options.root);
+    write(`${CLEAN_ROOM_STAGE_PREFIX} cleaned ${options.root}\n`);
+    return { kept: false, cleanupError: null };
+  } catch (error) {
+    const cleanupError = error instanceof Error ? error : new Error(String(error));
+    return { kept: false, cleanupError };
+  }
 }

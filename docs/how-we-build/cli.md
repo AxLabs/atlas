@@ -154,10 +154,17 @@ Atlas only via the absolute installed binary path — never `pnpm atlas`, `pnpm 
 or `packages/cli/dist/cli.js` for consumer lifecycle commands.
 
 Keep `packages/cli` pack E2E as the faster artifact/init check. Use `pnpm distribution:verify` when
-the generated project's install/build/Doctor/generator lifecycle must be proven self-contained. Pass
-`--keep` (or `ATLAS_KEEP_CLEAN_ROOM=1`) to preserve the temporary directory after a successful run.
-Failures always preserve the directory and print command, cwd, exit status, stdout, and stderr for
-the failing stage.
+the generated project's install/build/Doctor/generator lifecycle must be proven self-contained.
+
+Temp-directory retention:
+
+- `--keep` or `ATLAS_KEEP_CLEAN_ROOM=1` preserves the directory on success and failure.
+- In CI (`CI=true`) without explicit keep, the directory is always removed.
+- Locally without explicit keep, failures preserve the directory for debugging and successes remove
+  it.
+
+Failures print command, cwd, exit status, stdout, and stderr for the failing stage, then either
+`[clean-room] preserved <path>` or `[clean-room] cleaned <path>`.
 
 ---
 

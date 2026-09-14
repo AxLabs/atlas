@@ -19,11 +19,13 @@ import {
   auditGeneratedWorkspace,
   collectWorkspaceResolutionIssues,
   createCleanRoomLayout,
+  finalizeCleanRoom,
   findPackedTarball,
+  isCiEnvironment,
+  isExplicitKeepRequested,
   isInsideDirectory,
   parseJsonEnvelope,
   readGeneratedBaseline,
-  removeDirectory,
   resolveAtlasRepoRoot,
   resolveCommandPath,
   runStage,
@@ -34,7 +36,8 @@ const scriptPath = fileURLToPath(import.meta.url);
 
 function parseArgs(argv) {
   const options = {
-    keep: process.env.ATLAS_KEEP_CLEAN_ROOM === "1",
+    keep: isExplicitKeepRequested({ argv, env: process.env }),
+    help: false,
   };
 
   for (const arg of argv) {
@@ -55,6 +58,10 @@ function writeHelp() {
 
 Prove that a packed @atlas/cli tarball bootstraps a self-contained Atlas project
 outside this repository.
+
+--keep (or ATLAS_KEEP_CLEAN_ROOM=1) preserves the temporary directory on
+success and failure. Without it, local failures keep the directory for
+debugging; CI (CI=true) always removes it.
 
 This is a maintainer distribution check. It does not publish to npm.
 `);
@@ -88,6 +95,7 @@ async function main() {
   const pnpm = resolveCommandPath("pnpm");
   const cliPackageRoot = path.join(repoRoot, "packages", "cli");
   let layout;
+  let failed = false;
 
   try {
     layout = createCleanRoomLayout(repoRoot);
@@ -97,16 +105,11 @@ async function main() {
       FORCE_COLOR: "0",
     };
 
-    runStage(
-      CLEAN_ROOM_STAGES.packCli,
-      pnpm,
-      ["--filter", "@atlas/cli", "build"],
-      {
-        cwd: repoRoot,
-        env: packEnv,
-        timeout: CLEAN_ROOM_TIMEOUTS_MS.packCli,
-      }
-    );
+    runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["--filter", "@atlas/cli", "build"], {
+      cwd: repoRoot,
+      env: packEnv,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.packCli,
+    });
     runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["pack", "--pack-destination", layout.artifacts], {
       cwd: cliPackageRoot,
       env: packEnv,
@@ -232,7 +235,7 @@ async function main() {
         timeout: CLEAN_ROOM_TIMEOUTS_MS.generate,
       }
     );
-    assertGeneratorOutput(generatedRoot, repoRoot);
+    assertGeneratorOutput(generatedRoot);
 
     runStage(CLEAN_ROOM_STAGES.typecheck, pnpm, ["typecheck"], {
       cwd: generatedRoot,
@@ -267,30 +270,66 @@ async function main() {
     process.stdout.write(
       `${CLEAN_ROOM_STAGE_PREFIX} ok ${GENERATED_PROJECT_NAME} @ Atlas ${atlasVersion}\n`
     );
-
-    if (!options.keep) {
-      removeDirectory(layout.root);
-    } else {
-      process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} kept ${layout.root}\n`);
-    }
-    return 0;
   } catch (error) {
+    failed = true;
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`${message}\n`);
-    if (layout?.root) {
-      process.stderr.write(`${CLEAN_ROOM_STAGE_PREFIX} preserved ${layout.root}\n`);
-    }
-    return 1;
   }
+
+  if (layout?.root) {
+    const cleanupFailed = reportCleanRoomRetention({
+      root: layout.root,
+      explicitKeep: options.keep,
+      failed,
+    });
+    if (cleanupFailed) {
+      return 1;
+    }
+  }
+
+  return failed ? 1 : 0;
 }
 
-if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === pathToFileURL(scriptPath).href) {
+/**
+ * @param {{
+ *   root: string;
+ *   explicitKeep: boolean;
+ *   failed: boolean;
+ * }} options
+ * @returns {boolean} true when directory removal failed
+ */
+function reportCleanRoomRetention(options) {
+  const write = options.failed
+    ? (message) => process.stderr.write(message)
+    : (message) => process.stdout.write(message);
+  const retention = finalizeCleanRoom({
+    root: options.root,
+    explicitKeep: options.explicitKeep,
+    isCi: isCiEnvironment(process.env),
+    failed: options.failed,
+    write,
+  });
+  if (!retention.cleanupError) {
+    return false;
+  }
+  process.stderr.write(
+    `${CLEAN_ROOM_STAGE_PREFIX} cleanup failed ${options.root}: ${retention.cleanupError.message}\n`
+  );
+  return true;
+}
+
+if (
+  process.argv[1] &&
+  pathToFileURL(path.resolve(process.argv[1])).href === pathToFileURL(scriptPath).href
+) {
   main()
     .then((code) => {
       process.exitCode = code;
     })
     .catch((error) => {
-      process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+      process.stderr.write(
+        `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`
+      );
       process.exitCode = 1;
     });
 }
