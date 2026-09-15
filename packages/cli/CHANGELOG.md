@@ -1,5 +1,12 @@
 # @atlas/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- ac8ef12: Add empty-directory `atlas init <project>` so an installed CLI can materialize a consumer
+  project from packaged bootstrap assets.
+
 ## 0.3.0
 
 ### Minor Changes
