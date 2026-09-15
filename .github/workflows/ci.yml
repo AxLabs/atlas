@@ -64,7 +64,7 @@ jobs:
       ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository) &&
       fromJSON('["self-hosted", "ci"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         working-directory:
@@ -113,16 +113,26 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "distribution=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.event.pull_request.head.sha }}"
-          if git diff --name-only "$BASE" "$HEAD" | grep -qE \
+          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+
+          if printf '%s\n' "$CHANGED" | grep -qE \
             '^(apps/|packages/|openapi/|scripts/|\.github/workflows/ci\.yml|turbo\.json|package\.json|pnpm-lock\.yaml|tsconfig.*\.json|eslint\.config)'; then
             echo "app=true" >> "$GITHUB_OUTPUT"
           else
             echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if printf '%s\n' "$CHANGED" | grep -qE \
+            '^(packages/cli/|packages/project/|apps/web/|packages/ui/|packages/config/|packages/consent/|templates/|openapi/|atlas\.config\.json|pnpm-workspace\.yaml|turbo\.json|eslint\.config|lighthouserc\.json|\.npmrc|\.nvmrc|\.prettierrc|\.prettierignore|\.gitignore|scripts/ensure-pnpm\.js|scripts/verify-distribution-clean-room\.mjs|scripts/lib/distribution-clean-room\.mjs|scripts/__tests__/distribution-clean-room|package\.json|jest\.config\.js|AGENTS\.md|LICENSE|THIRD_PARTY_NOTICES\.md|docs/how-we-build/(agents|architecture-ownership|atlas-contract|cli|doctor|upgrades|api|authorization|testing|folder-structure|examples|security)\.md|docs/security/threat-model\.md|docs/adr/000[7-9]|docs/adr/0010|\.github/workflows/ci\.yml)'; then
+            echo "distribution=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "distribution=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check for forbidden lockfiles
@@ -173,7 +183,9 @@ jobs:
         run: node scripts/check-doc-links.mjs
 
       - name: Install dependencies
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+        if:
+          steps.detect.outputs.app == 'true' || steps.detect.outputs.distribution == 'true' ||
+          github.event_name == 'push'
         run: |
           if [ "${ATLAS_CI_USE_SELF_HOSTED}" = "true" ]; then
             # Host-only optional deps: full cross-platform audit runs in the Governance job.
@@ -185,7 +197,9 @@ jobs:
           fi
 
       - name: Verify lockfile is up-to-date
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+        if:
+          steps.detect.outputs.app == 'true' || steps.detect.outputs.distribution == 'true' ||
+          github.event_name == 'push'
         run: |
           if ! git diff --exit-code pnpm-lock.yaml; then
             echo "❌ Error: pnpm-lock.yaml is out of date"
@@ -244,9 +258,17 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
+      - name: Verify packed CLI clean-room lifecycle
+        if: steps.detect.outputs.distribution == 'true' || github.event_name == 'push'
+        run: pnpm distribution:verify
+
       - name: Skip application checks (docs-only change)
-        if: steps.detect.outputs.app != 'true' && github.event_name == 'pull_request'
-        run: echo 'Docs-only PR. Skipped install, lint, typecheck, tests, build, and E2E.'
+        if:
+          steps.detect.outputs.app != 'true' && steps.detect.outputs.distribution != 'true' &&
+          github.event_name == 'pull_request'
+        run:
+          echo 'Docs-only PR. Skipped install, lint, typecheck, tests, build, E2E, and distribution
+          clean-room.'
 
       - name: Build application
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'

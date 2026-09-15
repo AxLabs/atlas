@@ -122,6 +122,50 @@ Until a later Distribution v1 slice publishes the package:
 - `atlas --version` reports the installed CLI package version, which is distinct from a target
   checkout's Atlas version.
 
+### Maintainer clean-room verification
+
+`pnpm distribution:verify` is the Distribution v1 acceptance check for a packed CLI. It does **not**
+publish to npm. The command builds `@atlas/cli` through the repository build, packs the tarball,
+installs that tarball into a temporary harness outside this checkout, and then runs the generated
+consumer lifecycle against the installed binary:
+
+```text
+/tmp/atlas-clean-room-XXXX/
+  harness/     # pnpm install of the packed @atlas/cli tarball
+  test-app/    # atlas init test-app
+```
+
+```bash
+pnpm --filter @atlas/cli build
+pnpm pack                         # from packages/cli into the clean-room artifacts directory
+<harness>/node_modules/.bin/atlas init test-app
+pnpm install                      # cwd: test-app
+pnpm build                        # cwd: test-app
+<installed-atlas> doctor --json --cwd test-app
+<installed-atlas> generate feature inventory-audit --cwd test-app
+<installed-atlas> generate page ops/health --cwd test-app
+pnpm typecheck                    # cwd: test-app
+<installed-atlas> context --json --cwd test-app
+```
+
+The verifier sanitizes `NODE_PATH`, source-repo `node_modules/.bin` PATH entries, Atlas CI/dev
+environment variables, and cwd-related variables that could point back at this checkout. It invokes
+Atlas only via the absolute installed binary path — never `pnpm atlas`, `pnpm --filter @atlas/cli`,
+or `packages/cli/dist/cli.js` for consumer lifecycle commands.
+
+Keep `packages/cli` pack E2E as the faster artifact/init check. Use `pnpm distribution:verify` when
+the generated project's install/build/Doctor/generator lifecycle must be proven self-contained.
+
+Temp-directory retention:
+
+- `--keep` or `ATLAS_KEEP_CLEAN_ROOM=1` preserves the directory on success and failure.
+- In CI (`CI=true`) without explicit keep, the directory is always removed.
+- Locally without explicit keep, failures preserve the directory for debugging and successes remove
+  it.
+
+Failures print command, cwd, exit status, stdout, and stderr for the failing stage, then either
+`[clean-room] preserved <path>` or `[clean-room] cleaned <path>`.
+
 ---
 
 ## Global options

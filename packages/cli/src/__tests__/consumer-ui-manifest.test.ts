@@ -84,8 +84,17 @@ describe("consumer UI package manifest transform", () => {
     expect(packaged.devDependencies?.["@storybook/test"]).toBe(
       canonical.devDependencies?.["@storybook/test"]
     );
+    expect(packaged.devDependencies?.["@types/node"]).toBe("22.10.2");
     expect(packaged.devDependencies?.jest).toBe(canonical.devDependencies?.jest);
     expect(packaged.devDependencies?.typescript).toBe(canonical.devDependencies?.typescript);
+  });
+
+  it("keeps Node types in the packaged UI tsconfig so typecheck does not rely on omitted Vite", () => {
+    const tsconfig = JSON.parse(
+      readFileSync(path.join(getRepoRoot(), "packages/ui/tsconfig.json"), "utf8")
+    ) as { compilerOptions?: { types?: string[] } };
+
+    expect(tsconfig.compilerOptions?.types).toEqual(["node"]);
   });
 
   it("is deterministic and does not rewrite the canonical maintainer manifest shape beyond omitted tooling", () => {
