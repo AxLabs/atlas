@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  collectUndeclaredDependenciesFromSourceFiles,
   discoverWorkspaceRoots,
   findUndeclaredDependenciesForAllWorkspaces,
   findUndeclaredDependenciesForWorkspace,
@@ -288,6 +289,58 @@ describe("findUndeclaredDependenciesForWorkspace", () => {
       scanMode: "repository",
     });
     expect(findings).toEqual([]);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("skips files that disappear between enumeration and read", () => {
+    const root = createDependencyFixture([
+      {
+        relativeRoot: "apps/web",
+        packageJson: { name: "@atlas/web", version: "0.1.0", private: true },
+        files: {
+          "src/stable.ts": "import 'undeclared-stable';\n",
+          "src/ephemeral.ts": "import 'undeclared-ephemeral';\n",
+        },
+      },
+    ]);
+
+    const stableFile = path.join(root, "apps/web/src/stable.ts");
+    const ephemeralFile = path.join(root, "apps/web/src/ephemeral.ts");
+    const enumeratedFiles = [ephemeralFile, stableFile];
+    rmSync(ephemeralFile);
+
+    let findings;
+    expect(() => {
+      findings = collectUndeclaredDependenciesFromSourceFiles(root, "apps/web", enumeratedFiles);
+    }).not.toThrow();
+
+    expect(findings).toEqual([
+      expect.objectContaining({
+        workspaceRoot: "apps/web",
+        packageName: "undeclared-stable",
+        filePath: "apps/web/src/stable.ts",
+      }),
+    ]);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("does not swallow non-ENOENT filesystem errors while reading source files", () => {
+    const root = createDependencyFixture([
+      {
+        relativeRoot: "apps/web",
+        packageJson: { name: "@atlas/web", version: "0.1.0", private: true },
+        files: {
+          "src/stable.ts": "import 'undeclared-stable';\n",
+        },
+      },
+    ]);
+
+    expect(() =>
+      collectUndeclaredDependenciesFromSourceFiles(root, "apps/web", [
+        path.join(root, "apps/web/src"),
+      ])
+    ).toThrow(/EISDIR|EACCES|EPERM/);
+
     rmSync(root, { recursive: true, force: true });
   });
 

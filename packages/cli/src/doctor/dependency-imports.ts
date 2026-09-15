@@ -81,14 +81,45 @@ export function findUndeclaredDependenciesForWorkspace(
     return [];
   }
 
-  const findings: UndeclaredDependencyFinding[] = [];
   const sourceRoot = joinRepoAbsolutePath(repoRoot, workspace.relativeRoot);
   if (!existsSync(sourceRoot)) {
     return [];
   }
 
-  for (const sourceFile of walkSourceFiles(sourceRoot, scanMode)) {
-    const imports = extractStaticModuleSpecifiers(sourceFile);
+  return collectUndeclaredDependenciesFromSourceFilesForWorkspace(
+    repoRoot,
+    workspace,
+    walkSourceFiles(sourceRoot, scanMode)
+  );
+}
+
+export function collectUndeclaredDependenciesFromSourceFiles(
+  repoRoot: string,
+  workspaceRoot: string,
+  sourceFiles: readonly string[]
+): UndeclaredDependencyFinding[] {
+  const workspace = readWorkspacePackage(repoRoot, workspaceRoot);
+  if (!workspace) {
+    return [];
+  }
+
+  return collectUndeclaredDependenciesFromSourceFilesForWorkspace(repoRoot, workspace, sourceFiles);
+}
+
+function collectUndeclaredDependenciesFromSourceFilesForWorkspace(
+  repoRoot: string,
+  workspace: WorkspacePackage,
+  sourceFiles: readonly string[]
+): UndeclaredDependencyFinding[] {
+  const findings: UndeclaredDependencyFinding[] = [];
+
+  for (const sourceFile of sourceFiles) {
+    const sourceText = readExistingSourceFile(sourceFile);
+    if (sourceText === undefined) {
+      continue;
+    }
+
+    const imports = extractStaticModuleSpecifiers(sourceFile, sourceText);
 
     for (const entry of imports) {
       const packageName = packageRootFromSpecifier(entry.specifier);
@@ -158,7 +189,17 @@ function walkSourceFiles(root: string, scanMode: DependencyScanMode): string[] {
   const files: string[] = [];
 
   function walk(current: string): void {
-    for (const entry of readdirSync(current)) {
+    let entries: string[];
+    try {
+      entries = readdirSync(current);
+    } catch (error) {
+      if (isEnoentError(error)) {
+        return;
+      }
+      throw error;
+    }
+
+    for (const entry of entries) {
       if (scanMode === "application") {
         if (
           entry === "__tests__" ||
@@ -172,7 +213,15 @@ function walkSourceFiles(root: string, scanMode: DependencyScanMode): string[] {
       }
 
       const absolutePath = path.join(current, entry);
-      const stats = statSync(absolutePath);
+      let stats;
+      try {
+        stats = statSync(absolutePath);
+      } catch (error) {
+        if (isEnoentError(error)) {
+          continue;
+        }
+        throw error;
+      }
 
       if (stats.isDirectory()) {
         if (IGNORED_DIRS.has(entry)) {
@@ -204,6 +253,26 @@ function walkSourceFiles(root: string, scanMode: DependencyScanMode): string[] {
 
   walk(root);
   return files.sort();
+}
+
+function readExistingSourceFile(sourceFilePath: string): string | undefined {
+  try {
+    return readFileSync(sourceFilePath, "utf8");
+  } catch (error) {
+    if (isEnoentError(error)) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+function isEnoentError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as NodeJS.ErrnoException).code === "ENOENT"
+  );
 }
 
 function isScannableFile(entry: string, scanMode: DependencyScanMode): boolean {
