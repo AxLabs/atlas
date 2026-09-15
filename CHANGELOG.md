@@ -17,6 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add empty-directory `atlas init <project>` so an installed CLI can materialize a consumer project
   from packaged bootstrap assets.
 
+### Fixed
+
+- Make repository dependency scanning resilient to source files that disappear during concurrent
+  generator validation, while continuing to fail on real filesystem and import-analysis errors.
+
 ## [0.3.0] - 2026-09-14
 
 ### Changed
