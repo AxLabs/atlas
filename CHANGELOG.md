@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-15
+
+### Changed
+
+- Declare `@types/node` on `@atlas/ui` and include Node in the UI typecheck tsconfig so generated
+  projects do not depend on source-monorepo hoisting or omitted Vite types.
+- Add empty-directory `atlas init <project>` so an installed CLI can materialize a consumer project
+  from packaged bootstrap assets.
+
 ## [0.3.0] - 2026-09-14
 
 ### Changed
@@ -59,7 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/blitzcraftlabs/atlas/releases/tag/v0.2.0
