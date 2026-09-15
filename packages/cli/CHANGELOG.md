@@ -7,6 +7,11 @@
 - ac8ef12: Add empty-directory `atlas init <project>` so an installed CLI can materialize a consumer
   project from packaged bootstrap assets.
 
+### Patch Changes
+
+- Make repository dependency scanning resilient to source files that disappear during concurrent
+  generator validation, while continuing to fail on real filesystem and import-analysis errors.
+
 ## 0.3.0
 
 ### Minor Changes
