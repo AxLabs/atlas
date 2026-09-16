@@ -35,8 +35,12 @@ export const REQUIRED_PACKED_PATHS = [
   "package/dist/index.js",
   "package/dist/dependency-validation.js",
   "package/dist/bootstrap-assets.js",
+  "package/dist/release-assets.js",
   "package/LICENSE",
+  "package/README.md",
+  "package/THIRD_PARTY_NOTICES.md",
   "package/assets/bootstrap/manifest.json",
+  "package/assets/releases/catalog.json",
 ] as const;
 
 export const REQUIRED_BOOTSTRAP_FILE_PATHS = [

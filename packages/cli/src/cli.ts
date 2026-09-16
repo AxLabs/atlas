@@ -220,6 +220,7 @@ async function runUpgradeCliCommand(
     dryRun: parsed.dryRun,
     allowDirty: parsed.allowDirty,
     skipValidation: parsed.skipValidation,
+    releasesDir: parsed.releasesDir,
     json: parsed.json,
     writer,
   });

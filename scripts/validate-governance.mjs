@@ -125,7 +125,7 @@ function extractNamedJob(workflow, jobId) {
 
   let end = lines.length;
   for (let index = start + 1; index < lines.length; index += 1) {
-    if (/^  [A-Za-z0-9_-]+:\s*$/.test(lines[index])) {
+    if (/^ {2}[A-Za-z0-9_-]+:\s*$/.test(lines[index])) {
       end = index;
       break;
     }
@@ -273,6 +273,48 @@ function checkOssWording() {
   }
 }
 
+function checkChangesetAccessPolicy() {
+  const changesetConfig = readJson(".changeset/config.json");
+  if (changesetConfig.access !== "public") {
+    fail(
+      '.changeset/config.json access must be "public" so @blitzcraftlabs/atlas cannot publish as restricted'
+    );
+  }
+
+  for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
+    const manifestPath = path.join(pkg.relativePath, "package.json");
+    const manifest = readJson(manifestPath);
+    if (pkg.name === PUBLIC_CLI_PACKAGE_NAME) {
+      continue;
+    }
+    if (manifest.private !== true) {
+      fail(`${manifestPath} must remain private so Changesets public access cannot publish it`);
+    }
+    if (manifest.publishConfig?.access === "public") {
+      fail(`${manifestPath} must not declare publishConfig.access public`);
+    }
+  }
+
+  const changesetsPublish = path.join(
+    process.cwd(),
+    "node_modules/@changesets/cli/dist/changesets-cli.cjs.js"
+  );
+  if (!existsSync(changesetsPublish)) {
+    fail("Missing @changesets/cli publish implementation for access-policy verification");
+    return;
+  }
+  const publishSource = readFileSync(changesetsPublish, "utf8");
+  if (
+    !publishSource.includes(
+      "publishConfig === null || publishConfig === void 0 ? void 0 : publishConfig.access) || access"
+    )
+  ) {
+    fail(
+      "@changesets/cli must continue to prefer package publishConfig.access over the global Changesets access setting"
+    );
+  }
+}
+
 function checkTagFormat(tag) {
   if (!ATLAS_TAG_PATTERN.test(tag)) {
     fail(`Invalid Atlas tag format "${tag}" (expected vX.Y.Z)`);
@@ -313,6 +355,7 @@ function main() {
   checkReleaseWorkflow();
   checkGovernanceDocLinks();
   checkOssWording();
+  checkChangesetAccessPolicy();
 
   const version = readRootVersion();
   checkTagFormat(`v${version}`);

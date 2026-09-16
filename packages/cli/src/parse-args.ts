@@ -19,6 +19,7 @@ export interface ParsedCli {
   targetVersion?: string;
   allowDirty: boolean;
   skipValidation: boolean;
+  releasesDir?: string;
 }
 
 const GLOBAL_FLAGS = new Set([
@@ -36,6 +37,7 @@ const GLOBAL_FLAGS = new Set([
   "--to",
   "--allow-dirty",
   "--skip-validation",
+  "--releases-dir",
 ]);
 
 function parseFlagValue(args: string[], index: number, flag: string): string {
@@ -141,6 +143,10 @@ function parseGlobalArgs(argv: string[]): ParsedCli {
       case "--skip-validation":
         parsed.skipValidation = true;
         break;
+      case "--releases-dir":
+        parsed.releasesDir = parseFlagValue(argv, index, "--releases-dir");
+        index += 1;
+        break;
       default:
         if (arg.startsWith("-")) {
           throw new CliError(CliErrorCode.USAGE_ERROR, `Unknown option: ${arg}`);
@@ -211,6 +217,10 @@ function parseGlobalFlagsOnly(argv: string[]): { flags: ParsedCli; remainder: st
       case "--skip-validation":
         flags.skipValidation = true;
         break;
+      case "--releases-dir":
+        flags.releasesDir = parseFlagValue(argv, index, "--releases-dir");
+        index += 1;
+        break;
       default:
         remainder.push(arg);
         break;
@@ -232,6 +242,7 @@ function mergeParsedFlags(target: ParsedCli, source: ParsedCli): void {
   target.targetVersion = target.targetVersion ?? source.targetVersion;
   target.allowDirty = target.allowDirty || source.allowDirty;
   target.skipValidation = target.skipValidation || source.skipValidation;
+  target.releasesDir = target.releasesDir ?? source.releasesDir;
 }
 
 export function parseCliArgs(argv: string[]): ParsedCli {

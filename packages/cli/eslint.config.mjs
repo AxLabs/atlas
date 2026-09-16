@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 export default [
   ...baseConfig,
   {
-    ignores: ["assets/**", "scripts/.cache/**"],
+    ignores: ["assets/**", "release-assets/**", "scripts/.cache/**"],
   },
   {
     files: ["**/*.ts", "**/*.tsx"],

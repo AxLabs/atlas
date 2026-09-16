@@ -228,8 +228,8 @@ function walkSourceFiles(root: string, scanMode: DependencyScanMode): string[] {
           continue;
         }
 
-        // Packaged bootstrap assets live at <cli-package>/assets and are not CLI source.
-        if (current === root && entry === "assets") {
+        // Packaged bootstrap/release assets are historical trees, not CLI source.
+        if (current === root && (entry === "assets" || entry === "release-assets")) {
           continue;
         }
 

@@ -66,7 +66,16 @@ describe("upgrade e2e", () => {
     );
 
     const result = runAtlasCli(
-      ["upgrade", "--to", "0.2.0", "--dry-run", "--json", "--skip-validation"],
+      [
+        "upgrade",
+        "--to",
+        "0.2.0",
+        "--dry-run",
+        "--json",
+        "--skip-validation",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
 
@@ -98,13 +107,31 @@ describe("upgrade e2e", () => {
     );
 
     const dryRun = runAtlasCli(
-      ["upgrade", "--to", "0.2.0", "--dry-run", "--json", "--skip-validation"],
+      [
+        "upgrade",
+        "--to",
+        "0.2.0",
+        "--dry-run",
+        "--json",
+        "--skip-validation",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
     expect(dryRun.exitCode).toBe(ExitCode.SUCCESS);
 
     const apply = runAtlasCli(
-      ["upgrade", "--to", "0.2.0", "--json", "--skip-validation", "--allow-dirty"],
+      [
+        "upgrade",
+        "--to",
+        "0.2.0",
+        "--json",
+        "--skip-validation",
+        "--allow-dirty",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
     expect(apply.exitCode).toBe(ExitCode.SUCCESS);
@@ -136,7 +163,16 @@ describe("upgrade e2e", () => {
     );
 
     const secondDryRun = runAtlasCli(
-      ["upgrade", "--to", "0.2.0", "--dry-run", "--json", "--skip-validation"],
+      [
+        "upgrade",
+        "--to",
+        "0.2.0",
+        "--dry-run",
+        "--json",
+        "--skip-validation",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
     const secondPayload = parseUpgradeJson(secondDryRun.stdout);
@@ -149,7 +185,16 @@ describe("upgrade e2e", () => {
     const tempRoot = copyFixtureToTemp(CONFLICT_FIXTURE_ROOT);
 
     const result = runAtlasCli(
-      ["upgrade", "--to", "0.2.0", "--json", "--skip-validation", "--allow-dirty"],
+      [
+        "upgrade",
+        "--to",
+        "0.2.0",
+        "--json",
+        "--skip-validation",
+        "--allow-dirty",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
 
@@ -168,7 +213,16 @@ describe("upgrade e2e", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
 
     const result = runAtlasCli(
-      ["upgrade", "--to", "0.4.0", "--dry-run", "--json", "--skip-validation"],
+      [
+        "upgrade",
+        "--to",
+        "0.4.0",
+        "--dry-run",
+        "--json",
+        "--skip-validation",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
 
@@ -181,7 +235,16 @@ describe("upgrade e2e", () => {
     const tempRoot = copyFixtureToTemp(FIXTURE_ROOT);
 
     const result = runAtlasCli(
-      ["upgrade", "--to", "0.2.0", "--json", "--skip-validation", "--allow-dirty"],
+      [
+        "upgrade",
+        "--to",
+        "0.2.0",
+        "--json",
+        "--skip-validation",
+        "--allow-dirty",
+        "--releases-dir",
+        path.join(tempRoot, "releases"),
+      ],
       tempRoot
     );
 

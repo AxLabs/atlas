@@ -30,6 +30,11 @@ import { applyPackageUpdates, hasUnresolvedRequiredPackageWork } from "./package
 import { planPackageUpdates } from "./package-plan";
 import { planUpgrade } from "./plan";
 import {
+  assertPackagedReleaseSupported,
+  findReleaseAssetRoot,
+  readPackagedReleaseCatalog,
+} from "./release-assets";
+import {
   buildManifestSubsetFromRelease,
   type LoadedReleaseSnapshot,
   loadReleaseSnapshot,
@@ -218,6 +223,50 @@ function writePlatformBaseline(
   writeFileSync(contractPath, `${JSON.stringify(updatedContract, null, 2)}\n`, "utf8");
 }
 
+function resolveUpgradeReleaseEvidence(releasesDir?: string): {
+  releasesDir: string;
+  catalog?: ReturnType<typeof readPackagedReleaseCatalog>;
+} {
+  if (releasesDir) {
+    return { releasesDir: path.resolve(releasesDir) };
+  }
+
+  const assetRoot = findReleaseAssetRoot();
+  return {
+    releasesDir: assetRoot,
+    catalog: readPackagedReleaseCatalog(assetRoot),
+  };
+}
+
+function loadUpgradeSnapshots(options: {
+  sourceVersion: string;
+  targetVersion: string;
+  releasesDir?: string;
+}): {
+  sourceRelease: LoadedReleaseSnapshot;
+  targetRelease: LoadedReleaseSnapshot;
+} {
+  const evidence = resolveUpgradeReleaseEvidence(options.releasesDir);
+  if (evidence.catalog) {
+    assertPackagedReleaseSupported({
+      sourceVersion: options.sourceVersion,
+      targetVersion: options.targetVersion,
+      catalog: evidence.catalog,
+    });
+  }
+
+  return {
+    sourceRelease: loadReleaseSnapshot({
+      atlasVersion: options.sourceVersion,
+      releasesDir: evidence.releasesDir,
+    }),
+    targetRelease: loadReleaseSnapshot({
+      atlasVersion: options.targetVersion,
+      releasesDir: evidence.releasesDir,
+    }),
+  };
+}
+
 function collectConsumerRelativePaths(
   sourceRelease: LoadedReleaseSnapshot,
   targetRelease: LoadedReleaseSnapshot
@@ -312,14 +361,9 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     );
   }
 
-  const sourceRelease = loadReleaseSnapshot({
-    repoRoot: options.repoRoot,
-    atlasVersion: sourceVersion,
-    releasesDir: options.releasesDir,
-  });
-  const targetRelease = loadReleaseSnapshot({
-    repoRoot: options.repoRoot,
-    atlasVersion: targetVersion,
+  const { sourceRelease, targetRelease } = loadUpgradeSnapshots({
+    sourceVersion,
+    targetVersion,
     releasesDir: options.releasesDir,
   });
 
@@ -650,7 +694,6 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 }
 
 export function loadUpgradeReleasePair(options: {
-  repoRoot: string;
   sourceVersion: string;
   targetVersion: string;
   releasesDir?: string;
@@ -658,16 +701,5 @@ export function loadUpgradeReleasePair(options: {
   sourceRelease: LoadedReleaseSnapshot;
   targetRelease: LoadedReleaseSnapshot;
 } {
-  return {
-    sourceRelease: loadReleaseSnapshot({
-      repoRoot: options.repoRoot,
-      atlasVersion: options.sourceVersion,
-      releasesDir: options.releasesDir,
-    }),
-    targetRelease: loadReleaseSnapshot({
-      repoRoot: options.repoRoot,
-      atlasVersion: options.targetVersion,
-      releasesDir: options.releasesDir,
-    }),
-  };
+  return loadUpgradeSnapshots(options);
 }

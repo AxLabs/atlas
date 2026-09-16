@@ -15,8 +15,12 @@ const REQUIRED_PACKED_FILES = [
   "dist/index.js",
   "dist/dependency-validation.js",
   "dist/bootstrap-assets.js",
+  "dist/release-assets.js",
   "LICENSE",
+  "README.md",
+  "THIRD_PARTY_NOTICES.md",
   "assets/bootstrap/manifest.json",
+  "assets/releases/catalog.json",
 ];
 
 function isCliPackageNoisePath(entry) {
@@ -32,20 +36,28 @@ function isSecretEnvPath(entry) {
 }
 
 const FORBIDDEN_PACKED_PATH_PATTERNS = [
-  { id: "src", test: (entry) => isCliPackageNoisePath(entry) && (entry === "src" || entry.startsWith("src/")) },
+  {
+    id: "src",
+    test: (entry) => isCliPackageNoisePath(entry) && (entry === "src" || entry.startsWith("src/")),
+  },
   {
     id: "tests",
     test: (entry) =>
-      isCliPackageNoisePath(entry) && (entry.includes("/__tests__/") || entry.startsWith("__tests__/")),
+      isCliPackageNoisePath(entry) &&
+      (entry.includes("/__tests__/") || entry.startsWith("__tests__/")),
   },
   {
     id: "scripts",
-    test: (entry) => isCliPackageNoisePath(entry) && (entry === "scripts" || entry.startsWith("scripts/")),
+    test: (entry) =>
+      isCliPackageNoisePath(entry) && (entry === "scripts" || entry.startsWith("scripts/")),
   },
   { id: "github", test: (entry) => entry === ".github" || entry.startsWith(".github/") },
   { id: "git", test: (entry) => entry === ".git" || entry.startsWith(".git/") },
   { id: "env", test: (entry) => isSecretEnvPath(entry) },
-  { id: "node-modules", test: (entry) => entry === "node_modules" || entry.includes("/node_modules/") },
+  {
+    id: "node-modules",
+    test: (entry) => entry === "node_modules" || entry.includes("/node_modules/"),
+  },
   { id: "coverage", test: (entry) => entry === "coverage" || entry.startsWith("coverage/") },
   {
     id: "storybook",
@@ -54,8 +66,7 @@ const FORBIDDEN_PACKED_PATH_PATTERNS = [
 ];
 
 const AUTH_FAILURE_PATTERN = /ENEEDAUTH|npm ERR! code ENEEDAUTH/i;
-const AUTH_WARNING_PATTERN =
-  /This command requires you to be logged in[^\n]*\(dry-run\)/i;
+const AUTH_WARNING_PATTERN = /This command requires you to be logged in[^\n]*\(dry-run\)/i;
 
 /**
  * @param {unknown} value
@@ -96,7 +107,9 @@ export function normalizeNpmPackPayload(payload) {
   }
 
   const files = Array.isArray(record.files)
-    ? record.files.map((entry) => (isRecord(entry) && typeof entry.path === "string" ? entry.path : String(entry)))
+    ? record.files.map((entry) =>
+        isRecord(entry) && typeof entry.path === "string" ? entry.path : String(entry)
+      )
     : [];
 
   return {
@@ -145,7 +158,9 @@ export function assertPublicCliManifest(manifest) {
 
   const bin = isRecord(manifest.bin) ? manifest.bin : {};
   if (bin[PUBLIC_CLI_BIN_NAME] !== "./dist/cli.js") {
-    issues.push(`bin.${PUBLIC_CLI_BIN_NAME} is ${String(bin[PUBLIC_CLI_BIN_NAME])}, expected ./dist/cli.js`);
+    issues.push(
+      `bin.${PUBLIC_CLI_BIN_NAME} is ${String(bin[PUBLIC_CLI_BIN_NAME])}, expected ./dist/cli.js`
+    );
   }
 
   const publishConfig = isRecord(manifest.publishConfig) ? manifest.publishConfig : {};
@@ -171,7 +186,11 @@ export function assertPublicCliManifest(manifest) {
     issues.push(`engines.node is ${String(engines.node)}, expected a Node >=22 requirement`);
   }
 
-  issues.push(...collectRuntimeWorkspaceProtocolLeaks(manifest).map((leak) => `runtime workspace dependency ${leak}`));
+  issues.push(
+    ...collectRuntimeWorkspaceProtocolLeaks(manifest).map(
+      (leak) => `runtime workspace dependency ${leak}`
+    )
+  );
   return issues;
 }
 
@@ -237,9 +256,13 @@ function runNpm(command, args, options) {
     maxBuffer: 10 * 1024 * 1024,
   });
 
-  const stdout = typeof result.stdout === "string" ? result.stdout : (result.stdout?.toString("utf8") ?? "");
-  const stderr = typeof result.stderr === "string" ? result.stderr : (result.stderr?.toString("utf8") ?? "");
-  const timedOut = Boolean(result.error && "code" in result.error && result.error.code === "ETIMEDOUT");
+  const stdout =
+    typeof result.stdout === "string" ? result.stdout : (result.stdout?.toString("utf8") ?? "");
+  const stderr =
+    typeof result.stderr === "string" ? result.stderr : (result.stderr?.toString("utf8") ?? "");
+  const timedOut = Boolean(
+    result.error && "code" in result.error && result.error.code === "ETIMEDOUT"
+  );
 
   return {
     status: timedOut ? null : (result.status ?? (result.error ? 1 : 0)),
@@ -261,6 +284,7 @@ export function verifyNpmPublishDryRun(options) {
   const packageRoot = options.packageRoot;
   const npmCommand = options.npmCommand ?? "npm";
   const env = {
+    ...process.env,
     ...options.env,
     NO_COLOR: "1",
     FORCE_COLOR: "0",
@@ -286,7 +310,9 @@ export function verifyNpmPublishDryRun(options) {
     const packPayload = normalizeNpmPackPayload(extractJsonPayload(pack.stdout));
     const packedFileIssues = collectPackedFileIssues(packPayload.files);
     if (packPayload.name !== PUBLIC_CLI_PACKAGE_NAME) {
-      packedFileIssues.push(`npm pack name is ${String(packPayload.name)}, expected ${PUBLIC_CLI_PACKAGE_NAME}`);
+      packedFileIssues.push(
+        `npm pack name is ${String(packPayload.name)}, expected ${PUBLIC_CLI_PACKAGE_NAME}`
+      );
     }
     if (packedFileIssues.length > 0) {
       throw new Error(`npm pack --dry-run contents are invalid:\n${packedFileIssues.join("\n")}`);

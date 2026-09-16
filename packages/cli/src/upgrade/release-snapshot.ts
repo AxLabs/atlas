@@ -5,6 +5,7 @@ import { computeBaselineChecksum } from "@atlas/project";
 
 import { CliError, CliErrorCode } from "../errors/cli-error";
 import { SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION } from "../template-sync/manifest";
+import { CLI_PACKAGE_NAME } from "../version";
 
 import {
   assertNoPathListDuplicates,
@@ -15,10 +16,11 @@ import {
   validateReleaseOpenApiPath,
   validateReleaseRelativePath,
 } from "./path-safety";
+import { RELEASE_SNAPSHOT_FILENAME } from "./release-constants";
 
 import type { UpgradeSnapshot } from "./types";
 
-export const RELEASE_SNAPSHOT_FILENAME = "release.snapshot.json";
+export { RELEASE_SNAPSHOT_FILENAME } from "./release-constants";
 export const RELEASE_SNAPSHOT_SCHEMA_VERSION = 1;
 
 export interface ReleaseSnapshotManifest {
@@ -39,8 +41,6 @@ export interface LoadedReleaseSnapshot {
   snapshot: UpgradeSnapshot;
   releaseRoot: string;
 }
-
-const DEFAULT_RELEASES_DIR = "releases";
 
 function readJsonFile<T>(absolutePath: string, label: string): T {
   if (!existsSync(absolutePath)) {
@@ -264,18 +264,14 @@ function buildUpgradeSnapshotFromRelease(
   };
 }
 
-export function resolveReleaseDirectory(
-  repoRoot: string,
-  atlasVersion: string,
-  releasesDir?: string
-): string {
-  const baseDir = releasesDir ?? path.join(repoRoot, DEFAULT_RELEASES_DIR);
-  const releaseRoot = path.join(baseDir, atlasVersion);
+export function resolveReleaseDirectory(releasesDir: string, atlasVersion: string): string {
+  const releaseRoot = path.join(releasesDir, atlasVersion);
+  const snapshotPath = path.join(releaseRoot, RELEASE_SNAPSHOT_FILENAME);
 
-  if (!existsSync(path.join(releaseRoot, RELEASE_SNAPSHOT_FILENAME))) {
+  if (!existsSync(snapshotPath)) {
     throw new CliError(
       CliErrorCode.UPGRADE_PREREQUISITE,
-      `No release snapshot found for Atlas version ${atlasVersion}. Expected ${path.join(releaseRoot, RELEASE_SNAPSHOT_FILENAME)}.`
+      `No release snapshot found for Atlas version ${atlasVersion}. Expected ${snapshotPath}. Normal atlas upgrade loads production snapshots from the installed ${CLI_PACKAGE_NAME} package, not from a consumer repository releases/ directory.`
     );
   }
 
@@ -283,15 +279,10 @@ export function resolveReleaseDirectory(
 }
 
 export function loadReleaseSnapshot(options: {
-  repoRoot: string;
   atlasVersion: string;
-  releasesDir?: string;
+  releasesDir: string;
 }): LoadedReleaseSnapshot {
-  const releaseRoot = resolveReleaseDirectory(
-    options.repoRoot,
-    options.atlasVersion,
-    options.releasesDir
-  );
+  const releaseRoot = resolveReleaseDirectory(options.releasesDir, options.atlasVersion);
   const manifestPath = path.join(releaseRoot, RELEASE_SNAPSHOT_FILENAME);
   const manifest = validateReleaseSnapshotManifest(
     readJsonFile(manifestPath, RELEASE_SNAPSHOT_FILENAME)

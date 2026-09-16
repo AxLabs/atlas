@@ -287,18 +287,32 @@ Test suite: `packages/cli/src/__tests__/upgrade-historical-rehearsal.test.ts`
 
 ---
 
-## Supported upgrade promise (v0.1)
+## Supported upgrade promise (pre-1.0)
 
-| Promise               | Detail                                                                                         |
-| --------------------- | ---------------------------------------------------------------------------------------------- |
-| **We support**        | Documented upgrade paths between intentional Atlas releases with migration notes when breaking |
-| **We support**        | Deterministic conflict detection for synced template infrastructure                            |
-| **We support**        | Regeneration for generated artifacts                                                           |
-| **We do not support** | Seamless upgrade from arbitrary historical snapshots without migration chain                   |
-| **We do not support** | Silent overwrite of consumer-modified synced files                                             |
-| **We do not support** | Perpetual automatic upgrades with zero review                                                  |
-| Pre-1.0               | Breaking changes allowed with changelog + migration docs                                       |
-| Migration retention   | Best-effort; at least one minor release deprecation notice when practicable                    |
+The first npm-distributed Atlas CLI (`@blitzcraftlabs/atlas@0.5.0`, once published) supports:
+
+| Promise               | Detail                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **We support**        | Adjacent upgrades between the current Atlas release and the immediately previous supported production release |
+| **We support**        | Deterministic conflict detection for synced template infrastructure                                           |
+| **We support**        | Regeneration for generated artifacts                                                                          |
+| **We do not support** | Unlimited historical upgrades, including rehearsal snapshots `0.1.0` / `0.2.0`                                |
+| **We do not support** | Silent overwrite of consumer-modified synced files                                                            |
+| **We do not support** | Perpetual automatic upgrades with zero review                                                                 |
+| Pre-1.0               | Breaking changes allowed with changelog + migration docs                                                      |
+| Migration retention   | Best-effort; at least one minor release deprecation notice when practicable                                   |
+
+Release evidence is **package-owned**. `atlas upgrade --to <version>` loads snapshots from the
+installed `@blitzcraftlabs/atlas` package catalog. `--releases-dir` is an explicit
+fixture/maintainer override. Generated consumers do not carry an Atlas `releases/` tree. Missing or
+corrupt packaged evidence fails closed.
+
+The canonical `v0.4.0` tag is the previous production baseline for the first public npm CLI. The
+`0.5.0` production snapshot is generated when the Version PR advances workspace versions. Until that
+snapshot exists, `--to 0.5.0` fails closed as an unsupported target.
+
+Until `@blitzcraftlabs/atlas` is published, use this repository or a packed tarball rather than the
+public registry.
 
 ---
 
@@ -336,8 +350,9 @@ handles the upgrade.
 
 **Partial / deferred within `atlas upgrade`:**
 
-- Three-way automatic merge engine (merge-required + conflict context only)
-- Full production manifest release snapshots beyond the rehearsal chain (`0.1.0 → 0.2.0 → 0.3.0`)
+- Full three-way merge engine (merge-required + conflict context only)
+- Cross-published-version clean-room proof (`0.4.0 → 0.5.0`) until the Version PR generates the
+  `0.5.0` production snapshot
 
 **Expert flag:** `--skip-validation` skips post-upgrade `atlas doctor` only. It never skips
 migration completion checks, required package update checks, strict target baseline capture, or

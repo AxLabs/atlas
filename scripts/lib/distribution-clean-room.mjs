@@ -26,6 +26,7 @@ export const CLEAN_ROOM_STAGES = Object.freeze({
   generate: "generate",
   typecheck: "typecheck",
   context: "context",
+  upgrade: "upgrade",
 });
 
 export const CLEAN_ROOM_TIMEOUTS_MS = Object.freeze({
@@ -39,6 +40,7 @@ export const CLEAN_ROOM_TIMEOUTS_MS = Object.freeze({
   generate: 60 * 1000,
   typecheck: 5 * 60 * 1000,
   context: 60 * 1000,
+  upgrade: 3 * 60 * 1000,
 });
 
 export const GENERATED_PROJECT_NAME = "test-app";
@@ -65,6 +67,7 @@ export const FORBIDDEN_GENERATED_PATHS = Object.freeze([
   "apps/reference",
   "packages/cli",
   "packages/project",
+  "releases",
 ]);
 
 export const EXPECTED_WORKSPACE_PACKAGE_NAMES = Object.freeze([

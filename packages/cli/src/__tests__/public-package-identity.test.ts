@@ -40,9 +40,13 @@ describe("public CLI package identity", () => {
   it("keeps a strict files allowlist and no runtime workspace protocol", () => {
     expect(manifest.files).toEqual([
       "dist/**/*.js",
+      "README.md",
       "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
       "assets/bootstrap/manifest.json",
       "assets/bootstrap/files/**",
+      "assets/releases/catalog.json",
+      "assets/releases/**",
     ]);
     expect(
       Object.values(manifest.dependencies ?? {}).some((range) => range.includes("workspace:"))

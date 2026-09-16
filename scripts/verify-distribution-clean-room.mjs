@@ -1,5 +1,14 @@
 #!/usr/bin/env node
-import { existsSync, realpathSync, statSync } from "node:fs";
+import {
+  existsSync,
+  realpathSync,
+  statSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  copyFileSync,
+} from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -29,6 +38,7 @@ import {
   readGeneratedBaseline,
   resolveAtlasRepoRoot,
   resolveCommandPath,
+  runCommand,
   runStage,
   sanitizeCleanRoomEnv,
 } from "./lib/distribution-clean-room.mjs";
@@ -86,6 +96,155 @@ function assertExecutable(filePath, label) {
   }
 }
 
+function checksumFile(filePath) {
+  return `sha256:${createHash("sha256").update(readFileSync(filePath)).digest("hex")}`;
+}
+
+function proveInstalledUpgradeBoundary(options) {
+  process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.upgrade}\n`);
+  const { atlas, generatedRoot, cliInstalled, repoRoot, harness } = options;
+
+  if (existsSync(path.join(generatedRoot, "releases"))) {
+    throw new Error("Generated consumer must not contain a releases/ tree");
+  }
+
+  const releaseResolver = path.join(cliInstalled, "dist", "release-assets.js");
+  if (!existsSync(releaseResolver)) {
+    throw new Error(`Installed CLI is missing dist/release-assets.js at ${releaseResolver}`);
+  }
+
+  const lookup = runCommand(
+    process.execPath,
+    [
+      "-e",
+      `
+const resolver = require(${JSON.stringify(releaseResolver)});
+const root = resolver.findReleaseAssetRoot();
+const catalog = resolver.readPackagedReleaseCatalog(root);
+process.stdout.write(JSON.stringify({ root, catalog }));
+`,
+    ],
+    {
+      cwd: generatedRoot,
+      env: sanitizeCleanRoomEnv({ repoRoot, cwd: generatedRoot }),
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.upgrade,
+    }
+  );
+  if (lookup.status !== 0) {
+    throw new Error(
+      `Installed release catalog lookup failed\nstdout:\n${lookup.stdout}\nstderr:\n${lookup.stderr}`
+    );
+  }
+
+  const resolved = JSON.parse(lookup.stdout);
+  const installedRoot = realpathSync(cliInstalled);
+  const catalogRoot = realpathSync(resolved.root);
+  if (!catalogRoot.startsWith(installedRoot)) {
+    throw new Error("Installed CLI resolved release assets outside its package root");
+  }
+  assertOutsideRepo(repoRoot, catalogRoot, "Packaged release assets");
+  if (
+    resolved.catalog.supportedVersions.includes("0.1.0") ||
+    resolved.catalog.supportedVersions.includes("0.2.0")
+  ) {
+    throw new Error("Packaged production catalog must not include rehearsal 0.1.0/0.2.0");
+  }
+
+  const unsupported = runCommand(
+    atlas,
+    ["upgrade", "--to", "9.9.9", "--dry-run", "--json", "--cwd", generatedRoot],
+    {
+      cwd: harness,
+      env: sanitizeCleanRoomEnv({ repoRoot, cwd: harness }),
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.upgrade,
+    }
+  );
+  const unsupportedOutput = `${unsupported.stdout}\n${unsupported.stderr}`;
+  if (unsupported.status === 0) {
+    throw new Error("atlas upgrade --to 9.9.9 must fail closed for an unsupported target");
+  }
+  if (!/Unsupported target Atlas release 9\.9\.9/.test(unsupportedOutput)) {
+    throw new Error(`Unsupported-target upgrade did not fail clearly:\n${unsupportedOutput}`);
+  }
+
+  const catalog = resolved.catalog;
+  const previous = [...catalog.supportedVersions]
+    .filter((version) => version !== catalog.current)
+    .at(-1);
+  if (!previous || previous === catalog.current) {
+    process.stdout.write(
+      `${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.upgrade} deferred cross-version proof until the Version PR generates the next production snapshot (catalog current ${catalog.current})\n`
+    );
+    return;
+  }
+
+  materializePreviousProductionBaseline({
+    generatedRoot,
+    cliInstalled,
+    previousVersion: previous,
+  });
+
+  const planned = runStage(
+    CLEAN_ROOM_STAGES.upgrade,
+    atlas,
+    ["upgrade", "--to", catalog.current, "--dry-run", "--json", "--cwd", generatedRoot],
+    {
+      cwd: harness,
+      env: sanitizeCleanRoomEnv({ repoRoot, cwd: harness }),
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.upgrade,
+    }
+  );
+  const envelope = parseJsonEnvelope(planned.stdout, "atlas upgrade --dry-run --json");
+  if (
+    envelope.result?.sourceVersion !== previous ||
+    envelope.result?.targetVersion !== catalog.current
+  ) {
+    throw new Error(
+      `Cross-version upgrade plan did not use ${previous} → ${catalog.current}: ${planned.stdout}`
+    );
+  }
+  if (!["planned", "blocked"].includes(envelope.result?.status)) {
+    throw new Error(`Unexpected cross-version upgrade status: ${planned.stdout}`);
+  }
+}
+
+function materializePreviousProductionBaseline(options) {
+  const snapshotRoot = path.join(
+    options.cliInstalled,
+    "assets",
+    "releases",
+    options.previousVersion
+  );
+  const manifestPath = path.join(snapshotRoot, "release.snapshot.json");
+  if (!existsSync(manifestPath)) {
+    throw new Error(`Packaged previous snapshot missing at ${manifestPath}`);
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const applicationRoot = path.join(options.generatedRoot, manifest.canonicalApplication);
+  const checksums = {};
+
+  for (const relativePath of manifest.syncedPaths) {
+    const source = path.join(snapshotRoot, manifest.canonicalApplication, relativePath);
+    const destination = path.join(applicationRoot, relativePath);
+    mkdirSync(path.dirname(destination), { recursive: true });
+    copyFileSync(source, destination);
+    checksums[relativePath] = checksumFile(destination);
+  }
+
+  const contractPath = path.join(options.generatedRoot, "atlas.config.json");
+  const contract = JSON.parse(readFileSync(contractPath, "utf8"));
+  contract.platform = {
+    ...(contract.platform ?? {}),
+    baseline: {
+      atlasVersion: options.previousVersion,
+      contractSchemaVersion: manifest.contractSchemaVersion,
+      templateManifestSchemaVersion: manifest.templateManifestSchemaVersion,
+      syncedPathChecksums: checksums,
+    },
+  };
+  writeFileSync(contractPath, `${JSON.stringify(contract, null, 2)}\n`);
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
@@ -117,7 +276,9 @@ async function main() {
       verifyNpmPublishDryRun({ packageRoot: cliPackageRoot, env: packEnv });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`${CLEAN_ROOM_STAGE_PREFIX} FAILED ${CLEAN_ROOM_STAGES.npmPublishDryRun}\n${message}`);
+      throw new Error(
+        `${CLEAN_ROOM_STAGE_PREFIX} FAILED ${CLEAN_ROOM_STAGES.npmPublishDryRun}\n${message}`
+      );
     }
     runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["pack", "--pack-destination", layout.artifacts], {
       cwd: cliPackageRoot,
@@ -275,6 +436,14 @@ async function main() {
     if (contextIssues.length > 0) {
       throw new Error(`Context assertions failed:\n${contextIssues.join("\n")}\n${context.stdout}`);
     }
+
+    proveInstalledUpgradeBoundary({
+      atlas,
+      generatedRoot,
+      cliInstalled,
+      repoRoot,
+      harness: layout.harness,
+    });
 
     process.stdout.write(
       `${CLEAN_ROOM_STAGE_PREFIX} ok ${GENERATED_PROJECT_NAME} @ Atlas ${atlasVersion}\n`
