@@ -41,7 +41,16 @@ describe("production upgrade support window", () => {
     expect(available).toContain("0.4.0");
     expect(available).not.toContain("0.1.0");
     expect(available).not.toContain("0.2.0");
-    expect(available).not.toContain("0.5.0");
+
+    const currentVersion = (
+      JSON.parse(readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8")) as {
+        version: string;
+      }
+    ).version;
+    const supportedVersions = selectSupportedReleaseWindow(currentVersion, available);
+    expect(supportedVersions.at(-1)).toBe(currentVersion);
+    expect(supportedVersions.length).toBeLessThanOrEqual(2);
+    expect(supportedVersions.every((version) => !isRehearsalOnlyAtlasVersion(version))).toBe(true);
   });
 
   it("keeps the canonical 0.4.0 snapshot as a v0.4.0 baseline, not a current-main rewrite", () => {
