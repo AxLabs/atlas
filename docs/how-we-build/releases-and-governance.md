@@ -224,8 +224,9 @@ After `changeset version`, `scripts/consolidate-atlas-release.mjs`:
 7. Updates root `CHANGELOG.md` **without discarding prior release sections or link references**
 8. Advances the `[Unreleased]` compare link and adds/updates the new version link reference
 9. Syncs versions across root and workspaces
-10. Generates the production release snapshot for the new Atlas version when one does not already
-    exist (`packages/cli/release-assets/production/<version>/`)
+10. Builds `@atlas/project` (package exports point at `dist/`), then generates the production
+    release snapshot for the new Atlas version when one does not already exist
+    (`packages/cli/release-assets/production/<version>/`)
 11. **Does not delete** workspace package changelogs (required by `changesets/action`)
 
 ---
