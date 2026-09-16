@@ -276,7 +276,7 @@ export function updateRootChangelog(rootContent, version, workspaceInput, dateLi
   return content;
 }
 
-export function generateCurrentProductionReleaseSnapshot(repoRoot = process.cwd()) {
+export function generateCurrentProductionReleaseSnapshot(repoRoot = process.cwd(), options = {}) {
   const manifestPath = path.join(repoRoot, "templates", "app-infrastructure.manifest.json");
   const cliPackagePath = path.join(repoRoot, "packages", "cli", "package.json");
   if (!existsSync(manifestPath) || !existsSync(cliPackagePath)) {
@@ -291,7 +291,15 @@ export function generateCurrentProductionReleaseSnapshot(repoRoot = process.cwd(
     throw new Error(`Missing production snapshot generator at ${script}`);
   }
 
-  const result = spawnSync(process.execPath, [script, "--repo-root", repoRoot], {
+  const args = [script, "--repo-root", repoRoot];
+  if (typeof options.outputDir === "string" && options.outputDir.length > 0) {
+    args.push("--output-dir", options.outputDir);
+  }
+  if (options.replace === true) {
+    args.push("--replace");
+  }
+
+  const result = spawnSync(process.execPath, args, {
     cwd: repoRoot,
     encoding: "utf8",
     stdio: "inherit",
