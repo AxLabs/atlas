@@ -163,6 +163,13 @@ pnpm build                        # cwd: test-app
 <installed-atlas> generate page ops/health --cwd test-app
 pnpm typecheck                    # cwd: test-app
 <installed-atlas> context --json --cwd test-app
+# When the packaged catalog contains previous + current production versions:
+# reconstruct previous-release Atlas-owned state from packaged snapshots, then
+<installed-atlas> upgrade --to <current> --dry-run --json --cwd test-app   # status must be planned
+<installed-atlas> upgrade --to <current> --json --cwd test-app
+<installed-atlas> doctor --json --cwd test-app
+pnpm typecheck                    # cwd: test-app
+pnpm build                        # cwd: test-app
 ```
 
 `pnpm distribution:publish-dry-run` runs `npm pack --dry-run` and

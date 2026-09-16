@@ -40,7 +40,7 @@ export const CLEAN_ROOM_TIMEOUTS_MS = Object.freeze({
   generate: 60 * 1000,
   typecheck: 5 * 60 * 1000,
   context: 60 * 1000,
-  upgrade: 3 * 60 * 1000,
+  upgrade: 10 * 60 * 1000,
 });
 
 export const GENERATED_PROJECT_NAME = "test-app";
@@ -747,6 +747,7 @@ export function assertGeneratorOutput(generatedRoot) {
  *   appVersion: string;
  *   generatedRoot: string;
  *   repoRoot: string;
+ *   requireIndependentAppVersion?: boolean;
  * }} expectations
  */
 export function assertDoctorReport(doctorEnvelope, expectations) {
@@ -786,7 +787,10 @@ export function assertDoctorReport(doctorEnvelope, expectations) {
     }
   }
 
-  if (expectations.appVersion === expectations.atlasVersion) {
+  if (
+    expectations.requireIndependentAppVersion !== false &&
+    expectations.appVersion === expectations.atlasVersion
+  ) {
     issues.push("Generated app package version must stay independent of the Atlas baseline");
   }
 

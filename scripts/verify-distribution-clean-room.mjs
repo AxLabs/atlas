@@ -1,14 +1,5 @@
 #!/usr/bin/env node
-import {
-  existsSync,
-  realpathSync,
-  statSync,
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  copyFileSync,
-} from "node:fs";
-import { createHash } from "node:crypto";
+import { existsSync, realpathSync, statSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -31,6 +22,7 @@ import {
   createCleanRoomLayout,
   finalizeCleanRoom,
   findPackedTarball,
+  formatStageFailure,
   isCiEnvironment,
   isExplicitKeepRequested,
   isInsideDirectory,
@@ -42,6 +34,10 @@ import {
   runStage,
   sanitizeCleanRoomEnv,
 } from "./lib/distribution-clean-room.mjs";
+import {
+  proveInstalledCrossVersionUpgrade,
+  selectPreviousSupportedVersion,
+} from "./lib/distribution-upgrade-proof.mjs";
 import { verifyNpmPublishDryRun } from "./lib/npm-publish-dry-run.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -96,13 +92,10 @@ function assertExecutable(filePath, label) {
   }
 }
 
-function checksumFile(filePath) {
-  return `sha256:${createHash("sha256").update(readFileSync(filePath)).digest("hex")}`;
-}
-
 function proveInstalledUpgradeBoundary(options) {
   process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.upgrade}\n`);
-  const { atlas, generatedRoot, cliInstalled, repoRoot, harness } = options;
+  const { atlas, generatedRoot, cliInstalled, repoRoot, harness, pnpm, consumerToolingEnv } =
+    options;
 
   if (existsSync(path.join(generatedRoot, "releases"))) {
     throw new Error("Generated consumer must not contain a releases/ tree");
@@ -168,81 +161,85 @@ process.stdout.write(JSON.stringify({ root, catalog }));
   }
 
   const catalog = resolved.catalog;
-  const previous = [...catalog.supportedVersions]
-    .filter((version) => version !== catalog.current)
-    .at(-1);
-  if (!previous || previous === catalog.current) {
+  const previous = selectPreviousSupportedVersion(catalog);
+  if (!previous) {
     process.stdout.write(
       `${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.upgrade} deferred cross-version proof until the Version PR generates the next production snapshot (catalog current ${catalog.current})\n`
     );
     return;
   }
 
-  materializePreviousProductionBaseline({
-    generatedRoot,
+  proveInstalledCrossVersionUpgrade({
+    catalog,
+    consumerRoot: generatedRoot,
     cliInstalled,
-    previousVersion: previous,
-  });
-
-  const planned = runStage(
-    CLEAN_ROOM_STAGES.upgrade,
-    atlas,
-    ["upgrade", "--to", catalog.current, "--dry-run", "--json", "--cwd", generatedRoot],
-    {
-      cwd: harness,
-      env: sanitizeCleanRoomEnv({ repoRoot, cwd: harness }),
-      timeout: CLEAN_ROOM_TIMEOUTS_MS.upgrade,
-    }
-  );
-  const envelope = parseJsonEnvelope(planned.stdout, "atlas upgrade --dry-run --json");
-  if (
-    envelope.result?.sourceVersion !== previous ||
-    envelope.result?.targetVersion !== catalog.current
-  ) {
-    throw new Error(
-      `Cross-version upgrade plan did not use ${previous} → ${catalog.current}: ${planned.stdout}`
-    );
-  }
-  if (!["planned", "blocked"].includes(envelope.result?.status)) {
-    throw new Error(`Unexpected cross-version upgrade status: ${planned.stdout}`);
-  }
-}
-
-function materializePreviousProductionBaseline(options) {
-  const snapshotRoot = path.join(
-    options.cliInstalled,
-    "assets",
-    "releases",
-    options.previousVersion
-  );
-  const manifestPath = path.join(snapshotRoot, "release.snapshot.json");
-  if (!existsSync(manifestPath)) {
-    throw new Error(`Packaged previous snapshot missing at ${manifestPath}`);
-  }
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const applicationRoot = path.join(options.generatedRoot, manifest.canonicalApplication);
-  const checksums = {};
-
-  for (const relativePath of manifest.syncedPaths) {
-    const source = path.join(snapshotRoot, manifest.canonicalApplication, relativePath);
-    const destination = path.join(applicationRoot, relativePath);
-    mkdirSync(path.dirname(destination), { recursive: true });
-    copyFileSync(source, destination);
-    checksums[relativePath] = checksumFile(destination);
-  }
-
-  const contractPath = path.join(options.generatedRoot, "atlas.config.json");
-  const contract = JSON.parse(readFileSync(contractPath, "utf8"));
-  contract.platform = {
-    ...(contract.platform ?? {}),
-    baseline: {
-      atlasVersion: options.previousVersion,
-      contractSchemaVersion: manifest.contractSchemaVersion,
-      templateManifestSchemaVersion: manifest.templateManifestSchemaVersion,
-      syncedPathChecksums: checksums,
+    runAtlas(args) {
+      process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.upgrade}\n`);
+      const result = runCommand(atlas, [...args, "--cwd", generatedRoot], {
+        cwd: harness,
+        env: sanitizeCleanRoomEnv({ repoRoot, cwd: harness }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.upgrade,
+      });
+      const envelope = parseJsonEnvelope(result.stdout, `atlas ${args.join(" ")}`);
+      if (args.includes("--dry-run")) {
+        return envelope;
+      }
+      if (result.status !== 0 || result.timedOut) {
+        throw new Error(
+          formatStageFailure({ ...result, stage: CLEAN_ROOM_STAGES.upgrade, command: atlas, args })
+        );
+      }
+      return envelope;
     },
-  };
-  writeFileSync(contractPath, `${JSON.stringify(contract, null, 2)}\n`);
+    runValidation() {
+      const doctor = runStage(
+        CLEAN_ROOM_STAGES.doctor,
+        atlas,
+        ["doctor", "--json", "--cwd", generatedRoot],
+        {
+          cwd: harness,
+          env: sanitizeCleanRoomEnv({ repoRoot, cwd: harness }),
+          timeout: CLEAN_ROOM_TIMEOUTS_MS.doctor,
+        }
+      );
+      const doctorEnvelope = parseJsonEnvelope(doctor.stdout, "atlas doctor --json");
+      const atlasVersion = readGeneratedBaseline(generatedRoot);
+      const generatedManifest = JSON.parse(
+        readFileSync(path.join(generatedRoot, "package.json"), "utf8")
+      );
+      const doctorIssues = assertDoctorReport(doctorEnvelope, {
+        atlasVersion,
+        appVersion: generatedManifest.version,
+        generatedRoot,
+        repoRoot,
+        requireIndependentAppVersion: false,
+      });
+      if (doctorIssues.length > 0) {
+        throw new Error(
+          `Post-upgrade doctor assertions failed:\n${doctorIssues.join("\n")}\n${doctor.stdout}`
+        );
+      }
+
+      runStage(CLEAN_ROOM_STAGES.typecheck, pnpm, ["typecheck"], {
+        cwd: generatedRoot,
+        env: sanitizeCleanRoomEnv({
+          repoRoot,
+          cwd: generatedRoot,
+          extra: consumerToolingEnv,
+        }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.typecheck,
+      });
+      runStage(CLEAN_ROOM_STAGES.build, pnpm, ["build"], {
+        cwd: generatedRoot,
+        env: sanitizeCleanRoomEnv({
+          repoRoot,
+          cwd: generatedRoot,
+          extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
+        }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
+      });
+    },
+  });
 }
 
 async function main() {
@@ -443,6 +440,8 @@ async function main() {
       cliInstalled,
       repoRoot,
       harness: layout.harness,
+      pnpm,
+      consumerToolingEnv,
     });
 
     process.stdout.write(

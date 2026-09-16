@@ -351,8 +351,10 @@ handles the upgrade.
 **Partial / deferred within `atlas upgrade`:**
 
 - Full three-way merge engine (merge-required + conflict context only)
-- Cross-published-version clean-room proof (`0.4.0 → 0.5.0`) until the Version PR generates the
-  `0.5.0` production snapshot
+- Cross-published-version clean-room proof (`0.4.0 → 0.5.0`) remains deferred only while the
+  packaged catalog contains a single production version. Once a second production snapshot exists,
+  `pnpm distribution:verify` reconstructs previous-release Atlas-owned state from packaged snapshots
+  and requires a planned, applied, and validated installed upgrade.
 
 **Expert flag:** `--skip-validation` skips post-upgrade `atlas doctor` only. It never skips
 migration completion checks, required package update checks, strict target baseline capture, or

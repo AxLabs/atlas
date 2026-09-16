@@ -217,6 +217,7 @@ describe("distribution clean-room helpers", () => {
     assert.match(verifier, /verifyNpmPublishDryRun/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.npmPublishDryRun/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.upgrade/);
+    assert.match(verifier, /proveInstalledCrossVersionUpgrade/);
     assert.match(verifier, /Generated consumer must not contain a releases\/ tree/);
     assert.doesNotMatch(packE2e, /\["install"\]/);
     assert.doesNotMatch(packE2e, /\["build"\]/);
