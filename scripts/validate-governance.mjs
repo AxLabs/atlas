@@ -20,6 +20,13 @@ function fail(message) {
   errors.push(message);
 }
 
+function stripYamlComments(content) {
+  return content
+    .split("\n")
+    .map((line) => line.replace(/#.*$/, ""))
+    .join("\n");
+}
+
 function assertFileExists(relativePath, label) {
   if (!existsSync(path.join(process.cwd(), relativePath))) {
     fail(`Missing ${label}: ${relativePath}`);
@@ -218,10 +225,33 @@ function checkReleaseWorkflow() {
   const sbomJob = extractNamedJob(workflow, "sbom");
   if (!sbomJob) {
     fail("release.yml is missing the sbom job");
-  } else if (sbomJob.includes("cache: pnpm") && !sbomJob.includes("pnpm install")) {
-    fail(
-      "SBOM job must not configure setup-node cache: pnpm unless it installs dependencies (empty cache path fails the post-step)"
-    );
+  } else {
+    const uncommentedSbomJob = stripYamlComments(sbomJob);
+    if (!/node-version:\s*22\b/.test(uncommentedSbomJob)) {
+      fail("SBOM job must keep Node.js 22");
+    }
+    if (!/package-manager-cache:\s*false/.test(uncommentedSbomJob)) {
+      fail(
+        "SBOM job must set setup-node package-manager-cache: false because it never runs pnpm install"
+      );
+    }
+    if (/\bpnpm install\b/.test(uncommentedSbomJob)) {
+      fail("SBOM job must not run pnpm install");
+    }
+    if (uncommentedSbomJob.includes("cache: pnpm")) {
+      fail(
+        "SBOM job must not configure setup-node cache: pnpm unless it installs dependencies (empty cache path fails the post-step)"
+      );
+    }
+  }
+
+  for (const jobId of ["rehearsal", "version-pr", "github-release"]) {
+    const job = extractNamedJob(workflow, jobId);
+    if (!job) {
+      fail(`release.yml is missing the ${jobId} job`);
+    } else if (!stripYamlComments(job).includes("cache: pnpm")) {
+      fail(`${jobId} job must keep setup-node cache: pnpm because it runs pnpm install`);
+    }
   }
 }
 

@@ -65,10 +65,13 @@ jobs:
       # Do not enable cache: pnpm here. This job never runs `pnpm install`, so the
       # setup-node post-step would fail with:
       # "Path(s) specified in the action for caching do(es) not exist".
+      # setup-node@v5 auto-enables package-manager-cache when it detects pnpm;
+      # disable it so Post Setup Node.js does not try to save a missing store.
       - name: Setup Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Generate SPDX SBOM
         env:

@@ -293,6 +293,40 @@ describe("release workflow policy", () => {
     assert.match(publishJob, /needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/);
   });
 
+  it("disables setup-node package-manager caching on the SBOM job that never installs", () => {
+    const workflow = readFileSync(
+      path.join(process.cwd(), ".github/workflows/release.yml"),
+      "utf8"
+    );
+
+    const stripYamlComments = (content) =>
+      content
+        .split("\n")
+        .map((line) => line.replace(/#.*$/, ""))
+        .join("\n");
+
+    const sbomJobStart = workflow.indexOf("  sbom:");
+    const sbomNext = workflow.slice(sbomJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+    const sbomJob = stripYamlComments(
+      sbomNext === -1
+        ? workflow.slice(sbomJobStart)
+        : workflow.slice(sbomJobStart, sbomJobStart + 1 + sbomNext)
+    );
+    assert.match(sbomJob, /node-version:\s*22\b/);
+    assert.match(sbomJob, /package-manager-cache:\s*false/);
+    assert.doesNotMatch(sbomJob, /\bpnpm install\b/);
+    assert.doesNotMatch(sbomJob, /cache:\s*pnpm/);
+
+    for (const jobId of ["rehearsal", "version-pr", "github-release"]) {
+      const start = workflow.indexOf(`  ${jobId}:`);
+      const next = workflow.slice(start + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+      const job = stripYamlComments(
+        next === -1 ? workflow.slice(start) : workflow.slice(start, start + 1 + next)
+      );
+      assert.match(job, /cache:\s*pnpm/);
+    }
+  });
+
   it("keeps publisher PENDING_CHANGESETS rejection as a backstop", () => {
     const publisher = readFileSync(
       path.join(process.cwd(), "scripts/release-publication.mjs"),
