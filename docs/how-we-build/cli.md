@@ -15,7 +15,7 @@ See also: [Atlas project contract](atlas-contract.md), [Agent workflow](agents.m
 | Concern                | Example                                                                             |
 | ---------------------- | ----------------------------------------------------------------------------------- |
 | Atlas project contract | Load `atlas.config.json` through `@atlas/project`                                   |
-| Platform version       | `atlas --version` reports the installed `@atlas/cli` platform snapshot              |
+| Platform version       | `atlas --version` reports the installed `@blitzcraftlabs/atlas` platform snapshot   |
 | Project bootstrap      | `atlas init <project>` creates a consumer repo; `atlas init` initializes a checkout |
 | Atlas generators       | `atlas generate feature …`, `atlas generate page …`, `atlas generate list --json`   |
 | Agent project context  | `atlas context` / `atlas context --json`                                            |
@@ -44,12 +44,13 @@ Use the underlying tools directly:
 
 ## Repository-local usage (current)
 
-The CLI is a private workspace package (`@atlas/cli`) with an `atlas` binary. Maintainers invoke it
-from the repository without npm publication:
+The CLI is the public workspace package (`@blitzcraftlabs/atlas`) with an `atlas` binary. It is
+publication-ready for npm but is **not** yet published to the public registry. Maintainers invoke it
+from the repository:
 
 ```bash
 pnpm install
-pnpm --filter @atlas/cli build
+pnpm --filter @blitzcraftlabs/atlas build
 pnpm atlas --help
 pnpm atlas --version
 pnpm atlas init --dry-run
@@ -62,13 +63,27 @@ The root `pnpm atlas` script runs the linked workspace binary via `pnpm exec atl
 
 ---
 
-## Future public distribution
+## Public package identity (publication-ready)
 
-`@atlas/cli` remains a private workspace package and is **not** published to the public npm
-registry. Distribution v1 first makes that package independently packable: `pnpm pack` from
-`packages/cli` produces a tarball that installs and runs outside this repository. The packed
-artifact internalizes `@atlas/project` and must not depend on unpublished `@atlas/*` workspaces at
-runtime. It also contains a **versioned bootstrap asset tree** derived from canonical Atlas source:
+The distributable CLI package identity is `@blitzcraftlabs/atlas`. The intended user experience
+after the first registry publication is:
+
+```bash
+pnpm dlx @blitzcraftlabs/atlas init my-app
+cd my-app
+pnpm install
+pnpm dev
+```
+
+That command is **publication-ready, not live**. Do not treat it as an install-from-npm path until
+the first `@blitzcraftlabs/atlas` version exists on the npm registry. Until then, maintainers still
+use `pnpm atlas` from a clone of this repository, or a packed tarball installed outside the
+checkout.
+
+`pnpm pack` from `packages/cli` produces a tarball that installs and runs outside this repository.
+The packed artifact internalizes `@atlas/project` and must not depend on unpublished `@atlas/*`
+workspaces at runtime. It also contains a **versioned bootstrap asset tree** derived from canonical
+Atlas source:
 
 ```text
 package/
@@ -87,11 +102,11 @@ package/
 
 The Atlas repository remains the source of truth. The CLI does not maintain a second hand-copied
 starter tree. `packages/cli/bootstrap/manifest.json` is the Distribution v1 allowlist;
-`pnpm --filter @atlas/cli build` materializes `packages/cli/assets/bootstrap/` from those source
-paths, and that generated tree is packed inside the tarball.
+`pnpm --filter @blitzcraftlabs/atlas build` materializes `packages/cli/assets/bootstrap/` from those
+source paths, and that generated tree is packed inside the tarball.
 
-Installed CLI code locates the tree from the `@atlas/cli` package root — never from process cwd, Git
-metadata, or `../../..` into this monorepo.
+Installed CLI code locates the tree from the `@blitzcraftlabs/atlas` package root — never from
+process cwd, Git metadata, or `../../..` into this monorepo.
 
 The bootstrap allowlist is not the same contract as `templates/app-infrastructure.manifest.json`:
 
@@ -115,29 +130,31 @@ so `apps/web`'s `perf:lhci` script resolves.
 `atlas init <project>` materializes that packaged tree into a new directory. It does not clone
 GitHub, copy the canonical monorepo, or read starter files from the caller's Atlas checkout.
 
-Until a later Distribution v1 slice publishes the package:
+Until the first npm publication:
 
 - Maintainers still use `pnpm atlas` from a clone of this repository.
-- Do not assume `npx atlas` against a public registry.
+- Do not assume `pnpm dlx @blitzcraftlabs/atlas` or `npx atlas` against a public registry.
 - `atlas --version` reports the installed CLI package version, which is distinct from a target
   checkout's Atlas version.
 
 ### Maintainer clean-room verification
 
 `pnpm distribution:verify` is the Distribution v1 acceptance check for a packed CLI. It does **not**
-publish to npm. The command builds `@atlas/cli` through the repository build, packs the tarball,
+publish to npm. The command builds `@blitzcraftlabs/atlas` through the repository build, proves
+`npm publish --dry-run --access public` would accept the package structurally, packs the tarball,
 installs that tarball into a temporary harness outside this checkout, and then runs the generated
 consumer lifecycle against the installed binary:
 
 ```text
 /tmp/atlas-clean-room-XXXX/
-  harness/     # pnpm install of the packed @atlas/cli tarball
+  harness/     # pnpm install of the packed @blitzcraftlabs/atlas tarball
   test-app/    # atlas init test-app
 ```
 
 ```bash
-pnpm --filter @atlas/cli build
-pnpm pack                         # from packages/cli into the clean-room artifacts directory
+pnpm --filter @blitzcraftlabs/atlas build
+pnpm distribution:publish-dry-run     # npm pack --dry-run + npm publish --dry-run --access public
+pnpm pack                             # from packages/cli into the clean-room artifacts directory
 <harness>/node_modules/.bin/atlas init test-app
 pnpm install                      # cwd: test-app
 pnpm build                        # cwd: test-app
@@ -148,10 +165,18 @@ pnpm typecheck                    # cwd: test-app
 <installed-atlas> context --json --cwd test-app
 ```
 
+`pnpm distribution:publish-dry-run` runs `npm pack --dry-run` and
+`npm publish --dry-run --access public` against `packages/cli`. It does not authenticate, create an
+npm package, or publish a version. npm may warn that a real publish would require login; that
+warning is expected without credentials. The check fails if the package is private, the name or
+`publishConfig.access` is wrong, required packed files are missing, runtime `workspace:*`
+dependencies leak, or npm exits non-zero / `ENEEDAUTH`.
+
 The verifier sanitizes `NODE_PATH`, source-repo `node_modules/.bin` PATH entries, Atlas CI/dev
 environment variables, and cwd-related variables that could point back at this checkout. It invokes
-Atlas only via the absolute installed binary path — never `pnpm atlas`, `pnpm --filter @atlas/cli`,
-or `packages/cli/dist/cli.js` for consumer lifecycle commands.
+Atlas only via the absolute installed binary path — never `pnpm atlas`,
+`pnpm --filter @blitzcraftlabs/atlas`, or `packages/cli/dist/cli.js` for consumer lifecycle
+commands.
 
 Keep `packages/cli` pack E2E as the faster artifact/init check. Use `pnpm distribution:verify` when
 the generated project's install/build/Doctor/generator lifecycle must be proven self-contained.
@@ -381,8 +406,8 @@ Reports are deterministic: stable `schemaVersion`, sorted paths, no timestamps.
 
 `atlasVersion` is the project's Atlas identity. Generated consumer projects use
 `platform.baseline.atlasVersion` from `atlas.config.json` so the application `package.json` version
-can stay independent. Source checkouts that still vendor `@atlas/cli` continue to use the root
-package version, including when a historical upgrade baseline is present.
+can stay independent. Source checkouts that still vendor `@blitzcraftlabs/atlas` continue to use the
+root package version, including when a historical upgrade baseline is present.
 
 ### `atlas doctor`
 
@@ -513,14 +538,14 @@ and proposed contracts before `init` reports success or performs mutations.
 
 ## Version source
 
-`atlas --version` reports the **installed `@atlas/cli` platform snapshot** SemVer from the CLI
-package metadata. It works outside an Atlas project and does not depend on the current working
-directory.
+`atlas --version` reports the **installed `@blitzcraftlabs/atlas` platform snapshot** SemVer from
+the CLI package metadata. It works outside an Atlas project and does not depend on the current
+working directory.
 
 During **checkout** `atlas init`, the CLI reports the **checkout/source snapshot** version from the
 target repository root `package.json`. During **bootstrap** `atlas init <project>`, the recorded
-Atlas version is the packaged bootstrap/`@atlas/cli` version — not a checkout that did not exist
-yet. Those identities are independent of contract `schemaVersion`.
+Atlas version is the packaged bootstrap/`@blitzcraftlabs/atlas` version — not a checkout that did
+not exist yet. Those identities are independent of contract `schemaVersion`.
 
 Machine-readable `--json` output may include:
 
@@ -528,7 +553,7 @@ Machine-readable `--json` output may include:
 {
   "atlasVersion": "0.1.0",
   "contractSchemaVersion": 1,
-  "cliPackage": "@atlas/cli"
+  "cliPackage": "@blitzcraftlabs/atlas"
 }
 ```
 

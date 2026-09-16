@@ -4,19 +4,21 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { PUBLIC_CLI_PACKAGE_NAME } from "./atlas-workspaces.mjs";
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDir, "..");
 const require = createRequire(import.meta.url);
 
 function loadDependencyValidation() {
   try {
-    return require("@atlas/cli/dependency-validation");
+    return require("@blitzcraftlabs/atlas/dependency-validation");
   } catch {
-    execSync("pnpm turbo build --filter=@atlas/cli", {
+    execSync("pnpm turbo build --filter=@blitzcraftlabs/atlas", {
       cwd: defaultRepoRoot,
       stdio: "inherit",
     });
-    return require("@atlas/cli/dependency-validation");
+    return require("@blitzcraftlabs/atlas/dependency-validation");
   }
 }
 
@@ -54,7 +56,7 @@ function listDependencySections(pkg) {
 }
 
 export function isAtlasWorkspaceLink(name, spec) {
-  return name.startsWith("@atlas/") && spec === "workspace:*";
+  return spec === "workspace:*" && (name.startsWith("@atlas/") || name === PUBLIC_CLI_PACKAGE_NAME);
 }
 
 export function isNonRegistryDependencySpec(spec) {

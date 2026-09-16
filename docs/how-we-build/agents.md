@@ -32,7 +32,7 @@ If a Cursor rule contradicts Doctor or the resolved project contract, the Cursor
 Start from repository root **`AGENTS.md`**, then:
 
 ```bash
-pnpm --filter @atlas/cli build
+pnpm --filter @blitzcraftlabs/atlas build
 pnpm atlas context --json
 ```
 

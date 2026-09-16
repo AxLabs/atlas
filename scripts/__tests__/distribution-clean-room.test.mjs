@@ -101,7 +101,7 @@ describe("distribution clean-room helpers", () => {
       name: "test-app",
       version: "0.1.0",
       dependencies: {
-        "@atlas/cli": "workspace:*",
+        "@blitzcraftlabs/atlas": "workspace:*",
       },
     });
     writeManifest(generatedRoot, "apps/web/package.json", {
@@ -116,7 +116,7 @@ describe("distribution clean-room helpers", () => {
     writeManifest(generatedRoot, "packages/config/package.json", { name: "@atlas/config" });
 
     const issues = auditGeneratedWorkspace(generatedRoot);
-    assert.ok(issues.some((issue) => issue.includes("@atlas/cli")));
+    assert.ok(issues.some((issue) => issue.includes("@blitzcraftlabs/atlas")));
     assert.ok(issues.some((issue) => issue.includes("@atlas/project")));
     assert.equal(
       issues.some((issue) => issue.includes("@atlas/ui") && issue.includes("workspace:*")),
@@ -213,6 +213,9 @@ describe("distribution clean-room helpers", () => {
     assert.match(verifier, /\["build"\]/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.installConsumer/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.build/);
+    assert.match(verifier, /@blitzcraftlabs\/atlas/);
+    assert.match(verifier, /verifyNpmPublishDryRun/);
+    assert.match(verifier, /CLEAN_ROOM_STAGES\.npmPublishDryRun/);
     assert.doesNotMatch(packE2e, /\["install"\]/);
     assert.doesNotMatch(packE2e, /\["build"\]/);
   });

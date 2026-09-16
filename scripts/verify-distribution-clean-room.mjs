@@ -3,6 +3,7 @@ import { existsSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { PUBLIC_CLI_PACKAGE_NAME } from "./atlas-workspaces.mjs";
 import {
   CLEAN_ROOM_STAGE_PREFIX,
   CLEAN_ROOM_STAGES,
@@ -31,6 +32,7 @@ import {
   runStage,
   sanitizeCleanRoomEnv,
 } from "./lib/distribution-clean-room.mjs";
+import { verifyNpmPublishDryRun } from "./lib/npm-publish-dry-run.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 
@@ -56,7 +58,7 @@ function parseArgs(argv) {
 function writeHelp() {
   process.stdout.write(`Usage: pnpm distribution:verify [--keep]
 
-Prove that a packed @atlas/cli tarball bootstraps a self-contained Atlas project
+Prove that a packed @blitzcraftlabs/atlas tarball bootstraps a self-contained Atlas project
 outside this repository.
 
 --keep (or ATLAS_KEEP_CLEAN_ROOM=1) preserves the temporary directory on
@@ -72,7 +74,7 @@ function installedAtlasBinary(harness) {
 }
 
 function installedCliPackage(harness) {
-  return path.join(harness, "node_modules", "@atlas", "cli");
+  return path.join(harness, "node_modules", "@blitzcraftlabs", "atlas");
 }
 
 function assertExecutable(filePath, label) {
@@ -105,11 +107,18 @@ async function main() {
       FORCE_COLOR: "0",
     };
 
-    runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["--filter", "@atlas/cli", "build"], {
+    runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["--filter", PUBLIC_CLI_PACKAGE_NAME, "build"], {
       cwd: repoRoot,
       env: packEnv,
       timeout: CLEAN_ROOM_TIMEOUTS_MS.packCli,
     });
+    process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.npmPublishDryRun}\n`);
+    try {
+      verifyNpmPublishDryRun({ packageRoot: cliPackageRoot, env: packEnv });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`${CLEAN_ROOM_STAGE_PREFIX} FAILED ${CLEAN_ROOM_STAGES.npmPublishDryRun}\n${message}`);
+    }
     runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["pack", "--pack-destination", layout.artifacts], {
       cwd: cliPackageRoot,
       env: packEnv,
@@ -133,7 +142,7 @@ async function main() {
     assertExecutable(atlasBin, "Installed Atlas binary");
     assertOutsideRepo(repoRoot, layout.harness, "Clean-room harness");
     assertOutsideRepo(repoRoot, atlasBin, "Installed Atlas binary");
-    assertOutsideRepo(repoRoot, cliInstalled, "Installed @atlas/cli");
+    assertOutsideRepo(repoRoot, cliInstalled, `Installed ${PUBLIC_CLI_PACKAGE_NAME}`);
     if (isInsideDirectory(cliPackageRoot, cliInstalled)) {
       throw new Error("Installed CLI resolved to the source-tree package");
     }

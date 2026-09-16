@@ -1295,7 +1295,7 @@ function writePublicationFixture() {
   );
   writeFileSync(
     path.join(dir, "packages/cli/package.json"),
-    JSON.stringify({ name: "@atlas/cli", version: "0.2.0", private: true })
+    JSON.stringify({ name: "@blitzcraftlabs/atlas", version: "0.2.0" })
   );
   writeFileSync(
     path.join(dir, "apps/reference/package.json"),

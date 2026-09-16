@@ -27,7 +27,7 @@ See [architecture ownership](docs/how-we-build/architecture-ownership.md) for ow
 ## Discover the current project
 
 ```bash
-pnpm --filter @atlas/cli build
+pnpm --filter @blitzcraftlabs/atlas build
 pnpm atlas context
 pnpm atlas context --json
 ```
@@ -136,7 +136,7 @@ atlas/
 ├── apps/web/              # Starter application
 ├── apps/reference/        # Reference application
 ├── packages/ui/           # @atlas/ui
-├── packages/cli/          # @atlas/cli
+├── packages/cli/          # @blitzcraftlabs/atlas
 ├── packages/project/      # @atlas/project
 ├── atlas.config.json      # Author contract
 ├── openapi/               # OpenAPI specification

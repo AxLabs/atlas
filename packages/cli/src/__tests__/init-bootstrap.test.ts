@@ -589,6 +589,7 @@ describe("atlas init bootstrap generated project", () => {
         expect(packageJson.dependencies).toBeUndefined();
         expect(JSON.stringify(packageJson)).not.toContain("workspace:");
         expect(packageJson.devDependencies?.["@atlas/cli"]).toBeUndefined();
+        expect(packageJson.devDependencies?.["@blitzcraftlabs/atlas"]).toBeUndefined();
         expect(packageJson.devDependencies?.["@atlas/project"]).toBeUndefined();
 
         const readme = readFileSync(path.join(destination, "README.md"), "utf8");

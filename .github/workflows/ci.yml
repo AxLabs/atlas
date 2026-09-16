@@ -129,7 +129,7 @@ jobs:
           fi
 
           if printf '%s\n' "$CHANGED" | grep -qE \
-            '^(packages/cli/|packages/project/|apps/web/|packages/ui/|packages/config/|packages/consent/|templates/|openapi/|atlas\.config\.json|pnpm-workspace\.yaml|turbo\.json|eslint\.config|lighthouserc\.json|\.npmrc|\.nvmrc|\.prettierrc|\.prettierignore|\.gitignore|scripts/ensure-pnpm\.js|scripts/verify-distribution-clean-room\.mjs|scripts/lib/distribution-clean-room\.mjs|scripts/__tests__/distribution-clean-room|package\.json|jest\.config\.js|AGENTS\.md|LICENSE|THIRD_PARTY_NOTICES\.md|docs/how-we-build/(agents|architecture-ownership|atlas-contract|cli|doctor|upgrades|api|authorization|testing|folder-structure|examples|security)\.md|docs/security/threat-model\.md|docs/adr/000[7-9]|docs/adr/0010|\.github/workflows/ci\.yml)'; then
+            '^(packages/cli/|packages/project/|apps/web/|packages/ui/|packages/config/|packages/consent/|templates/|openapi/|atlas\.config\.json|pnpm-workspace\.yaml|turbo\.json|eslint\.config|lighthouserc\.json|\.npmrc|\.nvmrc|\.prettierrc|\.prettierignore|\.gitignore|scripts/ensure-pnpm\.js|scripts/verify-distribution-clean-room\.mjs|scripts/verify-npm-publish-dry-run\.mjs|scripts/lib/distribution-clean-room\.mjs|scripts/lib/npm-publish-dry-run\.mjs|scripts/__tests__/distribution-clean-room|scripts/__tests__/npm-publish-dry-run|package\.json|jest\.config\.js|AGENTS\.md|LICENSE|THIRD_PARTY_NOTICES\.md|docs/how-we-build/(agents|architecture-ownership|atlas-contract|cli|doctor|upgrades|api|authorization|testing|folder-structure|examples|security|releases-and-governance)\.md|docs/security/threat-model\.md|docs/adr/000[7-9]|docs/adr/0010|docs/adr/0011|\.github/workflows/ci\.yml)'; then
             echo "distribution=true" >> "$GITHUB_OUTPUT"
           else
             echo "distribution=false" >> "$GITHUB_OUTPUT"
@@ -230,7 +230,7 @@ jobs:
 
       - name: Run Atlas Doctor
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm --filter @atlas/cli build && pnpm atlas doctor --json
+        run: pnpm --filter @blitzcraftlabs/atlas build && pnpm atlas doctor --json
 
       - name: Run TypeScript check
         if: steps.detect.outputs.app == 'true' || github.event_name == 'push'

@@ -5,7 +5,7 @@ import type { ReleaseSnapshotManifest } from "./release-snapshot";
 import type { UpgradePlanItem } from "./types";
 
 const ATLAS_WORKSPACE_PACKAGES = [
-  "@atlas/cli",
+  "@blitzcraftlabs/atlas",
   "@atlas/config",
   "@atlas/consent",
   "@atlas/project",
@@ -13,7 +13,7 @@ const ATLAS_WORKSPACE_PACKAGES = [
 ] as const;
 
 const ATLAS_PACKAGE_DIR: Record<(typeof ATLAS_WORKSPACE_PACKAGES)[number], string> = {
-  "@atlas/cli": "packages/cli/package.json",
+  "@blitzcraftlabs/atlas": "packages/cli/package.json",
   "@atlas/config": "packages/config/package.json",
   "@atlas/consent": "packages/consent/package.json",
   "@atlas/project": "packages/project/package.json",

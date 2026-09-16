@@ -12,8 +12,15 @@ export interface CommandResult {
 export interface PackedManifest {
   name?: string;
   version?: string;
+  private?: boolean;
+  license?: string;
+  homepage?: string;
   bin?: Record<string, string>;
   files?: string[];
+  engines?: { node?: string };
+  repository?: { type?: string; url?: string; directory?: string };
+  bugs?: { url?: string };
+  publishConfig?: { access?: string };
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;

@@ -11,18 +11,18 @@ const require = createRequire(import.meta.url);
 
 function loadDependencyValidation() {
   try {
-    return require("@atlas/cli/dependency-validation");
+    return require("@blitzcraftlabs/atlas/dependency-validation");
   } catch {
-    execSync("pnpm turbo build --filter=@atlas/cli", {
+    execSync("pnpm turbo build --filter=@blitzcraftlabs/atlas", {
       cwd: repoRoot,
       stdio: "pipe",
     });
-    return require("@atlas/cli/dependency-validation");
+    return require("@blitzcraftlabs/atlas/dependency-validation");
   }
 }
 
-test("@atlas/cli/dependency-validation subpath resolves after build", () => {
-  execSync("pnpm turbo build --filter=@atlas/cli", {
+test("@blitzcraftlabs/atlas/dependency-validation subpath resolves after build", () => {
+  execSync("pnpm turbo build --filter=@blitzcraftlabs/atlas", {
     cwd: repoRoot,
     stdio: "pipe",
   });
@@ -33,9 +33,9 @@ test("@atlas/cli/dependency-validation subpath resolves after build", () => {
   assert.equal(typeof module.findUndeclaredDependenciesForAllWorkspaces, "function");
 });
 
-test("@atlas/cli/workspace-membership is not exported", () => {
+test("@blitzcraftlabs/atlas/workspace-membership is not exported", () => {
   assert.throws(
-    () => require("@atlas/cli/workspace-membership"),
+    () => require("@blitzcraftlabs/atlas/workspace-membership"),
     (error) => error.code === "MODULE_NOT_FOUND" || error.code === "ERR_PACKAGE_PATH_NOT_EXPORTED",
   );
 });

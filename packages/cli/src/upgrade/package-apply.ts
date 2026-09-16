@@ -4,7 +4,7 @@ import path from "node:path";
 import type { UpgradePlanItem } from "./types";
 
 const ATLAS_PACKAGE_DIR: Record<string, string> = {
-  "@atlas/cli": "packages/cli/package.json",
+  "@blitzcraftlabs/atlas": "packages/cli/package.json",
   "@atlas/config": "packages/config/package.json",
   "@atlas/consent": "packages/consent/package.json",
   "@atlas/project": "packages/project/package.json",

@@ -10,7 +10,7 @@
       "@atlas/web",
       "@atlas/reference",
       "@atlas/project",
-      "@atlas/cli"
+      "@blitzcraftlabs/atlas"
     ]
   ],
   "linked": [],

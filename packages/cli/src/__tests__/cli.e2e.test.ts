@@ -88,7 +88,7 @@ describe("atlas CLI executable", () => {
     expect(payload.ok).toBe(true);
     expect(payload.result.atlasVersion).toBe(cliVersion);
     expect(payload.result.contractSchemaVersion).toBe(1);
-    expect(payload.result.cliPackage).toBe("@atlas/cli");
+    expect(payload.result.cliPackage).toBe("@blitzcraftlabs/atlas");
   });
 
   it("returns non-zero for unknown command", () => {

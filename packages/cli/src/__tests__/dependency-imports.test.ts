@@ -277,7 +277,12 @@ describe("findUndeclaredDependenciesForWorkspace", () => {
     const root = createDependencyFixture([
       {
         relativeRoot: "packages/cli",
-        packageJson: { name: "@atlas/cli", version: "0.1.0", private: true, dependencies: {} },
+        packageJson: {
+          name: "@blitzcraftlabs/atlas",
+          version: "0.1.0",
+          private: true,
+          dependencies: {},
+        },
         files: {
           "src/cli.ts": "export {};\n",
           "assets/bootstrap/files/apps/web/src/example.ts": "import 'next';\n",

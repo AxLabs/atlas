@@ -20,7 +20,7 @@ const CLI_PACKAGE_VERSION = (
 ).version;
 
 describe("CLI package version resolution", () => {
-  it("reads the installed CLI version from the @atlas/cli package, not the process cwd", () => {
+  it("reads the installed CLI version from the @blitzcraftlabs/atlas package, not the process cwd", () => {
     expect(readCliAtlasVersion()).toBe(CLI_PACKAGE_VERSION);
     expect(findCliPackageRoot(__dirname)).toBe(CLI_PACKAGE_ROOT);
     expect(findCliPackageRoot(path.join(CLI_PACKAGE_ROOT, "dist"))).toBe(CLI_PACKAGE_ROOT);
@@ -36,7 +36,9 @@ describe("CLI package version resolution", () => {
 
     expect(readCliAtlasVersion()).toBe(CLI_PACKAGE_VERSION);
     expect(readCliAtlasVersion()).not.toBe("99.0.0");
-    expect(() => findCliPackageRoot(outside)).toThrow(/Unable to locate @atlas\/cli package.json/);
+    expect(() => findCliPackageRoot(outside)).toThrow(
+      `Unable to locate ${CLI_PACKAGE_NAME} package.json`
+    );
     rmSync(outside, { recursive: true, force: true });
   });
 

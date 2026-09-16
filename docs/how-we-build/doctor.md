@@ -31,7 +31,7 @@ and translates tagged findings into stable Atlas diagnostics.
 ## Usage
 
 ```bash
-pnpm --filter @atlas/cli build
+pnpm --filter @blitzcraftlabs/atlas build
 pnpm atlas doctor
 pnpm atlas doctor --json
 pnpm atlas doctor --cwd apps/web
@@ -198,7 +198,7 @@ or configuration execution failures fail the `architecture-boundaries` check wit
 ## CI usage
 
 ```bash
-pnpm --filter @atlas/cli build
+pnpm --filter @blitzcraftlabs/atlas build
 pnpm atlas doctor --json
 ```
 

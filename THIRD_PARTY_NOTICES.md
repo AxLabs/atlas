@@ -74,7 +74,7 @@ See [provenance.md](docs/how-we-build/provenance.md) for audit commands and clas
 | ------------------------------------------------------------------ | ---------------------------------------- | -------------------------------------------------------------- |
 | [openapi-typescript](https://github.com/drwpow/openapi-typescript) | `apps/*/src/lib/api/contracts/schema.ts` | MIT dependency; generated output carries generator header only |
 | shadcn CLI                                                         | `packages/ui/src/components/ui/*`        | shadcn/ui MIT (see above)                                      |
-| `@atlas/cli` generators                                            | feature/page scaffolds                   | Apache-2.0 (Atlas-authored templates)                          |
+| `@blitzcraftlabs/atlas` generators                                 | feature/page scaffolds                   | Apache-2.0 (Atlas-authored templates)                          |
 
 ## Fonts
 
