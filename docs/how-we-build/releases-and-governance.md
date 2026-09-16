@@ -18,8 +18,10 @@ Atlas is **open source under Apache License 2.0**. The canonical public reposito
 | **Third-party dependencies** | Retain their own licenses                                                                                  |
 | **Third-party provenance**   | [provenance.md](provenance.md), [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)                   |
 
-The repository is public. Workspace packages remain unpublished npm internals (`private: true`).
-Canonical GitHub Releases are published automatically after a Version PR merges to `main`.
+The repository is public. Internal `@atlas/*` workspace packages remain unpublished npm internals
+(`private: true`). The public CLI package identity is `@blitzcraftlabs/atlas`; it is
+publication-ready but is **not** published to the npm registry by the current GitHub Release
+workflow. Canonical GitHub Releases are published automatically after a Version PR merges to `main`.
 
 ---
 
@@ -36,7 +38,7 @@ Canonical GitHub Releases are published automatically after a Version PR merges 
 | `@atlas/config`          | Internal tooling config      | No                | Part of Atlas snapshot   |
 | `@atlas/consent`         | Optional consent module      | No                | Part of Atlas snapshot   |
 | `@atlas/project`         | Architecture contract loader | No                | Part of Atlas snapshot   |
-| `@atlas/cli`             | Atlas-specific CLI           | No                | Part of Atlas snapshot   |
+| `@blitzcraftlabs/atlas`  | Public Atlas CLI             | Not yet           | Part of Atlas snapshot   |
 
 Workspace `package.json` version fields mirror the Atlas release for tooling only.
 
@@ -172,8 +174,10 @@ After the Version PR merges to `main`, the Release workflow publishes fail-close
    proven ancestor of current `main` after post-release commits
 10. Repair a missing Release or missing required SBOM at the same SHA without retagging
 
-Workspace packages are not published to npm. Publication does not claim signed provenance, SLSA, or
-a formal security audit.
+Internal `@atlas/*` workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the
+public CLI package identity and is publication-ready, but the GitHub Release workflow does not
+publish it to the registry. Publication does not claim signed provenance, SLSA, or a formal security
+audit.
 
 ### Rehearsal
 

@@ -6,6 +6,7 @@ import {
   ATLAS_WORKSPACE_PACKAGES,
   CANONICAL_GOVERNANCE_DOC,
   LEGACY_PACKAGE_TAG_PATTERN,
+  PUBLIC_CLI_PACKAGE_NAME,
   readJson,
   readRootVersion,
   readWorkspaceVersions,
@@ -36,6 +37,22 @@ function assertPrivateWorkspace(relativePath) {
   const pkg = readJson(relativePath);
   if (pkg.private !== true) {
     fail(`${relativePath} must remain private (not an independent npm product)`);
+  }
+}
+
+function assertPublicCliPackage(relativePath) {
+  const pkg = readJson(relativePath);
+  if (pkg.private === true) {
+    fail(`${relativePath} must not be private; it is Atlas's public npm CLI package`);
+  }
+  if (pkg.name !== PUBLIC_CLI_PACKAGE_NAME) {
+    fail(`${relativePath} name must be ${PUBLIC_CLI_PACKAGE_NAME} (found: ${pkg.name ?? "none"})`);
+  }
+  if (pkg.bin?.atlas !== "./dist/cli.js") {
+    fail(`${relativePath} bin.atlas must remain ./dist/cli.js`);
+  }
+  if (pkg.publishConfig?.access !== "public") {
+    fail(`${relativePath} publishConfig.access must be "public"`);
   }
 }
 
@@ -251,8 +268,13 @@ function main() {
   assertLicenseIsApache("package.json");
 
   for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
-    assertLicenseIsApache(path.join(pkg.relativePath, "package.json"));
-    assertPrivateWorkspace(path.join(pkg.relativePath, "package.json"));
+    const manifestPath = path.join(pkg.relativePath, "package.json");
+    assertLicenseIsApache(manifestPath);
+    if (pkg.name === PUBLIC_CLI_PACKAGE_NAME) {
+      assertPublicCliPackage(manifestPath);
+    } else {
+      assertPrivateWorkspace(manifestPath);
+    }
   }
 
   checkVersionAlignment();

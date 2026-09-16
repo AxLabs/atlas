@@ -37,7 +37,7 @@ importers:
 
   .:
     devDependencies:
-      '@atlas/cli':
+      '@blitzcraftlabs/atlas':
         specifier: workspace:*
         version: link:packages/cli
       '@changesets/cli':

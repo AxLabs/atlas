@@ -5,6 +5,7 @@ import path from "node:path";
 import { BootstrapAssetError } from "../bootstrap/errors";
 import { parseSourceBootstrapManifest } from "../bootstrap/schema";
 import { buildBootstrapAssets } from "../bootstrap/build";
+import { CLI_PACKAGE_NAME } from "../version";
 
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -78,7 +79,7 @@ describe("bootstrap source manifest validation", () => {
     const sandbox = createSandbox();
     try {
       writeJson(path.join(sandbox.root, "package.json"), {
-        name: "@atlas/cli",
+        name: CLI_PACKAGE_NAME,
         version: "0.0.0-test",
       });
       writeJson(path.join(sandbox.root, "bootstrap/manifest.json"), {
@@ -103,7 +104,7 @@ describe("bootstrap source manifest validation", () => {
     const outside = mkdtempSync(path.join(os.tmpdir(), "atlas-bootstrap-outside-"));
     try {
       writeJson(path.join(sandbox.root, "package.json"), {
-        name: "@atlas/cli",
+        name: CLI_PACKAGE_NAME,
         version: "0.0.0-test",
       });
       writeFileSync(path.join(outside, "secret.txt"), "secret\n");
@@ -129,7 +130,7 @@ describe("bootstrap source manifest validation", () => {
     const sandbox = createSandbox();
     try {
       writeJson(path.join(sandbox.root, "package.json"), {
-        name: "@atlas/cli",
+        name: CLI_PACKAGE_NAME,
         version: "0.0.0-test",
       });
       writeFileSync(path.join(sandbox.root, "nested.txt"), "nested\n");

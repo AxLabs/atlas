@@ -243,7 +243,9 @@ and evaluate it.
 ### Tradeoffs
 
 - **Accepted:** Public forks and inspections
-- **Accepted:** Workspace packages stay unpublished npm internals
+- **Accepted:** Internal `@atlas/*` workspaces stay unpublished npm internals
+- **Accepted:** `@blitzcraftlabs/atlas` is the public CLI identity and is not yet on the npm
+  registry
 - **Mitigated:** Qualified claims and the claims register constrain overstatement
 
 ---
@@ -252,7 +254,9 @@ and evaluate it.
 
 ### Decision
 
-Atlas uses a monorepo with shared packages, but packages are internal—not published to npm.
+Atlas uses a monorepo with shared packages. Internal `@atlas/*` packages remain source-owned and
+unpublished. `@blitzcraftlabs/atlas` is the public CLI distribution identity and is not yet
+published to npm.
 
 ### Why
 

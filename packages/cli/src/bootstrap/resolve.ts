@@ -29,7 +29,7 @@ export function packagedBootstrapFilesRoot(assetRoot: string): string {
 }
 
 /**
- * Locate packaged bootstrap assets from a file inside the installed `@atlas/cli`
+ * Locate packaged bootstrap assets from a file inside the installed `@blitzcraftlabs/atlas`
  * package. Does not consult process.cwd(), Git metadata, or the Atlas repo root.
  */
 export function findBootstrapAssetRoot(startDir = __dirname): string {

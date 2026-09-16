@@ -13,7 +13,7 @@ Canonical workflow: [docs/how-we-build/agents.md](../../../docs/how-we-build/age
 ## 1. Discover
 
 ```bash
-pnpm --filter @atlas/cli build
+pnpm --filter @blitzcraftlabs/atlas build
 pnpm atlas context --json
 pnpm atlas generate list --json
 ```

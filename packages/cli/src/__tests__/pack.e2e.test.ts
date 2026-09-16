@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, realpathSync, rmSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "../doctor/static-imports";
@@ -141,13 +141,42 @@ describe("Atlas CLI pack and clean-room install", () => {
 
     expect(manifest.name).toBe(CLI_PACKAGE_NAME);
     expect(manifest.version).toBe(cliVersion);
+    expect(manifest.private).not.toBe(true);
     expect(manifest.bin?.atlas).toBe("./dist/cli.js");
+    expect(manifest.publishConfig?.access).toBe("public");
+    expect(manifest.repository?.url).toContain("github.com/blitzcraftlabs/atlas");
+    expect(manifest.repository?.directory).toBe("packages/cli");
+    expect(manifest.homepage).toBe("https://shipwithatlas.com");
+    expect(manifest.bugs?.url).toBe("https://github.com/blitzcraftlabs/atlas/issues");
+    expect(manifest.license).toBe("Apache-2.0");
+    expect(manifest.engines?.node).toContain("22");
     expect(collectWorkspaceProtocolLeaks(manifest)).toEqual([]);
     expect(collectRuntimeAtlasDependencies(manifest)).toEqual([]);
     expect(manifest.dependencies?.["@atlas/project"]).toBeUndefined();
     expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual(
       ["minimatch", "typescript", "yaml", "zod"].sort()
     );
+  });
+
+  it("is accepted by npm publish --dry-run --access public without authentication", () => {
+    const result = runCommand(
+      "npm",
+      ["publish", "--dry-run", "--access", "public", "--ignore-scripts"],
+      { cwd: PACKAGE_ROOT }
+    );
+    try {
+      const combined = `${result.stdout}\n${result.stderr}`;
+      expect(result.status).toBe(0);
+      expect(combined).not.toMatch(/ENEEDAUTH|npm ERR! code ENEEDAUTH/i);
+      expect(combined).toContain(CLI_PACKAGE_NAME);
+      expect(combined).not.toMatch(/This package has been marked as private/i);
+    } finally {
+      for (const name of readdirSync(PACKAGE_ROOT)) {
+        if (name.endsWith(".tgz")) {
+          rmSync(path.join(PACKAGE_ROOT, name), { force: true });
+        }
+      }
+    }
   });
 
   it("does not leave unresolved unpublished Atlas imports in packed runtime JS", () => {
@@ -196,7 +225,7 @@ describe("Atlas CLI pack and clean-room install", () => {
       expect(existsSync(bin)).toBe(true);
       expect(statSync(bin).mode & 0o111).not.toBe(0);
 
-      const installedPackage = path.join(cleanRoom, "node_modules", "@atlas", "cli");
+      const installedPackage = path.join(cleanRoom, "node_modules", "@blitzcraftlabs", "atlas");
       expect(existsSync(installedPackage)).toBe(true);
       expect(realpathSync(installedPackage)).not.toBe(realpathSync(PACKAGE_ROOT));
       expect(realpathSync(bin).startsWith(realpathSync(PACKAGE_ROOT) + path.sep)).toBe(false);

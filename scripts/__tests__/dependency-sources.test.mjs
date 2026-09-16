@@ -30,6 +30,8 @@ function createTempRepo(files) {
 
 test("allows atlas workspace links and rejects common non-registry specs", () => {
   assert.equal(isAtlasWorkspaceLink("@atlas/ui", "workspace:*"), true);
+  assert.equal(isAtlasWorkspaceLink("@blitzcraftlabs/atlas", "workspace:*"), true);
+  assert.equal(isAtlasWorkspaceLink("@blitzcraftlabs/atlas", "^0.4.0"), false);
   assert.equal(isNonRegistryDependencySpec("workspace:*"), true);
   assert.equal(isNonRegistryDependencySpec("github:owner/repo"), true);
   assert.equal(isNonRegistryDependencySpec("owner/repo"), true);

@@ -53,7 +53,7 @@ function writeInstalledCliLayout(): { root: string; cleanup: () => void } {
 }
 
 describe("installed-package bootstrap asset resolution", () => {
-  it("locates packaged assets from the installed @atlas/cli package, not cwd or a checkout", () => {
+  it("locates packaged assets from the installed @blitzcraftlabs/atlas package, not cwd or a checkout", () => {
     const installed = writeInstalledCliLayout();
     const decoy = mkdtempSync(path.join(os.tmpdir(), "atlas-bootstrap-decoy-cwd-"));
     const previousCwd = process.cwd();
@@ -96,7 +96,7 @@ describe("installed-package bootstrap asset resolution", () => {
         "utf8"
       );
       expect(() => findBootstrapAssetRoot(checkout)).toThrow(
-        /Unable to locate @atlas\/cli package.json/
+        `Unable to locate ${CLI_PACKAGE_NAME} package.json`
       );
     } finally {
       rmSync(checkout, { recursive: true, force: true });

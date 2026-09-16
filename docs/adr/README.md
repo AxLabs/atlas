@@ -38,7 +38,7 @@ Write an ADR when you:
 | [0008](0008-atlas-project-contract.md)                             | Atlas Project Architecture Contract                | Accepted |
 | [0009](0009-starter-reference-template-sync.md)                    | Starter/Reference Template Sync                    | Accepted |
 | [0010](0010-atlas-upgrades-downstream-propagation.md)              | Atlas Upgrades and Downstream Propagation          | Accepted |
-| [0011](0011-distribution-v1-package-and-bootstrap-architecture.md) | Distribution v1 Package and Bootstrap Architecture | Proposed |
+| [0011](0011-distribution-v1-package-and-bootstrap-architecture.md) | Distribution v1 Package and Bootstrap Architecture | Accepted |
 
 ## Status Lifecycle
 

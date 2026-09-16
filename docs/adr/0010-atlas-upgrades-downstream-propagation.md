@@ -54,12 +54,12 @@ incomplete evidence. `atlas upgrade` will refresh it after successful upgrades.
 
 **Version concepts (minimal):**
 
-| Concept                          | Source                              | Used for                              |
-| -------------------------------- | ----------------------------------- | ------------------------------------- |
-| Atlas release version            | Root `package.json` / git tag       | Primary consumer baseline identity    |
-| Contract schema version          | `atlas.config.json` `schemaVersion` | Contract migrations (`atlas upgrade`) |
-| Template manifest schema version | Manifest `schemaVersion`            | Sync policy migrations                |
-| CLI snapshot version             | `@atlas/cli` package version        | Doctor tooling drift warnings         |
+| Concept                          | Source                                  | Used for                              |
+| -------------------------------- | --------------------------------------- | ------------------------------------- |
+| Atlas release version            | Root `package.json` / git tag           | Primary consumer baseline identity    |
+| Contract schema version          | `atlas.config.json` `schemaVersion`     | Contract migrations (`atlas upgrade`) |
+| Template manifest schema version | Manifest `schemaVersion`                | Sync policy migrations                |
+| CLI snapshot version             | `@blitzcraftlabs/atlas` package version | Doctor tooling drift warnings         |
 
 We do **not** introduce independent per-file or per-package baseline version numbers in v0.1.
 

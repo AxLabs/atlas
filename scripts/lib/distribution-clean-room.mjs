@@ -17,6 +17,7 @@ export const CLEAN_ROOM_STAGE_PREFIX = "[clean-room]";
 
 export const CLEAN_ROOM_STAGES = Object.freeze({
   packCli: "pack CLI",
+  npmPublishDryRun: "npm publish dry-run",
   installCli: "install CLI",
   init: "init",
   installConsumer: "install consumer",
@@ -29,6 +30,7 @@ export const CLEAN_ROOM_STAGES = Object.freeze({
 
 export const CLEAN_ROOM_TIMEOUTS_MS = Object.freeze({
   packCli: 5 * 60 * 1000,
+  npmPublishDryRun: 2 * 60 * 1000,
   installCli: 3 * 60 * 1000,
   init: 60 * 1000,
   installConsumer: 10 * 60 * 1000,

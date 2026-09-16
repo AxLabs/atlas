@@ -1,7 +1,6 @@
 {
-  "name": "@atlas/cli",
+  "name": "@blitzcraftlabs/atlas",
   "version": "0.4.0",
-  "private": true,
   "license": "Apache-2.0",
   "description": "Atlas command-line interface for project contract and bootstrap workflows",
   "bin": {
@@ -17,6 +16,21 @@
     "assets/bootstrap/manifest.json",
     "assets/bootstrap/files/**"
   ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blitzcraftlabs/atlas.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://shipwithatlas.com",
+  "bugs": {
+    "url": "https://github.com/blitzcraftlabs/atlas/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "rm -rf dist assets && tsc -p tsconfig.build.json && node scripts/bundle-cli.mjs",
     "build:bootstrap": "node scripts/build-bootstrap-assets.mjs",

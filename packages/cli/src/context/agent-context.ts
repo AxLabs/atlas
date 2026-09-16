@@ -88,7 +88,7 @@ export interface AgentContextReport {
 const RECOMMENDED_VALIDATION_COMMANDS: AgentValidationCommand[] = [
   {
     id: "atlas-doctor",
-    command: "pnpm --filter @atlas/cli build && pnpm atlas doctor",
+    command: "pnpm --filter @blitzcraftlabs/atlas build && pnpm atlas doctor",
     when: "After architecture-sensitive changes (contract, routing, feature structure, ownership).",
   },
   {

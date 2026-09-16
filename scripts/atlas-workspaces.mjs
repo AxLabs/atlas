@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+/** Public npm identity of the Atlas CLI. Other workspaces remain private/source-owned. */
+export const PUBLIC_CLI_PACKAGE_NAME = "@blitzcraftlabs/atlas";
+export const PUBLIC_CLI_BIN_NAME = "atlas";
+export const PUBLIC_CLI_RELATIVE_PATH = "packages/cli";
+
 /** Workspace packages that share the Atlas release version (not independent products). */
 export const ATLAS_WORKSPACE_PACKAGES = [
   { name: "@atlas/web", relativePath: "apps/web" },
@@ -9,7 +14,7 @@ export const ATLAS_WORKSPACE_PACKAGES = [
   { name: "@atlas/config", relativePath: "packages/config" },
   { name: "@atlas/consent", relativePath: "packages/consent" },
   { name: "@atlas/project", relativePath: "packages/project" },
-  { name: "@atlas/cli", relativePath: "packages/cli" },
+  { name: PUBLIC_CLI_PACKAGE_NAME, relativePath: PUBLIC_CLI_RELATIVE_PATH },
 ];
 
 export const CANONICAL_GOVERNANCE_DOC = "docs/how-we-build/releases-and-governance.md";

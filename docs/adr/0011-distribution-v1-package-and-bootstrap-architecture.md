@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed**
+**Accepted**
 
 ## Context
 
@@ -50,7 +50,7 @@ source-owned Atlas project that Doctor, generators, upgrades, and agents can rea
 The initial public npm surface is **one package containing the Atlas CLI and its Atlas-specific
 runtime implementation**.
 
-Recommended package identity:
+The public npm identity is resolved:
 
 ```text
 @blitzcraftlabs/atlas
@@ -66,16 +66,16 @@ with:
 }
 ```
 
-The intended user experience is:
+The intended user experience after the first registry publication is:
 
 ```bash
 pnpm dlx @blitzcraftlabs/atlas init my-app
 ```
 
-The exact npm scope/package availability is an **external account/registry prerequisite** and must
-be verified before implementation treats this name as reserved. If the `blitzcraftlabs` npm scope
-cannot be used, the fallback naming decision should remain BlitzCraft-owned (for example
-`@blitzcraftlabs/atlas-cli`) rather than publishing under an unrelated generic `atlas` scope.
+The `blitzcraftlabs` npm organization exists and is maintainer-controlled. This ADR no longer treats
+the package name as provisional. **Registry publication and Trusted Publishing remain follow-up
+work**; do not document or assume `pnpm dlx @blitzcraftlabs/atlas` is live until a version exists on
+the npm registry.
 
 Internal workspace names may remain `@atlas/*` inside generated source. This ADR does not claim or
 reserve the public npm `@atlas` scope.
@@ -491,8 +491,9 @@ After this ADR is accepted, Distribution v1 should proceed in dependency order:
    - pack/install/init/install/build/Doctor/generate/context outside the monorepo;
    - matrix Linux/macOS x64/arm64 as infrastructure permits.
 7. **npm namespace + trusted publishing setup**
-   - maintainer verifies/creates the selected npm scope;
-   - configure least-privilege publication/provenance.
+   - the public package identity `@blitzcraftlabs/atlas` is resolved;
+   - maintainer still configures least-privilege Trusted Publishing before the first real npm
+     publication (not part of this ADR's accepted package-identity work).
 8. **Release integration**
    - publish the CLI package only for a canonical Atlas release/version;
    - fail closed on existing versions, missing provenance prerequisites, or failed clean-room

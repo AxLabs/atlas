@@ -164,7 +164,7 @@ describe("updateRootChangelog first public release links", () => {
         { name: "@atlas/web", section: WEB_SECTION },
         { name: "@atlas/reference", section: REFERENCE_SECTION },
         { name: "@atlas/ui", section: UI_SECTION },
-        { name: "@atlas/cli", section: CLI_SECTION },
+        { name: "@blitzcraftlabs/atlas", section: CLI_SECTION },
       ],
       "2026-09-12",
     );
@@ -196,7 +196,7 @@ describe("consolidateAtlasRelease idempotence", () => {
       "@atlas/web": WEB_SECTION,
       "@atlas/reference": REFERENCE_SECTION,
       "@atlas/ui": UI_SECTION,
-      "@atlas/cli": CLI_SECTION,
+      "@blitzcraftlabs/atlas": CLI_SECTION,
     };
 
     for (const pkg of ATLAS_WORKSPACE_PACKAGES) {

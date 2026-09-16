@@ -4,7 +4,7 @@ import path from "node:path";
 import { ATLAS_CONTRACT_FILENAME, LATEST_SCHEMA_VERSION } from "@atlas/project";
 
 /** npm package name of the Atlas CLI. Distinct from a target checkout's Atlas version. */
-export const CLI_PACKAGE_NAME = "@atlas/cli";
+export const CLI_PACKAGE_NAME = "@blitzcraftlabs/atlas";
 
 interface PackageJsonFields {
   name?: unknown;
@@ -26,8 +26,8 @@ function readPackageVersion(packageJsonPath: string, label: string): string {
 }
 
 /**
- * Locate the installed `@atlas/cli` package root from a file inside that package.
- * Walks toward filesystem root and requires `package.json` name `@atlas/cli` so a
+ * Locate the installed `@blitzcraftlabs/atlas` package root from a file inside that package.
+ * Walks toward filesystem root and requires `package.json` name `@blitzcraftlabs/atlas` so a
  * caller's project `package.json` cannot satisfy version resolution.
  */
 export function findCliPackageRoot(startDir: string): string {
@@ -52,7 +52,7 @@ export function findCliPackageRoot(startDir: string): string {
   throw new Error(`Unable to locate ${CLI_PACKAGE_NAME} package.json from ${startDir}`);
 }
 
-/** Atlas platform/CLI snapshot version from the installed @atlas/cli package. */
+/** Atlas platform/CLI snapshot version from the installed @blitzcraftlabs/atlas package. */
 export function readCliAtlasVersion(): string {
   return readPackageVersion(
     path.join(findCliPackageRoot(__dirname), "package.json"),
@@ -65,7 +65,7 @@ export function readCliAtlasVersion(): string {
  *
  * Generated consumer projects keep an independent app `package.json` version and record the Atlas
  * snapshot in `atlas.config.json` `platform.baseline.atlasVersion`. Platform/source checkouts that
- * still vendor `@atlas/cli` continue to use root `package.json.version` so a historical baseline
+ * still vendor `@blitzcraftlabs/atlas` continue to use root `package.json.version` so a historical baseline
  * does not replace the checkout's current Atlas identity.
  */
 export function readCheckoutAtlasVersion(repoRoot: string): string {

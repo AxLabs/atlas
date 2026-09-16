@@ -15,13 +15,13 @@ const require = createRequire(import.meta.url);
 
 function loadDependencyValidation() {
   try {
-    return require("@atlas/cli/dependency-validation");
+    return require("@blitzcraftlabs/atlas/dependency-validation");
   } catch {
-    execSync("pnpm turbo build --filter=@atlas/cli", {
+    execSync("pnpm turbo build --filter=@blitzcraftlabs/atlas", {
       cwd: repoRoot,
       stdio: "inherit",
     });
-    return require("@atlas/cli/dependency-validation");
+    return require("@blitzcraftlabs/atlas/dependency-validation");
   }
 }
 

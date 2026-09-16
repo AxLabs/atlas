@@ -172,12 +172,12 @@ KB).
 
 ## 5. Generated / vendored source
 
-| Generator          | Output                                   | Classification                          |
-| ------------------ | ---------------------------------------- | --------------------------------------- |
-| shadcn CLI         | `packages/ui/src/components/ui/*`        | generated → adapted                     |
-| openapi-typescript | `apps/*/src/lib/api/contracts/schema.ts` | generated                               |
-| `@atlas/cli`       | feature/page scaffolds                   | Atlas-generated templates               |
-| pnpm / turbo       | lockfiles, `.turbo` (ignored)            | generated — not redistributed as source |
+| Generator               | Output                                   | Classification                          |
+| ----------------------- | ---------------------------------------- | --------------------------------------- |
+| shadcn CLI              | `packages/ui/src/components/ui/*`        | generated → adapted                     |
+| openapi-typescript      | `apps/*/src/lib/api/contracts/schema.ts` | generated                               |
+| `@blitzcraftlabs/atlas` | feature/page scaffolds                   | Atlas-generated templates               |
+| pnpm / turbo            | lockfiles, `.turbo` (ignored)            | generated — not redistributed as source |
 
 **Vendored upstream directories:** none found (`vendor/`, `third_party/`, etc.).
 

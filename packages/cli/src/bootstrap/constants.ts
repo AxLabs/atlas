@@ -1,9 +1,9 @@
 export const BOOTSTRAP_MANIFEST_SCHEMA_VERSION = 1;
 
-/** Canonical source allowlist, relative to the `@atlas/cli` package root. */
+/** Canonical source allowlist, relative to the `@blitzcraftlabs/atlas` package root. */
 export const SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH = "bootstrap/manifest.json";
 
-/** Packaged asset root, relative to the installed `@atlas/cli` package root. */
+/** Packaged asset root, relative to the installed `@blitzcraftlabs/atlas` package root. */
 export const PACKAGED_BOOTSTRAP_ASSET_ROOT_SEGMENTS = ["assets", "bootstrap"] as const;
 
 export const PACKAGED_BOOTSTRAP_MANIFEST_NAME = "manifest.json";
