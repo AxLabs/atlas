@@ -163,6 +163,13 @@ pnpm build                        # cwd: test-app
 <installed-atlas> generate page ops/health --cwd test-app
 pnpm typecheck                    # cwd: test-app
 <installed-atlas> context --json --cwd test-app
+# When the packaged catalog contains previous + current production versions:
+# reconstruct previous-release Atlas-owned state from packaged snapshots, then
+<installed-atlas> upgrade --to <current> --dry-run --json --cwd test-app   # status must be planned
+<installed-atlas> upgrade --to <current> --json --cwd test-app
+<installed-atlas> doctor --json --cwd test-app
+pnpm typecheck                    # cwd: test-app
+pnpm build                        # cwd: test-app
 ```
 
 `pnpm distribution:publish-dry-run` runs `npm pack --dry-run` and
@@ -450,21 +457,29 @@ and exits `0` when repairable drift is cleared. See
 ### `atlas upgrade`
 
 Plan and apply supported Atlas release upgrades using `platform.baseline` checksum evidence and
-versioned release snapshots under `releases/<version>/`.
+**package-owned** production release snapshots from the installed `@blitzcraftlabs/atlas` CLI.
 
 ```bash
-atlas upgrade --to 0.2.0 --dry-run
-atlas upgrade --to 0.2.0
-atlas upgrade --to 0.2.0 --json
+atlas upgrade --to 0.5.0 --dry-run
+atlas upgrade --to 0.5.0
+atlas upgrade --to 0.5.0 --json
 ```
 
-| Option              | Description                                                   |
-| ------------------- | ------------------------------------------------------------- |
-| `--to <version>`    | Target Atlas release version (required)                       |
-| `--dry-run`         | Full planning path without filesystem mutations               |
-| `--json`            | Machine-readable plan and result on stdout                    |
-| `--allow-dirty`     | Allow mutations when the Git worktree has uncommitted changes |
-| `--skip-validation` | Skip post-upgrade `atlas doctor` (fixture/CI only)            |
+`--releases-dir` is an explicit fixture/maintainer override. Normal installed-package usage does not
+read a consumer `releases/` tree. Missing packaged evidence fails closed.
+
+The pre-1.0 support window is the current Atlas release plus the immediately previous supported
+production release (adjacent upgrades only). Repository `releases/0.1.0` and `releases/0.2.0` are
+rehearsal-only and are not public support.
+
+| Option              | Description                                                                  |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `--to <version>`    | Target Atlas release version (required)                                      |
+| `--dry-run`         | Full planning path without filesystem mutations                              |
+| `--json`            | Machine-readable plan and result on stdout                                   |
+| `--allow-dirty`     | Allow mutations when the Git worktree has uncommitted changes                |
+| `--skip-validation` | Skip post-upgrade `atlas doctor` (fixture/CI only)                           |
+| `--releases-dir`    | Explicit fixture/maintainer snapshot directory; not used for normal upgrades |
 
 Blocking conflicts refuse all mutations. `platform.baseline` advances only after a fully successful
 apply and `atlas doctor` validation. See [upgrades](upgrades.md) and

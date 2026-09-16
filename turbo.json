@@ -5,7 +5,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "assets/bootstrap/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "assets/**"]
     },
     "dev": {
       "cache": false,

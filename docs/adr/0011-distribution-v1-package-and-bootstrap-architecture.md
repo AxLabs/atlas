@@ -32,9 +32,9 @@ The current repository establishes several constraints:
   they do not require external template files for feature/page generation.
 - Template synchronization and baseline capture read `templates/app-infrastructure.manifest.json`
   from the consumer repository.
-- `atlas upgrade` currently loads release snapshots from `releases/<version>` under the consumer
-  repository (or an explicitly supplied fixture directory). A package-installed CLI cannot assume a
-  newly generated consumer carries Atlas's entire release-history repository structure forever.
+- `atlas upgrade` loads production release snapshots from the installed `@blitzcraftlabs/atlas`
+  package. `--releases-dir` remains an explicit fixture/maintainer override. Generated consumers do
+  not carry Atlas's `releases/` history.
 - Agent context currently references repository-local documentation and ADR paths.
 - The root platform support contract is Node `>=22` and pnpm `>=10`; the workspace's materialized
   architecture matrix is Linux/macOS on x64/arm64.
@@ -271,6 +271,7 @@ build public CLI artifact
 -> pnpm install --frozen-lockfile (or the documented first-install equivalent)
 -> pnpm build
 -> atlas doctor
+-> prove installed upgrade assets resolve from the package, not consumer releases/
 ```
 
 The test should also run at least one generator and `atlas context --json` so package assets,
@@ -312,8 +313,9 @@ create an independent CLI release train.
 The existing Changesets/fixed-version model can continue to prepare Atlas versions while package
 publication is added as a separate, fail-closed release action after clean-room validation.
 
-Implementation must revisit `.changeset/config.json` before npm publication because its current
-`access: restricted` and private-package policy reflect the repository-only era.
+Implementation uses `.changeset/config.json` `access: public` together with package-level
+`publishConfig.access: public` on `@blitzcraftlabs/atlas`. Other workspaces remain `private: true`
+and are not npm packages. Changesets prefers `publishConfig.access` when present.
 
 No npm publication workflow should be added until:
 
@@ -482,8 +484,8 @@ After this ADR is accepted, Distribution v1 should proceed in dependency order:
      where useful;
    - record Atlas baseline identity.
 4. **Distribution-owned upgrade assets**
-   - resolve supported release snapshots/migrations from the installed CLI package;
-   - keep repository-local fixture overrides for tests.
+   - resolve supported release snapshots from the installed CLI package;
+   - keep `--releases-dir` as an explicit fixture/maintainer override.
 5. **Agent/docs distribution cleanup**
    - materialize required local docs or emit stable public URLs;
    - prove `atlas context --json` references exist.

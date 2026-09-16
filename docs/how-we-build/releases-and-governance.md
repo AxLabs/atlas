@@ -224,18 +224,21 @@ After `changeset version`, `scripts/consolidate-atlas-release.mjs`:
 7. Updates root `CHANGELOG.md` **without discarding prior release sections or link references**
 8. Advances the `[Unreleased]` compare link and adds/updates the new version link reference
 9. Syncs versions across root and workspaces
-10. **Does not delete** workspace package changelogs (required by `changesets/action`)
+10. Generates the production release snapshot for the new Atlas version when one does not already
+    exist (`packages/cli/release-assets/production/<version>/`)
+11. **Does not delete** workspace package changelogs (required by `changesets/action`)
 
 ---
 
 ## Support policy
 
-| Topic                          | Policy                                                                     |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| Supported line                 | Current Atlas release on `main` after the latest intentional version merge |
-| Security / compatibility fixes | Prioritized for the latest supported release                               |
-| Older pre-1.0 snapshots        | Fixes only when explicitly stated                                          |
-| LTS                            | **No LTS programme** at this stage                                         |
+| Topic                          | Policy                                                                           |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| Supported line                 | Current Atlas release plus the immediately previous supported production release |
+| Security / compatibility fixes | Prioritized for the latest supported release                                     |
+| Older pre-1.0 snapshots        | Rehearsal `0.1.0` / `0.2.0` are not production upgrade support                   |
+| LTS                            | **No LTS programme** at this stage                                               |
+| npm CLI                        | Not published yet; intended identity `@blitzcraftlabs/atlas`                     |
 
 ---
 

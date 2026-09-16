@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { ATLAS_WORKSPACE_PACKAGES, readJson } from "./atlas-workspaces.mjs";
 import { HISTORICAL_UNPUBLISHED_VERSIONS } from "./release-publication.mjs";
@@ -13,6 +15,7 @@ import { assertPreOnePointZero, parseSemver } from "./semver-utils.mjs";
 
 const ATLAS_REPO_COMPARE = "https://github.com/blitzcraftlabs/atlas/compare";
 const ATLAS_REPO_RELEASES = "https://github.com/blitzcraftlabs/atlas/releases/tag";
+const CONSOLIDATE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 function writeJson(relativePath, data, repoRoot) {
   const filePath = path.join(repoRoot, relativePath);
@@ -205,7 +208,7 @@ function insertOrUpdateVersionSection(rootContent, version, releaseBody, dateLin
   const escaped = version.replace(/\./g, "\\.");
   const headerPattern = new RegExp(
     `^##\\s+(?:\\[${escaped}\\]|${escaped})(?:\\s+-\\s+.+)?\\s*$`,
-    "m",
+    "m"
   );
   const headerMatch = rootContent.match(headerPattern);
 
@@ -216,7 +219,7 @@ function insertOrUpdateVersionSection(rootContent, version, releaseBody, dateLin
     const nextLinkRef = afterHeader.search(/\n\[[^\]]+\]:\s/);
     const endOffset = Math.min(
       nextSection === -1 ? afterHeader.length : nextSection,
-      nextLinkRef === -1 ? afterHeader.length : nextLinkRef,
+      nextLinkRef === -1 ? afterHeader.length : nextLinkRef
     );
     const end = start + headerMatch[0].length + endOffset;
     const before = rootContent.slice(0, start).trimEnd();
@@ -232,8 +235,7 @@ function insertOrUpdateVersionSection(rootContent, version, releaseBody, dateLin
   const afterUnreleasedStart = unreleasedMatch.index + unreleasedMatch[0].length;
   const afterUnreleased = rootContent.slice(afterUnreleasedStart);
   const nextHeader = afterUnreleased.search(/^##\s+/m);
-  const insertAt =
-    nextHeader === -1 ? rootContent.length : afterUnreleasedStart + nextHeader;
+  const insertAt = nextHeader === -1 ? rootContent.length : afterUnreleasedStart + nextHeader;
 
   const before = rootContent.slice(0, insertAt).trimEnd();
   const after = rootContent.slice(insertAt).trimStart();
@@ -274,10 +276,39 @@ export function updateRootChangelog(rootContent, version, workspaceInput, dateLi
   return content;
 }
 
+export function generateCurrentProductionReleaseSnapshot(repoRoot = process.cwd()) {
+  const manifestPath = path.join(repoRoot, "templates", "app-infrastructure.manifest.json");
+  const cliPackagePath = path.join(repoRoot, "packages", "cli", "package.json");
+  if (!existsSync(manifestPath) || !existsSync(cliPackagePath)) {
+    return { status: "skipped", reason: "not-an-atlas-checkout" };
+  }
+
+  const script = path.join(
+    CONSOLIDATE_DIR,
+    "../packages/cli/scripts/generate-production-release-snapshot.mjs"
+  );
+  if (!existsSync(script)) {
+    throw new Error(`Missing production snapshot generator at ${script}`);
+  }
+
+  const result = spawnSync(process.execPath, [script, "--repo-root", repoRoot], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: "inherit",
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `Failed to generate the production release snapshot for the current Atlas version (${result.status ?? "null"})`
+    );
+  }
+
+  return { status: "ran" };
+}
+
 export function consolidateAtlasRelease(repoRoot = process.cwd()) {
   const version = readJson(
     path.join(ATLAS_WORKSPACE_PACKAGES[0].relativePath, "package.json"),
-    repoRoot,
+    repoRoot
   ).version;
 
   assertPreOnePointZero(version);
@@ -285,12 +316,12 @@ export function consolidateAtlasRelease(repoRoot = process.cwd()) {
   const packageSections = collectPackageChangelogSections(version, repoRoot);
   const workspaceBody = mergeChangelogSectionBodies(packageSections);
   const hasWorkspaceEntries = packageSections.some(
-    (entry) => parseChangelogEntries(extractSectionBody(entry.section)).length > 0,
+    (entry) => parseChangelogEntries(extractSectionBody(entry.section)).length > 0
   );
 
   if (!hasWorkspaceEntries && packageSections.length === 0) {
     throw new Error(
-      `No workspace changelog sections found for Atlas version ${version}. Was changeset version run?`,
+      `No workspace changelog sections found for Atlas version ${version}. Was changeset version run?`
     );
   }
 
@@ -301,19 +332,22 @@ export function consolidateAtlasRelease(repoRoot = process.cwd()) {
   const rootChangelogPath = path.join(repoRoot, "CHANGELOG.md");
   const rootContent = readFileSync(rootChangelogPath, "utf8");
   const updatedRoot = updateRootChangelog(rootContent, version, packageSections, dateLine);
-  writeFileSync(rootChangelogPath, updatedRoot.endsWith("\n") ? updatedRoot : `${updatedRoot}\n`, "utf8");
+  writeFileSync(
+    rootChangelogPath,
+    updatedRoot.endsWith("\n") ? updatedRoot : `${updatedRoot}\n`,
+    "utf8"
+  );
 
   syncWorkspaceVersions(version, repoRoot);
+  generateCurrentProductionReleaseSnapshot(repoRoot);
 
   return { version, mergedBody: workspaceBody, dateLine };
 }
 
-import { pathToFileURL } from "node:url";
-
 function main() {
   const result = consolidateAtlasRelease();
   console.log(
-    `Consolidated Atlas ${result.version} into CHANGELOG.md and synced workspace versions`,
+    `Consolidated Atlas ${result.version} into CHANGELOG.md and synced workspace versions`
   );
 }
 

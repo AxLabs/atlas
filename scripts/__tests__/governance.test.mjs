@@ -253,6 +253,41 @@ describe("semver utils", () => {
   });
 });
 
+describe("Changesets public access policy", () => {
+  it("keeps Changesets access public while other workspaces stay private", () => {
+    const changesetConfig = JSON.parse(
+      readFileSync(path.join(process.cwd(), ".changeset/config.json"), "utf8")
+    );
+    assert.equal(changesetConfig.access, "public");
+
+    for (const pkg of ATLAS_WORKSPACE_PACKAGES) {
+      const manifest = JSON.parse(
+        readFileSync(path.join(process.cwd(), pkg.relativePath, "package.json"), "utf8")
+      );
+      if (pkg.name === "@blitzcraftlabs/atlas") {
+        assert.notEqual(manifest.private, true);
+        assert.equal(manifest.publishConfig?.access, "public");
+        continue;
+      }
+      assert.equal(manifest.private, true, `${pkg.name} must remain private`);
+      assert.notEqual(
+        manifest.publishConfig?.access,
+        "public",
+        `${pkg.name} must not publish publicly`
+      );
+    }
+  });
+
+  it("documents that Changesets prefers package publishConfig.access", () => {
+    const validator = readFileSync(
+      path.join(process.cwd(), "scripts", "validate-governance.mjs"),
+      "utf8"
+    );
+    assert.match(validator, /checkChangesetAccessPolicy/);
+    assert.match(validator, /publishConfig\.access/);
+  });
+});
+
 describe("release workflow policy", () => {
   it("publishes GitHub Releases through the fail-closed helper, not changesets npm publish", () => {
     const workflow = readFileSync(
@@ -266,7 +301,7 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(workflow, /@atlas\/ui@/);
 
     const versionPrJobStart = workflow.indexOf("  version-pr:");
-    const versionPrNext = workflow.slice(versionPrJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+    const versionPrNext = workflow.slice(versionPrJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
     const versionPrJob =
       versionPrNext === -1
         ? workflow.slice(versionPrJobStart)
@@ -278,7 +313,7 @@ describe("release workflow policy", () => {
     );
 
     const publishJobStart = workflow.indexOf("  github-release:");
-    const nextJob = workflow.slice(publishJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+    const nextJob = workflow.slice(publishJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
     const publishJob =
       nextJob === -1
         ? workflow.slice(publishJobStart)
@@ -306,7 +341,7 @@ describe("release workflow policy", () => {
         .join("\n");
 
     const sbomJobStart = workflow.indexOf("  sbom:");
-    const sbomNext = workflow.slice(sbomJobStart + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+    const sbomNext = workflow.slice(sbomJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
     const sbomJob = stripYamlComments(
       sbomNext === -1
         ? workflow.slice(sbomJobStart)
@@ -319,7 +354,7 @@ describe("release workflow policy", () => {
 
     for (const jobId of ["rehearsal", "version-pr", "github-release"]) {
       const start = workflow.indexOf(`  ${jobId}:`);
-      const next = workflow.slice(start + 1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+      const next = workflow.slice(start + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
       const job = stripYamlComments(
         next === -1 ? workflow.slice(start) : workflow.slice(start, start + 1 + next)
       );

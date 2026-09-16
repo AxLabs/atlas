@@ -1,0 +1,26 @@
+/** Packaged production release assets, relative to the installed `@blitzcraftlabs/atlas` package. */
+export const PACKAGED_RELEASE_ASSET_ROOT_SEGMENTS = ["assets", "releases"] as const;
+
+/** Committed production snapshots, relative to the `@blitzcraftlabs/atlas` package root. */
+export const SOURCE_PRODUCTION_RELEASES_RELATIVE_PATH = "release-assets/production";
+
+export const RELEASE_SNAPSHOT_FILENAME = "release.snapshot.json";
+export const RELEASE_CATALOG_FILENAME = "catalog.json";
+export const RELEASE_CATALOG_SCHEMA_VERSION = 1;
+export const PRODUCTION_RELEASE_SUPPORT_POLICY = "adjacent-supported-releases" as const;
+
+export const DEFAULT_OPENAPI_SPEC_RELATIVE_PATH = "openapi/openapi.json";
+
+/**
+ * Repository-local rehearsal snapshots. They are not a public compatibility promise and must never
+ * appear in the production catalog or packaged release assets.
+ */
+export const REHEARSAL_ONLY_ATLAS_VERSIONS = ["0.1.0", "0.2.0"] as const;
+
+export const SNAPSHOT_PACKAGE_MANIFEST_PATHS = [
+  "packages/cli/package.json",
+  "packages/config/package.json",
+  "packages/consent/package.json",
+  "packages/project/package.json",
+  "packages/ui/package.json",
+] as const;

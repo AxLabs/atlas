@@ -36,9 +36,12 @@ describe("release snapshot path safety", () => {
       openApiSpecRelativePath: "openapi/openapi.json",
     });
 
-    expect(() => loadReleaseSnapshot({ repoRoot: tempRoot, atlasVersion: "0.9.9" })).toThrow(
-      expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE })
-    );
+    expect(() =>
+      loadReleaseSnapshot({
+        atlasVersion: "0.9.9",
+        releasesDir: path.join(tempRoot, "releases"),
+      })
+    ).toThrow(expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE }));
   });
 
   it("rejects path traversal segments", () => {
@@ -56,9 +59,12 @@ describe("release snapshot path safety", () => {
       openApiSpecRelativePath: "openapi/openapi.json",
     });
 
-    expect(() => loadReleaseSnapshot({ repoRoot: tempRoot, atlasVersion: "0.9.9" })).toThrow(
-      expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE })
-    );
+    expect(() =>
+      loadReleaseSnapshot({
+        atlasVersion: "0.9.9",
+        releasesDir: path.join(tempRoot, "releases"),
+      })
+    ).toThrow(expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE }));
   });
 
   it("rejects duplicate synced paths", () => {
@@ -76,9 +82,12 @@ describe("release snapshot path safety", () => {
       openApiSpecRelativePath: "openapi/openapi.json",
     });
 
-    expect(() => loadReleaseSnapshot({ repoRoot: tempRoot, atlasVersion: "0.9.9" })).toThrow(
-      expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE })
-    );
+    expect(() =>
+      loadReleaseSnapshot({
+        atlasVersion: "0.9.9",
+        releasesDir: path.join(tempRoot, "releases"),
+      })
+    ).toThrow(expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE }));
   });
 
   it("rejects ownership overlap between synced and generated paths", () => {
@@ -96,8 +105,11 @@ describe("release snapshot path safety", () => {
       openApiSpecRelativePath: "openapi/openapi.json",
     });
 
-    expect(() => loadReleaseSnapshot({ repoRoot: tempRoot, atlasVersion: "0.9.9" })).toThrow(
-      expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE })
-    );
+    expect(() =>
+      loadReleaseSnapshot({
+        atlasVersion: "0.9.9",
+        releasesDir: path.join(tempRoot, "releases"),
+      })
+    ).toThrow(expect.objectContaining({ code: CliErrorCode.UPGRADE_PREREQUISITE }));
   });
 });

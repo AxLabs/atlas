@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { CliError, CliErrorCode } from "../errors/cli-error";
 import { writeCommandSuccess } from "../output/write";
 import { resolveRepoRootFromOptions } from "../project/find-root";
@@ -94,6 +96,7 @@ export function writeUpgradeHelp(writer: OutputWriter, json: boolean): void {
     "",
     "Upgrades respect ownership channels and platform.baseline checksum evidence.",
     "Consumer-owned and modified synced paths are never overwritten automatically.",
+    "Production release evidence is loaded from the installed @blitzcraftlabs/atlas package.",
     "",
     "Usage:",
     "  atlas upgrade --to <version> [options]",
@@ -104,16 +107,16 @@ export function writeUpgradeHelp(writer: OutputWriter, json: boolean): void {
     "  --json               Emit machine-readable JSON on stdout",
     "  --allow-dirty        Allow mutations on a dirty Git worktree (use with caution)",
     "  --skip-validation    Expert/test escape hatch: skip post-upgrade atlas doctor only (migrations, package updates, and baseline capture still run)",
-    "  --releases-dir <dir> Load release snapshots from a custom directory (fixture/CI use)",
+    "  --releases-dir <dir> Explicit fixture/maintainer override for release snapshots",
     "  --cwd <path>         Resolve the Atlas repository from a starting directory",
     "",
     "Exit behavior:",
     "  0 — successful dry-run or completed upgrade",
     "  9 — blocking conflicts in plan",
-    "  10 — missing baseline, release snapshot, or migration chain",
+    "  10 — missing baseline, packaged snapshot, unsupported version, or migration chain",
     "  8 — post-upgrade validation failed",
     "",
-    "See docs/how-we-build/upgrades.md for ownership and conflict policy.",
+    "See docs/how-we-build/upgrades.md for ownership, support window, and conflict policy.",
   ];
 
   if (json) {
@@ -141,13 +144,16 @@ export async function runUpgradeCommand(options: UpgradeCommandOptions): Promise
   }
 
   const repoRoot = resolveRepoRootFromOptions({ cwd: options.cwd });
+  const releasesDir = options.releasesDir
+    ? path.resolve(options.cwd ?? process.cwd(), options.releasesDir)
+    : undefined;
 
   const result = await runUpgrade({
     repoRoot,
     targetVersion: options.targetVersion,
     dryRun: options.dryRun,
     allowDirty: options.allowDirty,
-    releasesDir: options.releasesDir,
+    releasesDir,
     skipValidation: options.skipValidation,
   });
 

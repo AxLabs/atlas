@@ -48,10 +48,21 @@ await Promise.all([
     entryPoints: [path.join(packageRoot, "src/bootstrap-assets.ts")],
     outfile: path.join(distDir, "bootstrap-assets.js"),
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: [path.join(packageRoot, "src/release-assets.ts")],
+    outfile: path.join(distDir, "release-assets.js"),
+  }),
 ]);
 
 chmodSync(path.join(distDir, "cli.js"), 0o755);
 copyFileSync(path.join(repoRoot, "LICENSE"), path.join(packageRoot, "LICENSE"));
+copyFileSync(
+  path.join(repoRoot, "THIRD_PARTY_NOTICES.md"),
+  path.join(packageRoot, "THIRD_PARTY_NOTICES.md")
+);
 
 const { runBootstrapAssetBuild } = await import("./build-bootstrap-assets.mjs");
 await runBootstrapAssetBuild();
+const { runReleaseAssetBuild } = await import("./build-release-assets.mjs");
+await runReleaseAssetBuild();

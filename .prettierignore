@@ -35,3 +35,6 @@ bun.lockb
 # Other
 *.min.js
 *.min.css
+
+# Historical production upgrade snapshots (canonical file contents, not live source)
+packages/cli/release-assets/

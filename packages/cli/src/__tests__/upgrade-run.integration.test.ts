@@ -19,6 +19,13 @@ const fixtureUpgradeOptions = {
   migrationRegistry: FIXTURE_MIGRATION_REGISTRY,
 } as const;
 
+function fixtureOptions(tempRoot: string) {
+  return {
+    ...fixtureUpgradeOptions,
+    releasesDir: path.join(tempRoot, "releases"),
+  };
+}
+
 function copyFixtureToTemp(): string {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-upgrade-run-"));
   cpSync(FIXTURE_ROOT, tempRoot, { recursive: true });
@@ -54,7 +61,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: false,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(doctorSpy).toHaveBeenCalled();
@@ -95,7 +102,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: false,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("success");
@@ -129,7 +136,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     const ids = result.migrations.map((entry) => entry.id);
@@ -166,7 +173,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.3.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("success");
@@ -211,6 +218,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.3.0",
       allowDirty: true,
       skipValidation: true,
+      ...fixtureOptions(tempRoot),
       migrationRegistry: failingRegistry,
     });
 
@@ -230,7 +238,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("success");
@@ -255,7 +263,7 @@ describe("upgrade run integration", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("success");
@@ -327,7 +335,7 @@ describe("upgrade package semantics", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("success");
@@ -350,7 +358,7 @@ describe("upgrade package semantics", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("blocked");
@@ -371,7 +379,7 @@ describe("upgrade package semantics", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
-      ...fixtureUpgradeOptions,
+      ...fixtureOptions(tempRoot),
     });
 
     expect(result.status).toBe("success");

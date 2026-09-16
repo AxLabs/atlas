@@ -286,6 +286,7 @@ describe("findUndeclaredDependenciesForWorkspace", () => {
         files: {
           "src/cli.ts": "export {};\n",
           "assets/bootstrap/files/apps/web/src/example.ts": "import 'next';\n",
+          "release-assets/production/0.4.0/apps/web/src/example.ts": "import 'next';\n",
         },
       },
     ]);

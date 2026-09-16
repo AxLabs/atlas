@@ -135,6 +135,34 @@ describe("Atlas CLI pack and clean-room install", () => {
     expect(webPackage.scripts?.["perf:lhci"]).toContain("../../lighthouserc.json");
   });
 
+  it("packs production release assets and excludes rehearsal snapshots", () => {
+    expect(tarballPath).toBeDefined();
+    const catalog = JSON.parse(
+      readTarballFile(tarballPath as string, "package/assets/releases/catalog.json")
+    ) as {
+      current: string;
+      supportedVersions: string[];
+      rehearsalOnlyVersions: string[];
+    };
+
+    expect(catalog.current).toBe(cliVersion);
+    expect(catalog.supportedVersions).toContain(cliVersion);
+    expect(catalog.supportedVersions).not.toContain("0.1.0");
+    expect(catalog.supportedVersions).not.toContain("0.2.0");
+    expect(catalog.rehearsalOnlyVersions).toEqual(["0.1.0", "0.2.0"]);
+    expect(packedEntries).toContain("package/README.md");
+    expect(packedEntries).toContain("package/THIRD_PARTY_NOTICES.md");
+    expect(packedEntries).toContain(`package/assets/releases/${cliVersion}/release.snapshot.json`);
+    expect(packedEntries.some((entry) => entry.includes("assets/releases/0.1.0"))).toBe(false);
+    expect(packedEntries.some((entry) => entry.includes("assets/releases/0.2.0"))).toBe(false);
+    expect(packedEntries.some((entry) => entry.startsWith("package/src/"))).toBe(false);
+    expect(
+      packedEntries.some(
+        (entry) => entry.startsWith("package/src/") && entry.includes("/__tests__/")
+      )
+    ).toBe(false);
+  });
+
   it("does not leak workspace protocol or unpublished Atlas runtime dependencies", () => {
     expect(tarballPath).toBeDefined();
     const manifest = readPackedManifest(tarballPath as string);
@@ -190,6 +218,7 @@ describe("Atlas CLI pack and clean-room install", () => {
         "package/dist/cli.js",
         "package/dist/dependency-validation.js",
         "package/dist/index.js",
+        "package/dist/release-assets.js",
       ].sort()
     );
 
@@ -359,6 +388,44 @@ process.stdout.write(JSON.stringify({
       };
       expect(contextPayload.result.atlasVersion).toBe(cliVersion);
       expect(contextPayload.result.atlasVersion).not.toBe(generatedPackage.version);
+
+      expect(existsSync(path.join(generatedRoot, "releases"))).toBe(false);
+
+      const releaseResolverPath = path.join(installedPackage, "dist", "release-assets.js");
+      expect(existsSync(releaseResolverPath)).toBe(true);
+      const releaseLookup = runCommand(
+        process.execPath,
+        [
+          "-e",
+          `
+const path = require("path");
+const resolver = require(${JSON.stringify(releaseResolverPath)});
+const root = resolver.findReleaseAssetRoot();
+const catalog = resolver.readPackagedReleaseCatalog(root);
+process.stdout.write(JSON.stringify({ root, catalog }));
+`,
+        ],
+        { cwd: generatedRoot }
+      );
+      expect(releaseLookup.status).toBe(0);
+      const releaseResolved = JSON.parse(releaseLookup.stdout) as {
+        root: string;
+        catalog: { current: string; supportedVersions: string[] };
+      };
+      expect(realpathSync(releaseResolved.root).startsWith(installedRoot)).toBe(true);
+      expect(realpathSync(releaseResolved.root).startsWith(`${repoReal}${path.sep}`)).toBe(false);
+      expect(releaseResolved.catalog.current).toBe(cliVersion);
+      expect(releaseResolved.catalog.supportedVersions).not.toContain("0.1.0");
+
+      const unsupported = runInstalledAtlas(
+        cleanRoom,
+        ["upgrade", "--to", "9.9.9", "--dry-run", "--json", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(unsupported.status).not.toBe(0);
+      expect(`${unsupported.stdout}\n${unsupported.stderr}`).toMatch(
+        /Unsupported target Atlas release 9\.9\.9/
+      );
     },
     PACK_TIMEOUT_MS
   );

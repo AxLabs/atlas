@@ -39,15 +39,19 @@ describe("npm publish dry-run helpers", () => {
   });
 
   it("rejects private, restricted, or misnamed packages and runtime workspace leaks", () => {
-    assert.ok(assertPublicCliManifest(publicManifest({ private: true })).some((issue) => /private/.test(issue)));
+    assert.ok(
+      assertPublicCliManifest(publicManifest({ private: true })).some((issue) =>
+        /private/.test(issue)
+      )
+    );
     assert.ok(
       assertPublicCliManifest(publicManifest({ name: "@atlas/cli" })).some((issue) =>
         issue.includes(PUBLIC_CLI_PACKAGE_NAME)
       )
     );
     assert.ok(
-      assertPublicCliManifest(publicManifest({ publishConfig: { access: "restricted" } })).some((issue) =>
-        /publishConfig\.access/.test(issue)
+      assertPublicCliManifest(publicManifest({ publishConfig: { access: "restricted" } })).some(
+        (issue) => /publishConfig\.access/.test(issue)
       )
     );
     assert.ok(
@@ -64,21 +68,35 @@ describe("npm publish dry-run helpers", () => {
       "dist/index.js",
       "dist/dependency-validation.js",
       "dist/bootstrap-assets.js",
+      "dist/release-assets.js",
       "LICENSE",
+      "README.md",
+      "THIRD_PARTY_NOTICES.md",
       "assets/bootstrap/manifest.json",
+      "assets/releases/catalog.json",
     ];
     assert.deepEqual(collectPackedFileIssues(files), []);
     assert.equal(
       collectPackedFileIssues([...files, "assets/bootstrap/files/apps/web/.env.example"]).length,
       0
     );
-    assert.ok(collectPackedFileIssues([...files, ".env.local"]).some((issue) => issue.includes("env")));
-    assert.ok(collectPackedFileIssues([...files, "src/cli.ts"]).some((issue) => issue.includes("src")));
-    assert.ok(collectPackedFileIssues(files.filter((file) => file !== "LICENSE")).some((issue) => /LICENSE/.test(issue)));
+    assert.ok(
+      collectPackedFileIssues([...files, ".env.local"]).some((issue) => issue.includes("env"))
+    );
+    assert.ok(
+      collectPackedFileIssues([...files, "src/cli.ts"]).some((issue) => issue.includes("src"))
+    );
+    assert.ok(
+      collectPackedFileIssues(files.filter((file) => file !== "LICENSE")).some((issue) =>
+        /LICENSE/.test(issue)
+      )
+    );
   });
 
   it("parses npm pack JSON and detects unexpected auth requirements", () => {
-    const payload = extractJsonPayload('npm notice\n{"name":"@blitzcraftlabs/atlas","version":"0.4.0","files":[{"path":"package.json"}]}');
+    const payload = extractJsonPayload(
+      'npm notice\n{"name":"@blitzcraftlabs/atlas","version":"0.4.0","files":[{"path":"package.json"}]}'
+    );
     const normalized = normalizeNpmPackPayload(payload);
     assert.equal(normalized.name, PUBLIC_CLI_PACKAGE_NAME);
     assert.deepEqual(normalized.files, ["package.json"]);

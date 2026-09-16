@@ -70,6 +70,7 @@ describe("upgrade migration runtime separation", () => {
       targetVersion: "0.2.0",
       allowDirty: true,
       skipValidation: true,
+      releasesDir: path.join(tempRoot, "releases"),
     });
 
     expect(result.status).toBe("success");
@@ -89,6 +90,7 @@ describe("upgrade migration runtime separation", () => {
       targetVersion: "0.3.0",
       allowDirty: true,
       skipValidation: true,
+      releasesDir: path.join(tempRoot, "releases"),
       migrationRegistry: FIXTURE_MIGRATION_REGISTRY,
     });
 
