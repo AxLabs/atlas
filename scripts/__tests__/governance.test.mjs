@@ -24,6 +24,7 @@ import {
   hasSemverPrerelease,
   isGithubPrerelease,
   isPreOnePointZero,
+  isStablePublicRelease,
   parseSemver,
 } from "../semver-utils.mjs";
 
@@ -232,8 +233,10 @@ describe("updateChangelogLinkReferences", () => {
 describe("semver utils", () => {
   it("treats 0.x.y as normal releases, not prereleases", () => {
     assert.equal(isPreOnePointZero("0.2.0"), true);
+    assert.equal(isPreOnePointZero("1.0.0"), false);
     assert.equal(hasSemverPrerelease("0.2.0"), false);
     assert.equal(isGithubPrerelease("0.2.0"), false);
+    assert.equal(isGithubPrerelease("1.0.0"), false);
   });
 
   it("detects SemVer prerelease components", () => {
@@ -242,14 +245,16 @@ describe("semver utils", () => {
   });
 
   it("parses standard versions", () => {
-    const parsed = parseSemver("0.2.0");
+    const parsed = parseSemver("1.0.0");
     assert.deepEqual(parsed, {
-      major: 0,
-      minor: 2,
+      major: 1,
+      minor: 0,
       patch: 0,
       prerelease: null,
       build: null,
     });
+    assert.equal(isStablePublicRelease("1.0.0"), true);
+    assert.equal(isStablePublicRelease("0.5.0"), false);
   });
 });
 
@@ -301,7 +306,9 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(workflow, /@atlas\/ui@/);
 
     const versionPrJobStart = workflow.indexOf("  version-pr:");
-    const versionPrNext = workflow.slice(versionPrJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
+    const versionPrNext = workflow
+      .slice(versionPrJobStart + 1)
+      .search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
     const versionPrJob =
       versionPrNext === -1
         ? workflow.slice(versionPrJobStart)
@@ -326,6 +333,25 @@ describe("release workflow policy", () => {
     assert.match(publishJob, /needs:[\s\S]*\bversion-pr\b/);
     assert.match(publishJob, /github\.event_name\s*==\s*'push'/);
     assert.match(publishJob, /needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/);
+
+    const npmJobStart = workflow.indexOf("  npm-publish:");
+    assert.notEqual(npmJobStart, -1);
+    const npmNext = workflow.slice(npmJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
+    const npmJob =
+      npmNext === -1
+        ? workflow.slice(npmJobStart)
+        : workflow.slice(npmJobStart, npmJobStart + 1 + npmNext);
+    assert.match(npmJob, /id-token:\s*write/);
+    assert.match(npmJob, /contents:\s*read/);
+    assert.doesNotMatch(npmJob, /contents:\s*write/);
+    assert.doesNotMatch(npmJob, /NPM_TOKEN|NODE_AUTH_TOKEN/);
+    assert.match(npmJob, /publish-npm-package\.mjs/);
+    assert.match(npmJob, /--oidc/);
+    assert.match(npmJob, /npm@11\.5\.1/);
+    assert.match(npmJob, /needs:[\s\S]*\bgithub-release\b/);
+    assert.match(npmJob, /needs:[\s\S]*\bversion-pr\b/);
+    assert.match(npmJob, /distribution:verify-registry/);
+    assert.doesNotMatch(npmJob, /self-hosted/);
   });
 
   it("disables setup-node package-manager caching on the SBOM job that never installs", () => {
@@ -352,7 +378,7 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(sbomJob, /\bpnpm install\b/);
     assert.doesNotMatch(sbomJob, /cache:\s*pnpm/);
 
-    for (const jobId of ["rehearsal", "version-pr", "github-release"]) {
+    for (const jobId of ["rehearsal", "version-pr", "github-release", "npm-publish"]) {
       const start = workflow.indexOf(`  ${jobId}:`);
       const next = workflow.slice(start + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
       const job = stripYamlComments(

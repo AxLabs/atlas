@@ -11,7 +11,7 @@ import {
   extractSectionDate,
 } from "./extract-changelog-section.mjs";
 import { buildPlatformReleaseBody, parseChangelogEntries } from "./root-release-changelog.mjs";
-import { assertPreOnePointZero, parseSemver } from "./semver-utils.mjs";
+import { assertValidAtlasReleaseVersion, parseSemver } from "./semver-utils.mjs";
 
 const ATLAS_REPO_COMPARE = "https://github.com/blitzcraftlabs/atlas/compare";
 const ATLAS_REPO_RELEASES = "https://github.com/blitzcraftlabs/atlas/releases/tag";
@@ -319,7 +319,7 @@ export function consolidateAtlasRelease(repoRoot = process.cwd()) {
     repoRoot
   ).version;
 
-  assertPreOnePointZero(version);
+  assertValidAtlasReleaseVersion(version);
 
   const packageSections = collectPackageChangelogSections(version, repoRoot);
   const workspaceBody = mergeChangelogSectionBodies(packageSections);

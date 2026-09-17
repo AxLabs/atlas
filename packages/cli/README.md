@@ -13,15 +13,17 @@ inside Atlas and generated projects. They are not published to npm.
 
 ## Intended install (after the first npm publication)
 
-Atlas is not on the npm registry yet. Once `@blitzcraftlabs/atlas@0.5.0` is published, the intended
-commands are:
+Atlas is not on the npm registry yet. The first public version is `@blitzcraftlabs/atlas@1.0.0`.
+Once that version is published from canonical Git tag `v1.0.0` and
+`pnpm distribution:verify-registry 1.0.0` passes, the intended commands are:
 
 ```bash
 pnpm add -g @blitzcraftlabs/atlas
 atlas init my-app
 ```
 
-Until then, use this repository and `pnpm atlas` / a packed tarball.
+Until then, use this repository and `pnpm atlas` / a packed tarball. Do not treat a `0.5.0` tarball
+as the public npm bootstrap.
 
 ## Commands
 
@@ -34,8 +36,8 @@ Until then, use this repository and `pnpm atlas` / a packed tarball.
 | `atlas upgrade --to <version>` | Plan/apply a supported Atlas upgrade                               |
 
 `atlas upgrade` loads production release evidence from **this installed package**, not from a
-consumer `releases/` tree. The pre-1.0 support window is the current Atlas release plus the
-immediately previous supported production release, adjacent upgrades only.
+consumer `releases/` tree. The support window is the current Atlas release plus the immediately
+previous supported production release, adjacent upgrades only.
 
 `--releases-dir` is an explicit fixture/maintainer override. Missing packaged evidence fails closed.
 
@@ -44,7 +46,7 @@ immediately previous supported production release, adjacent upgrades only.
 - Production snapshots are package-owned.
 - Generated consumers do not carry Atlas release history.
 - Repository `releases/0.1.0` and `releases/0.2.0` are rehearsal-only and are not public support.
-- Pre-1.0 releases may include breaking changes with changelog and migration notes.
+- After 1.0, breaking public-contract changes require a major version.
 
 ## Links
 

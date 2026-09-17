@@ -1,0 +1,269 @@
+import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { describe, it } from "node:test";
+
+import { PUBLIC_CLI_PACKAGE_NAME } from "../atlas-workspaces.mjs";
+import {
+  NPM_OIDC_PUBLISH_ARGS,
+  NPM_PUBLICATION_ACTIONS,
+  NPM_PUBLISH_ARGS,
+  NPM_TRUSTED_PUBLISHING_MIN_NODE,
+  NPM_TRUSTED_PUBLISHING_MIN_NPM,
+  appendGithubOutput,
+  assertSafeNpmIdentity,
+  buildManualPublishCommand,
+  canonicalTarballFileName,
+  collectCanonicalReleaseCheckoutIssues,
+  collectPublicationIdentityIssues,
+  collectTrustedPublishingToolchainIssues,
+  compareDotVersions,
+  decideNpmPublicationAction,
+  expectedGitTag,
+  queryNpmPackageVersion,
+  stripNpmAuthEnv,
+} from "../lib/npm-publication.mjs";
+
+describe("npm publication identity", () => {
+  it("accepts the public CLI identity and canonical tag", () => {
+    assert.equal(expectedGitTag("0.5.0"), "v0.5.0");
+    assert.equal(
+      canonicalTarballFileName(PUBLIC_CLI_PACKAGE_NAME, "0.5.0"),
+      "blitzcraftlabs-atlas-0.5.0.tgz"
+    );
+    assert.equal(expectedGitTag("1.0.0"), "v1.0.0");
+    assert.equal(
+      canonicalTarballFileName(PUBLIC_CLI_PACKAGE_NAME, "1.0.0"),
+      "blitzcraftlabs-atlas-1.0.0.tgz"
+    );
+    assert.doesNotThrow(() =>
+      assertSafeNpmIdentity({
+        packageName: PUBLIC_CLI_PACKAGE_NAME,
+        version: "1.0.0",
+        tag: "v1.0.0",
+      })
+    );
+  });
+
+  it("rejects shell-injection shaped versions, tags, and package names", () => {
+    assert.throws(
+      () =>
+        assertSafeNpmIdentity({ packageName: PUBLIC_CLI_PACKAGE_NAME, version: "0.5.0; rm -rf /" }),
+      /unsafe npm version/
+    );
+    assert.throws(
+      () =>
+        assertSafeNpmIdentity({
+          packageName: PUBLIC_CLI_PACKAGE_NAME,
+          version: "0.5.0",
+          tag: "v0.5.0$(whoami)",
+        }),
+      /unsafe git tag/
+    );
+    assert.throws(
+      () => assertSafeNpmIdentity({ packageName: "@atlas/ui", version: "0.5.0" }),
+      /only @blitzcraftlabs\/atlas/
+    );
+    assert.throws(
+      () => canonicalTarballFileName(PUBLIC_CLI_PACKAGE_NAME, "../evil/0.5.0"),
+      /unsafe npm version/
+    );
+  });
+
+  it("requires CLI, root, tag, catalog, packed, and requested versions to agree", () => {
+    const aligned = {
+      packageName: PUBLIC_CLI_PACKAGE_NAME,
+      version: "0.5.0",
+      rootVersion: "0.5.0",
+      cliVersion: "0.5.0",
+      tag: "v0.5.0",
+      catalogCurrent: "0.5.0",
+      packedName: PUBLIC_CLI_PACKAGE_NAME,
+      packedVersion: "0.5.0",
+      requestedVersion: "0.5.0",
+    };
+    assert.deepEqual(collectPublicationIdentityIssues(aligned), []);
+    assert.ok(
+      collectPublicationIdentityIssues({ ...aligned, rootVersion: "0.4.0" }).some((issue) =>
+        issue.includes("root version")
+      )
+    );
+    assert.ok(
+      collectPublicationIdentityIssues({ ...aligned, packedVersion: "0.5.1" }).some((issue) =>
+        issue.includes("packed version")
+      )
+    );
+    assert.ok(
+      collectPublicationIdentityIssues({ ...aligned, catalogCurrent: "0.4.0" }).some((issue) =>
+        issue.includes("catalog")
+      )
+    );
+  });
+});
+
+describe("npm publication decisions", () => {
+  it("treats a missing package as a one-time bootstrap, not an OIDC publish", () => {
+    assert.deepEqual(decideNpmPublicationAction({ packageExists: false, versionExists: false }), {
+      action: NPM_PUBLICATION_ACTIONS.bootstrapRequired,
+      reason:
+        "package does not exist on npm; first publication must be a human-authenticated publish of the validated tarball",
+    });
+  });
+
+  it("noops when the exact version already exists instead of overwriting", () => {
+    assert.equal(
+      decideNpmPublicationAction({ packageExists: true, versionExists: true }).action,
+      NPM_PUBLICATION_ACTIONS.noop
+    );
+  });
+
+  it("publishes only when the package exists and the version is unpublished", () => {
+    assert.equal(
+      decideNpmPublicationAction({ packageExists: true, versionExists: false }).action,
+      NPM_PUBLICATION_ACTIONS.publish
+    );
+  });
+});
+
+describe("npm registry query", () => {
+  it("treats HTTP 404 as a missing package without throwing", async () => {
+    const result = await queryNpmPackageVersion({
+      version: "0.5.0",
+      fetchImpl: async () => new Response("Not Found", { status: 404 }),
+    });
+    assert.equal(result.packageExists, false);
+    assert.equal(result.versionExists, false);
+    assert.equal(result.status, "missing-package");
+  });
+
+  it("detects an already-published version from the registry document", async () => {
+    const result = await queryNpmPackageVersion({
+      version: "0.5.0",
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ versions: { "0.4.0": {}, "0.5.0": {} } }), { status: 200 }),
+    });
+    assert.equal(result.packageExists, true);
+    assert.equal(result.versionExists, true);
+    assert.equal(result.status, "version-exists");
+  });
+
+  it("detects a missing version of an existing package", async () => {
+    const result = await queryNpmPackageVersion({
+      version: "0.5.0",
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ versions: { "0.4.0": {} } }), { status: 200 }),
+    });
+    assert.equal(result.packageExists, true);
+    assert.equal(result.versionExists, false);
+    assert.equal(result.status, "version-missing");
+  });
+
+  it("fails closed on registry transport and HTTP errors", async () => {
+    await assert.rejects(
+      () =>
+        queryNpmPackageVersion({
+          version: "0.5.0",
+          fetchImpl: async () => {
+            throw new Error("ECONNRESET");
+          },
+        }),
+      /Failed to query npm registry/
+    );
+    await assert.rejects(
+      () =>
+        queryNpmPackageVersion({
+          version: "0.5.0",
+          fetchImpl: async () => new Response("nope", { status: 500 }),
+        }),
+      /HTTP 500/
+    );
+  });
+});
+
+describe("publication command and toolchain", () => {
+  it("prints a first-publish command against the exact tarball, not packages/cli", () => {
+    const command = buildManualPublishCommand("/tmp/artifacts/npm/blitzcraftlabs-atlas-0.5.0.tgz");
+    assert.equal(
+      command,
+      "npm publish /tmp/artifacts/npm/blitzcraftlabs-atlas-0.5.0.tgz --access public --ignore-scripts"
+    );
+    assert.equal(command.includes("packages/cli"), false);
+    assert.deepEqual(NPM_PUBLISH_ARGS, ["--access", "public", "--ignore-scripts"]);
+    assert.ok(NPM_OIDC_PUBLISH_ARGS.includes("--provenance"));
+  });
+
+  it("strips long-lived npm tokens so OIDC cannot fall back to NPM_TOKEN", () => {
+    const stripped = stripNpmAuthEnv({
+      PATH: "/usr/bin",
+      NPM_TOKEN: "secret",
+      NODE_AUTH_TOKEN: "secret",
+      "//registry.npmjs.org/:_authToken": "secret",
+    });
+    assert.equal(stripped.PATH, "/usr/bin");
+    assert.equal(stripped.NPM_TOKEN, undefined);
+    assert.equal(stripped.NODE_AUTH_TOKEN, undefined);
+    assert.equal(stripped["//registry.npmjs.org/:_authToken"], undefined);
+  });
+
+  it("requires the Trusted Publishing npm CLI without changing consumer Node engines", () => {
+    assert.equal(NPM_TRUSTED_PUBLISHING_MIN_NPM, "11.5.1");
+    assert.equal(NPM_TRUSTED_PUBLISHING_MIN_NODE, "22.14.0");
+    assert.equal(compareDotVersions("11.5.1", "11.5.1"), 0);
+    assert.ok(compareDotVersions("11.4.0", "11.5.1") < 0);
+    assert.deepEqual(
+      collectTrustedPublishingToolchainIssues({ nodeVersion: "22.10.2", npmVersion: "10.9.0" })
+        .length,
+      2
+    );
+    assert.deepEqual(
+      collectTrustedPublishingToolchainIssues({ nodeVersion: "22.14.0", npmVersion: "11.5.1" }),
+      []
+    );
+  });
+
+  it("writes GitHub outputs without interpolating newlines", () => {
+    const file = path.join(mkdtempSync(path.join(os.tmpdir(), "atlas-gha-")), "output");
+    writeFileSync(file, "");
+    appendGithubOutput("sha256", "abc", { outputFile: file });
+    assert.throws(
+      () => appendGithubOutput("sha256", "abc\ndef", { outputFile: file }),
+      /unsafe GitHub output value/
+    );
+  });
+});
+
+describe("canonical release checkout", () => {
+  it("accepts a clean exact v1.0.0 tag checkout", () => {
+    assert.deepEqual(
+      collectCanonicalReleaseCheckoutIssues({
+        expectedTag: "v1.0.0",
+        headSha: "abc123",
+        exactTag: "v1.0.0",
+        taggedSha: "abc123",
+        porcelain: "",
+      }),
+      []
+    );
+  });
+
+  it("rejects a dirty tree or a checkout that is not the release tag", () => {
+    const dirty = collectCanonicalReleaseCheckoutIssues({
+      expectedTag: "v1.0.0",
+      headSha: "abc123",
+      exactTag: "v1.0.0",
+      taggedSha: "abc123",
+      porcelain: " M packages/cli/README.md",
+    });
+    assert.match(dirty.join("\n"), /working tree is dirty/);
+
+    const untagged = collectCanonicalReleaseCheckoutIssues({
+      expectedTag: "v1.0.0",
+      headSha: "abc123",
+      exactTag: null,
+      taggedSha: "def456",
+      porcelain: "",
+    });
+    assert.match(untagged.join("\n"), /not the exact git tag v1\.0\.0/);
+  });
+});

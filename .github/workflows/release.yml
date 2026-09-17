@@ -184,3 +184,64 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node scripts/publish-atlas-release.mjs --target-sha "${GITHUB_SHA}"
+
+  npm-publish:
+    name: Publish npm package
+    if: github.event_name == 'push' && needs.version-pr.outputs.has-changesets != 'true'
+    needs:
+      - github-release
+      - version-pr
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install npm CLI for Trusted Publishing
+        run: |
+          npm install --global npm@11.5.1
+          node -e 'const [maj,min,pat]=process.versions.node.split(".").map(Number); if (maj<22 || (maj===22 && min<14)) { throw new Error("Trusted Publishing requires Node >= 22.14.0") }'
+          npm --version
+
+      - name: Pack, validate, and publish the exact CLI tarball
+        id: npm
+        run: node scripts/publish-npm-package.mjs --oidc
+
+      - name: Upload validated npm tarball
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: atlas-npm-${{ steps.npm.outputs.version }}
+          path: |
+            artifacts/npm/*.tgz
+            artifacts/npm/*.publish.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Verify the published package from npm
+        if: steps.npm.outputs.action == 'publish'
+        run: |
+          pnpm distribution:verify-registry "${{ steps.npm.outputs.version }}" --retries 12 --retry-wait-ms 10000
+
+      - name: First-publish bootstrap required
+        if: steps.npm.outputs.action == 'bootstrap-required'
+        run: |
+          echo "::notice::@blitzcraftlabs/atlas does not exist on npm yet. Download the validated tarball artifact and publish that exact file with a human-authenticated npm publish. Do not rebuild."

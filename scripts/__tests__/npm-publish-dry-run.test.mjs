@@ -87,6 +87,19 @@ describe("npm publish dry-run helpers", () => {
       collectPackedFileIssues([...files, "src/cli.ts"]).some((issue) => issue.includes("src"))
     );
     assert.ok(
+      collectPackedFileIssues([...files, "src/__tests__/fixtures/upgrade-e2e/releases/0.1.0"]).some(
+        (issue) => issue.includes("tests")
+      )
+    );
+    assert.ok(
+      collectPackedFileIssues([...files, "package/.github/workflows/release.yml"]).some((issue) =>
+        issue.includes("github")
+      )
+    );
+    assert.ok(
+      collectPackedFileIssues([...files, ".turbo/cache"]).some((issue) => issue.includes("cache"))
+    );
+    assert.ok(
       collectPackedFileIssues(files.filter((file) => file !== "LICENSE")).some((issue) =>
         /LICENSE/.test(issue)
       )

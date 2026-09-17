@@ -19,9 +19,13 @@ Atlas is **open source under Apache License 2.0**. The canonical public reposito
 | **Third-party provenance**   | [provenance.md](provenance.md), [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)                   |
 
 The repository is public. Internal `@atlas/*` workspace packages remain unpublished npm internals
-(`private: true`). The public CLI package identity is `@blitzcraftlabs/atlas`; it is
-publication-ready but is **not** published to the npm registry by the current GitHub Release
-workflow. Canonical GitHub Releases are published automatically after a Version PR merges to `main`.
+(`private: true`). The public CLI package identity is `@blitzcraftlabs/atlas`. Canonical GitHub
+Releases are published automatically after a Version PR merges to `main`. npm publication of that
+same Atlas version is a separate fail-closed job on the same workflow: the first version is a
+human-authenticated publish of the validated `.tgz` from canonical **`v1.0.0`**, and later versions
+use GitHub Actions OIDC / npm Trusted Publishing. Do not treat `pnpm dlx @blitzcraftlabs/atlas` as
+live until registry verification has passed for that published version. Do not bootstrap npm with
+`0.5.0`.
 
 ---
 
@@ -29,16 +33,16 @@ workflow. Canonical GitHub Releases are published automatically after a Version 
 
 **Atlas itself** — a **repository/platform snapshot**, not independent npm products.
 
-| Package                  | Role                         | Published to npm? | Independently supported? |
-| ------------------------ | ---------------------------- | ----------------- | ------------------------ |
-| `@atlas/monorepo` (root) | Canonical Atlas version      | No                | This is Atlas            |
-| `@atlas/web`             | Template application         | No                | Part of Atlas snapshot   |
-| `@atlas/reference`       | Executable reference app     | No                | Part of Atlas snapshot   |
-| `@atlas/ui`              | Internal UI primitives       | No                | Part of Atlas snapshot   |
-| `@atlas/config`          | Internal tooling config      | No                | Part of Atlas snapshot   |
-| `@atlas/consent`         | Optional consent module      | No                | Part of Atlas snapshot   |
-| `@atlas/project`         | Architecture contract loader | No                | Part of Atlas snapshot   |
-| `@blitzcraftlabs/atlas`  | Public Atlas CLI             | Not yet           | Part of Atlas snapshot   |
+| Package                  | Role                         | Published to npm?                                             | Independently supported? |
+| ------------------------ | ---------------------------- | ------------------------------------------------------------- | ------------------------ |
+| `@atlas/monorepo` (root) | Canonical Atlas version      | No                                                            | This is Atlas            |
+| `@atlas/web`             | Template application         | No                                                            | Part of Atlas snapshot   |
+| `@atlas/reference`       | Executable reference app     | No                                                            | Part of Atlas snapshot   |
+| `@atlas/ui`              | Internal UI primitives       | No                                                            | Part of Atlas snapshot   |
+| `@atlas/config`          | Internal tooling config      | No                                                            | Part of Atlas snapshot   |
+| `@atlas/consent`         | Optional consent module      | No                                                            | Part of Atlas snapshot   |
+| `@atlas/project`         | Architecture contract loader | No                                                            | Part of Atlas snapshot   |
+| `@blitzcraftlabs/atlas`  | Public Atlas CLI             | First version: manual validated tarball; later versions: OIDC | Part of Atlas snapshot   |
 
 Workspace `package.json` version fields mirror the Atlas release for tooling only.
 
@@ -48,43 +52,70 @@ Workspace `package.json` version fields mirror the Atlas release for tooling onl
 
 Atlas uses **[Semantic Versioning](https://semver.org/)** for repository releases.
 
-| Version             | Meaning                                                                                      |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| **Major (`X.0.0`)** | Reserved for a deliberately defined stable public contract. **Atlas has not reached 1.0.0.** |
-| **Minor (`0.x.0`)** | Intentional release: new capability, platform change, or **breaking change while pre-1.0**   |
-| **Patch (`0.x.y`)** | Bug fixes and low-risk adjustments within the current line                                   |
+| Version             | Meaning                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Major (`X.0.0`)** | Breaking change to a public 1.0 contract, or the explicit `0.5.0` → `1.0.0` public-distribution jump |
+| **Minor (`x.Y.0`)** | Compatible new capability after 1.0; while 0.x, also used for breaking proving-line changes          |
+| **Patch (`x.y.Z`)** | Bug fixes and low-risk adjustments within the current line                                           |
 
-### Pre-1.0 (`0.x.y`)
+## Atlas 1.0 stability contract
 
-- Atlas is **released intentionally** but APIs, templates, and upgrade mechanics may evolve.
-- Breaking changes are allowed but must be documented (see below).
-- **`1.0.0` is only created through an explicit maintainer stability decision** — not by routine
-  changesets.
-- A future `1.0.0` release requires a dedicated maintainer decision PR that updates or removes the
-  pre-1.0 guard in `scripts/semver-utils.mjs` as part of defining the stable public contract. There
-  is no environment-variable bypass — the intentional friction is useful.
+Atlas **0.x** GitHub releases were the platform-development and proving line. They remain historical
+repository snapshots. They are **not** the first public npm distribution.
 
-### Pre-1.0 changeset convention
+Atlas **1.0.0** is the first supported public distribution and the first stable public contract:
 
-Changesets `major` bumps advance `0.x.y` to **`1.0.0`**. To avoid accidental graduation:
+- Public CLI, generated-project, upgrade, and distribution contracts below are treated as stable.
+- Breaking those public contracts after 1.0 requires a **major** version.
+- Internal implementation may continue evolving without a major release.
+- Compatible feature additions use **minor**; fixes use **patch**.
+- There is **no LTS programme**. Atlas does not claim formal security certification, independent
+  audit completion, or perfect backward compatibility forever.
 
-| Change type                       | Changeset bump              | Example         |
-| --------------------------------- | --------------------------- | --------------- |
-| Bug fix / small non-breaking      | **patch**                   | `0.1.0 → 0.1.1` |
-| Feature or **breaking change**    | **minor**                   | `0.1.0 → 0.2.0` |
-| Deliberate 1.0 stability decision | **major** (maintainer-only) | `0.9.0 → 1.0.0` |
+The next canonical release from the current `0.5.0` line is **1.0.0**, produced by a Changesets
+**major** bump after this maintainer decision merges. Do not invent a `0.5.1` or `0.6.0` public npm
+bootstrap.
 
-Do **not** select **major** for ordinary breaking changes while Atlas remains pre-1.0.
+### What 1.0 treats as stable
+
+| Surface           | Stable contract                                                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CLI commands      | `atlas init`, `atlas doctor`, `atlas generate`, `atlas context`, `atlas upgrade`, plus `--help` / `--version`                                                          |
+| CLI flags         | `--json`, `--cwd`, `--dry-run`, `upgrade --to`, generate `--query` / `--mutation` / `--form` / `--tests`                                                               |
+| CLI behavior      | Documented exit codes; JSON envelopes `{ ok, command, result \| error }`                                                                                               |
+| Generated project | Workspace layout (`apps/web`, `packages/ui`, `packages/config`, `packages/consent`), `atlas.config.json` baseline, ownership/template-sync model, root package scripts |
+| Upgrade           | Packaged snapshots, adjacent current+previous catalog, fail-closed missing evidence, no silent overwrite of consumer-modified synced paths                             |
+| Distribution      | Package `@blitzcraftlabs/atlas`, binary `atlas`, Node `>=22`, pnpm `>=10`, GitHub tag `vX.Y.Z` equals npm version                                                      |
+| Architecture      | Consumer-visible `@atlas/ui` / `@atlas/config` / `@atlas/consent` stay source-owned and private; Doctor and generators follow the project contract                     |
+
+### What 1.0 does **not** freeze
+
+- Internal `@atlas/project` loader implementation and unpublished workspace internals
+- Doctor diagnostic code inventory beyond fail-closed contract drift
+- UI component visuals, Storybook, and docs copy that are not CLI/project/upgrade/distribution
+  contracts
+- `atlas sync infrastructure` checkout-repair details (supported, but not the public onboarding API)
+- Generator file interiors after the shell is written (product code is consumer-owned)
+
+### Changeset convention after this decision
+
+| Change type                         | Changeset bump            | Example         |
+| ----------------------------------- | ------------------------- | --------------- |
+| Bug fix / small non-breaking        | **patch**                 | `1.0.0 → 1.0.1` |
+| Compatible feature                  | **minor**                 | `1.0.0 → 1.1.0` |
+| Breaking public 1.0 contract        | **major**                 | `1.0.0 → 2.0.0` |
+| `0.5.0` → first public distribution | **major** (this decision) | `0.5.0 → 1.0.0` |
 
 ### Historical / internal tags
 
-| Tag                | Meaning                                             |
-| ------------------ | --------------------------------------------------- |
-| `v0.1.0-pre-split` | Internal pre-split snapshot                         |
-| `v1.0.0-platform`  | Internal milestone — **not** a public `1.0` promise |
+| Tag                | Meaning                                                 |
+| ------------------ | ------------------------------------------------------- |
+| `v0.1.0-pre-split` | Internal pre-split snapshot                             |
+| `v1.0.0-platform`  | Internal milestone — **not** the public `v1.0.0` tag    |
+| `v0.2.0`–`v0.5.0`  | Proving-line GitHub Releases; not the first npm package |
 
-Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v0.2.0`). `0.1.0` remains a historical
-internal snapshot and must not receive a public tag.
+Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v1.0.0`). `0.1.0` remains a historical
+internal snapshot and must not receive a public tag. `v1.0.0-platform` is not `v1.0.0`.
 
 ---
 
@@ -95,7 +126,8 @@ A deliberate tagged snapshot at one SemVer version. Intended contents:
 | Artifact            | Status                  | Notes                                                                          |
 | ------------------- | ----------------------- | ------------------------------------------------------------------------------ |
 | Git tag `vX.Y.Z`    | After Version PR merge  | Never retagged; never `v0.1.0`                                                 |
-| GitHub Release      | After Version PR merge  | Fail-closed notes + SBOM; no npm publish                                       |
+| GitHub Release      | After Version PR merge  | Fail-closed notes + SBOM                                                       |
+| npm package         | After GitHub Release    | Exact validated `@blitzcraftlabs/atlas` tarball; OIDC after first publication  |
 | Root `CHANGELOG.md` | Yes                     | Canonical history                                                              |
 | Migration notes     | When needed             | `docs/migrations/`                                                             |
 | SPDX SBOM snapshot  | Yes                     | Workflow artifact and GitHub Release asset; 90-day workflow retention          |
@@ -107,16 +139,16 @@ A deliberate tagged snapshot at one SemVer version. Intended contents:
 
 | Item                | Format            | Example       |
 | ------------------- | ----------------- | ------------- |
-| Canonical tag       | `vX.Y.Z`          | `v0.2.0`      |
-| GitHub Release name | `Atlas {version}` | `Atlas 0.2.0` |
+| Canonical tag       | `vX.Y.Z`          | `v1.0.0`      |
+| GitHub Release name | `Atlas {version}` | `Atlas 1.0.0` |
 | Not used            | `@atlas/ui@x.y.z` | Misleading    |
 
 ### GitHub Release prerelease semantics
 
-- `0.2.0` is a **normal** SemVer release — **not** a GitHub prerelease.
-- Only versions with a SemVer **prerelease component** are GitHub prereleases, e.g. `0.2.0-rc.1`.
+- `1.0.0` is a **normal** SemVer release — **not** a GitHub prerelease.
+- Only versions with a SemVer **prerelease component** are GitHub prereleases, e.g. `1.0.0-rc.1`.
 
-GitHub Release publication uses the SemVer prerelease component, not the `0.x` major line alone.
+GitHub Release publication uses the SemVer prerelease component, not the major line alone.
 
 ---
 
@@ -125,7 +157,7 @@ GitHub Release publication uses the SemVer prerelease component, not the `0.x` m
 ### Day-to-day
 
 1. Add a changeset in your PR: `pnpm changeset`
-2. Use the pre-1.0 bump convention above.
+2. Use the post-1.0 bump convention above (this decision uses **major** to reach `1.0.0`).
 3. Include migration steps in the changeset body for breaking changes.
 
 ### Version PR (automated on `main`)
@@ -136,6 +168,7 @@ When changesets merge to `main`, the Release workflow opens/updates a Version PR
 - Bumps all workspace packages to the same version (fixed group)
 - Consolidates release notes into root [`CHANGELOG.md`](../../CHANGELOG.md)
 - Consumes changeset files
+- Generates the production release snapshot for the new version (including `1.0.0`)
 
 The Version PR must pass normal CI and Governance. It does not create a Git tag. While the Version
 PR job reports pending changesets, the Publish GitHub Release job is skipped. Publication still
@@ -173,11 +206,59 @@ After the Version PR merges to `main`, the Release workflow publishes fail-close
 9. No-op when the current version is already published with required assets at this SHA, or at a
    proven ancestor of current `main` after post-release commits
 10. Repair a missing Release or missing required SBOM at the same SHA without retagging
+11. The `npm-publish` job then packs one `@blitzcraftlabs/atlas` tarball, validates it, and either
+    no-ops, requires the first-publish bootstrap, or publishes that exact file with OIDC
 
-Internal `@atlas/*` workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the
-public CLI package identity and is publication-ready, but the GitHub Release workflow does not
-publish it to the registry. Publication does not claim signed provenance, SLSA, or a formal security
-audit.
+The npm job is not a second versioning system. It distributes the same Atlas version that the GitHub
+Release already recorded.
+
+Internal `@atlas/*` workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the only
+public npm package. After the GitHub Release job completes, a separate `npm-publish` job packs
+**one** tarball, validates that exact file, and then:
+
+1. **No-op** if `@blitzcraftlabs/atlas@<version>` already exists on npm
+2. **Bootstrap skip** if the package does not exist yet (Trusted Publishing cannot create the first
+   package). Maintainers publish the validated `.tgz` from the **canonical `v1.0.0` tag checkout**
+   with a human-authenticated `npm publish` of that file — never a rebuilt copy of `packages/cli`
+   and never a `0.5.0` artifact
+3. **OIDC publish** of that same `.tgz` with provenance when the package exists and the version is
+   unpublished
+
+The npm job requests `id-token: write` only. It does not use `NPM_TOKEN`, does not run on pull
+requests or `workflow_dispatch`, and does not publish internal `@atlas/*` workspaces.
+
+### First npm publication
+
+The first public npm version is **`@blitzcraftlabs/atlas@1.0.0`**, packed from canonical Git tag
+`v1.0.0` after the GitHub Release exists. Do not publish `0.5.0`. Artifact hashes do not exist until
+that tag exists; do not pack from this feature branch.
+
+```bash
+git fetch --tags
+git worktree add /tmp/atlas-v1.0.0 v1.0.0
+cd /tmp/atlas-v1.0.0
+pnpm install --frozen-lockfile
+pnpm distribution:prepare-publish --require-release-tag
+# prints tarball path, bytes, sha256, tag, commit SHA, and:
+npm publish <printed-tarball> --access public --ignore-scripts
+pnpm distribution:verify-registry 1.0.0
+```
+
+Then configure npm Trusted Publishing on `@blitzcraftlabs/atlas`:
+
+| Field             | Value            |
+| ----------------- | ---------------- |
+| Provider          | GitHub Actions   |
+| Organization/user | `blitzcraftlabs` |
+| Repository        | `atlas`          |
+| Workflow filename | `release.yml`    |
+| Allowed action    | `npm publish`    |
+
+Subsequent Atlas versions publish from GitHub Actions OIDC. Do not document
+`pnpm dlx @blitzcraftlabs/atlas` as a public install path until registry verification has passed.
+
+Publication does not claim SLSA or a formal security audit. npm provenance is generated
+automatically for OIDC publishes from this public repository.
 
 ### Rehearsal
 
@@ -197,6 +278,9 @@ pnpm changeset:status
 pnpm changeset:version   # local only; CI uses this in Version PR
 pnpm governance:check
 pnpm release:rehearse
+pnpm distribution:prepare-publish --require-release-tag
+pnpm distribution:publish-npm --dry-run
+pnpm distribution:verify-registry <version>
 pnpm docs:check          # documentation links
 ```
 
@@ -237,9 +321,10 @@ After `changeset version`, `scripts/consolidate-atlas-release.mjs`:
 | ------------------------------ | -------------------------------------------------------------------------------- |
 | Supported line                 | Current Atlas release plus the immediately previous supported production release |
 | Security / compatibility fixes | Prioritized for the latest supported release                                     |
-| Older pre-1.0 snapshots        | Rehearsal `0.1.0` / `0.2.0` are not production upgrade support                   |
+| Older 0.x snapshots            | Rehearsal `0.1.0` / `0.2.0` are not production upgrade support                   |
+| Adjacent 1.0 upgrade           | `0.5.0` → `1.0.0` once both production snapshots are packaged                    |
 | LTS                            | **No LTS programme** at this stage                                               |
-| npm CLI                        | Not published yet; intended identity `@blitzcraftlabs/atlas`                     |
+| npm CLI                        | First public version is `@blitzcraftlabs/atlas@1.0.0` after GitHub `v1.0.0`      |
 
 ---
 
@@ -252,17 +337,17 @@ Breaking changes must document:
 
 ### Where to document
 
-1. Changeset body (**minor** bump pre-1.0)
+1. Changeset body (**major** bump after 1.0; **minor** was the 0.x proving-line convention)
 2. Root changelog under `### Breaking Changes`
 3. `docs/migrations/` when steps are non-trivial
 
 ### Deprecation
 
-| Stage                    | Expectation                                                |
-| ------------------------ | ---------------------------------------------------------- |
-| Announced                | Changelog + `@deprecated` JSDoc when applicable            |
-| Minimum notice (pre-1.0) | At least one minor release before removal when practicable |
-| Owner                    | PR author or named maintainer in migration doc             |
+| Stage          | Expectation                                                |
+| -------------- | ---------------------------------------------------------- |
+| Announced      | Changelog + `@deprecated` JSDoc when applicable            |
+| Minimum notice | At least one minor release before removal when practicable |
+| Owner          | PR author or named maintainer in migration doc             |
 
 See [`docs/migrations/README.md`](../migrations/README.md).
 
@@ -288,12 +373,13 @@ products. All workspace packages share one version via a **fixed** changeset gro
 
 ## Quick reference
 
-| Question                        | Answer                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| License?                        | Apache-2.0 ([`LICENSE`](../../LICENSE))                                 |
-| Public repo today?              | Yes — [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas) |
-| Versioned product?              | Atlas repository snapshot                                               |
-| Tag format?                     | `vX.Y.Z`                                                                |
-| Breaking change bump (pre-1.0)? | **minor** changeset                                                     |
-| npm publish?                    | No                                                                      |
-| GitHub Release today?           | After Version PR merge (`vX.Y.Z`); never `v0.1.0`                       |
+| Question                     | Answer                                                                              |
+| ---------------------------- | ----------------------------------------------------------------------------------- |
+| License?                     | Apache-2.0 ([`LICENSE`](../../LICENSE))                                             |
+| Public repo today?           | Yes — [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas)             |
+| Versioned product?           | Atlas repository snapshot                                                           |
+| Tag format?                  | `vX.Y.Z`                                                                            |
+| Next canonical release?      | `1.0.0` via Changesets **major**                                                    |
+| Breaking change bump (1.0+)? | **major** changeset                                                                 |
+| npm publish?                 | `@blitzcraftlabs/atlas` only; first version is canonical `v1.0.0` tarball bootstrap |
+| GitHub Release today?        | After Version PR merge (`vX.Y.Z`); never `v0.1.0`                                   |

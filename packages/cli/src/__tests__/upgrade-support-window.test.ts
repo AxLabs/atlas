@@ -17,7 +17,10 @@ describe("production upgrade support window", () => {
       "0.4.0",
       "0.5.0",
     ]);
-    expect(selectSupportedReleaseWindow("0.4.0", ["0.4.0"])).toEqual(["0.4.0"]);
+    expect(selectSupportedReleaseWindow("1.0.0", ["0.4.0", "0.5.0", "1.0.0"])).toEqual([
+      "0.5.0",
+      "1.0.0",
+    ]);
   });
 
   it("never treats rehearsal 0.1.0/0.2.0 as production support", () => {

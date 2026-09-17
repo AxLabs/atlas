@@ -244,8 +244,9 @@ and evaluate it.
 
 - **Accepted:** Public forks and inspections
 - **Accepted:** Internal `@atlas/*` workspaces stay unpublished npm internals
-- **Accepted:** `@blitzcraftlabs/atlas` is the public CLI identity and is not yet on the npm
-  registry
+- **Accepted:** `@blitzcraftlabs/atlas` is the public CLI identity; first npm publication is
+  canonical `@blitzcraftlabs/atlas@1.0.0` from Git tag `v1.0.0`. In-repo Trusted Publishing is
+  prepared; `pnpm dlx` is not live until registry verification passes.
 - **Mitigated:** Qualified claims and the claims register constrain overstatement
 
 ---
@@ -255,8 +256,8 @@ and evaluate it.
 ### Decision
 
 Atlas uses a monorepo with shared packages. Internal `@atlas/*` packages remain source-owned and
-unpublished. `@blitzcraftlabs/atlas` is the public CLI distribution identity and is not yet
-published to npm.
+unpublished. `@blitzcraftlabs/atlas` is the public CLI distribution identity. The first public npm
+version is `1.0.0`. It is not yet published; do not treat `pnpm dlx @blitzcraftlabs/atlas` as live.
 
 ### Why
 

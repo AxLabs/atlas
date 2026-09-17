@@ -67,6 +67,27 @@ describe("version consistency", () => {
     assert.match(errors.join("\n"), /no section for current Atlas version 0\.2\.0/);
   });
 
+  it("accepts 1.0.0 as a valid publication identity", () => {
+    const errors = collectVersionConsistencyErrors({
+      rootVersion: "1.0.0",
+      workspaceVersions: [
+        { name: "@atlas/web", version: "1.0.0" },
+        { name: "@atlas/ui", version: "1.0.0" },
+      ],
+      changelog: `# Changelog
+
+## [Unreleased]
+
+## [1.0.0] - 2026-09-17
+
+### Added
+- First supported public distribution
+`,
+      proposedTag: "v1.0.0",
+    });
+    assert.deepEqual(errors, []);
+  });
+
   it("fails when tag version != package version", () => {
     const errors = collectVersionConsistencyErrors({
       rootVersion: "0.2.0",
@@ -654,6 +675,29 @@ describe("release notes", () => {
     assert.match(notes, /Commit: `abc123`/);
     assert.match(notes, /\*\*not\*\* published to npm/);
     assert.match(notes, /does \*\*not\*\* include signed provenance, SLSA attestation/);
+    assert.match(notes, /pre-1\.0 repository\/platform snapshot/);
+  });
+
+  it("frames 1.0.0 as the first supported public distribution without claiming LTS or audit completion", () => {
+    const notes = buildCanonicalReleaseNotes(
+      `# Changelog
+
+## [Unreleased]
+
+## [1.0.0] - 2026-09-17
+
+### Added
+- First supported public distribution
+`,
+      "1.0.0",
+      { commitSha: "def456", firstCanonicalPublicRelease: false }
+    );
+    assert.match(notes, /first supported public distribution/);
+    assert.match(notes, /0\.x GitHub releases were the platform-development\/proving line/);
+    assert.match(notes, /Breaking public-contract changes after 1\.0 require a major version/);
+    assert.match(notes, /No LTS programme/);
+    assert.doesNotMatch(notes, /formal security audit completed/);
+    assert.doesNotMatch(notes, /Atlas remains pre-1\.0/);
   });
 
   it("detects first canonical public release from empty GitHub state", () => {
