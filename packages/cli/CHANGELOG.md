@@ -1,5 +1,21 @@
 # @blitzcraftlabs/atlas
 
+## 0.5.0
+
+### Minor Changes
+
+- e64f4ce: Prepare `@blitzcraftlabs/atlas` as Atlas's public npm CLI package. The `atlas` binary,
+  pack allowlist, and GitHub Release workflow stay the same; this change makes the package identity
+  and metadata publication-ready without publishing to the registry.
+
+### Patch Changes
+
+- 52baf97: Load production upgrade snapshots from the installed `@blitzcraftlabs/atlas` package
+  instead of a consumer `releases/` tree, and fail closed for unsupported or missing packaged
+  release evidence.
+- b37e3f7: Build `@atlas/project` before generating a production release snapshot so Version PRs
+  succeed after `pnpm install --frozen-lockfile` without a prior workspace build.
+
 ## 0.4.0
 
 ### Minor Changes
