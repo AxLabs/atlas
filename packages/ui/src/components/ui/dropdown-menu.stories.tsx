@@ -235,13 +235,21 @@ export const KeyboardInteraction: Story = {
     const canvas = within(canvasElement);
     const trigger = await canvas.findByRole("button", { name: "Open menu" });
 
-    await userEvent.click(trigger);
+    // Keyboard-open highlights the first item. Pointer-open often leaves highlight unset, so the
+    // next ArrowDown lands on Profile and ArrowUp wraps to Logout (`loopFocus`).
+    trigger.focus();
+    await userEvent.keyboard("{ArrowDown}");
     await screen.findByRole("menu");
 
-    // Base UI auto-highlights the first item (Profile) when the menu opens; ArrowDown moves to
-    // Settings. Navigate down then back up to land on Profile, then Enter to activate it.
+    const profileItem = () => screen.getByRole("menuitem", { name: "Profile" });
+    const settingsItem = () => screen.getByRole("menuitem", { name: "Settings" });
+
+    await waitFor(() => expect(profileItem()).toHaveAttribute("data-highlighted"));
+    // Navigate down then back up to land on Profile, then Enter to activate it.
     await userEvent.keyboard("{ArrowDown}");
+    await waitFor(() => expect(settingsItem()).toHaveAttribute("data-highlighted"));
     await userEvent.keyboard("{ArrowUp}");
+    await waitFor(() => expect(profileItem()).toHaveAttribute("data-highlighted"));
     await userEvent.keyboard("{Enter}");
     await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();
