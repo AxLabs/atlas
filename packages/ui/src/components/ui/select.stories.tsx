@@ -1,5 +1,7 @@
 import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
+import { skipStoryPlay } from "../../lib/skip-story-play";
+
 import { Label } from "./label";
 import {
   Select,
@@ -149,6 +151,9 @@ export const KeyboardInteraction: Story = {
     </Select>
   ),
   play: async ({ canvasElement }) => {
+    if (skipStoryPlay()) {
+      return;
+    }
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole("combobox", { name: "Framework" });
 

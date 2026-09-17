@@ -1,5 +1,7 @@
 import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
+import { skipStoryPlay } from "../../lib/skip-story-play";
+
 import { Button } from "./button";
 import {
   Dialog,
@@ -145,6 +147,9 @@ export const KeyboardInteraction: Story = {
     </Dialog>
   ),
   play: async ({ canvasElement }) => {
+    if (skipStoryPlay()) {
+      return;
+    }
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole("button", { name: "Open Dialog" });
 

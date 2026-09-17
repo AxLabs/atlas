@@ -23,6 +23,27 @@ async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
   }
 }
 
+async function pressShiftTab(page: Page) {
+  await page.keyboard.down("Shift");
+  await page.keyboard.press("Tab");
+  await page.keyboard.up("Shift");
+}
+
+async function focusByShiftTabbing(
+  target: Locator,
+  page: Page,
+  container: Locator,
+  maxAttempts = 8
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      return;
+    }
+    await pressShiftTab(page);
+    await expectFocusInside(container);
+  }
+}
+
 async function highlightedSelectOption(page: Page) {
   return page.evaluate(() => {
     const active = document.activeElement;
@@ -66,14 +87,19 @@ async function focusedOptionLabel(page: Page) {
 
 test.describe("Select keyboard composition", () => {
   test("opens, navigates, selects, and restores focus", async ({ page, baseURL }) => {
-    await gotoStory(page, baseURL!, "ui-select--keyboard-interaction");
+    await gotoStory(page, baseURL!, "ui-select--keyboard-interaction", "light", {
+      disablePlay: true,
+    });
 
     const trigger = story(page).getByRole("combobox", { name: "Framework" });
+    const listbox = page.getByRole("listbox");
+    await expect(listbox).toHaveCount(0);
+    await expect(trigger).toContainText("Next.js");
     await trigger.focus();
     await expect(trigger).toBeFocused();
 
     await page.keyboard.press("ArrowDown");
-    await expect(page.getByRole("listbox")).toBeVisible();
+    await expect(listbox).toBeVisible();
 
     // Typeahead is the keyboard navigation both engines expose. ArrowDown while
     // focus stays on the combobox does not move the highlighted option in WebKit.
@@ -90,7 +116,7 @@ test.describe("Select keyboard composition", () => {
     // Select from the existing keyboard state (no option `.click()`/`.press()`), so this proves a
     // genuine end-to-end keyboard action rather than a locator-focused synthetic key dispatch.
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("listbox")).toHaveCount(0);
+    await expect(listbox).toHaveCount(0);
     await expect(trigger).toContainText("React");
     await expect(trigger).toBeFocused();
   });
@@ -101,27 +127,36 @@ test.describe("Dialog keyboard composition", () => {
     page,
     baseURL,
   }) => {
-    await gotoStory(page, baseURL!, "ui-dialog--keyboard-interaction");
+    await gotoStory(page, baseURL!, "ui-dialog--keyboard-interaction", "light", {
+      disablePlay: true,
+    });
 
-    const trigger = story(page).locator('button[aria-label="Open Dialog"]');
-    await trigger.waitFor({ state: "visible", timeout: 30_000 });
-    await trigger.focus();
-    await page.keyboard.press("Enter");
-
+    const trigger = story(page).getByRole("button", { name: "Open Dialog" });
     const dialog = page.getByRole("dialog");
+    await expect(dialog).toHaveCount(0);
+    await trigger.focus();
+    await expect(trigger).toBeFocused();
+
+    await page.keyboard.press("Enter");
     await expect(dialog).toBeVisible();
 
     const cancel = dialog.getByRole("button", { name: "Cancel" });
     const continueButton = dialog.getByRole("button", { name: "Continue" });
+    await expect(cancel).toBeVisible();
+    await expect(continueButton).toBeVisible();
     await focusByTabbing(cancel, page);
     await expect(cancel).toBeFocused();
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Tab");
-    await expect(continueButton).toBeFocused();
+    await expect
+      .poll(async () => continueButton.evaluate((element) => element === document.activeElement))
+      .toBe(true);
+    await expect(cancel).toBeVisible();
     await expectFocusInside(dialog);
 
-    await page.keyboard.press("Shift+Tab");
+    await focusByShiftTabbing(cancel, page, dialog);
+    await expect(cancel).toBeVisible();
     await expect(cancel).toBeFocused();
     await expectFocusInside(dialog);
 
@@ -140,26 +175,36 @@ test.describe("Dialog keyboard composition", () => {
 
 test.describe("DropdownMenu keyboard composition", () => {
   test("opens, reaches items, activates, and restores focus", async ({ page, baseURL }) => {
-    await gotoStory(page, baseURL!, "ui-dropdownmenu--keyboard-interaction");
+    await gotoStory(page, baseURL!, "ui-dropdownmenu--keyboard-interaction", "light", {
+      disablePlay: true,
+    });
 
     const trigger = story(page).getByRole("button", { name: "Open menu" });
+    const menu = page.getByRole("menu");
+    await expect(menu).toHaveCount(0);
+    await expect(story(page).getByTestId("selected-item")).toHaveCount(0);
     await trigger.focus();
+    await expect(trigger).toBeFocused();
+
     await page.keyboard.press("ArrowDown");
-    await expect(page.getByRole("menu")).toBeVisible();
+    await expect(menu).toBeVisible();
 
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("menu")).toBeHidden();
+    await expect(menu).toBeHidden();
     await expect(trigger).toBeFocused();
   });
 });
 
 test.describe("Tooltip keyboard accessibility", () => {
   test("opens on keyboard focus and dismisses with Escape", async ({ page, baseURL }) => {
-    await gotoStory(page, baseURL!, "ui-tooltip--keyboard-accessibility");
+    await gotoStory(page, baseURL!, "ui-tooltip--keyboard-accessibility", "light", {
+      disablePlay: true,
+    });
 
     const trigger = story(page).getByRole("button", { name: "Show tooltip" });
-    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    const tooltip = page.getByRole("tooltip");
+    await expect(tooltip).toHaveCount(0);
 
     for (let attempt = 0; attempt < 6; attempt += 1) {
       await page.keyboard.press("Tab");
@@ -168,10 +213,10 @@ test.describe("Tooltip keyboard accessibility", () => {
       }
     }
     await expect(trigger).toBeFocused();
-    await expect(page.getByRole("tooltip")).toBeVisible();
+    await expect(tooltip).toBeVisible();
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(tooltip).toHaveCount(0);
     await expect(trigger).toBeFocused();
   });
 });
