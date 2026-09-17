@@ -255,8 +255,13 @@ function checkReleaseWorkflow() {
     if (!/needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/.test(npmPublishJob)) {
       fail("npm-publish job must skip publication when version-pr reports pending changesets");
     }
-    if (!/distribution:verify-registry/.test(npmPublishJob)) {
-      fail("npm-publish job must verify the published package from the npm registry");
+    if (!/fetch-tags:\s*true/.test(npmPublishJob)) {
+      fail("npm-publish job must fetch git tags so HEAD can be the exact canonical vX.Y.Z tag");
+    }
+    if (!/steps\.npm\.outputs\.action\s*!=\s*'noop'/.test(npmPublishJob)) {
+      fail(
+        "npm-publish must not require a packed tarball when the exact npm version already exists"
+      );
     }
     if (/workflow_dispatch/.test(npmPublishJob)) {
       fail("npm-publish job must not run on workflow_dispatch");
@@ -283,13 +288,19 @@ function checkReleaseWorkflow() {
     if (!npmPublicationLib.includes("stripNpmAuthEnv")) {
       fail("npm publication library must strip long-lived npm tokens before OIDC publish");
     }
-    if (!npmPublisher.includes("GITHUB_ACTIONS")) {
+    if (!npmPublicationLib.includes("runNpmPublication")) {
+      fail("npm publication library must orchestrate query-first publication");
+    }
+    if (!npmPublicationLib.includes("requireReleaseTag: true")) {
+      fail("unpublished npm versions must pack with requireReleaseTag: true");
+    }
+    if (!npmPublisher.includes("GITHUB_ACTIONS") && !npmPublicationLib.includes("GITHUB_ACTIONS")) {
       fail("npm publisher must refuse OIDC publish outside GitHub Actions");
     }
-    if (!npmPublisher.includes("packExactPublicCliTarball")) {
-      fail("npm publisher must publish the exact packed tarball it validated");
+    if (!npmPublisher.includes("runNpmPublication")) {
+      fail("npm publisher must orchestrate through runNpmPublication");
     }
-    if (!npmPublisher.includes("publishExactTarball")) {
+    if (!npmPublicationLib.includes("publishExactTarball")) {
       fail("npm publisher must publish the hashed tarball rather than rebuilding");
     }
   }

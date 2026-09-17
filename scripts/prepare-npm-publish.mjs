@@ -11,9 +11,11 @@ import { PUBLIC_CLI_PACKAGE_NAME } from "./atlas-workspaces.mjs";
 import { resolveAtlasRepoRoot } from "./lib/distribution-clean-room.mjs";
 import {
   NPM_ARTIFACT_RELATIVE_DIR,
+  assertPublicationIdentity,
   buildManualPublishCommand,
   packExactPublicCliTarball,
   queryNpmPackageVersion,
+  readPublicationIdentity,
   writePublishManifest,
 } from "./lib/npm-publication.mjs";
 
@@ -37,8 +39,9 @@ canonical Git tag:
   pnpm distribution:prepare-publish --require-release-tag
 
 --skip-build            Pack the already-built CLI dist without rebuilding.
---require-release-tag   Fail unless HEAD is the exact vX.Y.Z tag matching the
-                        package version and the working tree is clean.
+--require-release-tag   Always enforced: fail unless HEAD is the exact vX.Y.Z
+                        tag matching the package version and the working tree
+                        is clean. Accepted for documented invocations.
 `);
 }
 
@@ -66,17 +69,20 @@ async function main(argv = process.argv.slice(2)) {
   }
 
   const repoRoot = resolveAtlasRepoRoot(path.dirname(scriptPath));
+  const identity = readPublicationIdentity(repoRoot);
+  assertPublicationIdentity(identity);
+  const registry = await queryNpmPackageVersion({ version: identity.version });
+  if (registry.versionExists) {
+    throw new Error(
+      `${PUBLIC_CLI_PACKAGE_NAME}@${identity.version} already exists on npm. Refusing to prepare a duplicate publication.`
+    );
+  }
+
   const packed = packExactPublicCliTarball({
     repoRoot,
     skipBuild: options.skipBuild,
-    requireReleaseTag: options.requireReleaseTag,
+    requireReleaseTag: true,
   });
-  const registry = await queryNpmPackageVersion({ version: packed.identity.version });
-  if (registry.versionExists) {
-    throw new Error(
-      `${PUBLIC_CLI_PACKAGE_NAME}@${packed.identity.version} already exists on npm. Refusing to prepare a duplicate publication.`
-    );
-  }
 
   const command = buildManualPublishCommand(packed.tarballPath);
   const manifestPath = packed.tarballPath.replace(/\.tgz$/, ".publish.json");
@@ -91,7 +97,7 @@ async function main(argv = process.argv.slice(2)) {
     bytes: packed.bytes,
     registry: registry.status,
     manualPublishCommand: command,
-    requireReleaseTag: options.requireReleaseTag,
+    requireReleaseTag: true,
     note: "Publish this exact tarball from the canonical Git tag. Do not rebuild and do not publish a different file.",
   });
 

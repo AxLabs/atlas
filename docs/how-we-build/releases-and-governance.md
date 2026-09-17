@@ -206,23 +206,27 @@ After the Version PR merges to `main`, the Release workflow publishes fail-close
 9. No-op when the current version is already published with required assets at this SHA, or at a
    proven ancestor of current `main` after post-release commits
 10. Repair a missing Release or missing required SBOM at the same SHA without retagging
-11. The `npm-publish` job then packs one `@blitzcraftlabs/atlas` tarball, validates it, and either
-    no-ops, requires the first-publish bootstrap, or publishes that exact file with OIDC
+11. The `npm-publish` job queries npm for the current Atlas version. If that exact version already
+    exists, it no-ops without packing. If the package or version is missing, it requires HEAD to be
+    the exact canonical `vX.Y.Z` tag, packs one `@blitzcraftlabs/atlas` tarball from that checkout,
+    validates it, and either requires the first-publish bootstrap or publishes that exact file with
+    OIDC. Untagged later `main` commits cannot publish a missing version.
 
 The npm job is not a second versioning system. It distributes the same Atlas version that the GitHub
 Release already recorded.
 
 Internal `@atlas/*` workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the only
-public npm package. After the GitHub Release job completes, a separate `npm-publish` job packs
-**one** tarball, validates that exact file, and then:
+public npm package. After the GitHub Release job completes, a separate `npm-publish` job:
 
-1. **No-op** if `@blitzcraftlabs/atlas@<version>` already exists on npm
+1. **No-op** if `@blitzcraftlabs/atlas@<version>` already exists on npm — without rebuilding or
+   uploading a new tarball from later `main`
 2. **Bootstrap skip** if the package does not exist yet (Trusted Publishing cannot create the first
-   package). Maintainers publish the validated `.tgz` from the **canonical `v1.0.0` tag checkout**
-   with a human-authenticated `npm publish` of that file — never a rebuilt copy of `packages/cli`
-   and never a `0.5.0` artifact
-3. **OIDC publish** of that same `.tgz` with provenance when the package exists and the version is
-   unpublished
+   package). The job still packs only from the exact canonical tag. Maintainers publish that
+   validated `.tgz` with a human-authenticated `npm publish` of that file — never a rebuilt copy of
+   `packages/cli` and never a `0.5.0` artifact
+3. **OIDC publish** of that same `.tgz` with npm provenance when the package exists, the version is
+   unpublished, and HEAD is the exact matching `vX.Y.Z` tag. npm provenance is not a GitHub Release
+   attestation and is not SLSA
 
 The npm job requests `id-token: write` only. It does not use `NPM_TOKEN`, does not run on pull
 requests or `workflow_dispatch`, and does not publish internal `@atlas/*` workspaces.

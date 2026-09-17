@@ -21,7 +21,10 @@ import {
   compareDotVersions,
   decideNpmPublicationAction,
   expectedGitTag,
+  hashFileSha256,
+  publishExactTarball,
   queryNpmPackageVersion,
+  runNpmPublication,
   stripNpmAuthEnv,
 } from "../lib/npm-publication.mjs";
 
@@ -265,5 +268,244 @@ describe("canonical release checkout", () => {
       porcelain: "",
     });
     assert.match(untagged.join("\n"), /not the exact git tag v1\.0\.0/);
+
+    const wrongTag = collectCanonicalReleaseCheckoutIssues({
+      expectedTag: "v1.0.0",
+      headSha: "abc123",
+      exactTag: "v0.5.0",
+      taggedSha: "abc123",
+      porcelain: "",
+    });
+    assert.match(wrongTag.join("\n"), /exact tag is v0\.5\.0, expected v1\.0\.0/);
+
+    const shaMismatch = collectCanonicalReleaseCheckoutIssues({
+      expectedTag: "v1.0.0",
+      headSha: "abc123",
+      exactTag: "v1.0.0",
+      taggedSha: "def456",
+      porcelain: "",
+    });
+    assert.match(shaMismatch.join("\n"), /does not match v1\.0\.0 commit/);
+  });
+});
+
+describe("npm publication orchestration", () => {
+  const identity = {
+    packageName: PUBLIC_CLI_PACKAGE_NAME,
+    version: "1.1.0",
+    rootVersion: "1.1.0",
+    cliVersion: "1.1.0",
+    tag: "v1.1.0",
+  };
+  const packed = {
+    identity,
+    checkout: {
+      expectedTag: "v1.1.0",
+      headSha: "abc123",
+      exactTag: "v1.1.0",
+      taggedSha: "abc123",
+      porcelain: "",
+    },
+    tarballPath: "/tmp/artifacts/npm/blitzcraftlabs-atlas-1.1.0.tgz",
+    tarballName: "blitzcraftlabs-atlas-1.1.0.tgz",
+    sha256: "a".repeat(64),
+    bytes: 42,
+  };
+
+  function silent() {
+    return { write() {} };
+  }
+
+  async function run(overrides = {}) {
+    const calls = { pack: 0, checkout: 0, publish: 0, packOptions: null };
+    const result = await runNpmPublication({
+      repoRoot: "/tmp/atlas-fake",
+      dryRun: true,
+      oidc: false,
+      githubActions: true,
+      nodeVersion: "22.14.0",
+      npmVersion: "11.5.1",
+      stdout: silent(),
+      readIdentity: () => identity,
+      assertPrivateWorkspaces: () => {},
+      queryRegistry: async () => ({
+        packageExists: true,
+        versionExists: false,
+        status: "version-missing",
+      }),
+      assertCheckout: () => {
+        calls.checkout += 1;
+        return packed.checkout;
+      },
+      packTarball: (options) => {
+        calls.pack += 1;
+        calls.packOptions = options;
+        return packed;
+      },
+      hashFile: () => packed.sha256,
+      publishTarball: () => {
+        calls.publish += 1;
+      },
+      writeManifest: () => {},
+      appendOutput: () => {},
+      ...overrides,
+    });
+    return { result, calls };
+  }
+
+  it("no-ops an already-published version from untagged later main without packing", async () => {
+    const manifests = [];
+    const { result, calls } = await run({
+      queryRegistry: async () => ({
+        packageExists: true,
+        versionExists: true,
+        status: "version-exists",
+      }),
+      assertCheckout: () => {
+        throw new Error("already-published versions must not require the historical tag");
+      },
+      packTarball: () => {
+        throw new Error("already-published versions must not rebuild a historical tarball");
+      },
+      writeManifest: (_file, data) => {
+        manifests.push(data);
+      },
+    });
+    assert.equal(result.action, NPM_PUBLICATION_ACTIONS.noop);
+    assert.equal(result.packed, null);
+    assert.equal(calls.pack, 0);
+    assert.equal(calls.publish, 0);
+    assert.deepEqual(manifests, []);
+  });
+
+  it("fails closed before packing when the npm version is missing and HEAD is untagged", async () => {
+    const packCalls = { count: 0 };
+    await assert.rejects(
+      () =>
+        run({
+          assertCheckout: () => {
+            throw new Error(
+              "Refusing to pack a non-canonical checkout for v1.1.0:\nHEAD is not the exact git tag v1.1.0"
+            );
+          },
+          packTarball: () => {
+            packCalls.count += 1;
+            throw new Error("must not pack an untagged checkout");
+          },
+        }),
+      /not the exact git tag v1\.1\.0/
+    );
+    assert.equal(packCalls.count, 0);
+  });
+
+  it("fails closed when the npm version is missing and HEAD has the wrong tag", async () => {
+    await assert.rejects(
+      () =>
+        run({
+          assertCheckout: () => {
+            throw new Error(
+              "Refusing to pack a non-canonical checkout for v1.1.0:\nexact tag is v1.0.0, expected v1.1.0"
+            );
+          },
+          packTarball: () => {
+            throw new Error("must not pack from the wrong tag");
+          },
+        }),
+      /exact tag is v1\.0\.0/
+    );
+  });
+
+  it("fails closed when the npm version is missing and the exact-tag checkout is dirty", async () => {
+    await assert.rejects(
+      () =>
+        run({
+          assertCheckout: () => {
+            throw new Error(
+              "Refusing to pack a non-canonical checkout for v1.1.0:\nworking tree is dirty; pack the canonical release tag, not a local worktree"
+            );
+          },
+          packTarball: () => {
+            throw new Error("must not pack a dirty checkout");
+          },
+        }),
+      /working tree is dirty/
+    );
+  });
+
+  it("bootstraps from a clean exact tag when the package itself is missing", async () => {
+    const { result, calls } = await run({
+      queryRegistry: async () => ({
+        packageExists: false,
+        versionExists: false,
+        status: "missing-package",
+      }),
+    });
+    assert.equal(result.action, NPM_PUBLICATION_ACTIONS.bootstrapRequired);
+    assert.equal(calls.checkout, 1);
+    assert.equal(calls.pack, 1);
+    assert.equal(calls.packOptions.requireReleaseTag, true);
+    assert.equal(calls.publish, 0);
+    assert.equal(result.packed.sha256, packed.sha256);
+  });
+
+  it("can OIDC-publish from a clean exact tag when the package exists and the version is missing", async () => {
+    const { result, calls } = await run({
+      dryRun: false,
+      oidc: true,
+      githubActions: true,
+    });
+    assert.equal(result.action, NPM_PUBLICATION_ACTIONS.publish);
+    assert.equal(calls.checkout, 1);
+    assert.equal(calls.pack, 1);
+    assert.equal(calls.packOptions.requireReleaseTag, true);
+    assert.equal(calls.publish, 1);
+  });
+
+  it("refuses OIDC publish outside GitHub Actions", async () => {
+    await assert.rejects(
+      () =>
+        run({
+          dryRun: false,
+          oidc: true,
+          githubActions: false,
+        }),
+      /outside GitHub Actions/
+    );
+  });
+
+  it("refuses a substituted tarball after validation", async () => {
+    await assert.rejects(
+      () =>
+        run({
+          dryRun: false,
+          oidc: true,
+          githubActions: true,
+          hashFile: () => "b".repeat(64),
+          publishTarball: () => {
+            throw new Error("must not publish a substituted tarball");
+          },
+        }),
+      /Packed tarball changed after validation/
+    );
+  });
+});
+
+describe("exact tarball publish", () => {
+  it("refuses to publish a tarball whose SHA-256 no longer matches", () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "atlas-npm-sub-"));
+    const tarballPath = path.join(dir, "blitzcraftlabs-atlas-1.1.0.tgz");
+    writeFileSync(tarballPath, "canonical-bytes");
+    const expectedSha256 = hashFileSha256(tarballPath);
+    writeFileSync(tarballPath, "substituted-bytes");
+    assert.throws(
+      () =>
+        publishExactTarball({
+          tarballPath,
+          expectedSha256,
+          cwd: dir,
+          provenance: true,
+        }),
+      /substituted tarball/
+    );
   });
 });

@@ -499,8 +499,8 @@ function describeSupportLimitations(version) {
     "- Supported line: current Atlas release plus the immediately previous supported production release.",
     "- No LTS programme at this stage.",
     "- Internal `@atlas/*` workspace packages remain `private` and are **not** published to npm.",
-    "- `@blitzcraftlabs/atlas` is the public CLI package identity; this GitHub Release workflow does **not** publish it to the npm registry.",
-    "- This release does **not** include signed provenance, SLSA attestation, or a formal security audit.",
+    "- `@blitzcraftlabs/atlas` is the public npm package identity. npm distribution occurs after the canonical GitHub Release; registry availability is verified separately. The first npm publication requires the documented human bootstrap, while later releases may use Trusted Publishing.",
+    "- This GitHub Release does **not** include signed provenance, SLSA attestation, or a formal security audit. npm Trusted Publishing may attach npm provenance to later `@blitzcraftlabs/atlas` publishes; that is not a GitHub Release attestation and is not SLSA.",
   ];
 
   if (isPreOnePointZero(version)) {

@@ -714,6 +714,200 @@ export function decideNpmPublicationAction(state) {
 }
 
 /**
+ * Query npm first. Pack/publish only when the version is missing, and only
+ * from the exact canonical `vX.Y.Z` tag. Already-published versions no-op
+ * without rebuilding a historical artifact from later `main`.
+ *
+ * @param {{
+ *   repoRoot: string;
+ *   skipBuild?: boolean;
+ *   dryRun?: boolean;
+ *   oidc?: boolean;
+ *   githubActions?: boolean;
+ *   nodeVersion?: string;
+ *   npmVersion?: string;
+ *   queryRegistry?: typeof queryNpmPackageVersion;
+ *   packTarball?: typeof packExactPublicCliTarball;
+ *   publishTarball?: typeof publishExactTarball;
+ *   hashFile?: typeof hashFileSha256;
+ *   readIdentity?: typeof readPublicationIdentity;
+ *   assertPrivateWorkspaces?: typeof assertPrivateInternalWorkspaces;
+ *   assertCheckout?: typeof assertCanonicalReleaseCheckout;
+ *   writeManifest?: typeof writePublishManifest;
+ *   appendOutput?: typeof appendGithubOutput;
+ *   stdout?: { write(chunk: string): unknown };
+ * }} options
+ */
+export async function runNpmPublication(options) {
+  const repoRoot = options.repoRoot;
+  const skipBuild = options.skipBuild === true;
+  const dryRun = options.dryRun !== false;
+  const oidc = options.oidc === true;
+  const githubActions = options.githubActions ?? process.env.GITHUB_ACTIONS === "true";
+  const readIdentity = options.readIdentity ?? readPublicationIdentity;
+  const assertPrivateWorkspaces = options.assertPrivateWorkspaces ?? assertPrivateInternalWorkspaces;
+  const queryRegistry = options.queryRegistry ?? queryNpmPackageVersion;
+  const assertCheckout = options.assertCheckout ?? assertCanonicalReleaseCheckout;
+  const packTarball = options.packTarball ?? packExactPublicCliTarball;
+  const publishTarball = options.publishTarball ?? publishExactTarball;
+  const hashFile = options.hashFile ?? hashFileSha256;
+  const writeManifest = options.writeManifest ?? writePublishManifest;
+  const appendOutput = options.appendOutput ?? appendGithubOutput;
+  const stdout = options.stdout ?? process.stdout;
+
+  assertPrivateWorkspaces(repoRoot);
+  const identity = readIdentity(repoRoot);
+  assertPublicationIdentity(identity);
+
+  const registry = await queryRegistry({ version: identity.version });
+  const decision = decideNpmPublicationAction({
+    packageExists: registry.packageExists,
+    versionExists: registry.versionExists,
+  });
+
+  if (decision.action === NPM_PUBLICATION_ACTIONS.noop) {
+    appendOutput("action", decision.action);
+    appendOutput("version", identity.version);
+    appendOutput("tarball", "");
+    appendOutput("sha256", "");
+    stdout.write(
+      [
+        `npm publication decision: ${decision.action}`,
+        `  Package: ${PUBLIC_CLI_PACKAGE_NAME}@${identity.version}`,
+        `  Tag: ${identity.tag}`,
+        `  Registry: ${registry.status}`,
+        `  Reason: ${decision.reason}`,
+        "",
+        "✓ Exact npm version already published; no registry mutation and no rebuild",
+        "",
+      ].join("\n")
+    );
+    return {
+      action: decision.action,
+      reason: decision.reason,
+      identity,
+      registry,
+      packed: null,
+    };
+  }
+
+  const checkout = assertCheckout(repoRoot, identity.tag);
+  const packed = packTarball({
+    repoRoot,
+    skipBuild,
+    requireReleaseTag: true,
+  });
+  if (packed.identity.version !== identity.version || packed.identity.tag !== identity.tag) {
+    throw new Error(
+      `Packed identity ${packed.identity.packageName}@${packed.identity.version} does not match ${identity.packageName}@${identity.version}`
+    );
+  }
+
+  const frozenHash = hashFile(packed.tarballPath);
+  if (frozenHash !== packed.sha256) {
+    throw new Error("Packed tarball changed after validation");
+  }
+
+  const manifestPath = packed.tarballPath.replace(/\.tgz$/, ".publish.json");
+  writeManifest(manifestPath, {
+    packageName: packed.identity.packageName,
+    version: packed.identity.version,
+    tag: packed.identity.tag,
+    commitSha: packed.checkout?.headSha ?? checkout.headSha ?? null,
+    tarball: packed.tarballName,
+    tarballPath: packed.tarballPath,
+    sha256: packed.sha256,
+    bytes: packed.bytes,
+    action: decision.action,
+    reason: decision.reason,
+    registry: registry.status,
+    mode: dryRun ? "dry-run" : "oidc",
+  });
+
+  appendOutput("action", decision.action);
+  appendOutput("version", packed.identity.version);
+  appendOutput("tarball", packed.tarballPath);
+  appendOutput("sha256", packed.sha256);
+
+  stdout.write(
+    [
+      `npm publication decision: ${decision.action}`,
+      `  Package: ${PUBLIC_CLI_PACKAGE_NAME}@${packed.identity.version}`,
+      `  Tag: ${packed.identity.tag}`,
+      `  Commit: ${packed.checkout?.headSha ?? checkout.headSha ?? "(unknown)"}`,
+      `  Tarball: ${packed.tarballPath}`,
+      `  SHA-256: ${packed.sha256}`,
+      `  Registry: ${registry.status}`,
+      `  Reason: ${decision.reason}`,
+      "",
+    ].join("\n")
+  );
+
+  if (decision.action === NPM_PUBLICATION_ACTIONS.bootstrapRequired) {
+    stdout.write(
+      [
+        "✓ First publication bootstrap is required.",
+        "  From the canonical tag checkout, run `pnpm distribution:prepare-publish --require-release-tag`",
+        "  and publish the printed tarball with a human-authenticated `npm publish` of that exact file.",
+        "  Do not rebuild. Do not publish from packages/cli.",
+        "",
+      ].join("\n")
+    );
+    return {
+      action: decision.action,
+      reason: decision.reason,
+      identity: packed.identity,
+      registry,
+      packed,
+    };
+  }
+
+  if (dryRun || !oidc) {
+    stdout.write("✓ Publication prerequisites satisfied (dry-run; no npm mutation)\n");
+    return {
+      action: decision.action,
+      reason: decision.reason,
+      identity: packed.identity,
+      registry,
+      packed,
+    };
+  }
+
+  if (!githubActions) {
+    throw new Error("Refusing OIDC npm publish outside GitHub Actions");
+  }
+
+  const toolchainIssues = collectTrustedPublishingToolchainIssues({
+    nodeVersion: options.nodeVersion ?? process.versions.node,
+    npmVersion: options.npmVersion,
+  });
+  if (toolchainIssues.length > 0) {
+    throw new Error(
+      `Trusted Publishing toolchain is insufficient (need npm >= ${NPM_TRUSTED_PUBLISHING_MIN_NPM}):\n${toolchainIssues.join("\n")}`
+    );
+  }
+
+  if (hashFile(packed.tarballPath) !== packed.sha256) {
+    throw new Error("Tarball was substituted after the registry existence check");
+  }
+
+  publishTarball({
+    tarballPath: packed.tarballPath,
+    expectedSha256: packed.sha256,
+    cwd: repoRoot,
+    provenance: true,
+  });
+  stdout.write(`✓ Published ${PUBLIC_CLI_PACKAGE_NAME}@${packed.identity.version}\n`);
+  return {
+    action: decision.action,
+    reason: decision.reason,
+    identity: packed.identity,
+    registry,
+    packed,
+  };
+}
+
+/**
  * @param {{
  *   tarballPath: string;
  *   expectedSha256: string;

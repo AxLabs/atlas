@@ -152,9 +152,12 @@ as currently proven Atlas evidence.
 ## Security-fix propagation
 
 Documented in [`SECURITY.md`](../../SECURITY.md) and [upgrades.md](upgrades.md). Internal `@atlas/*`
-workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the public CLI package
-identity and is not published by the current GitHub Release workflow. Canonical GitHub Releases are
-published after a Version PR merges; they do not include signed provenance or npm publication.
+workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the public npm package
+identity. npm distribution occurs after the canonical GitHub Release; registry availability is
+verified separately. The first npm publication requires the documented human bootstrap of the exact
+canonical tarball, while later releases may use Trusted Publishing. Canonical GitHub Releases do not
+include signed provenance or SLSA attestation. npm provenance on later Trusted Publishing releases
+is not a GitHub Release attestation.
 
 ## Current limitations
 

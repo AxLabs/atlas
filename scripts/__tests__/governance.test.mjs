@@ -351,6 +351,8 @@ describe("release workflow policy", () => {
     assert.match(npmJob, /needs:[\s\S]*\bgithub-release\b/);
     assert.match(npmJob, /needs:[\s\S]*\bversion-pr\b/);
     assert.match(npmJob, /distribution:verify-registry/);
+    assert.match(npmJob, /fetch-tags:\s*true/);
+    assert.match(npmJob, /steps\.npm\.outputs\.action != 'noop'/);
     assert.doesNotMatch(npmJob, /self-hosted/);
   });
 
