@@ -290,14 +290,14 @@ The test must fail on:
 
 Distribution v1 supports only what Atlas already validates confidently:
 
-| Surface             | Initial support                                                             |
-| ------------------- | --------------------------------------------------------------------------- |
-| Node                | `>=22`                                                                      |
-| Package manager     | pnpm `>=10`; documented/tested path is `pnpm dlx` + pnpm workspace          |
-| OS                  | Linux and macOS                                                             |
-| CPU                 | x64 and arm64                                                               |
-| CLI module format   | CommonJS artifact is acceptable for v1; no public module-format API promise |
-| Atlas API stability | pre-1.0 SemVer; CLI commands/JSON schemas are versioned deliberately        |
+| Surface             | Initial support                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| Node                | `>=22`                                                                                         |
+| Package manager     | pnpm `>=10`; documented/tested path is `pnpm dlx` + pnpm workspace                             |
+| OS                  | Linux and macOS                                                                                |
+| CPU                 | x64 and arm64                                                                                  |
+| CLI module format   | CommonJS artifact is acceptable for v1; no public module-format API promise                    |
+| Atlas API stability | 1.0 public CLI/project/upgrade/distribution contracts; breaking those requires a major version |
 
 Windows may work in individual code paths but is not a Distribution-v1 support claim until it is in
 the clean-room CI matrix.
@@ -469,7 +469,10 @@ baseline should be a manifest-selected asset tree derived from real source.
 
 ## Implementation Sequence
 
-After this ADR is accepted, Distribution v1 should proceed in dependency order:
+After this ADR is accepted, Distribution v1 should proceed in dependency order. **Items 1–6 plus the
+1.0 public-contract audit and in-repo npm publication machinery are complete.** Remaining work is
+merge → Version PR `1.0.0` → GitHub `v1.0.0` → first human npm publish of that exact artifact →
+registry verification → Trusted Publisher → public one-command quickstart.
 
 1. **Packable CLI boundary**
    - internalize `@atlas/project`;
@@ -492,16 +495,18 @@ After this ADR is accepted, Distribution v1 should proceed in dependency order:
 6. **Clean-room CI**
    - pack/install/init/install/build/Doctor/generate/context outside the monorepo;
    - matrix Linux/macOS x64/arm64 as infrastructure permits.
-7. **npm namespace + trusted publishing setup**
-   - the public package identity `@blitzcraftlabs/atlas` is resolved;
-   - maintainer still configures least-privilege Trusted Publishing before the first real npm
-     publication (not part of this ADR's accepted package-identity work).
-8. **Release integration**
-   - publish the CLI package only for a canonical Atlas release/version;
-   - fail closed on existing versions, missing provenance prerequisites, or failed clean-room
-     checks.
-9. **Public quickstart**
-   - replace clone-first onboarding with the real `pnpm dlx ... init` path once a package is live.
+7. **npm namespace + trusted publishing setup** — **in progress in-repo**. The public package
+   identity `@blitzcraftlabs/atlas` is resolved. The release workflow is prepared for GitHub Actions
+   OIDC / npm Trusted Publishing. The first npm version is **1.0.0**, published by a human from the
+   exact canonical `v1.0.0` tarball because the package does not yet exist on the registry. Do not
+   bootstrap npm with `0.5.0`.
+8. **Release integration** — **in progress in-repo**. Publication is tied to the canonical Atlas
+   version after GitHub Release. Fail closed on identity mismatch, existing versions, a dirty
+   checkout, or a substituted artifact. Live registry publication is not complete until the 1.0.0
+   bootstrap publish and `pnpm distribution:verify-registry 1.0.0` succeed.
+9. **Public quickstart** — **not started**. Do not replace clone-first onboarding with
+   `pnpm dlx @blitzcraftlabs/atlas` until `@blitzcraftlabs/atlas@1.0.0` exists on npm and registry
+   verification passes.
 10. **Selective package review**
     - separately evaluate whether any source-owned workspace deserves a public npm API.
 

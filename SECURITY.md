@@ -9,11 +9,12 @@ claim that Atlas is free of vulnerabilities.
 Atlas supports the **current release line on `main` after the latest intentional version merge**.
 Security and compatibility fixes are prioritized for that line.
 
-| Line                        | Security fixes              |
-| --------------------------- | --------------------------- |
-| Current Atlas `0.x` on main | Yes — prioritized           |
-| Older pre-1.0 snapshots     | Only when explicitly stated |
-| LTS                         | None at this stage          |
+| Line                           | Security fixes              |
+| ------------------------------ | --------------------------- |
+| Current Atlas 1.x on main      | Yes — prioritized           |
+| Previous supported 1.x / 0.5.0 | Adjacent window only        |
+| Older 0.x snapshots            | Only when explicitly stated |
+| LTS                            | None at this stage          |
 
 See [Releases and governance](docs/how-we-build/releases-and-governance.md) for versioning and
 support policy. Do not assume older tagged snapshots receive patches.

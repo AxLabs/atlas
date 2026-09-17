@@ -9,7 +9,7 @@ export const NPM_PACK_DRY_RUN_ARGS = ["pack", "--dry-run", "--json", "--ignore-s
 
 const RUNTIME_DEPENDENCY_SECTIONS = ["dependencies", "optionalDependencies", "peerDependencies"];
 
-const REQUIRED_PACKED_FILES = [
+export const REQUIRED_PACKED_FILES = [
   "package.json",
   "dist/cli.js",
   "dist/index.js",
@@ -35,7 +35,7 @@ function isSecretEnvPath(entry) {
   return base.startsWith(".env.") && !base.endsWith(".example");
 }
 
-const FORBIDDEN_PACKED_PATH_PATTERNS = [
+export const FORBIDDEN_PACKED_PATH_PATTERNS = [
   {
     id: "src",
     test: (entry) => isCliPackageNoisePath(entry) && (entry === "src" || entry.startsWith("src/")),
@@ -44,7 +44,10 @@ const FORBIDDEN_PACKED_PATH_PATTERNS = [
     id: "tests",
     test: (entry) =>
       isCliPackageNoisePath(entry) &&
-      (entry.includes("/__tests__/") || entry.startsWith("__tests__/")),
+      (entry.includes("/__tests__/") ||
+        entry.startsWith("__tests__/") ||
+        entry.includes("/fixtures/") ||
+        entry.startsWith("fixtures/")),
   },
   {
     id: "scripts",
@@ -60,10 +63,32 @@ const FORBIDDEN_PACKED_PATH_PATTERNS = [
   },
   { id: "coverage", test: (entry) => entry === "coverage" || entry.startsWith("coverage/") },
   {
+    id: "cache",
+    test: (entry) =>
+      entry === ".turbo" ||
+      entry.startsWith(".turbo/") ||
+      entry.includes("/.turbo/") ||
+      entry === ".cache" ||
+      entry.startsWith(".cache/") ||
+      entry.includes("/.cache/"),
+  },
+  {
+    id: "changeset",
+    test: (entry) => entry === ".changeset" || entry.startsWith(".changeset/"),
+  },
+  {
     id: "storybook",
     test: (entry) => entry.includes(".storybook/") || /(^|\/)storybook(\.|$)/i.test(entry),
   },
 ];
+
+/**
+ * @param {string} entry
+ * @returns {string}
+ */
+export function normalizePackedEntry(entry) {
+  return entry.replace(/^package\//, "").replace(/\/$/, "");
+}
 
 const AUTH_FAILURE_PATTERN = /ENEEDAUTH|npm ERR! code ENEEDAUTH/i;
 const AUTH_WARNING_PATTERN = /This command requires you to be logged in[^\n]*\(dry-run\)/i;
@@ -201,13 +226,18 @@ export function assertPublicCliManifest(manifest) {
 export function collectPackedFileIssues(files) {
   /** @type {string[]} */
   const issues = [];
+  const normalized = files
+    .map((file) => normalizePackedEntry(file))
+    .filter((file) => file.length > 0);
+  const packed = new Set(normalized);
+
   for (const required of REQUIRED_PACKED_FILES) {
-    if (!files.includes(required)) {
+    if (!packed.has(required)) {
       issues.push(`packed files are missing ${required}`);
     }
   }
 
-  for (const file of files) {
+  for (const file of normalized) {
     const forbidden = FORBIDDEN_PACKED_PATH_PATTERNS.find((pattern) => pattern.test(file));
     if (forbidden) {
       issues.push(`packed files include forbidden ${forbidden.id} path: ${file}`);

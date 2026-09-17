@@ -125,19 +125,21 @@ locally: `pnpm docs:check --external`.
 
 ## Changesets and release impact
 
-Atlas versions the **repository/platform snapshot** as one pre-1.0 line. Changesets collect release
-metadata and open **Version PRs**. They do **not** publish npm packages. After a Version PR merges,
-automation publishes the canonical Git tag and GitHub Release.
+Atlas versions the **repository/platform snapshot** as one line. Changesets collect release metadata
+and open **Version PRs**. They do **not** publish npm packages. After a Version PR merges,
+automation publishes the canonical Git tag and GitHub Release. The next canonical release is
+**1.0.0** (first supported public distribution).
 
 Canonical policy: [Releases and Governance](docs/how-we-build/releases-and-governance.md).
 
 - Add a changeset when your change should appear in the Atlas changelog or receive a version bump.
 - Workspace packages are npm-`private`; they share the Atlas version and are not independent npm
   products.
-- **Pre-1.0 bump convention:**
-  - **patch** — bug fixes and small non-breaking work (`0.1.0 → 0.1.1`)
-  - **minor** — features and **breaking changes** (`0.1.0 → 0.2.0`)
-  - do **not** use **major** in changesets unless maintainers are deliberately releasing `1.0.0`
+- **Bump convention after 1.0:**
+  - **patch** — bug fixes and small non-breaking work (`1.0.0 → 1.0.1`)
+  - **minor** — compatible features (`1.0.0 → 1.1.0`)
+  - **major** — breaking public-contract changes (`1.0.0 → 2.0.0`)
+- This 1.0 decision uses **major** to advance `0.5.0` → `1.0.0`.
 - Breaking changes require migration notes in the changeset body and changelog; add
   `docs/migrations/` guides when steps are non-trivial.
 

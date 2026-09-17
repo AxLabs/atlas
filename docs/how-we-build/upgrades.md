@@ -287,9 +287,10 @@ Test suite: `packages/cli/src/__tests__/upgrade-historical-rehearsal.test.ts`
 
 ---
 
-## Supported upgrade promise (pre-1.0)
+## Supported upgrade promise (1.0)
 
-The first npm-distributed Atlas CLI (`@blitzcraftlabs/atlas@0.5.0`, once published) supports:
+The first npm-distributed Atlas CLI (`@blitzcraftlabs/atlas@1.0.0`, once published from canonical
+`v1.0.0`) supports:
 
 | Promise               | Detail                                                                                                        |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -299,7 +300,8 @@ The first npm-distributed Atlas CLI (`@blitzcraftlabs/atlas@0.5.0`, once publish
 | **We do not support** | Unlimited historical upgrades, including rehearsal snapshots `0.1.0` / `0.2.0`                                |
 | **We do not support** | Silent overwrite of consumer-modified synced files                                                            |
 | **We do not support** | Perpetual automatic upgrades with zero review                                                                 |
-| Pre-1.0               | Breaking changes allowed with changelog + migration docs                                                      |
+| Pre-1.0 proving line  | Breaking changes were allowed with changelog + migration docs; they are historical                            |
+| 1.0 public contract   | Breaking public CLI/project/upgrade/distribution contracts require a major version                            |
 | Migration retention   | Best-effort; at least one minor release deprecation notice when practicable                                   |
 
 Release evidence is **package-owned**. `atlas upgrade --to <version>` loads snapshots from the
@@ -307,9 +309,9 @@ installed `@blitzcraftlabs/atlas` package catalog. `--releases-dir` is an explic
 fixture/maintainer override. Generated consumers do not carry an Atlas `releases/` tree. Missing or
 corrupt packaged evidence fails closed.
 
-The canonical `v0.4.0` tag is the previous production baseline for the first public npm CLI. The
-`0.5.0` production snapshot is generated when the Version PR advances workspace versions. Until that
-snapshot exists, `--to 0.5.0` fails closed as an unsupported target.
+The canonical `v0.5.0` tag is the previous production baseline for the first public npm CLI. The
+`1.0.0` production snapshot is generated when the Version PR advances workspace versions. Until that
+snapshot exists, `--to 1.0.0` fails closed as an unsupported target. Do not publish `0.5.0` to npm.
 
 Until `@blitzcraftlabs/atlas` is published, use this repository or a packed tarball rather than the
 public registry.

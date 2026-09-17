@@ -30,6 +30,11 @@ Align ESLint config with new UI export.`,
 ---
 
 **BREAKING**: Rename theme boot export path. Migration: import from @atlas/ui/theme-boot.`,
+  graduateOne: `---
+"@blitzcraftlabs/atlas": major
+---
+
+Atlas 1.0 is the first supported public distribution. The 0.x GitHub line remains the proving history; npm publication starts at 1.0.0.`,
   withPendingUpstream: `---
 "@atlas/web": patch
 ---
@@ -141,10 +146,6 @@ function runScenario(baselineRoot, fixtureName, fixtureBody, expectations, optio
     );
   }
 
-  if (version.startsWith("1.")) {
-    throw new Error(`Scenario ${fixtureName}: version ${version} must remain pre-1.0`);
-  }
-
   assertWorkspaceChangelogs(scenarioRoot, version, fixtureName);
   assertAlignedVersions(scenarioRoot, version, fixtureName);
 
@@ -230,6 +231,15 @@ function main() {
         expectations: {
           expectedVersion: bumpMinor(startVersion),
           bodyIncludes: ["BREAKING", "theme boot"],
+          unreleasedCleared: true,
+        },
+      },
+      {
+        name: "graduate-1-0",
+        fixture: FIXTURE_CHANGES.graduateOne,
+        expectations: {
+          expectedVersion: bumpMajor(startVersion),
+          bodyIncludes: ["first supported public distribution"],
           unreleasedCleared: true,
         },
       },
@@ -327,6 +337,11 @@ function bumpPatch(version) {
 function bumpMinor(version) {
   const [major, minor] = version.split(".").map(Number);
   return `${major}.${minor + 1}.0`;
+}
+
+function bumpMajor(version) {
+  const [major] = version.split(".").map(Number);
+  return `${major + 1}.0.0`;
 }
 
 main();

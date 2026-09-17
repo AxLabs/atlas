@@ -11,10 +11,10 @@ pnpm changeset        # Add a changeset in your PR
 pnpm changeset:status # Preview pending version bumps
 ```
 
-### Pre-1.0 bump convention
+### Bump convention
 
-While Atlas remains below `1.0.0`:
+The pending 1.0 decision uses **major** (`0.5.0` → `1.0.0`). After `1.0.0`:
 
-- **patch** — bug fixes and small non-breaking work (`0.1.0 → 0.1.1`)
-- **minor** — features and **breaking changes** (`0.1.0 → 0.2.0`)
-- do **not** use **major** in changesets — that would advance to `1.0.0`
+- **patch** — bug fixes and small non-breaking work (`1.0.0 → 1.0.1`)
+- **minor** — compatible features (`1.0.0 → 1.1.0`)
+- **major** — breaking public-contract changes (`1.0.0 → 2.0.0`)

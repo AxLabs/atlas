@@ -12,7 +12,6 @@ import {
   readWorkspaceVersions,
 } from "./atlas-workspaces.mjs";
 import { extractChangelogSection } from "./extract-changelog-section.mjs";
-import { isPreOnePointZero } from "./semver-utils.mjs";
 
 const errors = [];
 
@@ -86,8 +85,9 @@ function checkVersionAlignment() {
     }
   }
 
-  if (!isPreOnePointZero(rootVersion)) {
-    fail(`Atlas version ${rootVersion} must remain < 1.0.0 until a deliberate 1.0 decision`);
+  const governanceDoc = readFileSync(path.join(process.cwd(), CANONICAL_GOVERNANCE_DOC), "utf8");
+  if (!governanceDoc.includes("## Atlas 1.0 stability contract")) {
+    fail(`${CANONICAL_GOVERNANCE_DOC} must define the Atlas 1.0 stability contract`);
   }
 }
 
@@ -212,6 +212,62 @@ function checkReleaseWorkflow() {
     }
   }
 
+  const npmPublishJob = extractNamedJob(workflow, "npm-publish");
+  if (!npmPublishJob) {
+    fail("release.yml is missing the npm-publish job");
+  } else {
+    if (!/permissions:[\s\S]*id-token:\s*write/.test(npmPublishJob)) {
+      fail("npm-publish job must request id-token: write for npm Trusted Publishing");
+    }
+    if (!/permissions:[\s\S]*contents:\s*read/.test(npmPublishJob)) {
+      fail("npm-publish job must keep contents: read");
+    }
+    if (/contents:\s*write/.test(npmPublishJob)) {
+      fail("npm-publish job must not request contents: write");
+    }
+    if (/packages:\s*write/.test(npmPublishJob)) {
+      fail("npm-publish job must not request packages: write");
+    }
+    if (/NPM_TOKEN|NODE_AUTH_TOKEN/.test(npmPublishJob)) {
+      fail("npm-publish job must not use a long-lived NPM_TOKEN");
+    }
+    if (!/publish-npm-package\.mjs/.test(npmPublishJob) || !/--oidc/.test(npmPublishJob)) {
+      fail("npm-publish job must publish through publish-npm-package.mjs --oidc");
+    }
+    if (!/npm@11\.5\.1/.test(npmPublishJob)) {
+      fail("npm-publish job must install npm@11.5.1 for Trusted Publishing");
+    }
+    if (!/node-version:\s*22\b/.test(stripYamlComments(npmPublishJob))) {
+      fail("npm-publish job must keep consumer Node 22 and upgrade only the npm CLI");
+    }
+    if (/self-hosted/.test(npmPublishJob)) {
+      fail("npm-publish job must use GitHub-hosted runners for npm Trusted Publishing");
+    }
+    if (
+      !/needs:[\s\S]*\bgithub-release\b/.test(npmPublishJob) ||
+      !/needs:[\s\S]*\bversion-pr\b/.test(npmPublishJob)
+    ) {
+      fail("npm-publish job must depend on github-release and version-pr");
+    }
+    if (!/github\.event_name\s*==\s*'push'/.test(npmPublishJob)) {
+      fail("npm-publish job must remain push-gated");
+    }
+    if (!/needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/.test(npmPublishJob)) {
+      fail("npm-publish job must skip publication when version-pr reports pending changesets");
+    }
+    if (!/fetch-tags:\s*true/.test(npmPublishJob)) {
+      fail("npm-publish job must fetch git tags so HEAD can be the exact canonical vX.Y.Z tag");
+    }
+    if (!/steps\.npm\.outputs\.action\s*!=\s*'noop'/.test(npmPublishJob)) {
+      fail(
+        "npm-publish must not require a packed tarball when the exact npm version already exists"
+      );
+    }
+    if (/workflow_dispatch/.test(npmPublishJob)) {
+      fail("npm-publish job must not run on workflow_dispatch");
+    }
+  }
+
   const publisherPath = path.join(process.cwd(), "scripts/release-publication.mjs");
   if (!existsSync(publisherPath)) {
     fail("Missing scripts/release-publication.mjs");
@@ -219,6 +275,33 @@ function checkReleaseWorkflow() {
     const publisher = readFileSync(publisherPath, "utf8");
     if (!publisher.includes("PENDING_CHANGESETS")) {
       fail("publisher must keep PENDING_CHANGESETS rejection as a safety backstop");
+    }
+  }
+
+  const npmPublisherPath = path.join(process.cwd(), "scripts/publish-npm-package.mjs");
+  const npmPublicationLibPath = path.join(process.cwd(), "scripts/lib/npm-publication.mjs");
+  if (!existsSync(npmPublisherPath) || !existsSync(npmPublicationLibPath)) {
+    fail("Missing npm publication scripts");
+  } else {
+    const npmPublisher = readFileSync(npmPublisherPath, "utf8");
+    const npmPublicationLib = readFileSync(npmPublicationLibPath, "utf8");
+    if (!npmPublicationLib.includes("stripNpmAuthEnv")) {
+      fail("npm publication library must strip long-lived npm tokens before OIDC publish");
+    }
+    if (!npmPublicationLib.includes("runNpmPublication")) {
+      fail("npm publication library must orchestrate query-first publication");
+    }
+    if (!npmPublicationLib.includes("requireReleaseTag: true")) {
+      fail("unpublished npm versions must pack with requireReleaseTag: true");
+    }
+    if (!npmPublisher.includes("GITHUB_ACTIONS") && !npmPublicationLib.includes("GITHUB_ACTIONS")) {
+      fail("npm publisher must refuse OIDC publish outside GitHub Actions");
+    }
+    if (!npmPublisher.includes("runNpmPublication")) {
+      fail("npm publisher must orchestrate through runNpmPublication");
+    }
+    if (!npmPublicationLib.includes("publishExactTarball")) {
+      fail("npm publisher must publish the hashed tarball rather than rebuilding");
     }
   }
 
@@ -245,7 +328,7 @@ function checkReleaseWorkflow() {
     }
   }
 
-  for (const jobId of ["rehearsal", "version-pr", "github-release"]) {
+  for (const jobId of ["rehearsal", "version-pr", "github-release", "npm-publish"]) {
     const job = extractNamedJob(workflow, jobId);
     if (!job) {
       fail(`release.yml is missing the ${jobId} job`);

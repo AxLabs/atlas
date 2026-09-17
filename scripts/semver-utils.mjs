@@ -35,10 +35,13 @@ export function isPreOnePointZero(version) {
   return parsed !== null && parsed.major === 0;
 }
 
-export function assertPreOnePointZero(version) {
-  if (!isPreOnePointZero(version)) {
-    throw new Error(
-      `Atlas version ${version} is >= 1.0.0. Pre-1.0 releases must stay below 1.0.0 until a deliberate stability decision.`,
-    );
+export function isStablePublicRelease(version) {
+  const parsed = parseSemver(version);
+  return parsed !== null && parsed.major >= 1;
+}
+
+export function assertValidAtlasReleaseVersion(version) {
+  if (!parseSemver(version)) {
+    throw new Error(`Invalid Atlas release version "${version}"`);
   }
 }

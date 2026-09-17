@@ -10,21 +10,22 @@ See also: [`SECURITY.md`](../../SECURITY.md), [security engineering](../how-we-b
 
 ## Assets
 
-| Asset                             | Where it lives                                                                                               | Notes                                                                                        |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| OAuth client ID / secret          | Server env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)                                                      | Never in client bundles if consumers keep them in `serverEnv`                                |
-| Access tokens                     | Encrypted `atlas_session` cookie                                                                             | Server-side only; `/api/auth/me` must not return them                                        |
-| Refresh tokens                    | Same session cookie                                                                                          | Google may omit on re-auth; rotation is **opportunistic**, not Atlas-owned                   |
-| Session ciphertext                | `atlas_session` httpOnly cookie                                                                              | AES-GCM with key derived from `AUTH_SESSION_SECRET` (PBKDF2, static salt `atlas-session-v1`) |
-| OAuth PKCE verifier + state       | `atlas_oauth_tmp` cookie (JSON, **not** encrypted)                                                           | 5-minute TTL; httpOnly                                                                       |
-| User identity / profile           | Session payload; `/api/auth/me` returns email/name/avatar + authz permissions                                | Tokens excluded from the public session response                                             |
-| Backend API authorization context | Server uses `session.accessToken`; UI uses resolved permissions                                              | Backend remains a separate trust domain                                                      |
-| Analytics / consent state         | `@atlas/consent` + analytics adapters; opt-in via env                                                        | Consent is **not** a legal CMP                                                               |
-| Telemetry / error data            | Web Vitals route, Sentry, logs                                                                               | Redaction helpers exist; consumers must use them                                             |
-| CI credentials                    | GitHub Actions `GITHUB_TOKEN`, optional `TURBO_*`, `LHCI_GITHUB_APP_TOKEN`, Codecov                          | Least-privilege workflow `permissions` applied                                               |
-| Repository write credentials      | Version PR job (`contents: write`, `pull-requests: write`); publish job (`contents: write`, `actions: read`) | Fail-closed tag/Release publication; no npm publish; no retag                                |
-| Release / snapshot artifacts      | Workflow artifacts (Playwright, SBOM, audit JSON)                                                            | 90-day SBOM retention for snapshots                                                          |
-| Self-hosted runner host state     | Persistent disk under `/var/cache/ci` when enabled                                                           | Trusted-operator domain                                                                      |
+| Asset                             | Where it lives                                                                                                      | Notes                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| OAuth client ID / secret          | Server env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)                                                             | Never in client bundles if consumers keep them in `serverEnv`                                |
+| Access tokens                     | Encrypted `atlas_session` cookie                                                                                    | Server-side only; `/api/auth/me` must not return them                                        |
+| Refresh tokens                    | Same session cookie                                                                                                 | Google may omit on re-auth; rotation is **opportunistic**, not Atlas-owned                   |
+| Session ciphertext                | `atlas_session` httpOnly cookie                                                                                     | AES-GCM with key derived from `AUTH_SESSION_SECRET` (PBKDF2, static salt `atlas-session-v1`) |
+| OAuth PKCE verifier + state       | `atlas_oauth_tmp` cookie (JSON, **not** encrypted)                                                                  | 5-minute TTL; httpOnly                                                                       |
+| User identity / profile           | Session payload; `/api/auth/me` returns email/name/avatar + authz permissions                                       | Tokens excluded from the public session response                                             |
+| Backend API authorization context | Server uses `session.accessToken`; UI uses resolved permissions                                                     | Backend remains a separate trust domain                                                      |
+| Analytics / consent state         | `@atlas/consent` + analytics adapters; opt-in via env                                                               | Consent is **not** a legal CMP                                                               |
+| Telemetry / error data            | Web Vitals route, Sentry, logs                                                                                      | Redaction helpers exist; consumers must use them                                             |
+| CI credentials                    | GitHub Actions `GITHUB_TOKEN`, optional `TURBO_*`, `LHCI_GITHUB_APP_TOKEN`, Codecov                                 | Least-privilege workflow `permissions` applied                                               |
+| Repository write credentials      | Version PR job (`contents: write`, `pull-requests: write`); GitHub Release job (`contents: write`, `actions: read`) | Fail-closed tag/Release publication; no retag; no npm token                                  |
+| npm Trusted Publishing OIDC       | npm-publish job (`id-token: write`, `contents: read`) on push to `main` after GitHub Release                        | GitHub-hosted only; no `NPM_TOKEN`; first package version is a human tarball publish         |
+| Release / snapshot artifacts      | Workflow artifacts (Playwright, SBOM, audit JSON)                                                                   | 90-day SBOM retention for snapshots                                                          |
+| Self-hosted runner host state     | Persistent disk under `/var/cache/ci` when enabled                                                                  | Trusted-operator domain                                                                      |
 
 ## Trust boundaries
 
@@ -92,14 +93,14 @@ reduce XSS theft; they do not encrypt the verifier at rest in the browser cookie
 
 ## Supply-chain / build
 
-| Threat                             | Control                                                                                                                             |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Malicious / vulnerable npm package | Frozen lockfile CI, Atlas audit policy (HIGH/CRITICAL), Renovate                                                                    |
-| Lockfile manipulation              | CI lockfile-up-to-date check; forbidden alternate lockfiles                                                                         |
-| GitHub Action compromise           | SHA-pinned remote actions; full-SHA allow-rule in workflow check                                                                    |
-| Mutable container tags             | Gitleaks pinned by digest                                                                                                           |
-| Secret leakage in git              | Gitleaks git-history scan of the CI checkout (`fetch-depth: 0`); history fixture proves committed-then-deleted secrets are detected |
-| Artifact tampering                 | GitHub-hosted artifact service; no signed provenance attestation yet                                                                |
+| Threat                             | Control                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Malicious / vulnerable npm package | Frozen lockfile CI, Atlas audit policy (HIGH/CRITICAL), Renovate                                                                                              |
+| Lockfile manipulation              | CI lockfile-up-to-date check; forbidden alternate lockfiles                                                                                                   |
+| GitHub Action compromise           | SHA-pinned remote actions; full-SHA allow-rule in workflow check                                                                                              |
+| Mutable container tags             | Gitleaks pinned by digest                                                                                                                                     |
+| Secret leakage in git              | Gitleaks git-history scan of the CI checkout (`fetch-depth: 0`); history fixture proves committed-then-deleted secrets are detected                           |
+| Artifact tampering                 | Exact packed `.tgz` is hashed before npm publish; OIDC provenance on later publishes; first npm version is a human-authenticated publish of that same tarball |
 
 `pnpm audit` is **not** complete application security.
 

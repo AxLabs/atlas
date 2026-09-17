@@ -12,7 +12,12 @@ import path from "node:path";
 
 import { ATLAS_TAG_PATTERN, readRootVersion, readWorkspaceVersions } from "./atlas-workspaces.mjs";
 import { extractChangelogSection } from "./extract-changelog-section.mjs";
-import { assertPreOnePointZero, isGithubPrerelease, parseSemver } from "./semver-utils.mjs";
+import {
+  isGithubPrerelease,
+  isPreOnePointZero,
+  isStablePublicRelease,
+  parseSemver,
+} from "./semver-utils.mjs";
 
 /** Internal snapshot that must never receive a public tag or GitHub Release. */
 export const HISTORICAL_UNPUBLISHED_VERSIONS = Object.freeze(["0.1.0"]);
@@ -277,12 +282,6 @@ export function collectVersionConsistencyErrors(input) {
     return errors;
   }
 
-  try {
-    assertPreOnePointZero(rootVersion);
-  } catch (error) {
-    errors.push(error instanceof Error ? error.message : String(error));
-  }
-
   for (const pkg of workspaceVersions) {
     if (pkg.version !== rootVersion) {
       errors.push(`Version mismatch: root is ${rootVersion}, ${pkg.name} is ${pkg.version}`);
@@ -473,6 +472,51 @@ export function evaluateCurrentPublicationState(options) {
 }
 
 /**
+ * @param {string} version
+ */
+function describeReleaseLine(version) {
+  if (version === "1.0.0") {
+    return [
+      "Atlas 1.0.0 is the first supported public distribution.",
+      "The 0.x GitHub releases were the platform-development/proving line; they are not the public npm contract.",
+      "Public CLI, generated-project, upgrade, and distribution contracts are now treated as stable.",
+      "Breaking public-contract changes after 1.0 require a major version. Internal implementation may still evolve.",
+    ].join(" ");
+  }
+
+  if (isStablePublicRelease(version)) {
+    return `Atlas ${version} is a stable public-contract release. Breaking public CLI, project, upgrade, or distribution contracts requires a major version.`;
+  }
+
+  return `Atlas ${version} is a pre-1.0 repository/platform snapshot release.`;
+}
+
+/**
+ * @param {string} version
+ */
+function describeSupportLimitations(version) {
+  const lines = [
+    "- Supported line: current Atlas release plus the immediately previous supported production release.",
+    "- No LTS programme at this stage.",
+    "- Internal `@atlas/*` workspace packages remain `private` and are **not** published to npm.",
+    "- `@blitzcraftlabs/atlas` is the public npm package identity. npm distribution occurs after the canonical GitHub Release; registry availability is verified separately. The first npm publication requires the documented human bootstrap, while later releases may use Trusted Publishing.",
+    "- This GitHub Release does **not** include signed provenance, SLSA attestation, or a formal security audit. npm Trusted Publishing may attach npm provenance to later `@blitzcraftlabs/atlas` publishes; that is not a GitHub Release attestation and is not SLSA.",
+  ];
+
+  if (isPreOnePointZero(version)) {
+    lines.push(
+      "- Pre-1.0 APIs, templates, and upgrade mechanics may still evolve; breaking changes use a **minor** bump."
+    );
+  } else {
+    lines.push(
+      "- After 1.0, breaking public-contract changes use a **major** bump. Compatible features use minor; fixes use patch."
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/**
  * @param {string} changelog
  * @param {string} version
  * @param {{
@@ -491,16 +535,17 @@ export function buildCanonicalReleaseNotes(changelog, version, options = {}) {
   }
 
   const firstPublic = options.firstCanonicalPublicRelease === true;
+  const summary = firstPublic
+    ? [
+        "`0.1.0` was a historical internal snapshot. No public `v0.1.0` tag or GitHub Release was published.",
+        `**${version} is the first canonical public GitHub Release.** ${describeReleaseLine(version)}`,
+      ].join("\n")
+    : describeReleaseLine(version);
 
   const preamble = [
     `# Atlas ${version}`,
     "",
-    firstPublic
-      ? [
-          "`0.1.0` was a historical internal snapshot. No public `v0.1.0` tag or GitHub Release was published.",
-          `**${version} is the first canonical public GitHub Release.** Atlas remains pre-1.0.`,
-        ].join("\n")
-      : `Atlas ${version} is a pre-1.0 repository/platform snapshot release.`,
+    summary,
     "",
     "## Changes",
     "",
@@ -517,12 +562,7 @@ export function buildCanonicalReleaseNotes(changelog, version, options = {}) {
     "",
     "## Support and limitations",
     "",
-    "- Supported line: current Atlas release on `main` after the latest intentional version merge.",
-    "- No LTS programme at this stage.",
-    "- Internal `@atlas/*` workspace packages remain `private` and are **not** published to npm.",
-    "- `@blitzcraftlabs/atlas` is the public CLI package identity; this GitHub Release workflow does **not** publish it to the npm registry.",
-    "- This release does **not** include signed provenance, SLSA attestation, or a formal security audit.",
-    "- Pre-1.0 APIs, templates, and upgrade mechanics may still evolve; breaking changes use a **minor** bump.",
+    describeSupportLimitations(version),
     "",
     "License: Apache-2.0. See `LICENSE` and `docs/how-we-build/releases-and-governance.md`.",
   ]

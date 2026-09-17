@@ -1,6 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { gotoStory, snapshotName, STORYBOOK_ROOT, VIEWPORTS } from "./storybook";
+import {
+  expectOverlayMatchesStoryTheme,
+  gotoStory,
+  snapshotName,
+  STORYBOOK_ROOT,
+  VIEWPORTS,
+} from "./storybook";
 
 interface VisualCase {
   storyId: string;
@@ -10,6 +16,8 @@ interface VisualCase {
   prepare?: (page: Page) => Promise<void>;
   /** Portaled overlays (dialog, menu, listbox, tooltip) use page-level locators. */
   screenshot?: (page: Page) => Promise<Locator>;
+  /** Assert portaled content inherited the requested Storybook html theme before snapshot. */
+  assertPortalTheme?: boolean;
 }
 
 const cases: VisualCase[] = [
@@ -66,10 +74,15 @@ const cases: VisualCase[] = [
     themes: ["light", "dark"],
     viewports: ["desktop"],
     prepare: async (page) => {
-      await page.getByRole("button", { name: "Show tooltip" }).hover();
+      const trigger = page.getByRole("button", { name: "Show tooltip" });
+      // KeyboardAccessibility's play opens then dismisses the tooltip. Wait for that
+      // to finish so the snapshot is a hover-opened, themed portal — not the play race.
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
+      await trigger.hover();
       await expect(page.getByRole("tooltip")).toBeVisible();
     },
     screenshot: async (page) => page.getByRole("tooltip"),
+    assertPortalTheme: true,
   },
   {
     storyId: "ui-form--with-error",
@@ -116,6 +129,10 @@ for (const visualCase of cases) {
         const target = visualCase.screenshot
           ? await visualCase.screenshot(page)
           : page.locator(STORYBOOK_ROOT);
+
+        if (visualCase.assertPortalTheme) {
+          await expectOverlayMatchesStoryTheme(target, theme);
+        }
 
         await expect(target).toHaveScreenshot(snapshotName([visualCase.name, theme, viewportName]));
       });

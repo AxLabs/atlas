@@ -45,8 +45,8 @@ Use the underlying tools directly:
 ## Repository-local usage (current)
 
 The CLI is the public workspace package (`@blitzcraftlabs/atlas`) with an `atlas` binary. It is
-publication-ready for npm but is **not** yet published to the public registry. Maintainers invoke it
-from the repository:
+wired for npm Trusted Publishing after a one-time first publication of the validated tarball. Until
+registry verification passes, maintainers invoke it from the repository:
 
 ```bash
 pnpm install
@@ -75,10 +75,9 @@ pnpm install
 pnpm dev
 ```
 
-That command is **publication-ready, not live**. Do not treat it as an install-from-npm path until
-the first `@blitzcraftlabs/atlas` version exists on the npm registry. Until then, maintainers still
-use `pnpm atlas` from a clone of this repository, or a packed tarball installed outside the
-checkout.
+That command is **not live** until `@blitzcraftlabs/atlas` exists on npm and
+`pnpm distribution:verify-registry <version>` passes. Until then, maintainers still use `pnpm atlas`
+from a clone of this repository, or a packed tarball installed outside the checkout.
 
 `pnpm pack` from `packages/cli` produces a tarball that installs and runs outside this repository.
 The packed artifact internalizes `@atlas/project` and must not depend on unpublished `@atlas/*`
@@ -187,6 +186,21 @@ commands.
 
 Keep `packages/cli` pack E2E as the faster artifact/init check. Use `pnpm distribution:verify` when
 the generated project's install/build/Doctor/generator lifecycle must be proven self-contained.
+After a version exists on npm, `pnpm distribution:verify-registry <version>` repeats that lifecycle
+from the registry and must not fall back to a local tarball.
+
+First publication of a never-before-published package must use canonical Git tag `v1.0.0`, not
+`v0.5.0` and not this feature branch:
+
+```bash
+git fetch --tags
+git worktree add /tmp/atlas-v1.0.0 v1.0.0
+cd /tmp/atlas-v1.0.0
+pnpm install --frozen-lockfile
+pnpm distribution:prepare-publish --require-release-tag
+# human: npm publish <printed-tarball> --access public --ignore-scripts
+pnpm distribution:verify-registry 1.0.0
+```
 
 Temp-directory retention:
 
@@ -460,17 +474,17 @@ Plan and apply supported Atlas release upgrades using `platform.baseline` checks
 **package-owned** production release snapshots from the installed `@blitzcraftlabs/atlas` CLI.
 
 ```bash
-atlas upgrade --to 0.5.0 --dry-run
-atlas upgrade --to 0.5.0
-atlas upgrade --to 0.5.0 --json
+atlas upgrade --to 1.0.0 --dry-run
+atlas upgrade --to 1.0.0
+atlas upgrade --to 1.0.0 --json
 ```
 
 `--releases-dir` is an explicit fixture/maintainer override. Normal installed-package usage does not
 read a consumer `releases/` tree. Missing packaged evidence fails closed.
 
-The pre-1.0 support window is the current Atlas release plus the immediately previous supported
-production release (adjacent upgrades only). Repository `releases/0.1.0` and `releases/0.2.0` are
-rehearsal-only and are not public support.
+The 1.0 support window is the current Atlas release plus the immediately previous supported
+production release (adjacent upgrades only). After `1.0.0` that window is `0.5.0` → `1.0.0`.
+Repository `releases/0.1.0` and `releases/0.2.0` are rehearsal-only and are not public support.
 
 | Option              | Description                                                                  |
 | ------------------- | ---------------------------------------------------------------------------- |
