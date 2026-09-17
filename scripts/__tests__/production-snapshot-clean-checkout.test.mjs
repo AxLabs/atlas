@@ -9,9 +9,14 @@ import { fileURLToPath } from "node:url";
 import { generateCurrentProductionReleaseSnapshot } from "../consolidate-atlas-release.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const atlasVersion = JSON.parse(
+  readFileSync(path.join(repoRoot, "packages/cli/package.json"), "utf8")
+).version;
 const committedSnapshotPath = path.join(
   repoRoot,
-  "packages/cli/release-assets/production/0.4.0/release.snapshot.json"
+  "packages/cli/release-assets/production",
+  atlasVersion,
+  "release.snapshot.json"
 );
 const projectDistIndex = path.join(repoRoot, "packages/project/dist/index.js");
 const projectTsbuildinfo = path.join(repoRoot, "packages/project/tsconfig.build.tsbuildinfo");
@@ -25,11 +30,13 @@ describe("production snapshot clean-checkout generation", () => {
     "succeeds without a pre-existing @atlas/project dist",
     { timeout: 120_000 },
     () => {
+      assert.equal(typeof atlasVersion, "string");
+      assert.notEqual(atlasVersion.length, 0);
       assert.equal(existsSync(committedSnapshotPath), true);
       const committedHashBefore = hashFile(committedSnapshotPath);
 
       const outputRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-snapshot-clean-checkout-"));
-      const outputDir = path.join(outputRoot, "0.4.0");
+      const outputDir = path.join(outputRoot, atlasVersion);
 
       try {
         rmSync(path.dirname(projectDistIndex), { recursive: true, force: true });
@@ -43,8 +50,8 @@ describe("production snapshot clean-checkout generation", () => {
         assert.equal(existsSync(generatedSnapshotPath), true);
 
         const generated = JSON.parse(readFileSync(generatedSnapshotPath, "utf8"));
-        assert.equal(generated.atlasVersion, "0.4.0");
-        assert.equal(generated.packageVersions["@blitzcraftlabs/atlas"], "0.4.0");
+        assert.equal(generated.atlasVersion, atlasVersion);
+        assert.equal(generated.packageVersions["@blitzcraftlabs/atlas"], atlasVersion);
         assert.equal(
           existsSync(projectDistIndex),
           true,
