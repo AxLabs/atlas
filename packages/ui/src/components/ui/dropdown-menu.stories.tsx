@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { skipStoryPlay } from "../../lib/skip-story-play";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -232,6 +234,9 @@ export const KeyboardInteraction: Story = {
   tags: ["critical"],
   render: () => <KeyboardInteractionDemo />,
   play: async ({ canvasElement }) => {
+    if (skipStoryPlay()) {
+      return;
+    }
     const canvas = within(canvasElement);
     const trigger = await canvas.findByRole("button", { name: "Open menu" });
 
