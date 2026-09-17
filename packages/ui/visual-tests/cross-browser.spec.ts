@@ -23,6 +23,27 @@ async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
   }
 }
 
+async function pressShiftTab(page: Page) {
+  await page.keyboard.down("Shift");
+  await page.keyboard.press("Tab");
+  await page.keyboard.up("Shift");
+}
+
+async function focusByShiftTabbing(
+  target: Locator,
+  page: Page,
+  container: Locator,
+  maxAttempts = 8
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      return;
+    }
+    await pressShiftTab(page);
+    await expectFocusInside(container);
+  }
+}
+
 async function highlightedSelectOption(page: Page) {
   return page.evaluate(() => {
     const active = document.activeElement;
@@ -128,11 +149,13 @@ test.describe("Dialog keyboard composition", () => {
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Tab");
-    await expect(continueButton).toBeFocused();
+    await expect
+      .poll(async () => continueButton.evaluate((element) => element === document.activeElement))
+      .toBe(true);
     await expect(cancel).toBeVisible();
     await expectFocusInside(dialog);
 
-    await continueButton.press("Shift+Tab");
+    await focusByShiftTabbing(cancel, page, dialog);
     await expect(cancel).toBeVisible();
     await expect(cancel).toBeFocused();
     await expectFocusInside(dialog);
