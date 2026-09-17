@@ -1,5 +1,7 @@
 import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
+import { skipStoryPlay } from "../../../.storybook/skip-play";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 import type { Meta, StoryObj } from "@storybook/react";
@@ -97,6 +99,9 @@ export const KeyboardAccessibility: Story = {
     </Tooltip>
   ),
   play: async ({ canvasElement }) => {
+    if (skipStoryPlay()) {
+      return;
+    }
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole("button", { name: "Show tooltip" });
 

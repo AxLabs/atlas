@@ -11,10 +11,17 @@ export const VIEWPORTS = {
 
 export type ThemeName = "light" | "dark";
 
-export function storyIframePath(storyId: string, theme: ThemeName = "light") {
+export function storyIframePath(
+  storyId: string,
+  theme: ThemeName = "light",
+  options: { disablePlay?: boolean } = {}
+) {
   const params = new URLSearchParams({ id: storyId });
   if (theme === "dark") {
     params.set("globals", "theme:dark");
+  }
+  if (options.disablePlay) {
+    params.set("atlasPlay", "0");
   }
   return `/iframe.html?${params.toString()}`;
 }
@@ -70,10 +77,11 @@ export async function gotoStory(
   page: Page,
   baseURL: string,
   storyId: string,
-  theme: ThemeName = "light"
+  theme: ThemeName = "light",
+  options: { disablePlay?: boolean } = {}
 ) {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(new URL(storyIframePath(storyId, theme), baseURL).toString(), {
+  await page.goto(new URL(storyIframePath(storyId, theme, options), baseURL).toString(), {
     waitUntil: "load",
   });
   const root = page.locator(STORYBOOK_ROOT);
