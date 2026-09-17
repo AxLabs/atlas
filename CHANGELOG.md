@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-17
+
+### Changed
+
+- Prepare `@blitzcraftlabs/atlas` as Atlas's public npm CLI package. The `atlas` binary, pack
+  allowlist, and GitHub Release workflow stay the same; this change makes the package identity and
+  metadata publication-ready without publishing to the registry.
+- Load production upgrade snapshots from the installed `@blitzcraftlabs/atlas` package instead of a
+  consumer `releases/` tree, and fail closed for unsupported or missing packaged release evidence.
+- Build `@atlas/project` before generating a production release snapshot so Version PRs succeed
+  after `pnpm install --frozen-lockfile` without a prior workspace build.
+
 ## [0.4.0] - 2026-09-15
 
 ### Changed
@@ -73,7 +85,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/blitzcraftlabs/atlas/compare/v0.2.0...v0.2.1
