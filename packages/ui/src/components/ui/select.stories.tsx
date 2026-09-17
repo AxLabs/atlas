@@ -152,10 +152,22 @@ export const KeyboardInteraction: Story = {
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole("combobox", { name: "Framework" });
 
-    await userEvent.click(trigger);
+    // Keyboard-open: mouse click + `alignItemWithTrigger` parks the pointer over the selected
+    // option, so later ArrowDown can be treated as pointer modality and never move highlight.
+    trigger.focus();
+    await userEvent.keyboard("{ArrowDown}");
     await waitFor(() => expect(screen.getByRole("listbox")).toBeVisible());
 
+    const nextOption = () => screen.getByRole("option", { name: "Next.js" });
+    const reactOption = () => screen.getByRole("option", { name: "React" });
+
+    // Base UI highlights the selected option on a later animation frame. Wait before ArrowDown
+    // or Enter re-commits "Next.js". Enter only commits the option that currently has DOM focus.
+    await waitFor(() => expect(nextOption()).toHaveAttribute("data-highlighted"));
     await userEvent.keyboard("{ArrowDown}");
+    await waitFor(() => expect(reactOption()).toHaveAttribute("data-highlighted"));
+    await waitFor(() => expect(reactOption()).toHaveFocus());
+
     await userEvent.keyboard("{Enter}");
     await expect(trigger).toHaveTextContent("React");
     // Wait for the listbox to be fully removed before play returns so the body-scoped axe scan
