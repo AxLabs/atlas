@@ -1,6 +1,6 @@
 import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
-import { skipStoryPlay } from "../../../.storybook/skip-play";
+import { skipStoryPlay } from "../../lib/skip-story-play";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 

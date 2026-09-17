@@ -1,6 +1,6 @@
 import { expect, screen, userEvent, waitFor, within } from "@storybook/test";
 
-import { skipStoryPlay } from "../../../.storybook/skip-play";
+import { skipStoryPlay } from "../../lib/skip-story-play";
 
 import { Button } from "./button";
 import {

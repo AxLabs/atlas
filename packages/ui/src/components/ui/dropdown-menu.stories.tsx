@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { skipStoryPlay } from "../../../.storybook/skip-play";
+import { skipStoryPlay } from "../../lib/skip-story-play";
 
 import {
   DropdownMenu,
