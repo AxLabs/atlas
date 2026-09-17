@@ -1,5 +1,12 @@
 # @atlas/reference
 
+## 1.0.0
+
+### Patch Changes
+
+- @atlas/ui@1.0.0
+- @atlas/consent@1.0.0
+
 ## 0.5.0
 
 ### Patch Changes
