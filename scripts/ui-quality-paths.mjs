@@ -44,6 +44,7 @@ export const UI_QUALITY_BOOTSTRAP_PATHS = [
   "packages/ui/.storybook/critical-stories.json",
   "packages/ui/.storybook/a11y-exceptions.json",
   ".github/workflows/ui-quality.yml",
+  ".github/actions/run-ui-quality-suite/action.yml",
 ];
 
 function escapeForRegExp(value) {

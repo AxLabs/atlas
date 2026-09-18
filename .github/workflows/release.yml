@@ -84,12 +84,12 @@ jobs:
         run: |
           node -e '
             const fs = require("node:fs");
-            const file = `artifacts/atlas-sbom-${process.env.GITHUB_SHA}.spdx.json`;
+            const file = "artifacts/atlas-sbom-" + process.env.GITHUB_SHA + ".spdx.json";
             const doc = JSON.parse(fs.readFileSync(file, "utf8"));
             if (!doc.spdxVersion || !Array.isArray(doc.packages) || doc.packages.length === 0) {
               throw new Error("SBOM is missing SPDX metadata or package records");
             }
-            console.log(`✓ SBOM valid (${doc.packages.length} packages)`);
+            console.log("✓ SBOM valid (" + doc.packages.length + " packages)");
           '
 
       - name: Upload SBOM

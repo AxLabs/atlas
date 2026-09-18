@@ -1,0 +1,137 @@
+name: Trusted Self-Hosted CI
+
+# Callable only after this file exists on main. Phase-2 callers pin:
+# blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
+#
+# Organization runner-group workflow allowlists should include exactly that path.
+# This is the only workflow in Atlas that may target the Blitzcraft OSS Trusted group.
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  workflow_call:
+    inputs:
+      suite:
+        description: ci, ui-quality, or bundle
+        type: string
+        required: true
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+jobs:
+  execute:
+    name: ${{ inputs.suite }} (trusted runner)
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on:
+      group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft OSS Trusted' }}
+      labels: ci
+    timeout-minutes: 90
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      BUDGET_TOTAL_STATIC_JS_KB: 3000
+      BUDGET_LARGEST_CHUNK_KB: 950
+      MAX_BUNDLE_GROWTH_KB: 100
+      MAX_BUNDLE_GROWTH_PERCENT: 15
+      CI_CHECKOUT_DIR:
+        ${{ inputs.suite == 'ci' && format('ci-ws-r{0}', github.run_id) || inputs.suite ==
+        'ui-quality' && format('ui-ws-r{0}', github.run_id) || format('bundle-ws-r{0}',
+        github.run_id) }}
+    defaults:
+      run:
+        working-directory: ${{ env.CI_CHECKOUT_DIR }}
+    steps:
+      - name: Validate suite input
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          case "${{ inputs.suite }}" in
+            ci|ui-quality|bundle)
+              echo "Trusted self-hosted suite: ${{ inputs.suite }}"
+              ;;
+            *)
+              echo "Unsupported trusted self-hosted suite: ${{ inputs.suite }}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Repair default workspace permissions
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          ws="${{ github.workspace }}"
+          if [ -d "$ws" ] && find "$ws" -user root -print -quit 2>/dev/null | grep -q .; then
+            echo "Repairing root-owned files in ${ws}"
+            sudo chown -R "$(id -u):$(id -g)" "$ws" 2>/dev/null || sudo rm -rf "$ws" 2>/dev/null || \
+              echo "Warning: could not repair ${ws}; continuing with isolated checkout subdirectory."
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          path: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Link checkout for composite actions
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          case "${{ inputs.suite }}" in
+            ci) target="ci-link-ci" ;;
+            ui-quality) target="ci-link-ui" ;;
+            bundle) target="ci-link-bundle" ;;
+          esac
+          if [[ -e "${target}" && ! -L "${target}" ]]; then
+            echo "Removing stale non-symlink checkout dir: ${target}"
+            rm -rf "${target}" 2>/dev/null || sudo rm -rf "${target}"
+          fi
+          ln -sfn "${{ env.CI_CHECKOUT_DIR }}" "${target}"
+
+      - name: Setup CI Node (ci)
+        if: inputs.suite == 'ci'
+        uses: ./ci-link-ci/.github/actions/setup-ci-node
+
+      - name: Setup CI Node (ui-quality)
+        if: inputs.suite == 'ui-quality'
+        uses: ./ci-link-ui/.github/actions/setup-ci-node
+
+      - name: Setup CI Node (bundle)
+        if: inputs.suite == 'bundle'
+        uses: ./ci-link-bundle/.github/actions/setup-ci-node
+
+      - name: Run CI suite
+        if: inputs.suite == 'ci'
+        uses: ./ci-link-ci/.github/actions/run-ci-suite
+        with:
+          runner-profile: self-hosted
+          checkout-dir: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Run UI quality suite
+        if: inputs.suite == 'ui-quality'
+        uses: ./ci-link-ui/.github/actions/run-ui-quality-suite
+        with:
+          runner-profile: self-hosted
+          checkout-dir: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Run bundle analysis suite
+        if: inputs.suite == 'bundle'
+        uses: ./ci-link-bundle/.github/actions/run-bundle-analysis-suite
+        with:
+          runner-profile: self-hosted
+
+      - name: Cleanup job artifacts (ci)
+        if: always() && inputs.suite == 'ci'
+        uses: ./ci-link-ci/.github/actions/cleanup-self-hosted-job
+
+      - name: Cleanup job artifacts (ui-quality)
+        if: always() && inputs.suite == 'ui-quality'
+        uses: ./ci-link-ui/.github/actions/cleanup-self-hosted-job
+
+      - name: Cleanup job artifacts (bundle)
+        if: always() && inputs.suite == 'bundle'
+        uses: ./ci-link-bundle/.github/actions/cleanup-self-hosted-job

@@ -54,11 +54,15 @@ pnpm lint && pnpm typecheck && pnpm test
 
 ## Composite actions
 
-| Action                    | Purpose                                                                    |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `setup-atlas-ci`          | Node 22 + pnpm; GitHub Actions pnpm cache or self-hosted persistent stores |
-| `setup-ci-node`           | Self-hosted Node/pnpm setup for isolated per-job checkouts                 |
-| `cleanup-self-hosted-job` | Clears per-job temp HOME on self-hosted runners                            |
+| Action                       | Purpose                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `setup-atlas-ci`             | Node 22 + pnpm; GitHub Actions pnpm cache or self-hosted persistent stores |
+| `setup-self-hosted-checkout` | Isolated checkout + persistent caches on trusted self-hosted runners       |
+| `setup-ci-node`              | Self-hosted Node/pnpm setup for isolated per-job checkouts                 |
+| `run-ci-suite`               | Shared CI checks for GitHub-hosted and trusted self-hosted paths           |
+| `run-ui-quality-suite`       | Shared Storybook, accessibility, and visual regression checks              |
+| `run-bundle-analysis-suite`  | Shared bundle size analysis and budget checks                              |
+| `cleanup-self-hosted-job`    | Clears per-job temp HOME on self-hosted runners                            |
 
 ## GitHub-hosted (default)
 
@@ -67,58 +71,109 @@ No configuration required. `setup-atlas-ci` uses `actions/setup-node` with `cach
 Optional: set [Turbo remote cache](https://turbo.build/repo/docs/core-concepts/remote-caching)
 secrets (`TURBO_TOKEN`, `TURBO_TEAM`) in the repository if your team uses Vercel remote caching.
 
-## Self-hosted runners (opt-in)
+Trusted self-hosted migration is staged in two phases. See
+[ci-trusted-runner-migration.md](ci-trusted-runner-migration.md) before enabling the organization
+runner-group allowlist.
 
-For a private runner fleet with persistent disk:
+## Self-hosted runners (opt-in maintainer acceleration)
+
+Atlas defaults to **GitHub-hosted** runners. No repository variables, runner groups, or BlitzCraft
+infrastructure are required for forks or downstream consumers.
+
+BlitzCraft Labs may opt into a persistent self-hosted fleet as a performance optimization for
+**trusted same-repository work** (pushes to `main` and maintainer PRs where
+`head.repo.full_name == github.repository`). External fork PRs always stay on GitHub-hosted runners,
+even when `ATLAS_CI_RUNNER_PROFILE=self-hosted`.
+
+### Architecture
+
+Only one workflow may target the trusted runner group directly:
+
+`.github/workflows/trusted-self-hosted.yml`
+
+Callers pin it to the trusted main revision:
+
+`blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
+
+The organization runner-group workflow allowlist should include exactly that path. The reusable
+workflow enforces the fork trust gate internally; callers also compute `ATLAS_CI_USE_SELF_HOSTED` so
+fork PRs never invoke the trusted path. Atlas does not use `pull_request_target` to execute
+untrusted PR code.
+
+| Workflow / job family | GitHub-hosted fallback | May use trusted self-hosted |
+| --------------------- | ---------------------- | --------------------------- |
+| **CI**                | Always                 | Trusted same-repo work only |
+| **UI Quality**        | Always                 | Trusted same-repo work only |
+| **Bundle Analysis**   | Always                 | Trusted same-repo work only |
+| **Governance**        | Always                 | No                          |
+| **Secrets Scan**      | Always                 | No                          |
+| **Security Audit**    | Always                 | No                          |
+| **Release**           | Always                 | No                          |
+
+### Enable
 
 ```bash
 pnpm ci:self-hosted:enable
 ```
 
-Set repository variable:
+Set repository variables (Settings → Actions → Variables):
 
-| Name                      | Value         |
-| ------------------------- | ------------- |
-| `ATLAS_CI_RUNNER_PROFILE` | `self-hosted` |
+| Name                      | Value                    | Required |
+| ------------------------- | ------------------------ | -------- |
+| `ATLAS_CI_RUNNER_PROFILE` | `self-hosted`            | Yes      |
+| `ATLAS_CI_RUNNER_GROUP`   | `Blitzcraft OSS Trusted` | Optional |
 
-Register runners with the `ci` label. Bootstrap each host:
+Register runners in the `Blitzcraft OSS Trusted` runner group with the `ci` capability label.
+Bootstrap each host:
 
 ```bash
 sudo mkdir -p /var/cache/ci
 sudo chown -R <runner-user>:<runner-user> /var/cache/ci
 ```
 
-**Trust boundary:** push access to the canonical Atlas repository is part of the trusted
-self-hosted-runner boundary. Fork pull requests (`head.repo.full_name != github.repository`) always
-run on GitHub-hosted runners, even when `ATLAS_CI_RUNNER_PROFILE=self-hosted`. Atlas does not use
-`pull_request_target` to execute untrusted PR code.
+Downstream organizations may configure their own runner infrastructure independently; Atlas does not
+assume access to BlitzCraft runner groups, secrets, or host paths.
 
-Self-hosted E2E runs inside the matching `mcr.microsoft.com/playwright` Docker image so Chromium and
-WebKit system libraries are available without `sudo apt-get` in CI jobs (the runner user cannot
-elevate for `playwright install --with-deps`). GitHub-hosted CI installs both required browsers
-explicitly. Playwright configs define the same projects locally and in CI. Web and reference suites
-run sequentially in one container to reduce runner disk pressure. Installs on self-hosted runners
-materialize host-only optional dependencies (`linux`/`x64` override); the Governance job on
-`ubuntu-latest` still installs the full Atlas-supported architecture set for deterministic license
-auditing. The container runs as the host runner user (`--user "$(id -u):$(id -g)"`) so Playwright
-and Next.js artifacts written through the bind-mounted workspace are not owned by root. pnpm is
-invoked via `corepack pnpm` from the repository root so Corepack honors the repo's `packageManager`
-field without `corepack enable`. Playwright's dev server command uses `corepack pnpm dev` so the
-webServer subprocess can resolve pnpm inside the container. Ensure Docker is installed and the
-runner user can run containers.
+### Execution details
 
-The **CI** job uses `runs-on: [self-hosted, ci]`, a single isolated per-run checkout subdirectory
-under `${{ github.workspace }}` (so a poisoned default workdir does not block `actions/checkout`),
-and persistent stores:
+Self-hosted E2E and UI visual checks run inside the matching `mcr.microsoft.com/playwright` Docker
+image so Chromium and WebKit system libraries are available without `sudo apt-get` in CI jobs (the
+runner user cannot elevate for `playwright install --with-deps`). GitHub-hosted CI installs both
+required browsers explicitly. Playwright configs define the same projects locally and in CI. Web and
+reference suites run sequentially in one container to reduce runner disk pressure. Installs on
+self-hosted runners materialize host-only optional dependencies (`linux`/`x64` override); the
+Governance job on `ubuntu-latest` still installs the full Atlas-supported architecture set for
+deterministic license auditing. The container runs as the host runner user
+(`--user "$(id -u):$(id -g)"`) so Playwright and Next.js artifacts written through the bind-mounted
+workspace are not owned by root. pnpm is invoked via `corepack pnpm` from the repository root so
+Corepack honors the repo's `packageManager` field without `corepack enable`. Playwright's dev server
+command uses `corepack pnpm dev` so the webServer subprocess can resolve pnpm inside the container.
+Ensure Docker is installed and the runner user can run containers. Atlas workflows do not mount the
+host Docker socket into jobs.
+
+Trusted jobs use an isolated per-run checkout subdirectory under `${{ github.workspace }}` (so a
+poisoned default workdir does not block `actions/checkout`) and persistent stores:
 
 | Variable          | Default path                            |
 | ----------------- | --------------------------------------- |
 | `PNPM_STORE_DIR`  | `/var/cache/ci/pnpm-store/<owner-repo>` |
 | `TURBO_CACHE_DIR` | `/var/cache/ci/turbo/<owner-repo>`      |
 
-Override the root with `CI_CACHE_ROOT` on the runner host.
+Example for `blitzcraftlabs/atlas`:
 
-To revert: delete the variable (or set `github-hosted`). See `tools/ci-self-hosted/README.md`.
+```text
+/var/cache/ci/pnpm-store/blitzcraftlabs-atlas/
+/var/cache/ci/turbo/blitzcraftlabs-atlas/
+```
+
+Override the root with `CI_CACHE_ROOT` on the runner host. GitHub-hosted runs continue to use
+`actions/setup-node` caching.
+
+`pnpm security:workflow-check` fails if another workflow targets the trusted runner group, omits the
+fork trust gate, or removes the GitHub-hosted fallback path.
+
+To revert: delete `ATLAS_CI_RUNNER_PROFILE` (or set `github-hosted`). See
+`tools/ci-self-hosted/README.md`.
 
 ## What Atlas does not ship in default CI
 
@@ -173,14 +228,14 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 - Jobs: **Governance**, **CI**, **Secrets Scan**, plus **Security Audit** from `security-audit.yml`
 - **CI** runs change detection first, then skips heavy steps on docs-only PRs
-- Self-hosted runs consume one `[self-hosted, ci]` runner slot per workflow (not three)
+- Self-hosted runs consume one `Blitzcraft OSS Trusted` / `ci` runner slot per workflow (not three)
 - Fork PRs never use the persistent self-hosted runner
 
 ### 4. Self-hosted profile (if applicable)
 
 1. Set `ATLAS_CI_RUNNER_PROFILE=self-hosted` on the repo.
 2. Push a branch with an app change.
-3. Confirm jobs land on `[self-hosted, ci]` runners.
+3. Confirm jobs land on the `Blitzcraft OSS Trusted` runner group (`ci` label).
 4. Second run on the same host should show faster `pnpm install` (warm store).
 
 ## Branch protection

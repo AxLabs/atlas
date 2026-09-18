@@ -108,8 +108,10 @@ reduce XSS theft; they do not encrypt the verifier at rest in the browser cookie
 
 When `ATLAS_CI_RUNNER_PROFILE=self-hosted`:
 
-**Mitigated in workflow:** fork PRs cannot select the persistent runner; isolated per-run checkout
-subdirectory; job temp HOME; Playwright E2E in a container as the runner user.
+**Mitigated in workflow:** only the main-pinned reusable workflow
+(`.github/workflows/trusted-self-hosted.yml`) may target the `Blitzcraft OSS Trusted` runner group;
+fork PRs cannot select the persistent runner; isolated per-run checkout subdirectory; job temp HOME;
+Playwright E2E in a container as the runner user.
 
 **Trusted-operator residual (not fully mitigated by Atlas):** persistent pnpm/Turbo caches; Docker
 daemon access on the host (E2E uses Docker); host network for Playwright container; workspace
