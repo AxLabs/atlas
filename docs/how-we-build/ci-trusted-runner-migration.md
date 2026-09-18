@@ -18,13 +18,20 @@ Do **not** enable the organization runner-group workflow allowlist yet.
 
 ## Phase 2 (after Phase 1 is on main)
 
-Open the Phase-2 migration PR (`ci/trusted-self-hosted-runner-phase2`) which:
+Open a Phase-2 migration PR (suggested branch: `ci/trusted-self-hosted-runner-phase2`) **only after
+Phase 1 is on `main`**. That PR must:
 
-1. Removes direct `[self-hosted, ci]` targeting from caller workflows.
-2. Pins callers to: `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
-3. Adds hosted executors (`CI (hosted)`, `UI Quality (hosted)`, `Bundle Analysis (hosted)`) and
-   final aggregators (`CI`, `UI Quality`, `Bundle Analysis`) for branch protection.
-4. Enables strict Phase-2 CI runner policy validation.
+1. Remove direct `[self-hosted, ci]` targeting from caller workflows.
+2. Pin callers to: `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
+   with only `with.suite` — no `runner_group`, `check_name`, `timeout-minutes`, or
+   `secrets: inherit` on reusable-workflow caller jobs.
+3. Add hosted executors (`CI (hosted)`, `UI Quality (hosted)`, `Bundle Analysis (hosted)`) and final
+   aggregators (`CI`, `UI Quality`, `Bundle Analysis`) for branch protection.
+4. Use `vars`/`github` expressions in job-level `if:` (the `env` context is unavailable on
+   reusable-workflow caller jobs).
+5. Pass only explicit secrets where required (`CODECOV_TOKEN` for the `ci` trusted caller).
+
+Phase-2 policy validation activates automatically once callers reference `trusted-self-hosted.yml`.
 
 Then configure GitHub manually:
 
