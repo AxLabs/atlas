@@ -1,9 +1,10 @@
 name: Trusted Self-Hosted CI
 
-# Callable only after this file exists on main. Phase-2 callers pin:
-# blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
-#
-# Organization runner-group workflow allowlists should include exactly that path.
+# Callable only after this file exists on main.
+# Reusable workflow callers pin:
+#   blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main
+# Organization runner-group workflow allowlist (do not change):
+#   blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
 # This is the only Atlas workflow that may target the Blitzcraft Trusted CI group.
 
 permissions:

@@ -37,6 +37,9 @@ Configure the organization runner-group workflow allowlist to include exactly:
 
 `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
 
+Reusable workflow callers in Atlas use a different GitHub format (`trusted-self-hosted.yml@main`).
+Do not copy the allowlist string into `uses:`.
+
 ## Disable
 
 ```bash

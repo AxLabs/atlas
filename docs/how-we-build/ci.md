@@ -91,14 +91,17 @@ Only one workflow may target the trusted runner group directly:
 
 `.github/workflows/trusted-self-hosted.yml`
 
-Callers pin it to the trusted main revision:
+Callers pin the reusable workflow with the GitHub Actions caller ref:
+
+`blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main`
+
+The organization runner-group workflow allowlist is a different GitHub format and must remain:
 
 `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
 
-The organization runner-group workflow allowlist should include exactly that path. The reusable
-workflow enforces the fork trust gate internally; callers also compute `ATLAS_CI_USE_SELF_HOSTED`
-from `vars`/`github` so fork PRs never invoke the trusted path. Atlas does not use
-`pull_request_target` to execute untrusted PR code.
+The reusable workflow enforces the fork trust gate internally; callers also compute
+`ATLAS_CI_USE_SELF_HOSTED` from `vars`/`github` so fork PRs never invoke the trusted path. Atlas
+does not use `pull_request_target` to execute untrusted PR code.
 
 | Workflow / job family | GitHub-hosted fallback             | May use trusted self-hosted |
 | --------------------- | ---------------------------------- | --------------------------- |

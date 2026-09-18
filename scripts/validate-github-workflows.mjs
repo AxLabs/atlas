@@ -23,8 +23,10 @@ const FAIL_OPEN_AUDIT_PATTERN =
   /(?:pnpm\s+audit|security:check|security-audit\.mjs)[\s\S]{0,80}\|\|\s*true/;
 
 export const TRUSTED_SELF_HOSTED_WORKFLOW = ".github/workflows/trusted-self-hosted.yml";
-export const TRUSTED_WORKFLOW_PIN = "trusted-self-hosted.yml@refs/heads/main";
+export const TRUSTED_WORKFLOW_PIN = "trusted-self-hosted.yml@main";
 export const TRUSTED_WORKFLOW_USES =
+  "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main";
+export const TRUSTED_WORKFLOW_ALLOWLIST =
   "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main";
 export const DEFAULT_RUNNER_GROUP = "Blitzcraft Trusted CI";
 export const LEGACY_RUNNER_GROUP = "Blitzcraft OSS Trusted";

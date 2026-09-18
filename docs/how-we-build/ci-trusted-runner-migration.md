@@ -32,11 +32,24 @@ Blitzcraft Trusted CI
 | Capacity          | `RUNNER_COUNT=2` (slots 3 and 4 inactive)                                        |
 | Persistent caches | `/var/cache/ci`                                                                  |
 | Atlas allowlist   | `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main` |
+| Caller `uses:`    | `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main`            |
 
 The group is **shared** with selected trusted private BlitzCraft workflows (for example Aviatopia
 and publishing-platform CI). Atlas is not the only consumer. Atlas can reach Turing **only** through
-the main-pinned reusable workflow above. Callers must never use `runs-on: [self-hosted, ci]`,
+the main-pinned reusable workflow. Callers must never use `runs-on: [self-hosted, ci]`,
 `runs-on.group`, or runner identities (`turing-ci-1` / `turing-ci-2`).
+
+These two GitHub formats are not interchangeable:
+
+```text
+Reusable workflow caller:
+blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main
+
+Runner-group workflow allowlist:
+blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
+```
+
+Do not change the organization runner-group allowlist to match the caller `uses:` string.
 
 `ATLAS_CI_RUNNER_GROUP` stays optional/unset. The trusted workflow defaults to
 `Blitzcraft Trusted CI`.
@@ -62,7 +75,7 @@ Caller workflows (`ci.yml`, `ui-quality.yml`, `perf-bundle.yml`) each have three
 Trusted callers pin exactly:
 
 ```text
-blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
+blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main
 ```
 
 They pass only `with.suite`. They do not set `runs-on`, `runner_group`, `check_name`,

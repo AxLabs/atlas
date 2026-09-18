@@ -10,6 +10,7 @@ import {
   TRUSTED_SELF_HOSTED_WORKFLOW,
   TRUSTED_WORKFLOW_PIN,
   TRUSTED_WORKFLOW_USES,
+  TRUSTED_WORKFLOW_ALLOWLIST,
   aggregateRequiredCheckResults,
   callersUseTrustedWorkflow,
   resolveIsolatedWorkspacePath,
@@ -248,14 +249,42 @@ describe("CI runner policy", () => {
     assert.deepEqual(errors, []);
   });
 
-  it("rejects mutable trusted workflow pins in Phase 2", () => {
+  it("uses @main for reusable-workflow callers and keeps the allowlist on refs/heads/main", () => {
+    assert.equal(TRUSTED_WORKFLOW_PIN, "trusted-self-hosted.yml@main");
+    assert.equal(
+      TRUSTED_WORKFLOW_USES,
+      "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main",
+    );
+    assert.equal(
+      TRUSTED_WORKFLOW_ALLOWLIST,
+      "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main",
+    );
+  });
+
+  it("rejects incorrect reusable-workflow caller refs in Phase 2", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "atlas-ci-policy-"));
     writePhase2Callers(root, {
-      ci: phase2Caller.replace(TRUSTED_WORKFLOW_PIN, "trusted-self-hosted.yml@main"),
+      ci: phase2Caller.replace(TRUSTED_WORKFLOW_PIN, "trusted-self-hosted.yml@refs/heads/main"),
     });
 
     const errors = validateCiRunnerPolicy(root);
-    assert.match(errors.join("\n"), /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@refs\/heads\/main/);
+    assert.match(
+      errors.join("\n"),
+      /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@main/,
+    );
+  });
+
+  it("rejects mutable trusted workflow pins in Phase 2", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "atlas-ci-policy-"));
+    writePhase2Callers(root, {
+      ci: phase2Caller.replace(TRUSTED_WORKFLOW_PIN, "trusted-self-hosted.yml@master"),
+    });
+
+    const errors = validateCiRunnerPolicy(root);
+    assert.match(
+      errors.join("\n"),
+      /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@main/,
+    );
   });
 
   it("rejects secrets inherit, caller runner group, and caller timeout on trusted jobs", () => {
