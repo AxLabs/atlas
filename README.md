@@ -26,6 +26,25 @@ live in your repository and remain under your control. Atlas does not publish a 
 
 ## Quick start
 
+### Clone this repository
+
+The currently executable path is a clone of this repository:
+
+```bash
+git clone https://github.com/blitzcraftlabs/atlas.git
+cd atlas
+corepack enable
+pnpm install
+cp apps/web/.env.example apps/web/.env.local
+pnpm --filter @atlas/web dev
+```
+
+Requires Node.js `>=22` and pnpm `>=10`.
+
+```text
+Open http://localhost:3000
+```
+
 ### Public CLI (pending first registry publication)
 
 ```bash
@@ -38,21 +57,6 @@ pnpm dev
 `@blitzcraftlabs/atlas` is not on the npm registry yet. Do not treat `pnpm dlx` as live until
 registry verification passes for `@blitzcraftlabs/atlas@1.0.1`. Canonical GitHub `v1.0.0` remains
 the first stable platform release; `1.0.1` is the intended first npm-published version.
-
-### Clone this repository
-
-Until that registry publication is verified, the currently executable path is a clone of this
-repository:
-
-```bash
-git clone https://github.com/blitzcraftlabs/atlas.git
-cd atlas
-corepack enable
-pnpm install
-pnpm dev
-```
-
-Requires Node.js `>=22` and pnpm `>=10`. Open `http://localhost:3000`.
 
 ## What you get
 

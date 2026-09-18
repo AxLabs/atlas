@@ -57,7 +57,7 @@ export function formatInitResult(result: CommandResult, dryRun: boolean): string
         `  cd ${result.repoRoot}`,
         "  pnpm install",
         "  pnpm dev",
-        "  pnpm dlx @blitzcraftlabs/atlas doctor"
+        `  pnpm dlx @blitzcraftlabs/atlas@${result.atlasVersion} doctor`
       );
     }
 

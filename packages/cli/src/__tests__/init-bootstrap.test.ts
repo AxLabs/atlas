@@ -596,7 +596,8 @@ describe("atlas init bootstrap generated project", () => {
         expect(readme).toContain(`generated from Atlas ${manifest.atlasVersion}`);
         expect(readme).toContain("pnpm install");
         expect(readme).toContain("pnpm dev");
-        expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
+        expect(readme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${manifest.atlasVersion} doctor`);
+        expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
         expect(readme).not.toContain("pnpm atlas -- doctor");
         expect(readme).not.toContain("pnpm atlas");
         expect(readme).not.toContain("publication path is finalized");

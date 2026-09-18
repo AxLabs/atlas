@@ -389,13 +389,15 @@ process.stdout.write(JSON.stringify({
       const generatedReadme = readFileSync(path.join(generatedRoot, "README.md"), "utf8");
       expect(generatedReadme).toContain("pnpm install");
       expect(generatedReadme).toContain("pnpm dev");
-      expect(generatedReadme).toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
+      expect(generatedReadme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${cliVersion} doctor`);
+      expect(generatedReadme).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
       expect(generatedReadme).not.toContain("pnpm atlas -- doctor");
       expect(generatedReadme).not.toContain("publication path is finalized");
 
       expect(init.stdout).toContain("pnpm install");
       expect(init.stdout).toContain("pnpm dev");
-      expect(init.stdout).toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
+      expect(init.stdout).toContain(`pnpm dlx @blitzcraftlabs/atlas@${cliVersion} doctor`);
+      expect(init.stdout).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
       expect(init.stdout).not.toContain("pnpm atlas -- doctor");
       expect(init.stdout).not.toContain("publication path is finalized");
 

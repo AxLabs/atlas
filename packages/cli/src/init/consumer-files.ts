@@ -92,7 +92,7 @@ Generated projects do not include an \`atlas\` package script. From this directo
 the published CLI:
 
 \`\`\`bash
-pnpm dlx @blitzcraftlabs/atlas doctor
+pnpm dlx @blitzcraftlabs/atlas@${options.atlasVersion} doctor
 \`\`\`
 
 ## Documentation

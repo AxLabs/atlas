@@ -64,13 +64,16 @@ atlas upgrade --to <version> --dry-run --json
 | `atlas context [--json]`       | Resolve the executable project contract for agents                 |
 | `atlas upgrade --to <version>` | Plan or apply a supported Atlas upgrade                            |
 
-Useful flags covered by the public 1.0 contract:
+Selected supported flags:
 
 - `atlas init`: `--dry-run`, `--json`, `--env skip|copy`
 - `atlas doctor`: `--json`, `--cwd <path>`
 - `atlas generate`: `--query`, `--mutation`, `--form`, `--tests`, `--dry-run`, `--json`
 - `atlas context`: `--json`, `--cwd <path>`
 - `atlas upgrade`: `--to <version>`, `--dry-run`, `--json`, `--allow-dirty`
+
+Which surfaces are SemVer-frozen is defined by the
+[1.0 stability contract](https://github.com/blitzcraftlabs/atlas/blob/main/docs/how-we-build/releases-and-governance.md#atlas-10-stability-contract).
 
 Run `atlas <command> --help` for the full command surface.
 
