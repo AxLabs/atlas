@@ -6,12 +6,82 @@ function story(page: Page) {
   return page.locator(STORYBOOK_ROOT);
 }
 
-async function expectFocusInside(container: Locator) {
+type ModalFocusCategory = "trapped" | "violation";
+type ModalFocusState =
+  | "dialog-control"
+  | "focus-guard"
+  | "escaped-trigger"
+  | "escaped-host"
+  | "escaped-body"
+  | "escaped-other"
+  | "invalid";
+
+interface ModalFocusClassification {
+  category: ModalFocusCategory;
+  state: ModalFocusState;
+}
+
+/**
+ * Valid trapped focus while a modal is open:
+ * - a descendant of `[role=dialog]` (Cancel, Continue, etc.)
+ * - a Base UI `[data-base-ui-focus-guard]` sentinel (trap internals, outside the dialog node)
+ *
+ * Violations: trigger, other `#storybook-root` controls, `body`, or any other host-page target.
+ */
+async function classifyModalFocus(page: Page): Promise<ModalFocusClassification> {
+  return page.evaluate((storyRootSelector) => {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) {
+      return { category: "violation", state: "invalid" };
+    }
+
+    const dialog = document.querySelector("[role='dialog']");
+    const trigger = document.querySelector(`${storyRootSelector} [data-slot='dialog-trigger']`);
+    const storyRoot = document.querySelector(storyRootSelector);
+
+    if (dialog?.contains(active)) {
+      return { category: "trapped", state: "dialog-control" };
+    }
+    if (active.hasAttribute("data-base-ui-focus-guard")) {
+      return { category: "trapped", state: "focus-guard" };
+    }
+    if (trigger === active || trigger?.contains(active)) {
+      return { category: "violation", state: "escaped-trigger" };
+    }
+    if (storyRoot?.contains(active)) {
+      return { category: "violation", state: "escaped-host" };
+    }
+    if (active.tagName === "BODY") {
+      return { category: "violation", state: "escaped-body" };
+    }
+    return { category: "violation", state: "escaped-other" };
+  }, STORYBOOK_ROOT);
+}
+
+async function assertFocusTrapped(page: Page) {
+  const result = await classifyModalFocus(page);
+  expect(result.category, `Modal focus escaped to ${result.state} while dialog is open`).toBe(
+    "trapped"
+  );
+}
+
+async function expectModalFocusTrapped(page: Page) {
   await expect
-    .poll(async () => container.evaluate((element) => element.contains(document.activeElement)), {
-      timeout: 10_000,
-    })
-    .toBe(true);
+    .poll(
+      async () => {
+        const result = await classifyModalFocus(page);
+        if (
+          result.state === "escaped-host" ||
+          result.state === "escaped-body" ||
+          result.state === "escaped-other"
+        ) {
+          throw new Error(`Modal focus escaped to ${result.state} while dialog is open`);
+        }
+        return result.category;
+      },
+      { timeout: 10_000 }
+    )
+    .toBe("trapped");
 }
 
 async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
@@ -21,29 +91,29 @@ async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
     }
     await page.keyboard.press("Tab");
   }
+
+  expect(
+    await target.evaluate((element) => element === document.activeElement),
+    `Tabbed ${maxAttempts} times without focusing the target element`
+  ).toBe(true);
 }
 
-async function focusByTabbingInside(target: Locator, page: Page, container: Locator) {
-  await expect
-    .poll(
-      async () => {
-        if (await target.evaluate((element) => element === document.activeElement)) {
-          return "focused";
-        }
-        await page.keyboard.press("Tab");
-        const focusInside = await container.evaluate((element) =>
-          element.contains(document.activeElement)
-        );
-        if (!focusInside) {
-          return "escaped";
-        }
-        return (await target.evaluate((element) => element === document.activeElement))
-          ? "focused"
-          : "tabbing";
-      },
-      { timeout: 10_000 }
-    )
-    .toBe("focused");
+async function focusByTabbingInsideTrapped(target: Locator, page: Page, maxAttempts = 16) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      return;
+    }
+    await page.keyboard.press("Tab");
+    await assertFocusTrapped(page);
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      return;
+    }
+  }
+
+  expect(
+    await target.evaluate((element) => element === document.activeElement),
+    `Tabbed ${maxAttempts} times without focusing the target while keeping focus trapped`
+  ).toBe(true);
 }
 
 async function pressShiftTab(page: Page) {
@@ -52,19 +122,22 @@ async function pressShiftTab(page: Page) {
   await page.keyboard.up("Shift");
 }
 
-async function focusByShiftTabbing(
-  target: Locator,
-  page: Page,
-  container: Locator,
-  maxAttempts = 8
-) {
+async function focusByShiftTabbingInsideTrapped(target: Locator, page: Page, maxAttempts = 16) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     if (await target.evaluate((element) => element === document.activeElement)) {
       return;
     }
     await pressShiftTab(page);
-    await expectFocusInside(container);
+    await assertFocusTrapped(page);
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      return;
+    }
   }
+
+  expect(
+    await target.evaluate((element) => element === document.activeElement),
+    `Shift+Tabbed ${maxAttempts} times without focusing the target while keeping focus trapped`
+  ).toBe(true);
 }
 
 async function highlightedSelectOption(page: Page) {
@@ -162,38 +235,90 @@ test.describe("Dialog keyboard composition", () => {
 
     await page.keyboard.press("Enter");
     await expect(dialog).toBeVisible();
-    await expectFocusInside(dialog);
+    await expectModalFocusTrapped(page);
 
     const cancel = dialog.getByRole("button", { name: "Cancel" });
     const continueButton = dialog.getByRole("button", { name: "Continue" });
     await expect(cancel).toBeVisible();
     await expect(continueButton).toBeVisible();
-    await focusByTabbingInside(cancel, page, dialog);
+
+    // Forward traversal: Tab until the last dialog control is focused. Base UI may land initial
+    // focus on Cancel, Continue, or a focus-guard sentinel — do not assume a fixed order.
+    await focusByTabbingInsideTrapped(continueButton, page);
+    await expect(continueButton).toBeFocused();
+    await assertFocusTrapped(page);
+
+    // Reverse traversal from a known dialog control. Run this before the boundary probe so
+    // Shift+Tab does not start from a post-wrap focus-guard state that WebKit can route via the
+    // trigger.
+    await focusByShiftTabbingInsideTrapped(cancel, page);
     await expect(cancel).toBeFocused();
-    await expectFocusInside(dialog);
+    await assertFocusTrapped(page);
 
+    // Boundary probe: Tab past the last known control. Focus must stay trapped (dialog controls or
+    // Base UI focus guards). Host-page controls and the trigger must not become active targets.
     await page.keyboard.press("Tab");
-    await expect
-      .poll(async () => continueButton.evaluate((element) => element === document.activeElement))
-      .toBe(true);
-    await expect(cancel).toBeVisible();
-    await expectFocusInside(dialog);
-
-    await focusByShiftTabbing(cancel, page, dialog);
-    await expect(cancel).toBeVisible();
-    await expect(cancel).toBeFocused();
-    await expectFocusInside(dialog);
-
-    // Boundary probe: Tab past the last known control. Focus must remain inside the dialog
-    // (Base UI may cycle to its own focus-guard sentinel elements rather than the first visible
-    // control). We accept that outcome — the intent is that focus cannot escape to the host page.
-    // Do not assert the exact first/last wrap element to avoid cross-engine flakiness.
-    await page.keyboard.press("Tab");
-    await expectFocusInside(dialog);
+    await assertFocusTrapped(page);
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(trigger).toBeFocused();
+  });
+
+  test("expect.poll can mask a temporary escape when only the final state is checked", async () => {
+    let step = 0;
+    await expect
+      .poll(
+        async () => {
+          step += 1;
+          if (step === 1) {
+            return "escaped";
+          }
+          if (step === 2) {
+            return "tabbing";
+          }
+          return "focused";
+        },
+        { timeout: 1_000 }
+      )
+      .toBe("focused");
+
+    expect(step).toBeGreaterThan(1);
+  });
+
+  test("assertFocusTrapped fails immediately when focus is forced onto the trigger", async ({
+    page,
+    baseURL,
+  }) => {
+    await gotoStory(page, baseURL!, "ui-dialog--keyboard-interaction", "light", {
+      disablePlay: true,
+    });
+
+    const trigger = story(page).getByRole("button", { name: "Open Dialog" });
+    const dialog = page.getByRole("dialog");
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeVisible();
+    await expectModalFocusTrapped(page);
+
+    await page.evaluate((storyRootSelector) => {
+      const element = document.querySelector(`${storyRootSelector} [data-slot='dialog-trigger']`);
+      if (element instanceof HTMLElement) {
+        element.focus();
+      }
+    }, STORYBOOK_ROOT);
+
+    const classification = await classifyModalFocus(page);
+    expect(classification.category).toBe("violation");
+    expect(classification.state).toBe("escaped-trigger");
+
+    let rejectedEscape = false;
+    try {
+      await assertFocusTrapped(page);
+    } catch {
+      rejectedEscape = true;
+    }
+    expect(rejectedEscape).toBe(true);
   });
 });
 

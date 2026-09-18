@@ -3,6 +3,7 @@ node_modules
 .pnp
 .pnp.js
 .pnpm
+.pnpm-store
 
 # Forbidden lockfiles (pnpm-lock.yaml is the only allowed lockfile)
 package-lock.json
@@ -33,12 +34,14 @@ dist
 build
 storybook-static
 packages/ui/test-results
+packages/ui/.pw-webkit
 packages/ui/design-system-screenshots
 
 # Security / SBOM local output
 artifacts
 
 # Misc
+.tmp-shadcn-preset-test
 .DS_Store
 *.pem
 
