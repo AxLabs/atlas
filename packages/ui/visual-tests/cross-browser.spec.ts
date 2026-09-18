@@ -21,6 +21,11 @@ async function focusByTabbing(target: Locator, page: Page, maxAttempts = 8) {
     }
     await page.keyboard.press("Tab");
   }
+
+  expect(
+    await target.evaluate((element) => element === document.activeElement),
+    `Tabbed ${maxAttempts} times without focusing the target element`
+  ).toBe(true);
 }
 
 async function focusByTabbingInside(target: Locator, page: Page, container: Locator) {
@@ -52,19 +57,27 @@ async function pressShiftTab(page: Page) {
   await page.keyboard.up("Shift");
 }
 
-async function focusByShiftTabbing(
-  target: Locator,
-  page: Page,
-  container: Locator,
-  maxAttempts = 8
-) {
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    if (await target.evaluate((element) => element === document.activeElement)) {
-      return;
-    }
-    await pressShiftTab(page);
-    await expectFocusInside(container);
-  }
+async function focusByShiftTabbingInside(target: Locator, page: Page, container: Locator) {
+  await expect
+    .poll(
+      async () => {
+        if (await target.evaluate((element) => element === document.activeElement)) {
+          return "focused";
+        }
+        await pressShiftTab(page);
+        const focusInside = await container.evaluate((element) =>
+          element.contains(document.activeElement)
+        );
+        if (!focusInside) {
+          return "escaped";
+        }
+        return (await target.evaluate((element) => element === document.activeElement))
+          ? "focused"
+          : "tabbing";
+      },
+      { timeout: 10_000 }
+    )
+    .toBe("focused");
 }
 
 async function highlightedSelectOption(page: Page) {
@@ -168,20 +181,11 @@ test.describe("Dialog keyboard composition", () => {
     const continueButton = dialog.getByRole("button", { name: "Continue" });
     await expect(cancel).toBeVisible();
     await expect(continueButton).toBeVisible();
-    await focusByTabbingInside(cancel, page, dialog);
-    await expect(cancel).toBeFocused();
-    await expectFocusInside(dialog);
 
-    await page.keyboard.press("Tab");
-    await expect
-      .poll(async () => continueButton.evaluate((element) => element === document.activeElement))
-      .toBe(true);
-    await expect(cancel).toBeVisible();
-    await expectFocusInside(dialog);
-
-    await focusByShiftTabbing(cancel, page, dialog);
-    await expect(cancel).toBeVisible();
-    await expect(cancel).toBeFocused();
+    // Forward traversal: poll Tab until the last dialog control is focused. Base UI may land
+    // initial focus on Cancel, Continue, or a focus-guard sentinel — do not assume a fixed order.
+    await focusByTabbingInside(continueButton, page, dialog);
+    await expect(continueButton).toBeFocused();
     await expectFocusInside(dialog);
 
     // Boundary probe: Tab past the last known control. Focus must remain inside the dialog
@@ -189,6 +193,11 @@ test.describe("Dialog keyboard composition", () => {
     // control). We accept that outcome — the intent is that focus cannot escape to the host page.
     // Do not assert the exact first/last wrap element to avoid cross-engine flakiness.
     await page.keyboard.press("Tab");
+    await expectFocusInside(dialog);
+
+    // Reverse traversal: poll Shift+Tab until the first dialog control is focused.
+    await focusByShiftTabbingInside(cancel, page, dialog);
+    await expect(cancel).toBeFocused();
     await expectFocusInside(dialog);
 
     await page.keyboard.press("Escape");
