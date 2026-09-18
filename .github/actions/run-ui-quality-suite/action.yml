@@ -24,7 +24,7 @@ runs:
         BASE="${{ github.event.pull_request.base.sha }}"
         HEAD="${{ github.event.pull_request.head.sha }}"
 
-        BOOTSTRAP_PATTERN='^(scripts/ui-quality-paths\.mjs|scripts/__tests__/ui-quality-paths\.test\.mjs|scripts/storybook-critical-policy\.mjs|scripts/__tests__/storybook-critical-policy\.test\.mjs|scripts/__fixtures__/storybook-critical-policy/|scripts/license-exceptions\.mjs|scripts/license-policy\.mjs|packages/ui/\.storybook/critical-stories\.json|packages/ui/\.storybook/a11y-exceptions\.json|\.github/workflows/ui-quality\.yml)'
+        BOOTSTRAP_PATTERN='^(scripts/ui-quality-paths\.mjs|scripts/__tests__/ui-quality-paths\.test\.mjs|scripts/storybook-critical-policy\.mjs|scripts/__tests__/storybook-critical-policy\.test\.mjs|scripts/__fixtures__/storybook-critical-policy/|scripts/license-exceptions\.mjs|scripts/license-policy\.mjs|packages/ui/\.storybook/critical-stories\.json|packages/ui/\.storybook/a11y-exceptions\.json|\.github/workflows/ui-quality\.yml|\.github/actions/run-ui-quality-suite/action\.yml)'
 
         if git diff --name-only "$BASE" "$HEAD" | grep -qE "$BOOTSTRAP_PATTERN"; then
           echo "ui=true" >> "$GITHUB_OUTPUT"

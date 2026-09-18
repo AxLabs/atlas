@@ -13,6 +13,7 @@ import {
 
 const cli = path.join(REPO_ROOT, "scripts", "ui-quality-paths.mjs");
 const workflowPath = path.join(REPO_ROOT, ".github", "workflows", "ui-quality.yml");
+const suiteActionPath = path.join(REPO_ROOT, ".github", "actions", "run-ui-quality-suite", "action.yml");
 
 function runCli(args, { input } = {}) {
   try {
@@ -92,20 +93,22 @@ describe("UI Quality path classification", () => {
 
   it("requires the UI Quality workflow to invoke the classifier for ordinary changes", () => {
     const workflow = readFileSync(workflowPath, "utf8");
-    assert.match(workflow, /node scripts\/ui-quality-paths\.mjs --git-diff/);
+    const suiteAction = readFileSync(suiteActionPath, "utf8");
+    assert.match(workflow, /run-ui-quality-suite/);
+    assert.match(suiteAction, /node scripts\/ui-quality-paths\.mjs --git-diff/);
   });
 });
 
 describe("UI Quality workflow bootstrap guard (self-protection)", () => {
-  const workflow = readFileSync(workflowPath, "utf8");
+  const suiteAction = readFileSync(suiteActionPath, "utf8");
 
   it("declares an explicit BOOTSTRAP_PATTERN in the Detect UI changes step", () => {
-    assert.match(workflow, /BOOTSTRAP_PATTERN='[^']+'/);
+    assert.match(suiteAction, /BOOTSTRAP_PATTERN='[^']+'/);
   });
 
   it("evaluates the bootstrap guard before invoking the classifier script", () => {
-    const bootstrapIndex = workflow.indexOf("BOOTSTRAP_PATTERN=");
-    const classifierIndex = workflow.indexOf("node scripts/ui-quality-paths.mjs --git-diff");
+    const bootstrapIndex = suiteAction.indexOf("BOOTSTRAP_PATTERN=");
+    const classifierIndex = suiteAction.indexOf("node scripts/ui-quality-paths.mjs --git-diff");
     assert.ok(bootstrapIndex >= 0, "workflow must declare BOOTSTRAP_PATTERN");
     assert.ok(classifierIndex >= 0, "workflow must still invoke the classifier script");
     assert.ok(
@@ -119,10 +122,11 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
     // exactly what the bootstrap guard protects, so the guard's own detection logic must not call
     // back into that script (directly, via node, or otherwise) -- otherwise a broken or
     // maliciously "fixed" classifier could hide changes to itself.
-    const detectStepMatch = workflow.match(/name: Detect UI changes[\s\S]*?run: \|([\s\S]*?)(?=\n {6}- name:)/);
+    const detectStepMatch = suiteAction.match(/name: Detect UI changes[\s\S]*?run: \|([\s\S]*?)(?=\n    - name:)/);
     assert.ok(detectStepMatch, "could not locate the Detect UI changes step body");
     const fullStepBody = detectStepMatch[0];
-    const bootstrapGuardBody = fullStepBody.slice(0, fullStepBody.indexOf("Ordinary product/config changes"));
+    const classifierIndex = fullStepBody.indexOf("node scripts/ui-quality-paths.mjs --git-diff");
+    const bootstrapGuardBody = fullStepBody.slice(0, classifierIndex);
 
     assert.doesNotMatch(
       bootstrapGuardBody,
@@ -134,7 +138,7 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
   it("the workflow's bootstrap pattern matches every UI_QUALITY_BOOTSTRAP_PATHS entry", () => {
     // Proves the workflow's hand-written grep pattern (which cannot import JS modules) has not
     // drifted from the classifier's own source of truth for enforcement-infrastructure paths.
-    const patternMatch = workflow.match(/BOOTSTRAP_PATTERN='([^']+)'/);
+    const patternMatch = suiteAction.match(/BOOTSTRAP_PATTERN='([^']+)'/);
     assert.ok(patternMatch, "workflow must declare BOOTSTRAP_PATTERN");
     const bootstrapRegex = new RegExp(patternMatch[1]);
 
@@ -145,7 +149,7 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
   });
 
   it("does not classify unrelated files via the bootstrap pattern (stays minimal)", () => {
-    const patternMatch = workflow.match(/BOOTSTRAP_PATTERN='([^']+)'/);
+    const patternMatch = suiteAction.match(/BOOTSTRAP_PATTERN='([^']+)'/);
     assert.ok(patternMatch);
     const bootstrapRegex = new RegExp(patternMatch[1]);
 
@@ -159,7 +163,7 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
     // scripts/ui-quality-paths.mjs that (wrongly) reports "false" for a diff touching only itself.
     // The workflow-level guard must not depend on classifyUiQualityChanges at all, so it still
     // forces ui=true regardless of what the (hypothetically broken) classifier would have said.
-    const patternMatch = workflow.match(/BOOTSTRAP_PATTERN='([^']+)'/);
+    const patternMatch = suiteAction.match(/BOOTSTRAP_PATTERN='([^']+)'/);
     assert.ok(patternMatch);
     const bootstrapRegex = new RegExp(patternMatch[1]);
 
