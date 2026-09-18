@@ -156,6 +156,10 @@ jobs:
       - version-pr
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      action: ${{ steps.release.outputs.action }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
     permissions:
       contents: write
       actions: read
@@ -179,6 +183,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Publish canonical tag and GitHub Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_SHA: ${{ github.sha }}
@@ -187,7 +192,9 @@ jobs:
 
   npm-publish:
     name: Publish npm package
-    if: github.event_name == 'push' && needs.version-pr.outputs.has-changesets != 'true'
+    if:
+      github.event_name == 'push' && needs.version-pr.outputs.has-changesets != 'true' &&
+      needs.github-release.outputs.action == 'publish'
     needs:
       - github-release
       - version-pr

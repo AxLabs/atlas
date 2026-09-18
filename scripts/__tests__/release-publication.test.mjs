@@ -6,7 +6,12 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { generateSpdxSbom } from "../generate-sbom.mjs";
-import { createGitTag, preparePublication, runPublication } from "../publish-atlas-release.mjs";
+import {
+  createGitTag,
+  preparePublication,
+  runPublication,
+  writePublicationGithubOutputs,
+} from "../publish-atlas-release.mjs";
 import {
   PublicationError,
   REQUIRED_RELEASE_CHECK_WORKFLOWS,
@@ -1298,6 +1303,194 @@ describe("annotated tag identity", () => {
       rmSync(repoRoot, { recursive: true, force: true });
       rmSync(originRoot, { recursive: true, force: true });
     }
+  });
+});
+
+function readGithubOutputs(filePath) {
+  const outputs = {};
+  for (const line of readFileSync(filePath, "utf8").trim().split("\n")) {
+    const separator = line.indexOf("=");
+    if (separator === -1) {
+      continue;
+    }
+    outputs[line.slice(0, separator)] = line.slice(separator + 1);
+  }
+  return outputs;
+}
+
+function npmPublishEligible(action) {
+  return action === "publish";
+}
+
+describe("GitHub Actions publication outputs", () => {
+  const targetSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+  it("writes action, version, and tag to GITHUB_OUTPUT", () => {
+    const outputFile = path.join(mkdtempSync(path.join(os.tmpdir(), "atlas-gh-out-")), "output");
+    writePublicationGithubOutputs(
+      { action: "publish", version: "0.2.0", tag: "v0.2.0" },
+      { outputFile }
+    );
+    assert.deepEqual(readGithubOutputs(outputFile), {
+      action: "publish",
+      version: "0.2.0",
+      tag: "v0.2.0",
+    });
+  });
+
+  it("exports noop for post-release commits so npm publish is skipped", () => {
+    const fixture = writePublicationFixture();
+    const outputFile = path.join(fixture.dir, "github-output");
+    const releaseSha = "cccccccccccccccccccccccccccccccccccccccc";
+    const githubState = {
+      existingTags: [{ name: "v0.2.0", sha: releaseSha }],
+      existingReleases: [
+        {
+          tagName: "v0.2.0",
+          sha: releaseSha,
+          assets: [sbomAssetNameForCommit(releaseSha), "LICENSE"],
+        },
+      ],
+      canonicalMainSha: targetSha,
+    };
+
+    const result = runPublication(
+      {
+        repoRoot: fixture.dir,
+        dryRun: false,
+        skipChecks: true,
+        outputDir: fixture.outputDir,
+        targetSha,
+        outputFile,
+      },
+      {
+        loadGithubState: () => githubState,
+        waitForRequiredChecks() {},
+        applyPublication() {
+          throw new Error("noop must not mutate");
+        },
+        isCommitAncestor: (ancestorSha, descendantSha) =>
+          ancestorSha === releaseSha && descendantSha === targetSha,
+      }
+    );
+
+    const outputs = readGithubOutputs(outputFile);
+    assert.equal(result.decision.action, "noop");
+    assert.equal(outputs.action, "noop");
+    assert.equal(outputs.version, "0.2.0");
+    assert.equal(outputs.tag, "v0.2.0");
+    assert.equal(npmPublishEligible(outputs.action), false);
+  });
+
+  it("exports publish for a genuine new release so npm publish is eligible", () => {
+    const fixture = writePublicationFixture();
+    const outputFile = path.join(fixture.dir, "github-output");
+
+    const result = runPublication(
+      {
+        repoRoot: fixture.dir,
+        dryRun: false,
+        skipChecks: true,
+        outputDir: fixture.outputDir,
+        targetSha,
+        outputFile,
+      },
+      {
+        loadGithubState: () => ({
+          existingTags: [],
+          existingReleases: [],
+          canonicalMainSha: targetSha,
+        }),
+        waitForRequiredChecks() {},
+        applyPublication() {},
+      }
+    );
+
+    const outputs = readGithubOutputs(outputFile);
+    assert.equal(result.decision.action, "publish");
+    assert.equal(outputs.action, "publish");
+    assert.equal(npmPublishEligible(outputs.action), true);
+  });
+
+  it("exports repair actions without enabling npm publish", () => {
+    const fixture = writePublicationFixture();
+    const outputFile = path.join(fixture.dir, "github-output");
+
+    const result = runPublication(
+      {
+        repoRoot: fixture.dir,
+        dryRun: false,
+        skipChecks: true,
+        outputDir: fixture.outputDir,
+        targetSha,
+        outputFile,
+      },
+      {
+        loadGithubState: () => ({
+          existingTags: [{ name: "v0.2.0", sha: targetSha }],
+          existingReleases: [],
+          canonicalMainSha: targetSha,
+        }),
+        waitForRequiredChecks() {},
+        applyPublication() {},
+      }
+    );
+
+    const outputs = readGithubOutputs(outputFile);
+    assert.equal(result.decision.action, "repair-release");
+    assert.equal(outputs.action, "repair-release");
+    assert.equal(npmPublishEligible(outputs.action), false);
+  });
+
+  it("exports the revalidated final decision after required checks", () => {
+    const fixture = writePublicationFixture();
+    const outputFile = path.join(fixture.dir, "github-output");
+    const states = [
+      {
+        existingTags: [],
+        existingReleases: [],
+        canonicalMainSha: targetSha,
+      },
+      {
+        existingTags: [{ name: "v0.2.0", sha: targetSha }],
+        existingReleases: [
+          {
+            tagName: "v0.2.0",
+            sha: targetSha,
+            assets: [sbomAssetNameForCommit(targetSha), "LICENSE"],
+          },
+        ],
+        canonicalMainSha: targetSha,
+      },
+    ];
+    let loadCount = 0;
+
+    const result = runPublication(
+      {
+        repoRoot: fixture.dir,
+        dryRun: false,
+        skipChecks: false,
+        outputDir: fixture.outputDir,
+        targetSha,
+        outputFile,
+      },
+      {
+        loadGithubState() {
+          const state = states[loadCount];
+          loadCount += 1;
+          return state;
+        },
+        waitForRequiredChecks() {},
+        applyPublication() {
+          throw new Error("revalidated noop must not mutate");
+        },
+      }
+    );
+
+    const outputs = readGithubOutputs(outputFile);
+    assert.equal(result.decision.action, "noop");
+    assert.equal(outputs.action, "noop");
+    assert.equal(npmPublishEligible(outputs.action), false);
   });
 });
 
