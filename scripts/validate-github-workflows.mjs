@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { DEFAULT_REPO_ROOT, loadPolicy } from "./security-audit-policy.mjs";
+import { runActionlint } from "./run-actionlint.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 
@@ -93,6 +94,7 @@ export function findMissingJobTimeouts(content) {
   let inJobs = false;
   let currentJob = null;
   let jobHasTimeout = false;
+  let jobUsesReusableWorkflow = false;
   let jobIndentSeen = false;
 
   for (const line of lines) {
@@ -101,7 +103,7 @@ export function findMissingJobTimeouts(content) {
       continue;
     }
     if (inJobs && /^[a-zA-Z]/.test(line) && !line.startsWith(" ")) {
-      if (currentJob && !jobHasTimeout) {
+      if (currentJob && !jobHasTimeout && !jobUsesReusableWorkflow) {
         missing.push(currentJob);
       }
       break;
@@ -111,20 +113,24 @@ export function findMissingJobTimeouts(content) {
     }
     const header = line.match(jobHeader);
     if (header) {
-      if (currentJob && !jobHasTimeout) {
+      if (currentJob && !jobHasTimeout && !jobUsesReusableWorkflow) {
         missing.push(currentJob);
       }
       currentJob = header[1];
       jobHasTimeout = false;
+      jobUsesReusableWorkflow = false;
       jobIndentSeen = true;
       continue;
+    }
+    if (currentJob && /^\s{4}uses:\s+.*\/\.github\/workflows\//.test(line)) {
+      jobUsesReusableWorkflow = true;
     }
     if (currentJob && /^\s{4}timeout-minutes:\s*\d+/.test(line)) {
       jobHasTimeout = true;
     }
   }
 
-  if (inJobs && currentJob && !jobHasTimeout && jobIndentSeen) {
+  if (inJobs && currentJob && !jobHasTimeout && !jobUsesReusableWorkflow && jobIndentSeen) {
     missing.push(currentJob);
   }
 
@@ -156,15 +162,134 @@ function normalizeWorkflowPath(relativePath) {
   return relativePath.split(path.sep).join("/");
 }
 
-export function targetsTrustedRunnerInfrastructure(content) {
-  return (
-    /runs-on:\s*\[.*self-hosted/.test(content) ||
-    /runs-on:\s*\n\s+group:/.test(content) ||
-    /runs-on:\s*\n\s+labels:\s*ci\b/.test(content)
-  );
+export function targetsTrustedRunnerGroup(content) {
+  return /runs-on:\s*\n\s+group:/.test(content);
 }
 
-export function validateCiRunnerPolicy(root = DEFAULT_REPO_ROOT) {
+export function targetsLegacySelfHostedLabels(content) {
+  return /runs-on:[\s\S]{0,400}\[.*self-hosted/.test(content);
+}
+
+/** @deprecated Prefer targetsTrustedRunnerGroup or targetsLegacySelfHostedLabels */
+export function targetsTrustedRunnerInfrastructure(content) {
+  return targetsTrustedRunnerGroup(content) || targetsLegacySelfHostedLabels(content);
+}
+
+export function callersUseTrustedWorkflow(root = DEFAULT_REPO_ROOT) {
+  const workflowDir = path.join(root, ".github", "workflows");
+  if (!existsSync(workflowDir)) {
+    return false;
+  }
+
+  for (const entry of readdirSync(workflowDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !/\.ya?ml$/i.test(entry.name)) {
+      continue;
+    }
+    const content = stripComments(
+      readFileSync(path.join(workflowDir, entry.name), "utf8")
+    );
+    if (content.includes("trusted-self-hosted.yml")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function findDynamicLocalActionUses(content, relativePath) {
+  const errors = [];
+  for (const line of content.split("\n")) {
+    if (/uses:\s*\.\/\$\{\{/.test(line)) {
+      errors.push(`${relativePath}: local action uses paths must be static: ${line.trim()}`);
+    }
+  }
+  return errors;
+}
+
+export function findReusableWorkflowCallerViolations(content, relativePath) {
+  const errors = [];
+  const lines = content.split("\n");
+  let currentJob = null;
+  let inReusableCaller = false;
+
+  for (const line of lines) {
+    const header = line.match(/^ {2}([A-Za-z0-9_-]+):\s*$/);
+    if (header) {
+      currentJob = header[1];
+      inReusableCaller = false;
+      continue;
+    }
+    if (
+      currentJob &&
+      /^\s{4}uses:\s+.*\/\.github\/workflows\/trusted-self-hosted\.yml/.test(line)
+    ) {
+      inReusableCaller = true;
+    }
+    if (inReusableCaller && /^\s{4}timeout-minutes:/.test(line)) {
+      errors.push(
+        `${relativePath}: job "${currentJob}" must not set timeout-minutes on a reusable workflow caller`,
+      );
+    }
+    if (inReusableCaller && /^\s{6}runner_group:/.test(line)) {
+      errors.push(
+        `${relativePath}: job "${currentJob}" must not pass runner_group to the trusted reusable workflow`,
+      );
+    }
+    if (inReusableCaller && /^\s{4}secrets:\s*inherit\b/.test(line)) {
+      errors.push(
+        `${relativePath}: job "${currentJob}" must not use secrets: inherit for trusted self-hosted callers`,
+      );
+    }
+  }
+
+  return errors;
+}
+
+export function validateTrustedWorkflowDefinition(trustedContent, trustedRelative) {
+  const errors = [];
+
+  if (!/workflow_call:/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must be callable via workflow_call`,
+    );
+  }
+  if (!/pull_request\.head\.repo\.full_name/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must gate execution on github.event.pull_request.head.repo.full_name`,
+    );
+  }
+  if (/runner_group:/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must not accept runner_group from callers`,
+    );
+  }
+  if (!/runs-on:[\s\S]*\bgroup:/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must select the runner group directly in runs-on`,
+    );
+  }
+  if (!/labels:\s*ci\b/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must require the ci runner label`,
+    );
+  }
+  if (
+    !trustedContent.includes(DEFAULT_RUNNER_GROUP) &&
+    !/vars\.ATLAS_CI_RUNNER_GROUP/.test(trustedContent)
+  ) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must default to ${DEFAULT_RUNNER_GROUP}`,
+    );
+  }
+  if (!/ci\|ui-quality\|bundle/.test(trustedContent)) {
+    errors.push(`${trustedRelative}: trusted self-hosted workflow must validate allowed suite values`);
+  }
+  errors.push(...findDynamicLocalActionUses(trustedContent, trustedRelative));
+
+  return errors;
+}
+
+export function validateCiRunnerPolicyPhase1(root = DEFAULT_REPO_ROOT) {
   const errors = [];
   const workflowDir = path.join(root, ".github", "workflows");
   if (!existsSync(workflowDir)) {
@@ -179,33 +304,7 @@ export function validateCiRunnerPolicy(root = DEFAULT_REPO_ROOT) {
   }
 
   const trustedContent = stripComments(readFileSync(trustedPath, "utf8"));
-  const trustedRelative = TRUSTED_SELF_HOSTED_WORKFLOW;
-
-  if (!/workflow_call:/.test(trustedContent)) {
-    errors.push(
-      `${trustedRelative}: trusted self-hosted workflow must be callable via workflow_call`
-    );
-  }
-  if (!/pull_request\.head\.repo\.full_name/.test(trustedContent)) {
-    errors.push(
-      `${trustedRelative}: trusted self-hosted workflow must gate execution on github.event.pull_request.head.repo.full_name`
-    );
-  }
-  if (!/group:\s*\$\{\{\s*inputs\.runner_group\s*\}\}/.test(trustedContent)) {
-    errors.push(
-      `${trustedRelative}: trusted self-hosted workflow must target runners via inputs.runner_group`
-    );
-  }
-  if (!/labels:\s*ci\b/.test(trustedContent)) {
-    errors.push(
-      `${trustedRelative}: trusted self-hosted workflow must require the ci runner label`
-    );
-  }
-  if (!trustedContent.includes(DEFAULT_RUNNER_GROUP)) {
-    errors.push(
-      `${trustedRelative}: trusted self-hosted workflow must default runner group to ${DEFAULT_RUNNER_GROUP}`
-    );
-  }
+  errors.push(...validateTrustedWorkflowDefinition(trustedContent, TRUSTED_SELF_HOSTED_WORKFLOW));
 
   for (const entry of readdirSync(workflowDir, { withFileTypes: true })) {
     if (!entry.isFile() || !/\.ya?ml$/i.test(entry.name)) {
@@ -217,35 +316,32 @@ export function validateCiRunnerPolicy(root = DEFAULT_REPO_ROOT) {
     const content = stripComments(readFileSync(filePath, "utf8"));
 
     errors.push(...findPullRequestTargetRisks(content, relativePath));
+    errors.push(...findDynamicLocalActionUses(content, relativePath));
 
     if (relativePath === TRUSTED_SELF_HOSTED_WORKFLOW) {
       continue;
     }
 
-    if (targetsTrustedRunnerInfrastructure(content)) {
+    if (targetsTrustedRunnerGroup(content)) {
       errors.push(
-        `${relativePath}: only ${TRUSTED_SELF_HOSTED_WORKFLOW} may target trusted self-hosted runner infrastructure`
+        `${relativePath}: only ${TRUSTED_SELF_HOSTED_WORKFLOW} may target trusted self-hosted runner groups`,
       );
     }
 
     if (content.includes("trusted-self-hosted.yml")) {
-      if (!content.includes(TRUSTED_WORKFLOW_PIN)) {
-        errors.push(
-          `${relativePath}: trusted self-hosted reusable workflow must be pinned to ${TRUSTED_WORKFLOW_PIN}`
-        );
-      }
-      if (!/ATLAS_CI_RUNNER_PROFILE/.test(content)) {
-        errors.push(
-          `${relativePath}: trusted self-hosted callers must read ATLAS_CI_RUNNER_PROFILE`
-        );
-      }
-      if (!/ATLAS_CI_USE_SELF_HOSTED/.test(content)) {
-        errors.push(
-          `${relativePath}: trusted self-hosted callers must define ATLAS_CI_USE_SELF_HOSTED`
-        );
-      }
+      errors.push(
+        `${relativePath}: Phase-2 trusted caller migration must not ship until ${TRUSTED_SELF_HOSTED_WORKFLOW} exists on main`,
+      );
     }
   }
+
+  return errors;
+}
+
+export function validateCiRunnerPolicyPhase2(root = DEFAULT_REPO_ROOT) {
+  const errors = validateCiRunnerPolicyPhase1(root).filter(
+    (error) => !error.includes("Phase-2 trusted caller migration must not ship"),
+  );
 
   for (const relativePath of WORKFLOWS_REQUIRING_HOSTED_FALLBACK) {
     const filePath = path.join(root, relativePath);
@@ -255,30 +351,60 @@ export function validateCiRunnerPolicy(root = DEFAULT_REPO_ROOT) {
     }
 
     const content = stripComments(readFileSync(filePath, "utf8"));
-    const hasHostedRunner =
-      /runs-on:\s*ubuntu-latest/.test(content) ||
-      /runs-on:\s*ubuntu-24\.04/.test(content) ||
-      /runs-on:\s*ubuntu-22\.04/.test(content);
-    const hasHostedGuard =
-      /ATLAS_CI_USE_SELF_HOSTED\s*!=\s*'true'/.test(content) ||
-      /ATLAS_CI_RUNNER_PROFILE\s*\|\|\s*'github-hosted'/.test(content);
 
-    if (!hasHostedRunner) {
-      errors.push(`${relativePath}: must keep a GitHub-hosted runs-on fallback path`);
+    if (!content.includes("trusted-self-hosted.yml")) {
+      errors.push(`${relativePath}: must call the main-pinned trusted self-hosted reusable workflow`);
+      continue;
     }
-    if (!hasHostedGuard) {
+    if (!content.includes(TRUSTED_WORKFLOW_PIN)) {
       errors.push(
-        `${relativePath}: must guard GitHub-hosted execution when self-hosted is disabled or untrusted`
+        `${relativePath}: trusted self-hosted reusable workflow must be pinned to ${TRUSTED_WORKFLOW_PIN}`,
       );
     }
-    if (!/trusted-self-hosted\.yml@refs\/heads\/main/.test(content)) {
+    if (!/ATLAS_CI_RUNNER_PROFILE/.test(content)) {
+      errors.push(`${relativePath}: trusted self-hosted callers must read ATLAS_CI_RUNNER_PROFILE`);
+    }
+    if (!/ATLAS_CI_USE_SELF_HOSTED/.test(content)) {
+      errors.push(`${relativePath}: trusted self-hosted callers must define ATLAS_CI_USE_SELF_HOSTED`);
+    }
+    if (!/name: (CI|UI Quality|Bundle Analysis)\n/.test(content) && !/name: CI\n/.test(content)) {
+      // aggregator names checked per workflow below
+    }
+    if (targetsTrustedRunnerGroup(content) || targetsLegacySelfHostedLabels(content)) {
       errors.push(
-        `${relativePath}: must call the main-pinned trusted self-hosted reusable workflow`
+        `${relativePath}: Phase-2 callers must not target trusted runner infrastructure directly`,
+      );
+    }
+
+    errors.push(...findReusableWorkflowCallerViolations(content, relativePath));
+
+    const expected =
+      relativePath.endsWith("ci.yml")
+        ? { hosted: "CI (hosted)", aggregate: "CI" }
+        : relativePath.endsWith("ui-quality.yml")
+          ? { hosted: "UI Quality (hosted)", aggregate: "UI Quality" }
+          : { hosted: "Bundle Analysis (hosted)", aggregate: "Bundle Analysis" };
+
+    if (!content.includes(`name: ${expected.hosted}`)) {
+      errors.push(
+        `${relativePath}: must define a GitHub-hosted executor named "${expected.hosted}"`,
+      );
+    }
+    if (!new RegExp(`\\n {4}name: ${expected.aggregate}\\n`).test(content)) {
+      errors.push(
+        `${relativePath}: must define a final aggregator job named "${expected.aggregate}"`,
       );
     }
   }
 
   return errors;
+}
+
+export function validateCiRunnerPolicy(root = DEFAULT_REPO_ROOT) {
+  if (callersUseTrustedWorkflow(root)) {
+    return validateCiRunnerPolicyPhase2(root);
+  }
+  return validateCiRunnerPolicyPhase1(root);
 }
 
 export function findGitleaksPinIssues(content, policy) {
@@ -363,6 +489,7 @@ export function validateGithubWorkflows(root = DEFAULT_REPO_ROOT) {
   }
 
   errors.push(...validateCiRunnerPolicy(root));
+  errors.push(...runActionlint(root));
 
   return errors;
 }

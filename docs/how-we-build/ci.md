@@ -71,6 +71,10 @@ No configuration required. `setup-atlas-ci` uses `actions/setup-node` with `cach
 Optional: set [Turbo remote cache](https://turbo.build/repo/docs/core-concepts/remote-caching)
 secrets (`TURBO_TOKEN`, `TURBO_TEAM`) in the repository if your team uses Vercel remote caching.
 
+Trusted self-hosted migration is staged in two phases. See
+[ci-trusted-runner-migration.md](ci-trusted-runner-migration.md) before enabling the organization
+runner-group allowlist.
+
 ## Self-hosted runners (opt-in maintainer acceleration)
 
 Atlas defaults to **GitHub-hosted** runners. No repository variables, runner groups, or BlitzCraft

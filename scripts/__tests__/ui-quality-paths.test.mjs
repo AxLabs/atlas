@@ -94,8 +94,10 @@ describe("UI Quality path classification", () => {
   it("requires the UI Quality workflow to invoke the classifier for ordinary changes", () => {
     const workflow = readFileSync(workflowPath, "utf8");
     const suiteAction = readFileSync(suiteActionPath, "utf8");
-    assert.match(workflow, /run-ui-quality-suite/);
-    assert.match(suiteAction, /node scripts\/ui-quality-paths\.mjs --git-diff/);
+    assert.match(
+      `${workflow}\n${suiteAction}`,
+      /node scripts\/ui-quality-paths\.mjs --git-diff/,
+    );
   });
 });
 
