@@ -36,7 +36,7 @@ Automation in this repository uses `github.repository` / `GITHUB_REPOSITORY` and
 | Dependabot vulnerability alerts       | enabled                      | public repo              | `GET /repos/.../vulnerability-alerts` → HTTP 204                                                    |
 | Dependabot security updates           | enabled                      | public repo              | Native GitHub security-update workflow; no `dependabot.yml` version-update file                     |
 | GitHub code scanning                  | not applicable               | public repo              | No CodeQL workflow; Atlas uses Gitleaks + `pnpm security:check`                                     |
-| Codecov                               | upload failing               | public repo              | CI step runs and is non-blocking; latest `main` upload rejected (`Token required`)                  |
+| Codecov                               | reporting                    | public repo              | CI uploads the repository aggregate; `fail_ci_if_error: false`; risk floors stay local              |
 | Vercel GitHub App                     | intentionally not connected  | public Atlas repo        | No Vercel project linked to `blitzcraftlabs/atlas`; showcase lives in `atlas-showcase`              |
 | ChatGPT / Codex GitHub App            | manual verification required | selected-repo org app    | Org installation exists; user token cannot list selected repositories                               |
 | Cursor GitHub App                     | organization-wide            | all org repos            | `repository_selection: all`; no repo-specific action                                                |
@@ -44,22 +44,16 @@ Automation in this repository uses `github.repository` / `GITHUB_REPOSITORY` and
 ## Codecov
 
 CI uploads coverage with `codecov/codecov-action` and `fail_ci_if_error: false`. That policy is
-intentional: local `pnpm test:risk-coverage` is the blocking gate. See [testing.md](testing.md).
+intentional: `coverage-policy.json` via `pnpm test:risk-coverage` (locally) /
+`node scripts/coverage-policy.mjs` (CI, after `pnpm test:coverage:all`) is the blocking gate. See
+[testing.md](testing.md).
 
-On `main` run `34692166839` (`cbd5828`, 2026-09-12):
+Codecov is the **repository aggregate** used for the README coverage badge. It is not a merge gate
+and not a quality score. `codecov.yml` disables project and patch status checks.
 
-- `GITHUB_REPOSITORY` was `blitzcraftlabs/atlas`
-- Token length was `0` (no `CODECOV_TOKEN`, OIDC unused, Codecov GitHub App not installed on the
-  org)
-- Upload failed: `Token required - not valid tokenless upload`
-- The CI job stayed green because the step is non-blocking
-
-**Maintainer action:** in the Codecov GitHub App (or Codecov UI), add the **new** public repository
-`blitzcraftlabs/atlas` (ID `1366318006`). Do not reuse the old private archive identity. Prefer the
-GitHub App over adding `CODECOV_TOKEN` unless the app cannot be installed.
-
-After that, confirm https://app.codecov.io/gh/blitzcraftlabs/atlas shows coverage for a subsequent
-`main` or PR upload. Do not treat a green CI log as proof until that Codecov project page exists.
+CI supplies Istanbul `coverage-final.json` from `@atlas/web`, `@atlas/reference`, `@atlas/ui`,
+`@blitzcraftlabs/atlas` (CLI), `@atlas/project`, and `@atlas/consent`, plus LCOV from root
+`scripts/**`. Confirm https://app.codecov.io/gh/blitzcraftlabs/atlas after uploads on `main`.
 
 ## Vercel
 

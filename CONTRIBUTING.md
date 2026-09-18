@@ -109,6 +109,7 @@ Also run when your change touches the affected areas:
 | Build-affecting code            | `pnpm build`                                             |
 | User-facing flows               | `pnpm --filter @atlas/web test:e2e`                      |
 | Shared UI / auth / API coverage | `pnpm test:risk-coverage`                                |
+| Repository coverage reports     | `pnpm test:coverage:all`                                 |
 
 CI runs internal documentation link checks on every pull request. External URL checks are optional
 locally: `pnpm docs:check --external`.

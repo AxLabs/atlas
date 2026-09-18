@@ -187,7 +187,8 @@ Atlas uses a layered approach:
 - **E2E tests** — Playwright smoke coverage in CI
 
 `@atlas/ui` enforces Jest coverage thresholds in CI. Broader risk-based coverage for auth, API, and
-critical journeys is enforced by `pnpm test:risk-coverage` and `coverage-policy.json`. See
+critical journeys is enforced by `pnpm test:risk-coverage` and `coverage-policy.json`. The public
+Codecov percentage is a repository aggregate for visibility, not a merge gate. See
 [Testing](../how-we-build/testing.md). Failing tests block merges.
 
 ---

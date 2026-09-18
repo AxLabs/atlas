@@ -1,0 +1,30 @@
+# Repository aggregate coverage is reporting-only.
+# Blocking floors live in coverage-policy.json via `pnpm test:risk-coverage`.
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    project: false
+    patch: false
+
+comment:
+  require_changes: false
+
+ignore:
+  - "**/*.d.ts"
+  - "**/*.stories.tsx"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.test.mjs"
+  - "**/*.spec.ts"
+  - "**/__tests__/**"
+  - "**/__fixtures__/**"
+  - "**/fixtures/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/.next/**"
+  - "**/storybook-static/**"
+  - "apps/**/src/lib/api/contracts/schema.ts"
+  - "packages/cli/assets/**"
+  - "packages/cli/release-assets/**"

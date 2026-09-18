@@ -5,7 +5,7 @@ workspace, executable architecture contracts, generators, quality gates, and ver
 while keeping your application in your repository and under your control.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/blitzcraftlabs/atlas/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/blitzcraftlabs/atlas/actions/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-87%25-brightgreen?style=flat-square)](https://github.com/blitzcraftlabs/atlas/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/codecov/c/github/blitzcraftlabs/atlas/main?style=flat-square&label=coverage)](https://app.codecov.io/gh/blitzcraftlabs/atlas)
 [![UI Quality](https://img.shields.io/github/actions/workflow/status/blitzcraftlabs/atlas/ui-quality.yml?branch=main&style=flat-square&label=UI%20Quality)](https://github.com/blitzcraftlabs/atlas/actions/workflows/ui-quality.yml)
 [![Security Audit](https://img.shields.io/github/actions/workflow/status/blitzcraftlabs/atlas/security-audit.yml?branch=main&style=flat-square&label=Security%20Audit)](https://github.com/blitzcraftlabs/atlas/actions/workflows/security-audit.yml)
 [![release](https://img.shields.io/github/v/release/blitzcraftlabs/atlas?style=flat-square&label=release)](https://github.com/blitzcraftlabs/atlas/releases)

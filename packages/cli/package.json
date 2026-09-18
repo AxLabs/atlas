@@ -57,6 +57,7 @@
     "format:write": "prettier --write \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && jest",
+    "test:coverage": "pnpm build && jest --coverage --coverageReporters=text --coverageReporters=json --coverageReporters=lcov",
     "test:watch": "jest --watch",
     "clean": "rm -rf .turbo node_modules coverage dist LICENSE THIRD_PARTY_NOTICES.md assets scripts/.cache"
   },
