@@ -16,6 +16,10 @@ permissions:
 
 env:
   ATLAS_CI_RUNNER_PROFILE: ${{ vars.ATLAS_CI_RUNNER_PROFILE || 'github-hosted' }}
+  ATLAS_CI_RUNNER_GROUP: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft OSS Trusted' }}
+  ATLAS_CI_USE_SELF_HOSTED:
+    ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
+    github.event.pull_request.head.repo.full_name == github.repository) }}
 
 jobs:
   governance:
@@ -52,282 +56,59 @@ jobs:
       - name: Validate provenance (current tree)
         run: pnpm provenance:check
 
-  ci:
+  ci-hosted:
     name: CI
-    env:
-      CI_CHECKOUT_DIR: ci-ws-ci-r${{ github.run_id }}
-      CI_CHECKOUT_LINK: ci-link-ci
-      ATLAS_CI_USE_SELF_HOSTED:
-        ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
-        github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on:
-      ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository) &&
-      fromJSON('["self-hosted", "ci"]') || 'ubuntu-latest' }}
+    if: env.ATLAS_CI_USE_SELF_HOSTED != 'true'
+    runs-on: ubuntu-latest
     timeout-minutes: 90
-    defaults:
-      run:
-        working-directory:
-          ${{ env.ATLAS_CI_USE_SELF_HOSTED == 'true' && env.CI_CHECKOUT_DIR || github.workspace }}
     steps:
-      - name: Repair default workspace permissions
-        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
-        continue-on-error: true
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          ws="${{ github.workspace }}"
-          if [ -d "$ws" ] && find "$ws" -user root -print -quit 2>/dev/null | grep -q .; then
-            echo "Repairing root-owned files in ${ws}"
-            sudo chown -R "$(id -u):$(id -g)" "$ws" 2>/dev/null || sudo rm -rf "$ws" 2>/dev/null || \
-              echo "Warning: could not repair ${ws}; continuing with isolated checkout subdirectory."
-          fi
-
-      - name: Checkout repository (GitHub-hosted)
-        if: env.ATLAS_CI_USE_SELF_HOSTED != 'true'
+      - name: Checkout repository
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
-
-      - name: Checkout repository (self-hosted)
-        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          fetch-depth: 0
-          path: ${{ env.CI_CHECKOUT_DIR }}
-
-      - name: Link checkout for composite actions
-        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          target="${{ env.CI_CHECKOUT_LINK }}"
-          if [[ -e "${target}" && ! -L "${target}" ]]; then
-            echo "Removing stale non-symlink checkout dir: ${target}"
-            rm -rf "${target}" 2>/dev/null || sudo rm -rf "${target}"
-          fi
-          ln -sfn "${{ env.CI_CHECKOUT_DIR }}" "${target}"
-
-      - name: Detect application changes
-        id: detect
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "app=true" >> "$GITHUB_OUTPUT"
-            echo "distribution=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
-
-          if printf '%s\n' "$CHANGED" | grep -qE \
-            '^(apps/|packages/|openapi/|scripts/|\.github/workflows/ci\.yml|turbo\.json|package\.json|pnpm-lock\.yaml|tsconfig.*\.json|eslint\.config)'; then
-            echo "app=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "app=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          if printf '%s\n' "$CHANGED" | grep -qE \
-            '^(packages/cli/|packages/project/|apps/web/|packages/ui/|packages/config/|packages/consent/|templates/|openapi/|atlas\.config\.json|pnpm-workspace\.yaml|turbo\.json|eslint\.config|lighthouserc\.json|\.npmrc|\.nvmrc|\.prettierrc|\.prettierignore|\.gitignore|scripts/ensure-pnpm\.js|scripts/verify-distribution-clean-room\.mjs|scripts/verify-distribution-registry\.mjs|scripts/verify-npm-publish-dry-run\.mjs|scripts/prepare-npm-publish\.mjs|scripts/publish-npm-package\.mjs|scripts/lib/distribution-clean-room\.mjs|scripts/lib/distribution-registry\.mjs|scripts/lib/npm-publish-dry-run\.mjs|scripts/lib/npm-publication\.mjs|scripts/__tests__/distribution-clean-room|scripts/__tests__/distribution-registry|scripts/__tests__/npm-publish-dry-run|scripts/__tests__/npm-publication|package\.json|jest\.config\.js|AGENTS\.md|LICENSE|THIRD_PARTY_NOTICES\.md|docs/how-we-build/(agents|architecture-ownership|atlas-contract|cli|doctor|upgrades|api|authorization|testing|folder-structure|examples|security|releases-and-governance)\.md|docs/security/threat-model\.md|docs/adr/000[7-9]|docs/adr/0010|docs/adr/0011|\.github/workflows/ci\.yml|\.github/workflows/release\.yml)'; then
-            echo "distribution=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "distribution=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check for forbidden lockfiles
-        run: |
-          FORBIDDEN_LOCKFILES=""
-
-          if [ -f "package-lock.json" ]; then
-            FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES package-lock.json"
-          fi
-
-          if [ -f "yarn.lock" ]; then
-            FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES yarn.lock"
-          fi
-
-          if [ -f "bun.lockb" ]; then
-            FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES bun.lockb"
-          fi
-
-          if [ -n "$FORBIDDEN_LOCKFILES" ]; then
-            echo "❌ Error: Forbidden lockfiles detected:$FORBIDDEN_LOCKFILES"
-            echo ""
-            echo "Atlas enforces pnpm as the only package manager."
-            echo "Please remove these files and use 'pnpm install' instead."
-            exit 1
-          fi
-
-          echo "✅ No forbidden lockfiles found"
-
-      - name: Check lockfile exists
-        run: |
-          if [ ! -f "pnpm-lock.yaml" ]; then
-            echo "❌ Error: pnpm-lock.yaml is required but not found"
-            exit 1
-          fi
-          echo "✅ Lockfile exists"
 
       - name: Setup Atlas CI (GitHub-hosted)
-        if: env.ATLAS_CI_USE_SELF_HOSTED != 'true'
         uses: ./.github/actions/setup-atlas-ci
         with:
           runner-profile: github-hosted
 
-      - name: Setup CI Node (self-hosted)
-        if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
-        uses: ./ci-link-ci/.github/actions/setup-ci-node
-
-      - name: Check documentation links
-        run: node scripts/check-doc-links.mjs
-
-      - name: Install dependencies
-        if:
-          steps.detect.outputs.app == 'true' || steps.detect.outputs.distribution == 'true' ||
-          github.event_name == 'push'
-        run: |
-          if [ "${ATLAS_CI_USE_SELF_HOSTED}" = "true" ]; then
-            # Host-only optional deps: full cross-platform audit runs in the Governance job.
-            pnpm install --frozen-lockfile \
-              --config.supportedArchitectures.os=linux \
-              --config.supportedArchitectures.cpu=x64
-          else
-            pnpm install --frozen-lockfile
-          fi
-
-      - name: Verify lockfile is up-to-date
-        if:
-          steps.detect.outputs.app == 'true' || steps.detect.outputs.distribution == 'true' ||
-          github.event_name == 'push'
-        run: |
-          if ! git diff --exit-code pnpm-lock.yaml; then
-            echo "❌ Error: pnpm-lock.yaml is out of date"
-            echo "Please run 'pnpm install' and commit the updated lockfile"
-            exit 1
-          fi
-          echo "✅ Lockfile is up-to-date"
-
-      - name: Check generated OpenAPI contracts
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm api:check
-
-      - name: Validate environment variables
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm validate:env
-        env:
-          NODE_ENV: production
-          DATABASE_URL: postgresql://user:password@localhost:5432/atlas_ci
-          NEXT_PUBLIC_API_URL: https://api.example.com
-
-      - name: Run Prettier check
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm format
-
-      - name: Run ESLint
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm lint
-
-      - name: Run Atlas Doctor
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm --filter @blitzcraftlabs/atlas build && pnpm atlas doctor --json
-
-      - name: Run TypeScript check
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm typecheck
-
-      - name: Run unit and integration tests
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm test
-        env:
-          CI: true
-
-      - name: Enforce critical subsystem coverage
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm test:risk-coverage
-        env:
-          CI: true
-
-      # Reporting only. Coverage floors are enforced by test:risk-coverage above.
-      # Uploads need the Codecov GitHub App or CODECOV_TOKEN on this repository.
-      - name: Upload coverage report to Codecov
-        if: success() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
-        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
+      - name: Run CI suite
+        uses: ./.github/actions/run-ci-suite
         with:
-          files: ./packages/ui/coverage/coverage-final.json,./apps/web/coverage/coverage-final.json
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-
-      - name: Verify packed CLI clean-room lifecycle
-        if: steps.detect.outputs.distribution == 'true' || github.event_name == 'push'
-        run: pnpm distribution:verify
-
-      - name: Skip application checks (docs-only change)
-        if:
-          steps.detect.outputs.app != 'true' && steps.detect.outputs.distribution != 'true' &&
-          github.event_name == 'pull_request'
-        run:
-          echo 'Docs-only PR. Skipped install, lint, typecheck, tests, build, E2E, and distribution
-          clean-room.'
-
-      - name: Build application
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        run: pnpm build
+          runner-profile: github-hosted
         env:
-          CI: true
-          NODE_ENV: production
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Install Playwright browsers
-        if:
-          (steps.detect.outputs.app == 'true' || github.event_name == 'push') &&
-          env.ATLAS_CI_USE_SELF_HOSTED != 'true'
-        run: |
-          pnpm --filter @atlas/web exec playwright install --with-deps chromium webkit
-          pnpm --filter @atlas/reference exec playwright install --with-deps chromium webkit
+  ci-trusted:
+    if: env.ATLAS_CI_USE_SELF_HOSTED == 'true'
+    timeout-minutes: 90
+    uses: blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
+    with:
+      suite: ci
+      runner_group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft OSS Trusted' }}
+      check_name: CI
+      checkout_prefix: ci-ws-
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Run E2E tests
-        if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-        env:
-          CI: true
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
-          SKIP_ENV_VALIDATION: false
+  ci:
+    name: CI
+    if: env.ATLAS_CI_USE_SELF_HOSTED == 'true' && always()
+    needs:
+      - ci-trusted
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify trusted CI suite completed
+        shell: bash
         run: |
-          if [ "${ATLAS_CI_USE_SELF_HOSTED}" = "true" ]; then
-            pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
-            checkout_dir="${GITHUB_WORKSPACE}/${CI_CHECKOUT_DIR}"
-            docker run --rm \
-              --user "$(id -u):$(id -g)" \
-              --ipc=host \
-              --network host \
-              -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
-              -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
-              -w "${checkout_dir}" \
-              -e CI=true \
-              -e HOME=/tmp/pw-home \
-              -e NEXT_PUBLIC_API_URL=http://localhost:3001/api \
-              -e SKIP_ENV_VALIDATION=false \
-              -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
-              "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-              bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e && corepack pnpm --filter @atlas/reference test:e2e'
-          else
-            pnpm --filter @atlas/web test:e2e
-            pnpm --filter @atlas/reference test:e2e
+          result="${{ needs.ci-trusted.result }}"
+          if [[ "$result" == "success" ]]; then
+            echo "Trusted self-hosted CI suite passed."
+            exit 0
           fi
-
-      - name: Upload Playwright report
-        if: always() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: playwright-report
-          path:
-            ${{ env.ATLAS_CI_USE_SELF_HOSTED == 'true' && format('{0}/apps/web/playwright-report/',
-            env.CI_CHECKOUT_DIR) || 'apps/web/playwright-report/' }}
-          retention-days: 30
-
-      - name: Cleanup job artifacts
-        if: always() && env.ATLAS_CI_USE_SELF_HOSTED == 'true'
-        uses: ./ci-link-ci/.github/actions/cleanup-self-hosted-job
+          echo "Trusted self-hosted CI suite did not succeed (result=${result})." >&2
+          exit 1
 
   gitleaks:
     name: Secrets Scan

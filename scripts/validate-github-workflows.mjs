@@ -21,6 +21,15 @@ const GITLEAKS_LATEST_PATTERN = /gitleaks\/gitleaks:(latest|main|master)\b/i;
 const FAIL_OPEN_AUDIT_PATTERN =
   /(?:pnpm\s+audit|security:check|security-audit\.mjs)[\s\S]{0,80}\|\|\s*true/;
 
+export const TRUSTED_SELF_HOSTED_WORKFLOW = ".github/workflows/trusted-self-hosted.yml";
+export const TRUSTED_WORKFLOW_PIN = "trusted-self-hosted.yml@refs/heads/main";
+export const DEFAULT_RUNNER_GROUP = "Blitzcraft OSS Trusted";
+export const WORKFLOWS_REQUIRING_HOSTED_FALLBACK = [
+  ".github/workflows/ci.yml",
+  ".github/workflows/ui-quality.yml",
+  ".github/workflows/perf-bundle.yml",
+];
+
 export function listGithubYamlFiles(root = DEFAULT_REPO_ROOT) {
   const files = [];
 
@@ -62,7 +71,7 @@ export function findInvalidActionRefs(content) {
       continue;
     }
     const uses = match[1];
-    if (uses.startsWith("./")) {
+    if (uses.startsWith("./") || uses.includes("/.github/workflows/")) {
       continue;
     }
     if (!FULL_SHA_ACTION_PATTERN.test(uses)) {
@@ -129,24 +138,144 @@ export function findMissingWorkflowPermissions(content) {
   return ["workflow-level-or-job permissions block"];
 }
 
-export function findSelfHostedForkRisks(content, relativePath) {
+export function findPullRequestTargetRisks(content, relativePath) {
   const errors = [];
-  if (!relativePath.startsWith(`.github/workflows${path.sep}`) && !relativePath.startsWith(".github/workflows/")) {
+  if (
+    !relativePath.startsWith(`.github/workflows${path.sep}`) &&
+    !relativePath.startsWith(".github/workflows/")
+  ) {
     return errors;
   }
   if (/pull_request_target/.test(content)) {
     errors.push(`${relativePath}: pull_request_target is not allowed`);
   }
+  return errors;
+}
 
-  const usesSelfHosted = /\[\s*self-hosted/.test(content) || /runs-on:[\s\S]{0,200}self-hosted/.test(content);
-  if (!usesSelfHosted) {
+function normalizeWorkflowPath(relativePath) {
+  return relativePath.split(path.sep).join("/");
+}
+
+export function targetsTrustedRunnerInfrastructure(content) {
+  return (
+    /runs-on:\s*\[.*self-hosted/.test(content) ||
+    /runs-on:\s*\n\s+group:/.test(content) ||
+    /runs-on:\s*\n\s+labels:\s*ci\b/.test(content)
+  );
+}
+
+export function validateCiRunnerPolicy(root = DEFAULT_REPO_ROOT) {
+  const errors = [];
+  const workflowDir = path.join(root, ".github", "workflows");
+  if (!existsSync(workflowDir)) {
+    errors.push("Missing .github/workflows directory");
     return errors;
   }
 
-  if (!/pull_request\.head\.repo\.full_name/.test(content)) {
+  const trustedPath = path.join(root, TRUSTED_SELF_HOSTED_WORKFLOW);
+  if (!existsSync(trustedPath)) {
+    errors.push(`Missing required trusted reusable workflow: ${TRUSTED_SELF_HOSTED_WORKFLOW}`);
+    return errors;
+  }
+
+  const trustedContent = stripComments(readFileSync(trustedPath, "utf8"));
+  const trustedRelative = TRUSTED_SELF_HOSTED_WORKFLOW;
+
+  if (!/workflow_call:/.test(trustedContent)) {
     errors.push(
-      `${relativePath}: self-hosted runners must be gated on github.event.pull_request.head.repo.full_name == github.repository`,
+      `${trustedRelative}: trusted self-hosted workflow must be callable via workflow_call`
     );
+  }
+  if (!/pull_request\.head\.repo\.full_name/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must gate execution on github.event.pull_request.head.repo.full_name`
+    );
+  }
+  if (!/group:\s*\$\{\{\s*inputs\.runner_group\s*\}\}/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must target runners via inputs.runner_group`
+    );
+  }
+  if (!/labels:\s*ci\b/.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must require the ci runner label`
+    );
+  }
+  if (!trustedContent.includes(DEFAULT_RUNNER_GROUP)) {
+    errors.push(
+      `${trustedRelative}: trusted self-hosted workflow must default runner group to ${DEFAULT_RUNNER_GROUP}`
+    );
+  }
+
+  for (const entry of readdirSync(workflowDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !/\.ya?ml$/i.test(entry.name)) {
+      continue;
+    }
+
+    const filePath = path.join(workflowDir, entry.name);
+    const relativePath = normalizeWorkflowPath(path.relative(root, filePath));
+    const content = stripComments(readFileSync(filePath, "utf8"));
+
+    errors.push(...findPullRequestTargetRisks(content, relativePath));
+
+    if (relativePath === TRUSTED_SELF_HOSTED_WORKFLOW) {
+      continue;
+    }
+
+    if (targetsTrustedRunnerInfrastructure(content)) {
+      errors.push(
+        `${relativePath}: only ${TRUSTED_SELF_HOSTED_WORKFLOW} may target trusted self-hosted runner infrastructure`
+      );
+    }
+
+    if (content.includes("trusted-self-hosted.yml")) {
+      if (!content.includes(TRUSTED_WORKFLOW_PIN)) {
+        errors.push(
+          `${relativePath}: trusted self-hosted reusable workflow must be pinned to ${TRUSTED_WORKFLOW_PIN}`
+        );
+      }
+      if (!/ATLAS_CI_RUNNER_PROFILE/.test(content)) {
+        errors.push(
+          `${relativePath}: trusted self-hosted callers must read ATLAS_CI_RUNNER_PROFILE`
+        );
+      }
+      if (!/ATLAS_CI_USE_SELF_HOSTED/.test(content)) {
+        errors.push(
+          `${relativePath}: trusted self-hosted callers must define ATLAS_CI_USE_SELF_HOSTED`
+        );
+      }
+    }
+  }
+
+  for (const relativePath of WORKFLOWS_REQUIRING_HOSTED_FALLBACK) {
+    const filePath = path.join(root, relativePath);
+    if (!existsSync(filePath)) {
+      errors.push(`Missing workflow with required GitHub-hosted fallback: ${relativePath}`);
+      continue;
+    }
+
+    const content = stripComments(readFileSync(filePath, "utf8"));
+    const hasHostedRunner =
+      /runs-on:\s*ubuntu-latest/.test(content) ||
+      /runs-on:\s*ubuntu-24\.04/.test(content) ||
+      /runs-on:\s*ubuntu-22\.04/.test(content);
+    const hasHostedGuard =
+      /ATLAS_CI_USE_SELF_HOSTED\s*!=\s*'true'/.test(content) ||
+      /ATLAS_CI_RUNNER_PROFILE\s*\|\|\s*'github-hosted'/.test(content);
+
+    if (!hasHostedRunner) {
+      errors.push(`${relativePath}: must keep a GitHub-hosted runs-on fallback path`);
+    }
+    if (!hasHostedGuard) {
+      errors.push(
+        `${relativePath}: must guard GitHub-hosted execution when self-hosted is disabled or untrusted`
+      );
+    }
+    if (!/trusted-self-hosted\.yml@refs\/heads\/main/.test(content)) {
+      errors.push(
+        `${relativePath}: must call the main-pinned trusted self-hosted reusable workflow`
+      );
+    }
   }
 
   return errors;
@@ -166,7 +295,11 @@ export function findGitleaksPinIssues(content, policy) {
   if (!content.includes(policy.gitleaks.digest)) {
     errors.push(`Gitleaks image must be pinned to ${expected} (${policy.gitleaks.version})`);
   }
-  if (!content.includes("--network=none") || !content.includes("--redact") || !content.includes("--exit-code 1")) {
+  if (
+    !content.includes("--network=none") ||
+    !content.includes("--redact") ||
+    !content.includes("--exit-code 1")
+  ) {
     errors.push("Gitleaks invocation must keep --network=none, --redact, and --exit-code 1");
   }
   if (content.includes("--no-git")) {
@@ -183,10 +316,7 @@ export function findFailOpenSecurityPolicy(content, relativePath) {
   if (FAIL_OPEN_AUDIT_PATTERN.test(content)) {
     errors.push(`${relativePath}: security policy must not be fail-open with || true`);
   }
-  if (
-    relativePath.endsWith("security-audit.yml") &&
-    /continue-on-error:\s*true/.test(content)
-  ) {
+  if (relativePath.endsWith("security-audit.yml") && /continue-on-error:\s*true/.test(content)) {
     errors.push(`${relativePath}: continue-on-error is not allowed on the security audit`);
   }
   return errors;
@@ -213,7 +343,9 @@ export function validateGithubWorkflows(root = DEFAULT_REPO_ROOT) {
     const uncommented = stripComments(content);
 
     for (const match of findInvalidActionRefs(content)) {
-      errors.push(`${relativePath}: remote GitHub Action reference must be a 40-character commit SHA: ${match}`);
+      errors.push(
+        `${relativePath}: remote GitHub Action reference must be a 40-character commit SHA: ${match}`
+      );
     }
 
     if (relativePath.startsWith(`.github/workflows${path.sep}`)) {
@@ -225,10 +357,12 @@ export function validateGithubWorkflows(root = DEFAULT_REPO_ROOT) {
       }
     }
 
-    errors.push(...findSelfHostedForkRisks(uncommented, relativePath));
+    errors.push(...findPullRequestTargetRisks(uncommented, relativePath));
     errors.push(...findGitleaksPinIssues(content, policy));
     errors.push(...findFailOpenSecurityPolicy(content, relativePath));
   }
+
+  errors.push(...validateCiRunnerPolicy(root));
 
   return errors;
 }

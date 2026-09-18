@@ -103,18 +103,21 @@ pnpm sbom:generate
 Push access to the canonical Atlas repository is part of the trusted self-hosted-runner boundary.
 External fork pull requests **must not** run on persistent Atlas self-hosted machines.
 
-`ci.yml` selects `[self-hosted, ci]` only when `ATLAS_CI_RUNNER_PROFILE=self-hosted` **and**:
+Only `.github/workflows/trusted-self-hosted.yml` may target the `Blitzcraft OSS Trusted` runner
+group. Callers pin it to `refs/heads/main` and compute `ATLAS_CI_USE_SELF_HOSTED` only when
+`ATLAS_CI_RUNNER_PROFILE=self-hosted` **and**:
 
 ```text
 github.event_name != 'pull_request'
   || github.event.pull_request.head.repo.full_name == github.repository
 ```
 
-Fork PRs always use GitHub-hosted `ubuntu-latest`. Atlas does not use `pull_request_target` to check
-out untrusted code.
+The trusted reusable workflow repeats the fork gate before scheduling self-hosted jobs. Fork PRs
+always use GitHub-hosted runners. Atlas does not use `pull_request_target` to check out untrusted
+code.
 
-`pnpm security:workflow-check` fails if a workflow routes self-hosted jobs without that trust check,
-or if `pull_request_target` is introduced.
+`pnpm security:workflow-check` fails if another workflow targets trusted runner infrastructure,
+removes the fork trust gate, drops the GitHub-hosted fallback, or introduces `pull_request_target`.
 
 ## Branch protection / rulesets (expected)
 

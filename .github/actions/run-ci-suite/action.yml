@@ -1,0 +1,237 @@
+name: Run CI suite
+description: Shared Atlas CI checks for GitHub-hosted and trusted self-hosted runners
+inputs:
+  runner-profile:
+    description: github-hosted (default) or self-hosted (persistent /var/cache/ci stores)
+    required: false
+    default: github-hosted
+  checkout-dir:
+    description: Isolated checkout subdirectory name on self-hosted runners
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Detect application changes
+      id: detect
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+          echo "app=true" >> "$GITHUB_OUTPUT"
+          echo "distribution=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        BASE="${{ github.event.pull_request.base.sha }}"
+        HEAD="${{ github.event.pull_request.head.sha }}"
+        CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+
+        if printf '%s\n' "$CHANGED" | grep -qE \
+          '^(apps/|packages/|openapi/|scripts/|\.github/workflows/ci\.yml|turbo\.json|package\.json|pnpm-lock\.yaml|tsconfig.*\.json|eslint\.config)'; then
+          echo "app=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "app=false" >> "$GITHUB_OUTPUT"
+        fi
+
+        if printf '%s\n' "$CHANGED" | grep -qE \
+          '^(packages/cli/|packages/project/|apps/web/|packages/ui/|packages/config/|packages/consent/|templates/|openapi/|atlas\.config\.json|pnpm-workspace\.yaml|turbo\.json|eslint\.config|lighthouserc\.json|\.npmrc|\.nvmrc|\.prettierrc|\.prettierignore|\.gitignore|scripts/ensure-pnpm\.js|scripts/verify-distribution-clean-room\.mjs|scripts/verify-distribution-registry\.mjs|scripts/verify-npm-publish-dry-run\.mjs|scripts/prepare-npm-publish\.mjs|scripts/publish-npm-package\.mjs|scripts/lib/distribution-clean-room\.mjs|scripts/lib/distribution-registry\.mjs|scripts/lib/npm-publish-dry-run\.mjs|scripts/lib/npm-publication\.mjs|scripts/__tests__/distribution-clean-room|scripts/__tests__/distribution-registry|scripts/__tests__/npm-publish-dry-run|scripts/__tests__/npm-publication|package\.json|jest\.config\.js|AGENTS\.md|LICENSE|THIRD_PARTY_NOTICES\.md|docs/how-we-build/(agents|architecture-ownership|atlas-contract|cli|doctor|upgrades|api|authorization|testing|folder-structure|examples|security|releases-and-governance)\.md|docs/security/threat-model\.md|docs/adr/000[7-9]|docs/adr/0010|docs/adr/0011|\.github/workflows/ci\.yml|\.github/workflows/release\.yml)'; then
+          echo "distribution=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "distribution=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Check for forbidden lockfiles
+      shell: bash
+      run: |
+        FORBIDDEN_LOCKFILES=""
+
+        if [ -f "package-lock.json" ]; then
+          FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES package-lock.json"
+        fi
+
+        if [ -f "yarn.lock" ]; then
+          FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES yarn.lock"
+        fi
+
+        if [ -f "bun.lockb" ]; then
+          FORBIDDEN_LOCKFILES="$FORBIDDEN_LOCKFILES bun.lockb"
+        fi
+
+        if [ -n "$FORBIDDEN_LOCKFILES" ]; then
+          echo "❌ Error: Forbidden lockfiles detected:$FORBIDDEN_LOCKFILES"
+          echo ""
+          echo "Atlas enforces pnpm as the only package manager."
+          echo "Please remove these files and use 'pnpm install' instead."
+          exit 1
+        fi
+
+        echo "✅ No forbidden lockfiles found"
+
+    - name: Check lockfile exists
+      shell: bash
+      run: |
+        if [ ! -f "pnpm-lock.yaml" ]; then
+          echo "❌ Error: pnpm-lock.yaml is required but not found"
+          exit 1
+        fi
+        echo "✅ Lockfile exists"
+
+    - name: Check documentation links
+      shell: bash
+      run: node scripts/check-doc-links.mjs
+
+    - name: Install dependencies
+      if:
+        steps.detect.outputs.app == 'true' || steps.detect.outputs.distribution == 'true' ||
+        github.event_name == 'push'
+      shell: bash
+      run: |
+        if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
+          # Host-only optional deps: full cross-platform audit runs in the Governance job.
+          pnpm install --frozen-lockfile \
+            --config.supportedArchitectures.os=linux \
+            --config.supportedArchitectures.cpu=x64
+        else
+          pnpm install --frozen-lockfile
+        fi
+
+    - name: Verify lockfile is up-to-date
+      if:
+        steps.detect.outputs.app == 'true' || steps.detect.outputs.distribution == 'true' ||
+        github.event_name == 'push'
+      shell: bash
+      run: |
+        if ! git diff --exit-code pnpm-lock.yaml; then
+          echo "❌ Error: pnpm-lock.yaml is out of date"
+          echo "Please run 'pnpm install' and commit the updated lockfile"
+          exit 1
+        fi
+        echo "✅ Lockfile is up-to-date"
+
+    - name: Check generated OpenAPI contracts
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm api:check
+
+    - name: Validate environment variables
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm validate:env
+      env:
+        NODE_ENV: production
+        DATABASE_URL: postgresql://user:password@localhost:5432/atlas_ci
+        NEXT_PUBLIC_API_URL: https://api.example.com
+
+    - name: Run Prettier check
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm format
+
+    - name: Run ESLint
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm lint
+
+    - name: Run Atlas Doctor
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm --filter @blitzcraftlabs/atlas build && pnpm atlas doctor --json
+
+    - name: Run TypeScript check
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm typecheck
+
+    - name: Run unit and integration tests
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm test
+      env:
+        CI: true
+
+    - name: Enforce critical subsystem coverage
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm test:risk-coverage
+      env:
+        CI: true
+
+    - name: Upload coverage report to Codecov
+      if: success() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
+      uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
+      with:
+        files: ./packages/ui/coverage/coverage-final.json,./apps/web/coverage/coverage-final.json
+        token: ${{ env.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+
+    - name: Verify packed CLI clean-room lifecycle
+      if: steps.detect.outputs.distribution == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm distribution:verify
+
+    - name: Skip application checks (docs-only change)
+      if:
+        steps.detect.outputs.app != 'true' && steps.detect.outputs.distribution != 'true' &&
+        github.event_name == 'pull_request'
+      shell: bash
+      run:
+        echo 'Docs-only PR. Skipped install, lint, typecheck, tests, build, E2E, and distribution
+        clean-room.'
+
+    - name: Build application
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm build
+      env:
+        CI: true
+        NODE_ENV: production
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+    - name: Install Playwright browsers
+      if:
+        (steps.detect.outputs.app == 'true' || github.event_name == 'push') && inputs.runner-profile
+        != 'self-hosted'
+      shell: bash
+      run: |
+        pnpm --filter @atlas/web exec playwright install --with-deps chromium webkit
+        pnpm --filter @atlas/reference exec playwright install --with-deps chromium webkit
+
+    - name: Run E2E tests
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      env:
+        CI: true
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        SKIP_ENV_VALIDATION: false
+      run: |
+        if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
+          pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
+          checkout_dir="${GITHUB_WORKSPACE}/${{ inputs.checkout-dir }}"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --ipc=host \
+            --network host \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
+            -w "${checkout_dir}" \
+            -e CI=true \
+            -e HOME=/tmp/pw-home \
+            -e NEXT_PUBLIC_API_URL=http://localhost:3001/api \
+            -e SKIP_ENV_VALIDATION=false \
+            -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
+            "mcr.microsoft.com/playwright:v${pw_version}-noble" \
+            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e && corepack pnpm --filter @atlas/reference test:e2e'
+        else
+          pnpm --filter @atlas/web test:e2e
+          pnpm --filter @atlas/reference test:e2e
+        fi
+
+    - name: Upload Playwright report
+      if: always() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: playwright-report
+        path:
+          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/apps/web/playwright-report/',
+          inputs.checkout-dir) || 'apps/web/playwright-report/' }}
+        retention-days: 30

@@ -1,0 +1,44 @@
+name: Setup self-hosted checkout
+description:
+  Isolated checkout directory and persistent Node/pnpm caches on trusted self-hosted runners
+inputs:
+  checkout-dir:
+    description: Isolated checkout subdirectory under GITHUB_WORKSPACE
+    required: true
+  checkout-link:
+    description: Symlink name for composite actions that expect ./ci-link-*
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Repair default workspace permissions
+      continue-on-error: true
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      run: |
+        ws="${{ github.workspace }}"
+        if [ -d "$ws" ] && find "$ws" -user root -print -quit 2>/dev/null | grep -q .; then
+          echo "Repairing root-owned files in ${ws}"
+          sudo chown -R "$(id -u):$(id -g)" "$ws" 2>/dev/null || sudo rm -rf "$ws" 2>/dev/null || \
+            echo "Warning: could not repair ${ws}; continuing with isolated checkout subdirectory."
+        fi
+
+    - name: Checkout repository
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      with:
+        fetch-depth: 0
+        path: ${{ inputs.checkout-dir }}
+
+    - name: Link checkout for composite actions
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      run: |
+        target="${{ inputs.checkout-link }}"
+        if [[ -e "${target}" && ! -L "${target}" ]]; then
+          echo "Removing stale non-symlink checkout dir: ${target}"
+          rm -rf "${target}" 2>/dev/null || sudo rm -rf "${target}"
+        fi
+        ln -sfn "${{ inputs.checkout-dir }}" "${target}"
+
+    - name: Setup CI Node
+      uses: ./${{ inputs.checkout-link }}/.github/actions/setup-ci-node

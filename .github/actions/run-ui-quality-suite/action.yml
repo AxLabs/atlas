@@ -1,0 +1,111 @@
+name: Run UI quality suite
+description: Shared Storybook, accessibility, and visual regression checks
+inputs:
+  runner-profile:
+    description: github-hosted (default) or self-hosted (persistent /var/cache/ci stores)
+    required: false
+    default: github-hosted
+  checkout-dir:
+    description: Isolated checkout subdirectory name on self-hosted runners
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Detect UI changes
+      id: detect
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+          echo "ui=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        BASE="${{ github.event.pull_request.base.sha }}"
+        HEAD="${{ github.event.pull_request.head.sha }}"
+
+        BOOTSTRAP_PATTERN='^(scripts/ui-quality-paths\.mjs|scripts/__tests__/ui-quality-paths\.test\.mjs|scripts/storybook-critical-policy\.mjs|scripts/__tests__/storybook-critical-policy\.test\.mjs|scripts/__fixtures__/storybook-critical-policy/|scripts/license-exceptions\.mjs|scripts/license-policy\.mjs|packages/ui/\.storybook/critical-stories\.json|packages/ui/\.storybook/a11y-exceptions\.json|\.github/workflows/ui-quality\.yml)'
+
+        if git diff --name-only "$BASE" "$HEAD" | grep -qE "$BOOTSTRAP_PATTERN"; then
+          echo "ui=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        UI="$(node scripts/ui-quality-paths.mjs --git-diff "$BASE" "$HEAD")"
+        echo "ui=$UI" >> "$GITHUB_OUTPUT"
+
+    - name: Skip UI quality (no UI changes)
+      if: steps.detect.outputs.ui != 'true'
+      shell: bash
+      run: echo "No UI-impacting changes detected. Skipping Storybook quality gates."
+
+    - name: Install dependencies
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
+          pnpm install --frozen-lockfile \
+            --config.supportedArchitectures.os=linux \
+            --config.supportedArchitectures.cpu=x64
+        else
+          pnpm install --frozen-lockfile
+        fi
+
+    - name: Build Storybook
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: pnpm --filter @atlas/ui build-storybook
+
+    - name: Install Playwright browsers
+      if: steps.detect.outputs.ui == 'true' && inputs.runner-profile != 'self-hosted'
+      shell: bash
+      run: pnpm --filter @atlas/ui exec playwright install --with-deps chromium webkit
+
+    - name: Validate critical Storybook policy
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: node scripts/storybook-critical-policy.mjs
+
+    - name: Run Storybook interaction and accessibility tests
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: pnpm --filter @atlas/ui test:storybook
+
+    - name: Run cross-browser keyboard and focus checks
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: pnpm --filter @atlas/ui test:storybook:cross-browser
+
+    - name: Run visual regression tests
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
+          pw_version="$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')"
+          checkout_dir="${GITHUB_WORKSPACE}/${{ inputs.checkout-dir }}"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --ipc=host \
+            --network host \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
+            -w "${checkout_dir}" \
+            -e CI=true \
+            -e HOME=/tmp/pw-home \
+            -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
+            "mcr.microsoft.com/playwright:v${pw_version}-noble" \
+            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/ui test:visual'
+        else
+          pnpm --filter @atlas/ui test:visual
+        fi
+
+    - name: Upload visual diff artifacts
+      if: failure() && steps.detect.outputs.ui == 'true'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ui-quality-visual-diffs
+        path: |
+          packages/ui/test-results/
+          packages/ui/playwright-report-visual/
+          packages/ui/playwright-report-storybook/
+        retention-days: 14

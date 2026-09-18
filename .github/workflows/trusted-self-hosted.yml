@@ -1,0 +1,87 @@
+name: Trusted Self-Hosted CI
+
+# The only workflow in Atlas that may target the Blitzcraft OSS Trusted runner group.
+# Callers must pin this file to refs/heads/main so fork-controlled workflow edits cannot
+# weaken the trust boundary. Runner-group workflow allowlists should include exactly:
+# blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  workflow_call:
+    inputs:
+      suite:
+        description: ci, ui-quality, or bundle
+        type: string
+        required: true
+      runner_group:
+        description: GitHub runner group for trusted self-hosted execution
+        type: string
+        default: Blitzcraft OSS Trusted
+      check_name:
+        description: Visible GitHub check name for the suite job
+        type: string
+        required: true
+      checkout_prefix:
+        description: Prefix for isolated checkout directories
+        type: string
+        default: ci-ws-
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+env:
+  CI_CHECKOUT_DIR: ${{ inputs.checkout_prefix }}r${{ github.run_id }}
+  CI_CHECKOUT_LINK: ci-link-${{ inputs.suite }}
+
+jobs:
+  execute:
+    name: ${{ inputs.suite }} (trusted runner)
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on:
+      group: ${{ inputs.runner_group }}
+      labels: ci
+    timeout-minutes: 90
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      BUDGET_TOTAL_STATIC_JS_KB: 3000
+      BUDGET_LARGEST_CHUNK_KB: 950
+      MAX_BUNDLE_GROWTH_KB: 100
+      MAX_BUNDLE_GROWTH_PERCENT: 15
+    defaults:
+      run:
+        working-directory: ${{ env.CI_CHECKOUT_DIR }}
+    steps:
+      - name: Setup self-hosted checkout
+        uses: ./.github/actions/setup-self-hosted-checkout
+        with:
+          checkout-dir: ${{ env.CI_CHECKOUT_DIR }}
+          checkout-link: ${{ env.CI_CHECKOUT_LINK }}
+
+      - name: Run CI suite
+        if: inputs.suite == 'ci'
+        uses: ./${{ env.CI_CHECKOUT_LINK }}/.github/actions/run-ci-suite
+        with:
+          runner-profile: self-hosted
+          checkout-dir: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Run UI quality suite
+        if: inputs.suite == 'ui-quality'
+        uses: ./${{ env.CI_CHECKOUT_LINK }}/.github/actions/run-ui-quality-suite
+        with:
+          runner-profile: self-hosted
+          checkout-dir: ${{ env.CI_CHECKOUT_DIR }}
+
+      - name: Run bundle analysis suite
+        if: inputs.suite == 'bundle'
+        uses: ./${{ env.CI_CHECKOUT_LINK }}/.github/actions/run-bundle-analysis-suite
+        with:
+          runner-profile: self-hosted
+
+      - name: Cleanup job artifacts
+        if: always()
+        uses: ./${{ env.CI_CHECKOUT_LINK }}/.github/actions/cleanup-self-hosted-job
