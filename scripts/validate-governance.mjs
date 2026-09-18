@@ -210,6 +210,14 @@ function checkReleaseWorkflow() {
     if (!/needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/.test(publishJob)) {
       fail("github-release job must skip publication when version-pr reports pending changesets");
     }
+    if (!/id:\s*release/.test(publishJob)) {
+      fail("github-release publish step must expose id `release` for downstream gating");
+    }
+    if (
+      !/outputs:[\s\S]*action:\s*\$\{\{\s*steps\.release\.outputs\.action\s*\}\}/.test(publishJob)
+    ) {
+      fail("github-release job must expose the final publication action as a job output");
+    }
   }
 
   const npmPublishJob = extractNamedJob(workflow, "npm-publish");
@@ -254,6 +262,11 @@ function checkReleaseWorkflow() {
     }
     if (!/needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/.test(npmPublishJob)) {
       fail("npm-publish job must skip publication when version-pr reports pending changesets");
+    }
+    if (!/needs\.github-release\.outputs\.action\s*==\s*'publish'/.test(npmPublishJob)) {
+      fail(
+        "npm-publish job must run only when github-release reports the final publication action publish"
+      );
     }
     if (!/fetch-tags:\s*true/.test(npmPublishJob)) {
       fail("npm-publish job must fetch git tags so HEAD can be the exact canonical vX.Y.Z tag");

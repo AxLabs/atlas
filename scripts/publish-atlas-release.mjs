@@ -12,6 +12,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { generateSpdxSbom } from "./generate-sbom.mjs";
+import { appendGithubOutput } from "./lib/npm-publication.mjs";
 import {
   PublicationError,
   REQUIRED_RELEASE_CHECK_WORKFLOWS,
@@ -288,6 +289,17 @@ export function preparePublication(options, dependencies = {}) {
   };
 }
 
+export function writePublicationGithubOutputs(decision, options = {}) {
+  appendGithubOutput("action", decision.action, options);
+  appendGithubOutput("version", decision.version, options);
+  appendGithubOutput("tag", decision.tag, options);
+}
+
+function finalizePublication(prepared, options = {}) {
+  writePublicationGithubOutputs(prepared.decision, options);
+  return prepared;
+}
+
 function writeDecision(prepared, options) {
   const { decision, targetSha, sbom, notesPath } = prepared;
   process.stdout.write(
@@ -338,12 +350,12 @@ export function runPublication(options, dependencies = {}) {
 
   if (prepared.decision.action === "noop") {
     process.stdout.write("✓ No publication required\n");
-    return prepared;
+    return finalizePublication(prepared, options);
   }
 
   if (options.dryRun) {
     process.stdout.write("✓ Publication prerequisites satisfied (dry-run)\n");
-    return prepared;
+    return finalizePublication(prepared, options);
   }
 
   if (!options.skipChecks) {
@@ -359,7 +371,10 @@ export function runPublication(options, dependencies = {}) {
 
   if (fresh.decision.action === "noop") {
     process.stdout.write("✓ No publication required\n");
-    return { ...prepared, decision: fresh.decision, githubState: fresh.githubState };
+    return finalizePublication(
+      { ...prepared, decision: fresh.decision, githubState: fresh.githubState },
+      options
+    );
   }
 
   const toApply = {
@@ -368,7 +383,7 @@ export function runPublication(options, dependencies = {}) {
     githubState: fresh.githubState,
   };
   apply(options, toApply);
-  return toApply;
+  return finalizePublication(toApply, options);
 }
 
 function main(argv = process.argv.slice(2)) {

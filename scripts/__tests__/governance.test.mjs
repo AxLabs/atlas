@@ -333,6 +333,11 @@ describe("release workflow policy", () => {
     assert.match(publishJob, /needs:[\s\S]*\bversion-pr\b/);
     assert.match(publishJob, /github\.event_name\s*==\s*'push'/);
     assert.match(publishJob, /needs\.version-pr\.outputs\.has-changesets\s*!=\s*'true'/);
+    assert.match(publishJob, /id:\s*release/);
+    assert.match(
+      publishJob,
+      /outputs:[\s\S]*action:\s*\$\{\{\s*steps\.release\.outputs\.action\s*\}\}/
+    );
 
     const npmJobStart = workflow.indexOf("  npm-publish:");
     assert.notEqual(npmJobStart, -1);
@@ -350,6 +355,7 @@ describe("release workflow policy", () => {
     assert.match(npmJob, /npm@11\.5\.1/);
     assert.match(npmJob, /needs:[\s\S]*\bgithub-release\b/);
     assert.match(npmJob, /needs:[\s\S]*\bversion-pr\b/);
+    assert.match(npmJob, /needs\.github-release\.outputs\.action\s*==\s*'publish'/);
     assert.match(npmJob, /distribution:verify-registry/);
     assert.match(npmJob, /fetch-tags:\s*true/);
     assert.match(npmJob, /steps\.npm\.outputs\.action != 'noop'/);
