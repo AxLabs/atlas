@@ -22,11 +22,11 @@
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-mobile-chromium.png": {
-      "sha256": "159d2f96987e19e4daeb0afb232f32f0018a0c216022d0b6bbaaabc2e2050058",
+      "sha256": "6e28f3e077b3c736163b61f5e0b4fab8c268c85d38156e9137561973b00f74f3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reviewedOn": "2026-09-18"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-desktop-chromium.png": {
       "sha256": "ec3e8ecceddf6962c6cab4e30e48b6bfef17f45ff0a3a998ea18dc587f175795",
@@ -36,11 +36,11 @@
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-mobile-chromium.png": {
-      "sha256": "a7d5d91fcf3ee7568112a2ab80144423b25a48651ab680381f2b49494f7874a2",
+      "sha256": "9f2b205235e7acdfe7527694807ea468c12def16e2c00971b4a2bb2da58d9d01",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reviewedOn": "2026-09-18"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-desktop-chromium.png": {
       "sha256": "6dd65d1527c55534cb349737606b2ba2935187ebcfee363e8ccee5919ec52d5e",
@@ -169,32 +169,32 @@
       "reviewedOn": "2026-09-10"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-desktop-chromium.png": {
-      "sha256": "c0ce5e18f13bdc8b4b35250bac2428e6889317cd31538db6ef2699b0cc1e920f",
+      "sha256": "73d46f9f0ce87ac34ebd83add6f00810dcc96a72ba991633ddf018c09e4b8070",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reviewedOn": "2026-09-18"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-mobile-chromium.png": {
-      "sha256": "b5dc35e511a8dc5a5d3d2d10a22458492df68dd631bdd884cedad9fff35ca1c0",
+      "sha256": "640bffc781bcfda2c84434137bca041db3f5fbf34bf7da534606bed4d6e0a8a5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reviewedOn": "2026-09-18"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-desktop-chromium.png": {
-      "sha256": "0e0b95889d4ddf935e7af2be6354df311ed717fb999d27830c3a65fbe1434835",
+      "sha256": "a69a64e654b7486f30f2ed13c113c953fdc17cc846940c39f51a2c94e2cbe2f8",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reviewedOn": "2026-09-18"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-mobile-chromium.png": {
-      "sha256": "6690ea1790cc97274449e02688866c37c330db37a8259a0720ebc9c17e63d694",
+      "sha256": "920e6677d179aaac0b48e6f29dc132be73f741221bc2003a3d9cb1579399b93a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
       "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reviewedOn": "2026-09-18"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-desktop-chromium.png": {
       "sha256": "67c60b02171f920cbb32e448f7e80ee726a74c5e14baeef49bcb710d59ce41c3",
