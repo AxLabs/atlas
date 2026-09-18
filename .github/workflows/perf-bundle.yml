@@ -31,310 +31,62 @@ env:
   BUDGET_LARGEST_CHUNK_KB: 950
   MAX_BUNDLE_GROWTH_KB: 100
   MAX_BUNDLE_GROWTH_PERCENT: 15
+  ATLAS_CI_RUNNER_PROFILE: ${{ vars.ATLAS_CI_RUNNER_PROFILE || 'github-hosted' }}
+  ATLAS_CI_USE_SELF_HOSTED:
+    ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
+    github.event.pull_request.head.repo.full_name == github.repository) }}
 
 jobs:
-  analyze:
-    name: Bundle Analysis
+  bundle-hosted:
+    name: Bundle Analysis (hosted)
+    if: |
+      vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted' ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Checkout code
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+      - name: Setup Atlas CI
+        uses: ./.github/actions/setup-atlas-ci
         with:
-          node-version: 22
-          cache: "pnpm"
+          runner-profile: github-hosted
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build application
-        run: pnpm --filter @atlas/web... build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
-
-      - name: Run bundle analysis
-        run: pnpm --filter @atlas/web perf:analyze
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
-
-      - name: Restore bundle baseline
-        id: baseline-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      - name: Run bundle analysis suite
+        uses: ./.github/actions/run-bundle-analysis-suite
         with:
-          path: apps/web/.next/bundle-baseline.json
-          key: bundle-baseline-main-${{ github.event.pull_request.base.sha || github.sha }}
-          restore-keys: |
-            bundle-baseline-main-
+          runner-profile: github-hosted
 
-      - name: Extract bundle stats
-        id: stats
+  bundle-trusted:
+    name: Bundle Analysis (trusted)
+    if: |
+      vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main
+    with:
+      suite: bundle
+
+  bundle:
+    name: Bundle Analysis
+    needs: [bundle-hosted, bundle-trusted]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate Bundle Analysis results
         run: |
-          set -euo pipefail
-
-          STATIC_DIR="apps/web/.next/static"
-          STATS_FILE="apps/web/.next/bundle-stats.json"
-
-          TOTAL_BYTES=0
-          LARGEST_BYTES=0
-          CHUNK_COUNT=0
-          GZIP_BYTES=0
-
-          if [ -d "$STATIC_DIR" ]; then
-            CHUNK_COUNT=$(find "$STATIC_DIR" -type f -name '*.js' -print0 2>/dev/null | xargs -r -0 stat -c '%s' | wc -l | tr -d ' ')
-
-            if [ "$CHUNK_COUNT" -gt 0 ]; then
-              TOTAL_BYTES=$(find "$STATIC_DIR" -type f -name '*.js' -print0 2>/dev/null | xargs -r -0 stat -c '%s' | awk '{s+=$1} END {print s+0}')
-              LARGEST_BYTES=$(find "$STATIC_DIR" -type f -name '*.js' -print0 2>/dev/null | xargs -r -0 stat -c '%s' | sort -n | tail -1)
-
-              if command -v gzip >/dev/null 2>&1; then
-                GZIP_BYTES=$(find "$STATIC_DIR" -type f -name '*.js' -print0 2>/dev/null | xargs -r -0 -I{} gzip -c {} 2>/dev/null | wc -c | tr -d ' ')
-              fi
-            fi
+          hosted="${{ needs.bundle-hosted.result }}"
+          trusted="${{ needs.bundle-trusted.result }}"
+          echo "hosted=${hosted} trusted=${trusted}"
+          if { [ "$hosted" = success ] && [ "$trusted" = skipped ]; } || \
+             { [ "$hosted" = skipped ] && [ "$trusted" = success ]; }; then
+            exit 0
           fi
-
-          TOTAL_KB=$((TOTAL_BYTES / 1024))
-          LARGEST_KB=$((LARGEST_BYTES / 1024))
-          GZIP_KB=$((GZIP_BYTES / 1024))
-
-          mkdir -p "$(dirname "$STATS_FILE")"
-          TOTAL_KB="$TOTAL_KB" LARGEST_KB="$LARGEST_KB" CHUNK_COUNT="$CHUNK_COUNT" GZIP_KB="$GZIP_KB" node <<'NODE'
-          const fs = require('fs');
-
-          const stats = {
-            totalStaticJsKb: Number(process.env.TOTAL_KB) || 0,
-            largestChunkKb: Number(process.env.LARGEST_KB) || 0,
-            chunkCount: Number(process.env.CHUNK_COUNT) || 0,
-            gzipStaticJsKb: Number(process.env.GZIP_KB) || 0,
-          };
-
-          fs.writeFileSync('apps/web/.next/bundle-stats.json', `${JSON.stringify(stats, null, 2)}\n`);
-          NODE
-
-          {
-            echo "total_static_js_kb=$TOTAL_KB"
-            echo "largest_chunk_kb=$LARGEST_KB"
-            echo "chunk_count=$CHUNK_COUNT"
-            echo "gzip_static_js_kb=$GZIP_KB"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "Bundle stats"
-          echo "  Total static JS:   ${TOTAL_KB} KB (${CHUNK_COUNT} chunks)"
-          echo "  Largest chunk:     ${LARGEST_KB} KB"
-          echo "  Total gzip JS:     ${GZIP_KB} KB"
-          echo "  Stats written to:  $STATS_FILE"
-
-      - name: Check bundle budgets
-        id: bundle-check
-        env:
-          BUDGET_TOTAL_STATIC_JS_KB: ${{ env.BUDGET_TOTAL_STATIC_JS_KB }}
-          BUDGET_LARGEST_CHUNK_KB: ${{ env.BUDGET_LARGEST_CHUNK_KB }}
-          MAX_BUNDLE_GROWTH_KB: ${{ env.MAX_BUNDLE_GROWTH_KB }}
-          MAX_BUNDLE_GROWTH_PERCENT: ${{ env.MAX_BUNDLE_GROWTH_PERCENT }}
-          BASELINE_CACHE_HIT: ${{ steps.baseline-cache.outputs.cache-hit }}
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-
-          const statsPath = 'apps/web/.next/bundle-stats.json';
-          const baselinePath = 'apps/web/.next/bundle-baseline.json';
-
-          const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
-          const baselineFound =
-            process.env.BASELINE_CACHE_HIT === 'true' && fs.existsSync(baselinePath);
-
-          const budgets = {
-            totalStaticJsKb: Number(process.env.BUDGET_TOTAL_STATIC_JS_KB),
-            largestChunkKb: Number(process.env.BUDGET_LARGEST_CHUNK_KB),
-            maxGrowthKb: Number(process.env.MAX_BUNDLE_GROWTH_KB),
-            maxGrowthPercent: Number(process.env.MAX_BUNDLE_GROWTH_PERCENT),
-          };
-
-          let budgetExceeded = false;
-          let regressionExceeded = false;
-          let totalGrowthKb = 0;
-          let totalGrowthPercent = 0;
-
-          const totalWithinBudget = stats.totalStaticJsKb <= budgets.totalStaticJsKb;
-          const largestWithinBudget = stats.largestChunkKb <= budgets.largestChunkKb;
-
-          if (!totalWithinBudget || !largestWithinBudget) {
-            budgetExceeded = true;
-          }
-
-          let baseline = null;
-          if (baselineFound) {
-            baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-            totalGrowthKb = stats.totalStaticJsKb - baseline.totalStaticJsKb;
-            totalGrowthPercent =
-              baseline.totalStaticJsKb > 0
-                ? (totalGrowthKb / baseline.totalStaticJsKb) * 100
-                : 0;
-
-            if (
-              totalGrowthKb > budgets.maxGrowthKb ||
-              totalGrowthPercent > budgets.maxGrowthPercent
-            ) {
-              regressionExceeded = true;
-            }
-          }
-
-          const summary = [];
-          summary.push('## Bundle size check');
-          summary.push('');
-          summary.push('### Absolute budgets');
-          summary.push('');
-          summary.push('| Metric | Size | Budget | Status |');
-          summary.push('|--------|------|--------|--------|');
-          summary.push(
-            `| Total static JS | ${stats.totalStaticJsKb} KB | ${budgets.totalStaticJsKb} KB | ${totalWithinBudget ? 'Within budget' : 'Over budget'} |`
-          );
-          summary.push(
-            `| Largest chunk | ${stats.largestChunkKb} KB | ${budgets.largestChunkKb} KB | ${largestWithinBudget ? 'Within budget' : 'Over budget'} |`
-          );
-          summary.push(
-            `| JS chunks | ${stats.chunkCount} | — | — |`
-          );
-          summary.push(
-            `| Gzip static JS | ${stats.gzipStaticJsKb} KB | — | informational |`
-          );
-          summary.push('');
-          summary.push('### Baseline comparison');
-
-          if (baselineFound && baseline) {
-            summary.push('');
-            summary.push('| Metric | Current | Baseline | Change | Limit | Status |');
-            summary.push('|--------|---------|----------|--------|-------|--------|');
-            summary.push(
-              `| Total static JS | ${stats.totalStaticJsKb} KB | ${baseline.totalStaticJsKb} KB | ${totalGrowthKb >= 0 ? '+' : ''}${totalGrowthKb} KB (${totalGrowthPercent.toFixed(1)}%) | ≤ ${budgets.maxGrowthKb} KB / ${budgets.maxGrowthPercent}% | ${regressionExceeded ? 'Regression' : 'OK'} |`
-            );
-          } else {
-            summary.push('');
-            summary.push(
-              '_Baseline comparison skipped — no main baseline was restored for this run._'
-            );
-          }
-
-          summary.push('');
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary.join('\n')}\n`);
-
-          const output = [
-            `budget_exceeded=${budgetExceeded}`,
-            `regression_exceeded=${regressionExceeded}`,
-            `baseline_found=${baselineFound}`,
-            `total_growth_kb=${totalGrowthKb}`,
-            `total_growth_percent=${totalGrowthPercent.toFixed(1)}`,
-          ].join('\n');
-
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${output}\n`);
-          NODE
-
-      - name: Save baseline on main
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: cp apps/web/.next/bundle-stats.json apps/web/.next/bundle-baseline.json
-
-      - name: Cache baseline on main
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: apps/web/.next/bundle-baseline.json
-          key: bundle-baseline-main-${{ github.sha }}
-
-      - name: Upload bundle analysis
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: bundle-analysis
-          path: |
-            apps/web/.next/bundle-stats.json
-            apps/web/.next/analyze
-            apps/web/.next/diagnostics/analyze
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
-        with:
-          script: |
-            const marker = '<!-- atlas-bundle-analysis -->';
-
-            const totalStaticJsKb = '${{ steps.stats.outputs.total_static_js_kb }}';
-            const gzipStaticJsKb = '${{ steps.stats.outputs.gzip_static_js_kb }}';
-            const largestChunkKb = '${{ steps.stats.outputs.largest_chunk_kb }}';
-            const chunkCount = '${{ steps.stats.outputs.chunk_count }}';
-            const budgetExceeded = '${{ steps.bundle-check.outputs.budget_exceeded }}' === 'true';
-            const regressionExceeded = '${{ steps.bundle-check.outputs.regression_exceeded }}' === 'true';
-            const baselineFound = '${{ steps.bundle-check.outputs.baseline_found }}' === 'true';
-            const totalGrowthKb = '${{ steps.bundle-check.outputs.total_growth_kb }}';
-            const totalGrowthPercent = '${{ steps.bundle-check.outputs.total_growth_percent }}';
-
-            const totalBudget = '${{ env.BUDGET_TOTAL_STATIC_JS_KB }}';
-            const largestBudget = '${{ env.BUDGET_LARGEST_CHUNK_KB }}';
-            const maxGrowthKb = '${{ env.MAX_BUNDLE_GROWTH_KB }}';
-            const maxGrowthPercent = '${{ env.MAX_BUNDLE_GROWTH_PERCENT }}';
-
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
-            let body = `${marker}\n`;
-            body += '## Bundle analysis\n\n';
-            body += 'Regression analysis for generated static JS. This does not replace real-user performance profiling.\n\n';
-            body += '| Metric | Value |\n';
-            body += '|--------|-------|\n';
-            body += `| Total static JS | ${totalStaticJsKb} KB (budget: ${totalBudget} KB) |\n`;
-            body += `| Gzip static JS | ${gzipStaticJsKb} KB |\n`;
-            body += `| Largest chunk | ${largestChunkKb} KB (budget: ${largestBudget} KB) |\n`;
-            body += `| JS chunks | ${chunkCount} |\n`;
-            body += `| Absolute budgets | ${budgetExceeded ? 'Exceeded' : 'OK'} |\n`;
-
-            if (baselineFound) {
-              body += `| Baseline comparison | ${regressionExceeded ? 'Regression' : 'OK'} (${totalGrowthKb >= 0 ? '+' : ''}${totalGrowthKb} KB, ${totalGrowthPercent}%; limit: ${maxGrowthKb} KB / ${maxGrowthPercent}%) |\n`;
-            } else {
-              body += '| Baseline comparison | Skipped (no main baseline restored) |\n';
-            }
-
-            body += '\n';
-
-            if (budgetExceeded || regressionExceeded) {
-              body += '**Bundle check failed.** Review the workflow summary, optimize where possible, or document the increase in the PR.\n\n';
-            }
-
-            body += `Download the \`bundle-analysis\` artifact from the [workflow run](${runUrl}) for analyzer output.\n`;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const existingComment = comments.find((comment) => comment.body?.includes(marker));
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
-
-      - name: Fail if bundle check failed
-        if:
-          steps.bundle-check.outputs.budget_exceeded == 'true' ||
-          steps.bundle-check.outputs.regression_exceeded == 'true'
-        run: |
-          echo "Bundle check failed."
-          echo "Review the workflow summary and optimize or document the increase."
+          echo "Required Bundle Analysis path did not succeed (fail closed; no hosted fallback for trusted failures)."
           exit 1
