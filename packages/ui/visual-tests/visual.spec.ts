@@ -13,6 +13,8 @@ interface VisualCase {
   name: string;
   themes: ("light" | "dark")[];
   viewports: (keyof typeof VIEWPORTS)[];
+  /** Skip Storybook play when Playwright prepares the snapshot state. */
+  disablePlay?: boolean;
   prepare?: (page: Page) => Promise<void>;
   /** Portaled overlays (dialog, menu, listbox, tooltip) use page-level locators. */
   screenshot?: (page: Page) => Promise<Locator>;
@@ -33,6 +35,7 @@ const cases: VisualCase[] = [
     name: "select-closed",
     themes: ["light", "dark"],
     viewports: ["desktop", "mobile"],
+    disablePlay: true,
     screenshot: async (page) => page.getByRole("combobox"),
   },
   {
@@ -75,9 +78,6 @@ const cases: VisualCase[] = [
     viewports: ["desktop"],
     prepare: async (page) => {
       const trigger = page.getByRole("button", { name: "Show tooltip" });
-      // KeyboardAccessibility's play opens then dismisses the tooltip. Wait for that
-      // to finish so the snapshot is a hover-opened, themed portal — not the play race.
-      await expect(page.getByRole("tooltip")).toHaveCount(0);
       await trigger.hover();
       await expect(page.getByRole("tooltip")).toBeVisible();
     },
@@ -120,7 +120,9 @@ for (const visualCase of cases) {
       test(`${visualCase.name} ${theme} ${viewportName}`, async ({ page, baseURL }) => {
         const viewport = VIEWPORTS[viewportName];
         await page.setViewportSize(viewport);
-        await gotoStory(page, baseURL!, visualCase.storyId, theme);
+        await gotoStory(page, baseURL!, visualCase.storyId, theme, {
+          disablePlay: visualCase.disablePlay ?? visualCase.prepare !== undefined,
+        });
 
         if (visualCase.prepare) {
           await visualCase.prepare(page);
