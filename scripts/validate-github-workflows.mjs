@@ -327,6 +327,11 @@ export function findReusableWorkflowCallerViolations(content, relativePath) {
         `${relativePath}: job "${job.name}" must use vars/github in job-level if (env is unavailable on reusable-workflow callers)`,
       );
     }
+    if (!/pull-requests:\s*write/.test(job.body)) {
+      errors.push(
+        `${relativePath}: job "${job.name}" must grant pull-requests: write to match the trusted reusable workflow`,
+      );
+    }
   }
 
   return errors;

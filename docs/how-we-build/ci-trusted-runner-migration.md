@@ -79,8 +79,9 @@ blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main
 ```
 
 They pass only `with.suite`. They do not set `runs-on`, `runner_group`, `check_name`,
-`timeout-minutes`, or `secrets: inherit`. The `ci` caller passes only `CODECOV_TOKEN`. Job-level
-`if:` uses `vars` and `github` directly.
+`timeout-minutes`, or `secrets: inherit`. Caller jobs must grant `pull-requests: write` because the
+reusable workflow requests it (otherwise GitHub rejects the whole workflow at startup). The `ci`
+caller passes only `CODECOV_TOKEN`. Job-level `if:` uses `vars` and `github` directly.
 
 Leave `ATLAS_CI_RUNNER_PROFILE=github-hosted` until Phase 2 is merged. Switching the variable on the
 Phase 2 PR would deadlock because `main` still has the old callers.

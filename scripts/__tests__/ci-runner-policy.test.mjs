@@ -107,6 +107,9 @@ jobs:
       vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+      pull-requests: write
     uses: ${TRUSTED_WORKFLOW_USES}
     with:
       suite: ci
