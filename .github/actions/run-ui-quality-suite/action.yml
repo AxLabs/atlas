@@ -105,7 +105,7 @@ runs:
       with:
         name: ui-quality-visual-diffs
         path: |
-          packages/ui/test-results/
-          packages/ui/playwright-report-visual/
-          packages/ui/playwright-report-storybook/
+          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/packages/ui/test-results/', inputs.checkout-dir) || 'packages/ui/test-results/' }}
+          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/packages/ui/playwright-report-visual/', inputs.checkout-dir) || 'packages/ui/playwright-report-visual/' }}
+          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/packages/ui/playwright-report-storybook/', inputs.checkout-dir) || 'packages/ui/playwright-report-storybook/' }}
         retention-days: 14

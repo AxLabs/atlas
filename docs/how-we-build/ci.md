@@ -96,19 +96,19 @@ Callers pin it to the trusted main revision:
 `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
 
 The organization runner-group workflow allowlist should include exactly that path. The reusable
-workflow enforces the fork trust gate internally; callers also compute `ATLAS_CI_USE_SELF_HOSTED` so
-fork PRs never invoke the trusted path. Atlas does not use `pull_request_target` to execute
-untrusted PR code.
+workflow enforces the fork trust gate internally; callers also compute `ATLAS_CI_USE_SELF_HOSTED`
+from `vars`/`github` so fork PRs never invoke the trusted path. Atlas does not use
+`pull_request_target` to execute untrusted PR code.
 
-| Workflow / job family | GitHub-hosted fallback | May use trusted self-hosted |
-| --------------------- | ---------------------- | --------------------------- |
-| **CI**                | Always                 | Trusted same-repo work only |
-| **UI Quality**        | Always                 | Trusted same-repo work only |
-| **Bundle Analysis**   | Always                 | Trusted same-repo work only |
-| **Governance**        | Always                 | No                          |
-| **Secrets Scan**      | Always                 | No                          |
-| **Security Audit**    | Always                 | No                          |
-| **Release**           | Always                 | No                          |
+| Workflow / job family | GitHub-hosted fallback             | May use trusted self-hosted |
+| --------------------- | ---------------------------------- | --------------------------- |
+| **CI**                | Fork PRs and github-hosted profile | Trusted same-repo work only |
+| **UI Quality**        | Fork PRs and github-hosted profile | Trusted same-repo work only |
+| **Bundle Analysis**   | Fork PRs and github-hosted profile | Trusted same-repo work only |
+| **Governance**        | Always                             | No                          |
+| **Secrets Scan**      | Always                             | No                          |
+| **Security Audit**    | Always                             | No                          |
+| **Release**           | Always                             | No                          |
 
 ### Enable
 
@@ -118,12 +118,15 @@ pnpm ci:self-hosted:enable
 
 Set repository variables (Settings → Actions → Variables):
 
-| Name                      | Value                    | Required |
-| ------------------------- | ------------------------ | -------- |
-| `ATLAS_CI_RUNNER_PROFILE` | `self-hosted`            | Yes      |
-| `ATLAS_CI_RUNNER_GROUP`   | `Blitzcraft OSS Trusted` | Optional |
+| Name                      | Value                     | Required |
+| ------------------------- | ------------------------- | -------- |
+| `ATLAS_CI_RUNNER_PROFILE` | `self-hosted`             | Yes      |
+| `ATLAS_CI_RUNNER_GROUP`   | unset (optional override) | Optional |
 
-Register runners in the `Blitzcraft OSS Trusted` runner group with the `ci` capability label.
+Register runners in the `Blitzcraft Trusted CI` runner group with the `ci` capability label.
+`ATLAS_CI_RUNNER_GROUP` is optional; the trusted workflow defaults to `Blitzcraft Trusted CI`. The
+group is shared with selected private BlitzCraft CI workflows; Atlas reaches it only through the
+main-pinned reusable workflow. Turing capacity is two runners (`turing-ci-1`, `turing-ci-2`).
 Bootstrap each host:
 
 ```bash
@@ -228,14 +231,14 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 - Jobs: **Governance**, **CI**, **Secrets Scan**, plus **Security Audit** from `security-audit.yml`
 - **CI** runs change detection first, then skips heavy steps on docs-only PRs
-- Self-hosted runs consume one `Blitzcraft OSS Trusted` / `ci` runner slot per workflow (not three)
+- Self-hosted runs consume one `Blitzcraft Trusted CI` / `ci` runner slot per workflow (not three)
 - Fork PRs never use the persistent self-hosted runner
 
 ### 4. Self-hosted profile (if applicable)
 
 1. Set `ATLAS_CI_RUNNER_PROFILE=self-hosted` on the repo.
 2. Push a branch with an app change.
-3. Confirm jobs land on the `Blitzcraft OSS Trusted` runner group (`ci` label).
+3. Confirm jobs land on the `Blitzcraft Trusted CI` runner group (`ci` label).
 4. Second run on the same host should show faster `pnpm install` (warm store).
 
 ## Branch protection

@@ -103,7 +103,7 @@ pnpm sbom:generate
 Push access to the canonical Atlas repository is part of the trusted self-hosted-runner boundary.
 External fork pull requests **must not** run on persistent Atlas self-hosted machines.
 
-Only `.github/workflows/trusted-self-hosted.yml` may target the `Blitzcraft OSS Trusted` runner
+Only `.github/workflows/trusted-self-hosted.yml` may target the `Blitzcraft Trusted CI` runner
 group. Callers pin it to `refs/heads/main` and compute `ATLAS_CI_USE_SELF_HOSTED` only when
 `ATLAS_CI_RUNNER_PROFILE=self-hosted` **and**:
 

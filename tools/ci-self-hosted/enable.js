@@ -64,7 +64,7 @@ function main() {
   console.log("1. Bootstrap each runner host:");
   console.log("     sudo mkdir -p /var/cache/ci");
   console.log("     sudo chown -R <runner-user>:<runner-user> /var/cache/ci");
-  console.log("2. Register runners in the Blitzcraft OSS Trusted runner group with label: ci");
+  console.log("2. Register runners in the Blitzcraft Trusted CI runner group with label: ci");
   console.log("3. Allowlist this workflow on the runner group:");
   console.log(
     "     blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main"
@@ -74,7 +74,9 @@ function main() {
   console.log("     Value: self-hosted");
   console.log("     Optional:");
   console.log("     Name:  ATLAS_CI_RUNNER_GROUP");
-  console.log("     Value: Blitzcraft OSS Trusted");
+  console.log(
+    "     Value: Blitzcraft Trusted CI  (optional; leave unset to use the workflow default)"
+  );
   console.log("5. Push a branch and confirm trusted jobs schedule on your runners.\n");
   console.log("📖 See docs/how-we-build/ci.md for full documentation.\n");
   console.log("To revert: pnpm ci:self-hosted:disable and delete the repository variable.\n");

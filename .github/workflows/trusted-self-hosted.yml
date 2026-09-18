@@ -4,7 +4,7 @@ name: Trusted Self-Hosted CI
 # blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
 #
 # Organization runner-group workflow allowlists should include exactly that path.
-# This is the only workflow in Atlas that may target the Blitzcraft OSS Trusted group.
+# This is the only Atlas workflow that may target the Blitzcraft Trusted CI group.
 
 permissions:
   contents: read
@@ -28,7 +28,7 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
-      group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft OSS Trusted' }}
+      group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft Trusted CI' }}
       labels: ci
     timeout-minutes: 90
     env:
@@ -123,6 +123,7 @@ jobs:
         uses: ./ci-link-bundle/.github/actions/run-bundle-analysis-suite
         with:
           runner-profile: self-hosted
+          checkout-dir: ${{ env.CI_CHECKOUT_DIR }}
 
       - name: Cleanup job artifacts (ci)
         if: always() && inputs.suite == 'ci'

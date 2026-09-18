@@ -14,9 +14,19 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  ATLAS_CI_RUNNER_PROFILE: ${{ vars.ATLAS_CI_RUNNER_PROFILE || 'github-hosted' }}
+  ATLAS_CI_USE_SELF_HOSTED:
+    ${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
+    github.event.pull_request.head.repo.full_name == github.repository) }}
+
 jobs:
-  ui-quality:
-    name: UI Quality
+  ui-quality-hosted:
+    name: UI Quality (hosted)
+    if: |
+      vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted' ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -25,87 +35,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect UI changes
-        id: detect
+      - name: Setup Atlas CI
+        uses: ./.github/actions/setup-atlas-ci
+        with:
+          runner-profile: github-hosted
+
+      - name: Run UI quality suite
+        uses: ./.github/actions/run-ui-quality-suite
+        with:
+          runner-profile: github-hosted
+
+  ui-quality-trusted:
+    name: UI Quality (trusted)
+    if: |
+      vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    uses: blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main
+    with:
+      suite: ui-quality
+
+  ui-quality:
+    name: UI Quality
+    needs: [ui-quality-hosted, ui-quality-trusted]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate UI Quality results
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "ui=true" >> "$GITHUB_OUTPUT"
+          hosted="${{ needs.ui-quality-hosted.result }}"
+          trusted="${{ needs.ui-quality-trusted.result }}"
+          echo "hosted=${hosted} trusted=${trusted}"
+          if { [ "$hosted" = success ] && [ "$trusted" = skipped ]; } || \
+             { [ "$hosted" = skipped ] && [ "$trusted" = success ]; }; then
             exit 0
           fi
-
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-
-          # Bootstrap guard: a minimal, explicit, hand-reviewed allowlist of enforcement
-          # infrastructure. This deliberately does NOT call scripts/ui-quality-paths.mjs -- that
-          # script (and its transitive imports, e.g. license-exceptions.mjs) is exactly what this
-          # guard protects, so UI Quality must still run even if the script is broken, deleted, or
-          # has been changed to (wrongly) classify its own diff as non-impacting. Keep in sync with
-          # UI_QUALITY_BOOTSTRAP_PATHS in scripts/ui-quality-paths.mjs; enforced by
-          # scripts/__tests__/ui-quality-paths.test.mjs.
-          BOOTSTRAP_PATTERN='^(scripts/ui-quality-paths\.mjs|scripts/__tests__/ui-quality-paths\.test\.mjs|scripts/storybook-critical-policy\.mjs|scripts/__tests__/storybook-critical-policy\.test\.mjs|scripts/__fixtures__/storybook-critical-policy/|scripts/license-exceptions\.mjs|scripts/license-policy\.mjs|packages/ui/\.storybook/critical-stories\.json|packages/ui/\.storybook/a11y-exceptions\.json|\.github/workflows/ui-quality\.yml)'
-
-          if git diff --name-only "$BASE" "$HEAD" | grep -qE "$BOOTSTRAP_PATTERN"; then
-            echo "ui=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Ordinary product/config changes are classified by the full script, not duplicated here.
-          UI="$(node scripts/ui-quality-paths.mjs --git-diff "$BASE" "$HEAD")"
-          echo "ui=$UI" >> "$GITHUB_OUTPUT"
-
-      - name: Skip UI quality (no UI changes)
-        if: steps.detect.outputs.ui != 'true'
-        run: echo "No UI-impacting changes detected. Skipping Storybook quality gates."
-
-      - name: Setup pnpm
-        if: steps.detect.outputs.ui == 'true'
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-        with:
-          version: 10.19.0
-
-      - name: Setup Node.js
-        if: steps.detect.outputs.ui == 'true'
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        if: steps.detect.outputs.ui == 'true'
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Storybook
-        if: steps.detect.outputs.ui == 'true'
-        run: pnpm --filter @atlas/ui build-storybook
-
-      - name: Install Playwright browsers
-        if: steps.detect.outputs.ui == 'true'
-        run: pnpm --filter @atlas/ui exec playwright install --with-deps chromium webkit
-
-      - name: Validate critical Storybook policy
-        if: steps.detect.outputs.ui == 'true'
-        run: node scripts/storybook-critical-policy.mjs
-
-      - name: Run Storybook interaction and accessibility tests
-        if: steps.detect.outputs.ui == 'true'
-        run: pnpm --filter @atlas/ui test:storybook
-
-      - name: Run cross-browser keyboard and focus checks
-        if: steps.detect.outputs.ui == 'true'
-        run: pnpm --filter @atlas/ui test:storybook:cross-browser
-
-      - name: Run visual regression tests
-        if: steps.detect.outputs.ui == 'true'
-        run: pnpm --filter @atlas/ui test:visual
-
-      - name: Upload visual diff artifacts
-        if: failure() && steps.detect.outputs.ui == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: ui-quality-visual-diffs
-          path: |
-            packages/ui/test-results/
-            packages/ui/playwright-report-visual/
-            packages/ui/playwright-report-storybook/
-          retention-days: 14
+          echo "Required UI Quality path did not succeed (fail closed; no hosted fallback for trusted failures)."
+          exit 1
