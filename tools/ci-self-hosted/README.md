@@ -17,14 +17,15 @@ pnpm ci:self-hosted:enable
 
 Then set repository variables (Settings → Actions → Variables):
 
-| Name                      | Value                    |
-| ------------------------- | ------------------------ |
-| `ATLAS_CI_RUNNER_PROFILE` | `self-hosted`            |
-| `ATLAS_CI_RUNNER_GROUP`   | `Blitzcraft OSS Trusted` |
+| Name                      | Value                     |
+| ------------------------- | ------------------------- |
+| `ATLAS_CI_RUNNER_PROFILE` | `self-hosted`             |
+| `ATLAS_CI_RUNNER_GROUP`   | unset (optional override) |
 
-`ATLAS_CI_RUNNER_GROUP` is optional when the default group name matches your organization setup.
+`ATLAS_CI_RUNNER_GROUP` is optional when the default group name (`Blitzcraft Trusted CI`) matches
+your organization setup.
 
-Register runners in the `Blitzcraft OSS Trusted` runner group with the `ci` label. Bootstrap each
+Register runners in the `Blitzcraft Trusted CI` runner group with the `ci` label. Bootstrap each
 runner host once:
 
 ```bash
@@ -35,6 +36,9 @@ sudo chown -R <runner-user>:<runner-user> /var/cache/ci
 Configure the organization runner-group workflow allowlist to include exactly:
 
 `blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main`
+
+Reusable workflow callers in Atlas use a different GitHub format (`trusted-self-hosted.yml@main`).
+Do not copy the allowlist string into `uses:`.
 
 ## Disable
 
