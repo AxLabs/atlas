@@ -1,23 +1,23 @@
 # Atlas
 
-> Enterprise-grade frontend platform for building production-ready web applications—with qualified,
-> evidence-backed claims documented in the [claims register](../audit/claims-register.md).
+Atlas is an open-source frontend platform for Next.js teams. It gives you a production-shaped
+workspace, executable architecture contracts, generators, quality gates, and versioned upgrades —
+while keeping your application in your repository and under your control.
 
 ---
 
 ## What is Atlas?
 
-Atlas is a **forkable frontend platform template**. It is **open source under Apache License 2.0**.
-The canonical repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas).
-Anyone can clone, fork, and evaluate it.
+Atlas is a **frontend platform**, not a hosted service and not a Next.js replacement. You operate it
+through the `atlas` CLI and an `atlas.config.json` project contract. That contract is executable:
+Doctor, generators, context, and upgrades all read the same source of truth.
 
-The platform provides opinionated patterns so teams can ship production applications without
-reinventing infrastructure for authentication, data fetching, validation, theming, accessibility,
-and observability.
+The generated application stays **source-owned**. Your Next.js app, UI packages, and configuration
+live in your repository. Atlas does not publish a public collection of `@atlas/*` packages. The
+public package is `@blitzcraftlabs/atlas`.
 
-Start from the clean starter (`apps/web`), explore the executable reference application
-(`apps/reference`), then delete `/examples` and build on the platform primitives in `lib/`,
-`providers/`, and `packages/ui`.
+Start from `atlas init` (or the clean starter in `apps/web`), explore `apps/reference` to see a
+finished Atlas product, then delete `/examples` and build on the platform primitives.
 
 ### Two applications
 
@@ -26,9 +26,8 @@ Start from the clean starter (`apps/web`), explore the executable reference appl
 | `apps/web`       | Clean consumer starter — removable `/examples` pattern pages only    |
 | `apps/reference` | Executable finished reference product — full Atlas architecture demo |
 
-The `/examples` routes in the starter demonstrate isolated patterns (data states, forms). Run
-`apps/reference` to see how those patterns compose in a realistic application with auth, API
-integration, and product features.
+`apps/reference` is the evaluation harness. It is **not** the consumer bootstrap created by
+`atlas init`.
 
 ```bash
 pnpm --filter @atlas/reference dev
@@ -40,11 +39,12 @@ Reference application URL: `http://localhost:3001` (developer harness at `/harne
 
 ## Who is Atlas for?
 
-- **Product teams** who want to ship features, not build infrastructure
-- **Frontend engineers** who value type safety and consistent patterns
-- **Organizations** adopting Atlas as a public Apache-2.0 template
+- **Product teams** who want a maintained platform lifecycle, not a one-time starter
+- **Frontend engineers** who want executable architecture instead of conventions that live only in
+  docs
+- **Organizations** adopting Atlas as a public Apache-2.0, source-owned workspace
 
-Atlas is a public open-source starter. Commercial engineering or support is optional and separate
+Atlas is a public open-source platform. Commercial engineering or support is optional and separate
 from using the source.
 
 ---
@@ -53,7 +53,7 @@ from using the source.
 
 | Document                                                            | What You'll Learn                          |
 | ------------------------------------------------------------------- | ------------------------------------------ |
-| [Quickstart](quickstart.md)                                         | What to expect when running Atlas          |
+| [Quickstart](quickstart.md)                                         | Clone path, forthcoming CLI, evaluation    |
 | [Architecture](architecture.md)                                     | System design and mental model             |
 | [Examples](examples.md)                                             | Reference patterns in the template         |
 | [Capabilities](capabilities.md)                                     | What Atlas solves and why it matters       |
@@ -74,7 +74,8 @@ See [Examples](examples.md).
 
 ## Production history (summary)
 
-Atlas has been exercised through real products. Use these categories exactly:
+Atlas has been exercised through real products. Use these categories exactly. This is qualified
+historical evidence, not a landing-page claim about current adoption metrics.
 
 | Category                  | Products                                                                                                                         |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |

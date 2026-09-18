@@ -189,17 +189,18 @@ the generated project's install/build/Doctor/generator lifecycle must be proven 
 After a version exists on npm, `pnpm distribution:verify-registry <version>` repeats that lifecycle
 from the registry and must not fall back to a local tarball.
 
-First publication of a never-before-published package must use canonical Git tag `v1.0.0`, not
-`v0.5.0` and not this feature branch:
+First publication of a never-before-published package must use the exact canonical Git tag matching
+the unpublished package version — currently **`v1.0.1`**, not `v1.0.0`, not `v0.5.0`, and not this
+feature branch:
 
 ```bash
 git fetch --tags
-git worktree add /tmp/atlas-v1.0.0 v1.0.0
-cd /tmp/atlas-v1.0.0
+git worktree add /tmp/atlas-v1.0.1 v1.0.1
+cd /tmp/atlas-v1.0.1
 pnpm install --frozen-lockfile
 pnpm distribution:prepare-publish --require-release-tag
 # human: npm publish <printed-tarball> --access public --ignore-scripts
-pnpm distribution:verify-registry 1.0.0
+pnpm distribution:verify-registry 1.0.1
 ```
 
 Temp-directory retention:

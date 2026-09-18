@@ -2,7 +2,20 @@
   "name": "@blitzcraftlabs/atlas",
   "version": "1.0.0",
   "license": "Apache-2.0",
-  "description": "Atlas command-line interface for project contract and bootstrap workflows",
+  "description": "Source-owned frontend platform CLI for Next.js — bootstrap, diagnose, generate, inspect, and upgrade Atlas applications.",
+  "keywords": [
+    "atlas",
+    "nextjs",
+    "react",
+    "typescript",
+    "frontend",
+    "platform",
+    "cli",
+    "scaffolding",
+    "codegen",
+    "architecture",
+    "pnpm"
+  ],
   "bin": {
     "atlas": "./dist/cli.js"
   },

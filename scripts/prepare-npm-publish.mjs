@@ -29,12 +29,12 @@ Build @blitzcraftlabs/atlas once, pack the exact tarball, validate that file,
 and print the one-time first-publish command. This does not authenticate to npm
 or publish a version.
 
-First npm publication of 1.0.0 must run from an isolated checkout of the
-canonical Git tag:
+First npm publication must run from an isolated checkout of the exact
+canonical Git tag matching the unpublished package version:
 
   git fetch --tags
-  git worktree add /tmp/atlas-v1.0.0 v1.0.0
-  cd /tmp/atlas-v1.0.0
+  git worktree add /tmp/atlas-vX.Y.Z vX.Y.Z
+  cd /tmp/atlas-vX.Y.Z
   pnpm install --frozen-lockfile
   pnpm distribution:prepare-publish --require-release-tag
 

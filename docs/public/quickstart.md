@@ -6,13 +6,32 @@
 
 ## Overview
 
-Atlas is a complete frontend platform template. When you run it, you get:
+Atlas is an open-source frontend platform for Next.js teams. When you run it, you get:
 
 - A Next.js application with TypeScript strict mode
-- A shared UI component library (`packages/ui`)
+- Source-owned UI, config, and consent packages in your repository
+- An executable `atlas.config.json` project contract
 - Configured tooling (linting, testing, type checking)
 - A **starter application** (`apps/web`) with minimal `/examples` pattern pages
 - A separate **reference application** (`apps/reference`) that demonstrates a finished Atlas product
+
+`apps/reference` is the evaluation harness. It is not the consumer bootstrap created by
+`atlas init`.
+
+---
+
+## Public CLI (pending first registry publication)
+
+```bash
+pnpm dlx @blitzcraftlabs/atlas init my-app
+cd my-app
+pnpm install
+pnpm dev
+```
+
+`@blitzcraftlabs/atlas` is not on the npm registry yet. Do not treat `pnpm dlx` as live until
+registry verification passes for `@blitzcraftlabs/atlas@1.0.1`. Until then, use the clone path
+below.
 
 ---
 

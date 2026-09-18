@@ -13,7 +13,7 @@ pnpm changeset:status # Preview pending version bumps
 
 ### Bump convention
 
-The pending 1.0 decision uses **major** (`0.5.0` → `1.0.0`). After `1.0.0`:
+The pending launch-surface release uses **patch** (`1.0.0` → `1.0.1`). After `1.0.0`:
 
 - **patch** — bug fixes and small non-breaking work (`1.0.0 → 1.0.1`)
 - **minor** — compatible features (`1.0.0 → 1.1.0`)

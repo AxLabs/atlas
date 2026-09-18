@@ -1,176 +1,151 @@
 # Atlas
 
-Enterprise-grade frontend platform built with Next.js, TypeScript, and Tailwind CSS.
+Atlas is an open-source frontend platform for Next.js teams. It gives you a production-shaped
+workspace, executable architecture contracts, generators, quality gates, and versioned upgrades —
+while keeping your application in your repository and under your control.
+
+[![CI](https://github.com/blitzcraftlabs/atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/blitzcraftlabs/atlas/actions/workflows/ci.yml)
+[![UI Quality](https://github.com/blitzcraftlabs/atlas/actions/workflows/ui-quality.yml/badge.svg)](https://github.com/blitzcraftlabs/atlas/actions/workflows/ui-quality.yml)
+[![Security Audit](https://github.com/blitzcraftlabs/atlas/actions/workflows/security-audit.yml/badge.svg)](https://github.com/blitzcraftlabs/atlas/actions/workflows/security-audit.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/blitzcraftlabs/atlas)](https://github.com/blitzcraftlabs/atlas/releases)
+[![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
+[Website](https://shipwithatlas.com) · [Documentation](docs/public/README.md) ·
+[Releases](https://github.com/blitzcraftlabs/atlas/releases)
 
 ## What is Atlas?
 
-Atlas is a **forkable frontend platform template** for building production-ready web applications.
-It is **open source under Apache License 2.0**. The canonical repository is
-[`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas). Anyone can clone, fork, and
-evaluate it.
+Atlas is a **frontend platform**, not a hosted service and not a Next.js replacement. You operate it
+through the `atlas` CLI and an `atlas.config.json` project contract. That contract is executable:
+Doctor, generators, context, and upgrades all read the same source of truth instead of inferring
+structure from documentation.
 
-The platform provides opinionated patterns for authentication, data fetching, validation, theming,
-accessibility, and observability—so teams can focus on shipping product.
+The generated application stays **source-owned**. Your Next.js app, UI packages, and configuration
+live in your repository and remain under your control. Atlas does not publish a public collection of
+`@atlas/*` packages. The public package is `@blitzcraftlabs/atlas`.
 
-Start from the clean `apps/web` starter, and explore `apps/reference` to see a finished product
-built with Atlas. Minimal `/examples` pages in the starter demonstrate isolated patterns; delete
-them when building your product.
+## Quick start
+
+### Public CLI (pending first registry publication)
 
 ```bash
-# Starter app (consumer starting point)
-pnpm --filter @atlas/web dev        # http://localhost:3000
-
-# Reference application (evaluation / learning)
-pnpm --filter @atlas/reference dev  # http://localhost:3001
+pnpm dlx @blitzcraftlabs/atlas init my-app
+cd my-app
+pnpm install
+pnpm dev
 ```
 
----
+`@blitzcraftlabs/atlas` is not on the npm registry yet. Do not treat `pnpm dlx` as live until
+registry verification passes for `@blitzcraftlabs/atlas@1.0.1`. Canonical GitHub `v1.0.0` remains
+the first stable platform release; `1.0.1` is the intended first npm-published version.
 
-## Documentation
+### Clone this repository
 
-| Audience                                               | Documentation                                                                                                                           |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **External** (evaluation, onboarding, architecture)    | **[Public Docs](docs/public/README.md)**                                                                                                |
-| **Contributors** (maintainers and public contributors) | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [How We Build](docs/how-we-build/README.md), [ADRs](docs/adr/README.md) |
-
-### Public Documentation
-
-- [Overview](docs/public/README.md) — What Atlas is and who it's for
-- [Quickstart](docs/public/quickstart.md) — What to expect when running Atlas
-- [Architecture](docs/public/architecture.md) — System design and mental model
-- [Examples](docs/public/examples.md) — Minimal reference patterns in the template
-- [Capabilities](docs/public/capabilities.md) — What Atlas solves and why
-- [Decisions](docs/public/decisions.md) — Key engineering choices
-- [FAQ](docs/public/faq.md) — Common questions answered
-
-### Reference examples (in-repo)
-
-| Route            | What it demonstrates                            |
-| ---------------- | ----------------------------------------------- |
-| `/examples`      | Overview of included reference patterns         |
-| `/examples/data` | React Query, loading/empty/error/success states |
-| `/examples/form` | Zod validation and server field error mapping   |
-
-Delete these when you start building your product. The interactive showcase lives at
-[shipwithatlas.com](https://shipwithatlas.com).
-
----
-
-## Quick Start
+Until that registry publication is verified, the currently executable path is a clone of this
+repository:
 
 ```bash
 git clone https://github.com/blitzcraftlabs/atlas.git
 cd atlas
-
-# Prerequisites: Node.js >= 22, pnpm >= 10
 corepack enable
 pnpm install
-
-# Setup environment
-cp apps/web/.env.example apps/web/.env.local
-pnpm validate:env
-
-# Start dev server
 pnpm dev
 ```
 
-Open `http://localhost:3000`.
+Requires Node.js `>=22` and pnpm `>=10`. Open `http://localhost:3000`.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor workflow.
+## What you get
 
-## Project Structure
+| Capability                                                       | What it does                                                                                 |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [`atlas init`](docs/how-we-build/cli.md)                         | Create a source-owned Atlas project from packaged bootstrap assets                           |
+| [`atlas doctor`](docs/how-we-build/doctor.md)                    | Check contract, ownership, and architecture drift                                            |
+| [`atlas generate`](docs/how-we-build/cli.md)                     | Scaffold features and App Router pages from the same contract                                |
+| [`atlas context --json`](docs/how-we-build/agents.md)            | Expose the executable project contract to humans and coding agents                           |
+| [`atlas upgrade`](docs/how-we-build/upgrades.md)                 | Plan versioned upgrades without silently overwriting consumer changes                        |
+| [`atlas.config.json`](docs/how-we-build/atlas-contract.md)       | Author-written project contract shared by CLI, Doctor, generators, and upgrades              |
+| [Source ownership](docs/how-we-build/architecture-ownership.md)  | Generated code lives in your repo; upgrade planning detects consumer modifications           |
+| [UI quality gates](.github/workflows/ui-quality.yml)             | Storybook interaction, accessibility, and visual checks on critical compositions             |
+| [Security policy and gates](SECURITY.md)                         | Private vulnerability reporting plus blocking HIGH/CRITICAL dependency policy                |
+| [Clean-room distribution verification](docs/how-we-build/cli.md) | Packed CLI must init, install, build, and diagnose a generated project outside this checkout |
 
+## Why Atlas?
+
+Atlas is more than a one-time starter template.
+
+| Typical starter                              | Atlas                                 |
+| -------------------------------------------- | ------------------------------------- |
+| Initial scaffold                             | Maintained platform lifecycle         |
+| Conventions in docs                          | Executable architecture contract      |
+| Architecture can drift silently              | Doctor checks drift                   |
+| One-time scaffolding                         | Supported generators                  |
+| Manual template updates                      | Versioned upgrade planning            |
+| Agent infers structure                       | `atlas context` exposes the contract  |
+| Consumer changes can be overwritten manually | Upgrade planner detects modifications |
+
+Atlas is not a component library, a hosted PaaS, or a certified security/WCAG/LTS product.
+
+## How Atlas works
+
+```text
+init
+→ build product
+→ doctor
+→ generate
+→ context
+→ upgrade
 ```
-atlas/
-├── apps/web/           # Clean Atlas starter application
-├── apps/reference/     # Executable reference application
-├── packages/ui/        # Shared UI components
-├── packages/config/    # Shared configuration
-├── docs/
-│   ├── public/         # External-facing documentation
-│   ├── how-we-build/   # Internal conventions and patterns
-│   └── adr/            # Architecture decisions
-└── tools/              # Build and dev tools
-```
 
----
+`atlas init` materializes a complete Next.js workspace into a directory you own. You then build
+product code in that repository. Doctor checks that the project still matches the Atlas contract.
+Generators add structural surfaces without inventing a second architecture. `atlas context --json`
+exposes the same contract to agents. `atlas upgrade` plans the next Atlas version from packaged
+release evidence and refuses to overwrite files you have modified.
 
-## Internal Documentation
+The generated project remains source-owned: Atlas ships with your application, it does not host it.
 
-| Document                                                                  | What You'll Learn                     |
-| ------------------------------------------------------------------------- | ------------------------------------- |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)**                                    | Access model, PRs, validation         |
-| **[How We Build](docs/how-we-build/README.md)**                           | Platform conventions, rules, patterns |
-| **[Folder Structure](docs/how-we-build/folder-structure.md)**             | Where code lives                      |
-| **[Environment Variables](docs/how-we-build/env.md)**                     | Adding and using env vars             |
-| **[API & Data Fetching](docs/how-we-build/api.md)**                       | React Query, API client               |
-| **[Testing](docs/how-we-build/testing.md)**                               | Test setup and patterns               |
-| **[Accessibility](docs/how-we-build/accessibility.md)**                   | a11y rules                            |
-| **[Examples](docs/how-we-build/examples.md)**                             | Reference pages in the template       |
-| **[Claims register](docs/audit/claims-register.md)**                      | Material claims and evidence          |
-| **[Releases & Governance](docs/how-we-build/releases-and-governance.md)** | Versioning, licensing, releases       |
-| **[ADRs](docs/adr/README.md)**                                            | Why we made specific choices          |
+## Evaluate Atlas
 
----
+`apps/reference` is the **executable reference application**. It is not the consumer bootstrap. Use
+it to inspect a finished Atlas product with auth, API, authorization, and platform diagnostics.
 
-## Common Tasks
-
-### Add a new environment variable
-
-→ [docs/how-we-build/env.md](docs/how-we-build/env.md#adding-a-new-environment-variable)
-
-### Add a new API endpoint hook
-
-→ [docs/how-we-build/api.md](docs/how-we-build/api.md)
-
-### Add a new UI component
-
-1. Create component in `packages/ui/src/components/`
-2. Write tests (`*.test.tsx`)
-3. Export from `packages/ui/src/index.ts`
-4. Add Storybook story
-
-### Run tests
+From a clone of this repository:
 
 ```bash
-pnpm test           # Unit tests
-pnpm test:e2e       # E2E tests
-pnpm storybook      # Component explorer
+cp apps/reference/.env.example apps/reference/.env.local
+pnpm --filter @atlas/reference dev
 ```
 
----
+Open `http://localhost:3001`. The developer harness is at `/harness`.
 
-## Commands
+The consumer starting surface created by `atlas init` is `apps/web`, not `apps/reference`.
 
-```bash
-pnpm dev            # Start development
-pnpm build          # Production build
-pnpm lint           # Run ESLint
-pnpm typecheck      # TypeScript check
-pnpm test           # Run tests
-pnpm docs:check     # Validate internal documentation links
-pnpm governance:check  # Release/licensing policy invariants
-pnpm storybook      # UI component explorer
-```
+## Documentation
 
----
+| Audience     | Start here                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| Public docs  | [Overview](docs/public/README.md) · [Quickstart](docs/public/quickstart.md)               |
+| Architecture | [Architecture](docs/public/architecture.md) · [Capabilities](docs/public/capabilities.md) |
+| Examples     | [Examples](docs/public/examples.md) · [FAQ](docs/public/faq.md)                           |
+| How We Build | [Conventions](docs/how-we-build/README.md) · [ADRs](docs/adr/README.md)                   |
+| Releases     | [Releases and governance](docs/how-we-build/releases-and-governance.md)                   |
+| Contribute   | [CONTRIBUTING.md](CONTRIBUTING.md)                                                        |
+| Security     | [SECURITY.md](SECURITY.md)                                                                |
 
 ## Contributing
 
-See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the public contribution model, branch practices,
-validation, and PR expectations.
+Atlas is open source under Apache License 2.0. Clone, fork, and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the access model, validation, and PR expectations.
 
----
+## Security
 
-## License and access
+Report vulnerabilities privately through GitHub Private Vulnerability Reporting. See
+[SECURITY.md](SECURITY.md). Atlas includes documented security controls and blocking dependency
+policy; it is not independently audited and does not claim certification.
 
-Atlas is **open source under Apache License 2.0** ([`LICENSE`](LICENSE)). The canonical public
-repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas). Clone and fork are
-permitted under the license.
+## License
 
-Workspace packages remain internal (`private: true` in npm metadata) and are **not** independently
-published to npm. Changesets open a Version PR; after that PR merges, automation publishes the
-canonical `vX.Y.Z` Git tag and GitHub Release. `0.1.0` is a historical internal snapshot and has no
-public tag.
+Apache License 2.0. See [`LICENSE`](LICENSE).
 
-Release governance: [Releases and Governance](docs/how-we-build/releases-and-governance.md).
+The public npm package is `@blitzcraftlabs/atlas`. Internal `@atlas/*` workspaces are source-owned
+internals and are **not** independently published to npm.

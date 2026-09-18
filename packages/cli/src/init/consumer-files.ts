@@ -77,6 +77,8 @@ export function buildConsumerReadme(options: {
 
 This project was generated from Atlas ${options.atlasVersion}.
 
+The generated application stays in this repository. Atlas does not host your application.
+
 ## Getting started
 
 \`\`\`bash
@@ -84,7 +86,19 @@ pnpm install
 pnpm dev
 \`\`\`
 
-Atlas CLI validation for generated projects will be documented once the package publication path is finalized.
+## Atlas Doctor
+
+Generated projects do not include an \`atlas\` package script. From this directory, run Doctor with
+the published CLI:
+
+\`\`\`bash
+pnpm dlx @blitzcraftlabs/atlas doctor
+\`\`\`
+
+## Documentation
+
+- Atlas public docs: https://github.com/blitzcraftlabs/atlas/blob/main/docs/public/README.md
+- Atlas Doctor: https://github.com/blitzcraftlabs/atlas/blob/main/docs/how-we-build/doctor.md
 `;
 }
 
