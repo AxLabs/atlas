@@ -434,7 +434,7 @@ describe("CI runner policy", () => {
     assert.match(uiAction, /inputs\.runner-profile != 'self-hosted'/);
     assert.match(
       uiAction,
-      /corepack pnpm --filter @atlas\/ui test:storybook && corepack pnpm --filter @atlas\/ui test:storybook:cross-browser && corepack pnpm --filter @atlas\/ui test:visual/,
+      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:storybook && pnpm --filter @atlas\/ui test:storybook:cross-browser && pnpm --filter @atlas\/ui test:visual/,
     );
     assert.match(uiAction, /mcr\.microsoft\.com\/playwright:v\$\{pw_version\}-noble/);
     assert.match(setupCiNode, /package-manager-cache:\s*false/);

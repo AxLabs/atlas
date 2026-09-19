@@ -79,7 +79,7 @@ runs:
             -e HOME=/tmp/pw-home \
             -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
             "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/ui test:storybook && corepack pnpm --filter @atlas/ui test:storybook:cross-browser && corepack pnpm --filter @atlas/ui test:visual'
+            bash -lc 'mkdir -p "$HOME/bin" && corepack enable --install-directory "$HOME/bin" pnpm && export PATH="$HOME/bin:$PATH" && pnpm --filter @atlas/ui test:storybook && pnpm --filter @atlas/ui test:storybook:cross-browser && pnpm --filter @atlas/ui test:visual'
         else
           pnpm --filter @atlas/ui test:storybook
           pnpm --filter @atlas/ui test:storybook:cross-browser
