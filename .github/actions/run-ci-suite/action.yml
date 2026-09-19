@@ -20,21 +20,7 @@ runs:
 
         BASE="${{ github.event.pull_request.base.sha }}"
         HEAD="${{ github.event.pull_request.head.sha }}"
-        CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
-
-        if printf '%s\n' "$CHANGED" | grep -qE \
-          '^(apps/|packages/|openapi/|scripts/|\.github/workflows/ci\.yml|turbo\.json|package\.json|pnpm-lock\.yaml|tsconfig.*\.json|eslint\.config)'; then
-          echo "app=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "app=false" >> "$GITHUB_OUTPUT"
-        fi
-
-        if printf '%s\n' "$CHANGED" | grep -qE \
-          '^(packages/cli/|packages/project/|apps/web/|packages/ui/|packages/config/|packages/consent/|templates/|openapi/|atlas\.config\.json|pnpm-workspace\.yaml|turbo\.json|eslint\.config|lighthouserc\.json|\.npmrc|\.nvmrc|\.prettierrc|\.prettierignore|\.gitignore|scripts/ensure-pnpm\.js|scripts/verify-distribution-clean-room\.mjs|scripts/verify-distribution-registry\.mjs|scripts/verify-npm-publish-dry-run\.mjs|scripts/prepare-npm-publish\.mjs|scripts/publish-npm-package\.mjs|scripts/lib/distribution-clean-room\.mjs|scripts/lib/distribution-registry\.mjs|scripts/lib/npm-publish-dry-run\.mjs|scripts/lib/npm-publication\.mjs|scripts/__tests__/distribution-clean-room|scripts/__tests__/distribution-registry|scripts/__tests__/npm-publish-dry-run|scripts/__tests__/npm-publication|package\.json|jest\.config\.js|AGENTS\.md|LICENSE|THIRD_PARTY_NOTICES\.md|docs/how-we-build/(agents|architecture-ownership|atlas-contract|cli|doctor|upgrades|api|authorization|testing|folder-structure|examples|security|releases-and-governance)\.md|docs/security/threat-model\.md|docs/adr/000[7-9]|docs/adr/0010|docs/adr/0011|\.github/workflows/ci\.yml|\.github/workflows/release\.yml)'; then
-          echo "distribution=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "distribution=false" >> "$GITHUB_OUTPUT"
-        fi
+        node scripts/ci-change-paths.mjs --git-diff "$BASE" "$HEAD" >> "$GITHUB_OUTPUT"
 
     - name: Check for forbidden lockfiles
       shell: bash
@@ -138,17 +124,17 @@ runs:
       shell: bash
       run: pnpm typecheck
 
-    - name: Run unit and integration tests
-      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
-      shell: bash
-      run: pnpm test
-      env:
-        CI: true
-
     - name: Collect repository coverage
       if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
       shell: bash
       run: pnpm test:coverage:all
+      env:
+        CI: true
+
+    - name: Run architecture boundary tests
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm test:boundaries
       env:
         CI: true
 

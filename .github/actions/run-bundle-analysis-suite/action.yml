@@ -8,7 +8,36 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Detect bundle-impacting changes
+      id: detect
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "bundle=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        BASE="${{ github.event.pull_request.base.sha }}"
+        HEAD="${{ github.event.pull_request.head.sha }}"
+
+        BOOTSTRAP_PATTERN='^(scripts/bundle-paths\.mjs|scripts/__tests__/bundle-paths\.test\.mjs|scripts/lib/ci-path-classification\.mjs|\.github/workflows/perf-bundle\.yml|\.github/actions/run-bundle-analysis-suite/action\.yml)'
+
+        if git diff --name-only "$BASE" "$HEAD" | grep -qE "$BOOTSTRAP_PATTERN"; then
+          echo "bundle=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        BUNDLE="$(node scripts/bundle-paths.mjs --git-diff "$BASE" "$HEAD")"
+        echo "bundle=$BUNDLE" >> "$GITHUB_OUTPUT"
+
+    - name: Skip bundle analysis (no bundle-impacting changes)
+      if: steps.detect.outputs.bundle != 'true'
+      shell: bash
+      run:
+        echo "No bundle-impacting changes detected. Skipping application rebuild and budget checks."
+
     - name: Install dependencies
+      if: steps.detect.outputs.bundle == 'true'
       shell: bash
       run: |
         if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
@@ -20,18 +49,21 @@ runs:
         fi
 
     - name: Build application
+      if: steps.detect.outputs.bundle == 'true'
       shell: bash
       run: pnpm --filter @atlas/web... build
       env:
         NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
     - name: Run bundle analysis
+      if: steps.detect.outputs.bundle == 'true'
       shell: bash
       run: pnpm --filter @atlas/web perf:analyze
       env:
         NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
     - name: Restore bundle baseline
+      if: steps.detect.outputs.bundle == 'true'
       id: baseline-cache
       uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
@@ -41,6 +73,7 @@ runs:
           bundle-baseline-main-
 
     - name: Extract bundle stats
+      if: steps.detect.outputs.bundle == 'true'
       id: stats
       shell: bash
       run: |
@@ -99,6 +132,7 @@ runs:
         echo "  Stats written to:  $STATS_FILE"
 
     - name: Check bundle budgets
+      if: steps.detect.outputs.bundle == 'true'
       id: bundle-check
       shell: bash
       env:
@@ -205,18 +239,23 @@ runs:
         NODE
 
     - name: Save baseline on main
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if:
+        steps.detect.outputs.bundle == 'true' && github.ref == 'refs/heads/main' &&
+        github.event_name == 'push'
       shell: bash
       run: cp apps/web/.next/bundle-stats.json apps/web/.next/bundle-baseline.json
 
     - name: Cache baseline on main
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if:
+        steps.detect.outputs.bundle == 'true' && github.ref == 'refs/heads/main' &&
+        github.event_name == 'push'
       uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: apps/web/.next/bundle-baseline.json
         key: bundle-baseline-main-${{ github.sha }}
 
     - name: Upload bundle analysis
+      if: steps.detect.outputs.bundle == 'true'
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: bundle-analysis
@@ -228,7 +267,7 @@ runs:
         retention-days: 30
 
     - name: Comment on PR
-      if: github.event_name == 'pull_request'
+      if: steps.detect.outputs.bundle == 'true' && github.event_name == 'pull_request'
       uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
       with:
         script: |
@@ -302,8 +341,8 @@ runs:
 
     - name: Fail if bundle check failed
       if:
-        steps.bundle-check.outputs.budget_exceeded == 'true' ||
-        steps.bundle-check.outputs.regression_exceeded == 'true'
+        steps.detect.outputs.bundle == 'true' && (steps.bundle-check.outputs.budget_exceeded ==
+        'true' || steps.bundle-check.outputs.regression_exceeded == 'true')
       shell: bash
       run: |
         echo "Bundle check failed."

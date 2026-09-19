@@ -64,13 +64,15 @@ Merged to `main`:
 
 ## Phase 2 (this migration)
 
-Caller workflows (`ci.yml`, `ui-quality.yml`, `perf-bundle.yml`) each have three layers:
+Caller workflows (`ci.yml`, `ui-quality.yml`) keep hosted/trusted/aggregator layers. Bundle Analysis
+(`perf-bundle.yml`) stays on GitHub-hosted Ubuntu so the two Turing runners are available for **CI**
+and **UI Quality**.
 
 | Workflow          | Hosted executor           | Trusted caller              | Aggregator (required check)    |
 | ----------------- | ------------------------- | --------------------------- | ------------------------------ |
 | `ci.yml`          | `ci-hosted` / CI (hosted) | `ci-trusted` / CI (trusted) | `ci` / **CI**                  |
 | `ui-quality.yml`  | `ui-quality-hosted`       | `ui-quality-trusted`        | `ui-quality` / **UI Quality**  |
-| `perf-bundle.yml` | `bundle-hosted`           | `bundle-trusted`            | `bundle` / **Bundle Analysis** |
+| `perf-bundle.yml` | `bundle-hosted`           | none (never Turing)         | `bundle` / **Bundle Analysis** |
 
 Trusted callers pin exactly:
 
@@ -97,25 +99,32 @@ Phase 2 PR would deadlock because `main` still has the old callers.
 | push to main | `github-hosted` | Atlas    |    run |    skip |
 | push to main | `self-hosted`   | Atlas    |   skip |     run |
 
+The table above applies to **CI** and **UI Quality**. UI Quality also skips both executors when
+hosted path detection reports no UI-impacting files (aggregator succeeds). **Bundle Analysis**
+always uses GitHub-hosted Ubuntu when it runs; it never occupies Turing and is not a hosted fallback
+for a trusted failure.
+
 A fork PR never reaches Turing, regardless of `ATLAS_CI_RUNNER_PROFILE`.
 
 There is **no** GitHub-hosted fallback when `profile=self-hosted`, the work is same-repo trusted
-execution, and Turing is offline. That condition queues or fails closed.
+**CI or UI Quality** execution, and Turing is offline. That condition queues or fails closed.
 
 ## Aggregators
 
 Branch protection keeps depending on **CI**, **UI Quality**, and **Bundle Analysis**. Each
 aggregator uses `if: always()`, runs on GitHub-hosted Ubuntu, and:
 
-- succeeds for `success` + `skipped` (either direction)
-- fails if the selected path failed or was cancelled
-- fails if both paths skipped
-- does not turn a trusted failure green
+- **CI / UI Quality:** succeed for `success` + `skipped` (either direction); fail if the selected
+  path failed or was cancelled; fail if both executors skipped unless UI path detection reported no
+  UI-impacting changes
+- **Bundle Analysis:** succeed when path detection skips the suite, or when the GitHub-hosted
+  analyzer succeeds; fail closed if the hosted analyzer failed
+- do not turn a trusted CI/UI Quality failure green
 
 ## Workloads that stay GitHub-hosted
 
-Governance, Secrets Scan, Security Audit, Release, Lighthouse, and visual-baseline updates stay on
-GitHub-hosted runners. No release/publish/deploy/signing work moves to Turing.
+Governance, Secrets Scan, Security Audit, Release, Lighthouse, Bundle Analysis, and visual-baseline
+updates stay on GitHub-hosted runners. No release/publish/deploy/signing work moves to Turing.
 
 ## Workspace layout
 

@@ -14,21 +14,33 @@ pull_request / push to main
   └── Security Audit     (blocking Atlas vulnerability policy + workflow pins)
 ```
 
-| Job                | When it runs                                                                                             | What it does                                                                                                                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Governance**     | Always                                                                                                   | License, provenance, and dependency-ownership gates                                                                                                                                                          |
-| **CI**             | Always (shell checks); full suite when `app=true` or push to `main`; clean-room when `distribution=true` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, tests, `test:coverage:all`, `coverage-policy.mjs` risk floors, Codecov report, `distribution:verify`, build, Chromium+WebKit E2E |
-| **UI Quality**     | When UI-impacting paths change or push to `main`                                                         | Storybook build, critical-story policy, `test:storybook`, Chromium+WebKit keyboard checks, Playwright visual baselines (`mcr.microsoft.com/playwright` Docker)                                               |
-| **Secrets Scan**   | Always                                                                                                   | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                                                                                   |
-| **Security Audit** | Always (also weekly cron)                                                                                | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                                                                                     |
+| Job                 | When it runs                                                                                             | What it does                                                                                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Governance**      | Always                                                                                                   | License, provenance, and dependency-ownership gates                                                                                                                                                                      |
+| **CI**              | Always (shell checks); full suite when `app=true` or push to `main`; clean-room when `distribution=true` | Change detection, lockfile policy, `validate:env`, format, lint, typecheck, `test:coverage:all`, `test:boundaries`, `coverage-policy.mjs` risk floors, Codecov report, `distribution:verify`, build, Chromium+WebKit E2E |
+| **UI Quality**      | When UI-impacting paths change or push to `main`                                                         | Hosted path detect first (no Turing). Storybook build, critical-story policy, `test:storybook`, Chromium+WebKit keyboard checks, Playwright visual baselines (`mcr.microsoft.com/playwright` Docker)                     |
+| **Bundle Analysis** | When application/UI/dependency/build-config can change emitted bundles, or push to `main`                | Always GitHub-hosted Ubuntu. Size budgets unchanged. Skips changeset/version/changelog-only and generated `packages/cli/release-assets/production/**` diffs                                                              |
+| **Secrets Scan**    | Always                                                                                                   | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                                                                                               |
+| **Security Audit**  | Always (also weekly cron)                                                                                | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                                                                                                 |
 
 **Docs-only PRs** still run Node setup and `pnpm docs:check` (via
 `node scripts/check-doc-links.mjs`). They skip install, lint, typecheck, tests, build, and E2E after
-the lightweight policy checks. Packaged bootstrap docs, CLI/runtime, starter app, and generated
-consumer sources set `distribution=true` and run `pnpm distribution:verify` inside the required
-**CI** job. That step is not skipped for affected Distribution v1 changes.
+the lightweight policy checks.
 
-**Push to `main`** always runs the full suite.
+`scripts/ci-change-paths.mjs` classifies `app` vs `distribution`. Full `pnpm distribution:verify`
+always runs on pushes to `main`, release/version metadata, CLI/bootstrap/templates/release
+assets/upgrades/publish scripts, and workspace/package metadata that can change generated consumers.
+Ordinary `apps/web/src`, `packages/ui/src`, Storybook, visual tests, and `apps/reference` product
+PRs do **not** run the clean-room lifecycle. Ambiguous packaging paths fail closed to
+`distribution=true`. The verifier itself is unchanged and still uses a real clean-room install (no
+reused `node_modules`).
+
+**Push to `main`** always runs the full suite, including distribution clean-room, UI Quality, and
+Bundle Analysis.
+
+Jest coverage is the canonical unit-test execution in CI (`pnpm test:coverage:all`). CI does not
+also run `pnpm test`. Architecture boundary tests (`pnpm test:boundaries`) and root `scripts` Node
+`--test` coverage stay separate.
 
 ## Local parity
 
@@ -38,7 +50,7 @@ Run the same checks before opening a PR:
 pnpm install --frozen-lockfile
 pnpm docs:check
 pnpm validate:env
-pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm test:coverage:all && pnpm test:risk-coverage
+pnpm format && pnpm lint && pnpm typecheck && pnpm test:coverage:all && pnpm test:boundaries && pnpm test:risk-coverage
 pnpm distribution:verify
 pnpm build
 pnpm --filter @atlas/web test:e2e
@@ -102,15 +114,15 @@ The reusable workflow enforces the fork trust gate internally; callers also comp
 `ATLAS_CI_USE_SELF_HOSTED` from `vars`/`github` so fork PRs never invoke the trusted path. Atlas
 does not use `pull_request_target` to execute untrusted PR code.
 
-| Workflow / job family | GitHub-hosted fallback             | May use trusted self-hosted |
-| --------------------- | ---------------------------------- | --------------------------- |
-| **CI**                | Fork PRs and github-hosted profile | Trusted same-repo work only |
-| **UI Quality**        | Fork PRs and github-hosted profile | Trusted same-repo work only |
-| **Bundle Analysis**   | Fork PRs and github-hosted profile | Trusted same-repo work only |
-| **Governance**        | Always                             | No                          |
-| **Secrets Scan**      | Always                             | No                          |
-| **Security Audit**    | Always                             | No                          |
-| **Release**           | Always                             | No                          |
+| Workflow / job family | GitHub-hosted fallback             | May use trusted self-hosted                                                      |
+| --------------------- | ---------------------------------- | -------------------------------------------------------------------------------- |
+| **CI**                | Fork PRs and github-hosted profile | Trusted same-repo work only                                                      |
+| **UI Quality**        | Fork PRs and github-hosted profile | Trusted same-repo work only, and only after hosted path detect says UI-impacting |
+| **Bundle Analysis**   | Always (path-aware)                | No — GitHub-hosted Ubuntu so Turing stays free for CI + UI Quality               |
+| **Governance**        | Always                             | No                                                                               |
+| **Secrets Scan**      | Always                             | No                                                                               |
+| **Security Audit**    | Always                             | No                                                                               |
+| **Release**           | Always                             | No                                                                               |
 
 ### Enable
 
@@ -239,8 +251,10 @@ git checkout -b test/ci-app-change
 Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 - Jobs: **Governance**, **CI**, **Secrets Scan**, plus **Security Audit** from `security-audit.yml`
-- **CI** runs change detection first, then skips heavy steps on docs-only PRs
-- Self-hosted runs consume one `Blitzcraft Trusted CI` / `ci` runner slot per workflow (not three)
+- **CI** runs change detection first, then skips heavy steps on docs-only PRs Self-hosted runs
+  consume one `Blitzcraft Trusted CI` / `ci` runner slot per **CI** or **UI Quality** workflow.
+  Bundle Analysis does not occupy Turing. UI Quality path detection runs on GitHub-hosted Ubuntu
+  first, so version/changelog-only PRs never queue a trusted runner.
 - Fork PRs never use the persistent self-hosted runner
 
 ### 4. Self-hosted profile (if applicable)

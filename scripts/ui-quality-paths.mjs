@@ -6,12 +6,17 @@
  * change without being classified as UI-quality-impacting.
  */
 
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const REPO_ROOT = path.resolve(__dirname, "..");
+import {
+  isReleaseOnlyChange,
+  listGitChangedFiles,
+  normalizeRepoPath,
+  REPO_ROOT,
+} from "./lib/ci-path-classification.mjs";
+
+export { REPO_ROOT, listGitChangedFiles, normalizeRepoPath };
 
 /**
  * Minimal, explicit allowlist of enforcement-infrastructure paths/prefixes: the UI Quality
@@ -19,7 +24,7 @@ export const REPO_ROOT = path.resolve(__dirname, "..");
  * enforce, and the workflow file that wires them together.
  *
  * This is the single source of truth for the *bootstrap guard* duplicated (by hand, necessarily)
- * as `BOOTSTRAP_PATTERN` in `.github/workflows/ui-quality.yml`'s "Detect UI changes" step. That
+ * as `BOOTSTRAP_PATTERN` in the UI Quality detect steps (workflow + suite action). That
  * guard intentionally does NOT call into this module: this file (and `isUiQualityImpactingPath`
  * below) is exactly what it protects, so it must still force `ui=true` even if this script is
  * broken, deleted, or has been changed to (wrongly) classify its own diff as non-impacting.
@@ -36,6 +41,8 @@ export const REPO_ROOT = path.resolve(__dirname, "..");
 export const UI_QUALITY_BOOTSTRAP_PATHS = [
   "scripts/ui-quality-paths.mjs",
   "scripts/__tests__/ui-quality-paths.test.mjs",
+  "scripts/lib/ci-path-classification.mjs",
+  "scripts/__tests__/ci-path-classification.test.mjs",
   "scripts/storybook-critical-policy.mjs",
   "scripts/__tests__/storybook-critical-policy.test.mjs",
   "scripts/__fixtures__/storybook-critical-policy/",
@@ -58,36 +65,27 @@ const BOOTSTRAP_ALTERNATION = UI_QUALITY_BOOTSTRAP_PATHS.map(escapeForRegExp).jo
  * workflow itself, or the Storybook critical-policy enforcement surface changes.
  */
 export const UI_QUALITY_PATH_PATTERN = new RegExp(
-  `^(packages/ui/|packages/config/|package\\.json$|pnpm-lock\\.yaml$|pnpm-workspace\\.yaml$|turbo\\.json$|${BOOTSTRAP_ALTERNATION})`
+  `^(packages/ui/|packages/config/|apps/web/src/providers/theme-provider\\.tsx$|apps/reference/src/providers/theme-provider\\.tsx$|apps/web/src/components/ThemeHotkey\\.tsx$|package\\.json$|pnpm-lock\\.yaml$|pnpm-workspace\\.yaml$|turbo\\.json$|${BOOTSTRAP_ALTERNATION})`
 );
 
-export function normalizeRepoPath(filePath) {
-  return String(filePath)
-    .replaceAll("\\", "/")
-    .replace(/^\.\//, "");
-}
-
 export function isUiQualityImpactingPath(filePath) {
-  return UI_QUALITY_PATH_PATTERN.test(normalizeRepoPath(filePath));
+  const normalized = normalizeRepoPath(filePath);
+  if (normalized.startsWith("packages/cli/release-assets/production/")) {
+    return false;
+  }
+  return UI_QUALITY_PATH_PATTERN.test(normalized);
 }
 
 export function classifyUiQualityChanges(files) {
+  if (isReleaseOnlyChange(files)) {
+    return { ui: false, impacting: [] };
+  }
+
   const impacting = files.filter((file) => isUiQualityImpactingPath(file));
   return {
     ui: impacting.length > 0,
     impacting,
   };
-}
-
-export function listGitChangedFiles(base, head, { cwd = REPO_ROOT } = {}) {
-  const stdout = execFileSync("git", ["diff", "--name-only", base, head], {
-    encoding: "utf8",
-    cwd,
-  });
-  return stdout
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
 }
 
 function parseArgs(argv) {

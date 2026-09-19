@@ -3,17 +3,9 @@ name: Performance - Bundle Analysis
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - "apps/web/**"
-      - "packages/ui/**"
-      - "pnpm-lock.yaml"
   push:
     branches:
       - main
-    paths:
-      - "apps/web/**"
-      - "packages/ui/**"
-      - "pnpm-lock.yaml"
   workflow_dispatch:
 
 permissions:
@@ -37,17 +29,51 @@ env:
     github.event.pull_request.head.repo.full_name == github.repository) }}
 
 jobs:
+  detect:
+    name: Detect bundle changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      bundle: ${{ steps.detect.outputs.bundle }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Detect bundle-impacting changes
+        id: detect
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "bundle=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          BOOTSTRAP_PATTERN='^(scripts/bundle-paths\.mjs|scripts/__tests__/bundle-paths\.test\.mjs|scripts/lib/ci-path-classification\.mjs|\.github/workflows/perf-bundle\.yml|\.github/actions/run-bundle-analysis-suite/action\.yml)'
+
+          if git diff --name-only "$BASE" "$HEAD" | grep -qE "$BOOTSTRAP_PATTERN"; then
+            echo "bundle=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BUNDLE="$(node scripts/bundle-paths.mjs --git-diff "$BASE" "$HEAD")"
+          echo "bundle=$BUNDLE" >> "$GITHUB_OUTPUT"
+
   bundle-hosted:
     name: Bundle Analysis (hosted)
-    if: |
-      vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted' ||
-      (github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name != github.repository)
+    needs: detect
+    if: needs.detect.outputs.bundle == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
 
       - name: Setup Atlas CI
         uses: ./.github/actions/setup-atlas-ci
@@ -59,34 +85,29 @@ jobs:
         with:
           runner-profile: github-hosted
 
-  bundle-trusted:
-    name: Bundle Analysis (trusted)
-    if: |
-      vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
-      (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main
-    with:
-      suite: bundle
-
   bundle:
     name: Bundle Analysis
-    needs: [bundle-hosted, bundle-trusted]
+    needs: [detect, bundle-hosted]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Aggregate Bundle Analysis results
         run: |
+          detect="${{ needs.detect.result }}"
+          bundle="${{ needs.detect.outputs.bundle }}"
           hosted="${{ needs.bundle-hosted.result }}"
-          trusted="${{ needs.bundle-trusted.result }}"
-          echo "hosted=${hosted} trusted=${trusted}"
-          if { [ "$hosted" = success ] && [ "$trusted" = skipped ]; } || \
-             { [ "$hosted" = skipped ] && [ "$trusted" = success ]; }; then
+          echo "detect=${detect} bundle=${bundle} hosted=${hosted}"
+          if [ "$detect" != success ]; then
+            echo "Bundle Analysis path detection failed."
+            exit 1
+          fi
+          if [ "$bundle" != "true" ]; then
+            echo "No bundle-impacting changes; Bundle Analysis skipped on GitHub-hosted Ubuntu."
             exit 0
           fi
-          echo "Required Bundle Analysis path did not succeed (fail closed; no hosted fallback for trusted failures)."
+          if [ "$hosted" = success ]; then
+            exit 0
+          fi
+          echo "Required Bundle Analysis hosted path did not succeed (fail closed)."
           exit 1

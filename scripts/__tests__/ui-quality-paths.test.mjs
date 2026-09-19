@@ -13,7 +13,13 @@ import {
 
 const cli = path.join(REPO_ROOT, "scripts", "ui-quality-paths.mjs");
 const workflowPath = path.join(REPO_ROOT, ".github", "workflows", "ui-quality.yml");
-const suiteActionPath = path.join(REPO_ROOT, ".github", "actions", "run-ui-quality-suite", "action.yml");
+const suiteActionPath = path.join(
+  REPO_ROOT,
+  ".github",
+  "actions",
+  "run-ui-quality-suite",
+  "action.yml"
+);
 
 function runCli(args, { input } = {}) {
   try {
@@ -72,7 +78,32 @@ describe("UI Quality path classification", () => {
       "scripts/license-policy.mjs",
     ]);
     assert.equal(result.ui, true);
-    assert.deepEqual(result.impacting, ["scripts/license-exceptions.mjs", "scripts/license-policy.mjs"]);
+    assert.deepEqual(result.impacting, [
+      "scripts/license-exceptions.mjs",
+      "scripts/license-policy.mjs",
+    ]);
+  });
+
+  it("does not classify generated production snapshots or version-only PRs as UI-quality-impacting", () => {
+    assert.equal(
+      isUiQualityImpactingPath(
+        "packages/cli/release-assets/production/1.0.0/packages/ui/src/components/ui/button.tsx"
+      ),
+      false
+    );
+    const result = classifyUiQualityChanges([
+      ".changeset/cool-fox.md",
+      "CHANGELOG.md",
+      "packages/ui/package.json",
+      "packages/cli/release-assets/production/1.0.0/release.snapshot.json",
+    ]);
+    assert.equal(result.ui, false);
+    assert.deepEqual(result.impacting, []);
+  });
+
+  it("classifies app theme integration files as UI-quality-impacting", () => {
+    assert.equal(isUiQualityImpactingPath("apps/web/src/providers/theme-provider.tsx"), true);
+    assert.equal(isUiQualityImpactingPath("apps/reference/src/providers/theme-provider.tsx"), true);
   });
 
   it("does not classify unrelated docs or scripts as UI-quality-impacting", () => {
@@ -94,10 +125,7 @@ describe("UI Quality path classification", () => {
   it("requires the UI Quality workflow to invoke the classifier for ordinary changes", () => {
     const workflow = readFileSync(workflowPath, "utf8");
     const suiteAction = readFileSync(suiteActionPath, "utf8");
-    assert.match(
-      `${workflow}\n${suiteAction}`,
-      /node scripts\/ui-quality-paths\.mjs --git-diff/,
-    );
+    assert.match(`${workflow}\n${suiteAction}`, /node scripts\/ui-quality-paths\.mjs --git-diff/);
   });
 });
 
@@ -124,7 +152,9 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
     // exactly what the bootstrap guard protects, so the guard's own detection logic must not call
     // back into that script (directly, via node, or otherwise) -- otherwise a broken or
     // maliciously "fixed" classifier could hide changes to itself.
-    const detectStepMatch = suiteAction.match(/name: Detect UI changes[\s\S]*?run: \|([\s\S]*?)(?=\n    - name:)/);
+    const detectStepMatch = suiteAction.match(
+      /name: Detect UI changes[\s\S]*?run: \|([\s\S]*?)(?=\n    - name:)/
+    );
     assert.ok(detectStepMatch, "could not locate the Detect UI changes step body");
     const fullStepBody = detectStepMatch[0];
     const classifierIndex = fullStepBody.indexOf("node scripts/ui-quality-paths.mjs --git-diff");
@@ -155,7 +185,11 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
     assert.ok(patternMatch);
     const bootstrapRegex = new RegExp(patternMatch[1]);
 
-    for (const file of ["docs/how-we-build/testing.md", "packages/ui/src/components/ui/button.tsx", "README.md"]) {
+    for (const file of [
+      "docs/how-we-build/testing.md",
+      "packages/ui/src/components/ui/button.tsx",
+      "README.md",
+    ]) {
       assert.doesNotMatch(file, bootstrapRegex, file);
     }
   });
@@ -174,7 +208,15 @@ describe("UI Quality workflow bootstrap guard (self-protection)", () => {
 
     const bootstrapCatchesIt = selfChange.some((file) => bootstrapRegex.test(file));
 
-    assert.equal(brokenClassifierResult.ui, false, "sanity check: the simulated broken classifier says non-impacting");
-    assert.equal(bootstrapCatchesIt, true, "the workflow bootstrap guard must catch it independently");
+    assert.equal(
+      brokenClassifierResult.ui,
+      false,
+      "sanity check: the simulated broken classifier says non-impacting"
+    );
+    assert.equal(
+      bootstrapCatchesIt,
+      true,
+      "the workflow bootstrap guard must catch it independently"
+    );
   });
 });

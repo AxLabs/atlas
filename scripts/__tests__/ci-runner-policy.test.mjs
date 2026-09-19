@@ -13,6 +13,7 @@ import {
   TRUSTED_WORKFLOW_ALLOWLIST,
   aggregateRequiredCheckResults,
   callersUseTrustedWorkflow,
+  selectBundleExecutionPath,
   selectCiExecutionPath,
   targetsLegacySelfHostedLabels,
   targetsTrustedRunnerGroup,
@@ -126,33 +127,104 @@ jobs:
     timeout-minutes: 5
 ${aggregatorStep}`;
 
+const phase2Ui = `name: UI Quality
+on: push
+env:
+  ATLAS_CI_RUNNER_PROFILE: \${{ vars.ATLAS_CI_RUNNER_PROFILE || 'github-hosted' }}
+  ATLAS_CI_USE_SELF_HOSTED:
+    \${{ vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' && (github.event_name != 'pull_request' ||
+    github.event.pull_request.head.repo.full_name == github.repository) }}
+permissions:
+  contents: read
+jobs:
+  detect:
+    name: Detect UI changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ui: true
+    steps:
+      - run: echo detect
+  ui-quality-hosted:
+    name: UI Quality (hosted)
+    needs: detect
+    if: |
+      needs.detect.outputs.ui == 'true' &&
+      (vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted' ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: echo hosted
+  ui-quality-trusted:
+    name: UI Quality (trusted)
+    needs: detect
+    if: |
+      needs.detect.outputs.ui == 'true' &&
+      vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ${TRUSTED_WORKFLOW_USES}
+    with:
+      suite: ui-quality
+  ui-quality:
+    name: UI Quality
+    needs: [detect, ui-quality-hosted, ui-quality-trusted]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          hosted="\${{ needs.ui-quality-hosted.result }}"
+          trusted="\${{ needs.ui-quality-trusted.result }}"
+          if { [ "$hosted" = success ] && [ "$trusted" = skipped ]; } || \\
+             { [ "$hosted" = skipped ] && [ "$trusted" = success ]; }; then
+            exit 0
+          fi
+          exit 1
+`;
+
+const phase2BundleHosted = `name: Bundle Analysis
+on: push
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  detect:
+    name: Detect bundle changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      bundle: true
+    steps:
+      - run: echo detect
+  bundle-hosted:
+    name: Bundle Analysis (hosted)
+    needs: detect
+    if: needs.detect.outputs.bundle == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: echo hosted
+  bundle:
+    name: Bundle Analysis
+    needs: [detect, bundle-hosted]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo hosted
+`;
+
 function writePhase2Callers(root, { ci = phase2Caller, ui, bundle } = {}) {
   writeWorkflow(root, TRUSTED_SELF_HOSTED_WORKFLOW, trustedWorkflow);
   writeWorkflow(root, ".github/workflows/ci.yml", ci);
-  writeWorkflow(
-    root,
-    ".github/workflows/ui-quality.yml",
-    ui ??
-      phase2Caller
-        .replaceAll("CI (hosted)", "UI Quality (hosted)")
-        .replaceAll("CI (trusted)", "UI Quality (trusted)")
-        .replaceAll("name: CI\n", "name: UI Quality\n")
-        .replaceAll("suite: ci", "suite: ui-quality")
-        .replaceAll("ci-hosted", "ui-quality-hosted")
-        .replaceAll("ci-trusted", "ui-quality-trusted"),
-  );
-  writeWorkflow(
-    root,
-    ".github/workflows/perf-bundle.yml",
-    bundle ??
-      phase2Caller
-        .replaceAll("CI (hosted)", "Bundle Analysis (hosted)")
-        .replaceAll("CI (trusted)", "Bundle Analysis (trusted)")
-        .replaceAll("name: CI\n", "name: Bundle Analysis\n")
-        .replaceAll("suite: ci", "suite: bundle")
-        .replaceAll("ci-hosted", "bundle-hosted")
-        .replaceAll("ci-trusted", "bundle-trusted"),
-  );
+  writeWorkflow(root, ".github/workflows/ui-quality.yml", ui ?? phase2Ui);
+  writeWorkflow(root, ".github/workflows/perf-bundle.yml", bundle ?? phase2BundleHosted);
 }
 
 describe("CI runner policy", () => {
@@ -160,7 +232,7 @@ describe("CI runner policy", () => {
     assert.equal(DEFAULT_RUNNER_GROUP, "Blitzcraft Trusted CI");
     const trusted = readFileSync(path.join(repoRoot, TRUSTED_SELF_HOSTED_WORKFLOW), "utf8");
     assert.ok(
-      trusted.includes("group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft Trusted CI' }}"),
+      trusted.includes("group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft Trusted CI' }}")
     );
   });
 
@@ -178,11 +250,7 @@ describe("CI runner policy", () => {
     const trusted = readFileSync(path.join(repoRoot, TRUSTED_SELF_HOSTED_WORKFLOW), "utf8");
     assert.equal(targetsTrustedRunnerGroup(trusted), true);
 
-    for (const relativePath of [
-      ".github/workflows/ci.yml",
-      ".github/workflows/ui-quality.yml",
-      ".github/workflows/perf-bundle.yml",
-    ]) {
+    for (const relativePath of [".github/workflows/ci.yml", ".github/workflows/ui-quality.yml"]) {
       const content = readFileSync(path.join(repoRoot, relativePath), "utf8");
       assert.equal(targetsTrustedRunnerGroup(content), false, relativePath);
       assert.equal(targetsLegacySelfHostedLabels(content), false, relativePath);
@@ -192,6 +260,13 @@ describe("CI runner policy", () => {
       assert.doesNotMatch(content, /runner_group:/);
       assert.doesNotMatch(content, /turing-ci-[0-9]+/);
     }
+
+    const bundle = readFileSync(path.join(repoRoot, ".github/workflows/perf-bundle.yml"), "utf8");
+    assert.equal(targetsTrustedRunnerGroup(bundle), false);
+    assert.equal(targetsLegacySelfHostedLabels(bundle), false);
+    assert.doesNotMatch(bundle, /trusted-self-hosted\.yml/);
+    assert.doesNotMatch(bundle, /bundle-trusted/);
+    assert.doesNotMatch(bundle, /turing-ci-[0-9]+/);
   });
 
   it("rejects runner_group input in the trusted workflow", () => {
@@ -201,8 +276,8 @@ describe("CI runner policy", () => {
       TRUSTED_SELF_HOSTED_WORKFLOW,
       trustedWorkflow.replace(
         "suite:\n        type: string\n        required: true",
-        "suite:\n        type: string\n        required: true\n      runner_group:\n        type: string",
-      ),
+        "suite:\n        type: string\n        required: true\n      runner_group:\n        type: string"
+      )
     );
     writeWorkflow(root, ".github/workflows/ci.yml", legacyCiWorkflow);
 
@@ -216,13 +291,12 @@ describe("CI runner policy", () => {
     writeWorkflow(
       root,
       ".github/workflows/ci.yml",
-      legacyCiWorkflow.replace(
-        "fromJSON('[\"self-hosted\", \"ci\"]')",
-        `'${DEFAULT_RUNNER_GROUP}'`,
-      ).replace(
-        "runs-on:",
-        `runs-on:\n      group: ${DEFAULT_RUNNER_GROUP}\n      labels: ci\n    legacy-runs-on:`,
-      ),
+      legacyCiWorkflow
+        .replace('fromJSON(\'["self-hosted", "ci"]\')', `'${DEFAULT_RUNNER_GROUP}'`)
+        .replace(
+          "runs-on:",
+          `runs-on:\n      group: ${DEFAULT_RUNNER_GROUP}\n      labels: ci\n    legacy-runs-on:`
+        )
     );
 
     const errors = validateCiRunnerPolicyPhase1(root);
@@ -261,11 +335,11 @@ describe("CI runner policy", () => {
     assert.equal(TRUSTED_WORKFLOW_PIN, "trusted-self-hosted.yml@main");
     assert.equal(
       TRUSTED_WORKFLOW_USES,
-      "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main",
+      "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@main"
     );
     assert.equal(
       TRUSTED_WORKFLOW_ALLOWLIST,
-      "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main",
+      "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main"
     );
   });
 
@@ -278,7 +352,7 @@ describe("CI runner policy", () => {
     const errors = validateCiRunnerPolicy(root);
     assert.match(
       errors.join("\n"),
-      /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@main/,
+      /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@main/
     );
   });
 
@@ -291,7 +365,7 @@ describe("CI runner policy", () => {
     const errors = validateCiRunnerPolicy(root);
     assert.match(
       errors.join("\n"),
-      /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@main/,
+      /must be pinned to blitzcraftlabs\/atlas\/\.github\/workflows\/trusted-self-hosted\.yml@main/
     );
   });
 
@@ -299,7 +373,7 @@ describe("CI runner policy", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "atlas-ci-policy-"));
     const badCaller = phase2Caller.replace(
       "    with:\n      suite: ci\n",
-      "    timeout-minutes: 90\n    secrets: inherit\n    with:\n      suite: ci\n      runner_group: extra\n",
+      "    timeout-minutes: 90\n    secrets: inherit\n    with:\n      suite: ci\n      runner_group: extra\n"
     );
     writePhase2Callers(root, { ci: badCaller });
 
@@ -335,7 +409,7 @@ describe("CI runner policy", () => {
         headRepo: "blitzcraftlabs/atlas",
         repository: "blitzcraftlabs/atlas",
       }),
-      { hosted: false, trusted: true },
+      { hosted: false, trusted: true }
     );
     assert.deepEqual(
       selectCiExecutionPath({
@@ -344,7 +418,7 @@ describe("CI runner policy", () => {
         headRepo: "blitzcraftlabs/atlas",
         repository: "blitzcraftlabs/atlas",
       }),
-      { hosted: false, trusted: true },
+      { hosted: false, trusted: true }
     );
     assert.deepEqual(
       selectCiExecutionPath({
@@ -353,7 +427,7 @@ describe("CI runner policy", () => {
         headRepo: "blitzcraftlabs/atlas",
         repository: "blitzcraftlabs/atlas",
       }),
-      { hosted: true, trusted: false },
+      { hosted: true, trusted: false }
     );
     assert.deepEqual(
       selectCiExecutionPath({
@@ -362,21 +436,23 @@ describe("CI runner policy", () => {
         headRepo: "blitzcraftlabs/atlas",
         repository: "blitzcraftlabs/atlas",
       }),
-      { hosted: true, trusted: false },
+      { hosted: true, trusted: false }
     );
+    assert.deepEqual(selectBundleExecutionPath(), { hosted: true, trusted: false });
   });
 
   it("keeps stable aggregator names and fail-closed required-check results", () => {
-    for (const relativePath of [
-      ".github/workflows/ci.yml",
-      ".github/workflows/ui-quality.yml",
-      ".github/workflows/perf-bundle.yml",
-    ]) {
+    for (const relativePath of [".github/workflows/ci.yml", ".github/workflows/ui-quality.yml"]) {
       const content = readFileSync(path.join(repoRoot, relativePath), "utf8");
       assert.match(content, /if: always\(\)/);
       assert.match(content, /\[ "\$hosted" = success \] && \[ "\$trusted" = skipped \]/);
       assert.match(content, /\[ "\$hosted" = skipped \] && \[ "\$trusted" = success \]/);
     }
+
+    const bundle = readFileSync(path.join(repoRoot, ".github/workflows/perf-bundle.yml"), "utf8");
+    assert.match(bundle, /if: always\(\)/);
+    assert.match(bundle, /needs: \[detect, bundle-hosted\]/);
+    assert.doesNotMatch(bundle, /bundle-trusted/);
 
     assert.equal(aggregateRequiredCheckResults("success", "skipped"), "success");
     assert.equal(aggregateRequiredCheckResults("skipped", "success"), "success");
@@ -390,23 +466,23 @@ describe("CI runner policy", () => {
     const trusted = readFileSync(path.join(repoRoot, TRUSTED_SELF_HOSTED_WORKFLOW), "utf8");
     const ciAction = readFileSync(
       path.join(repoRoot, ".github/actions/run-ci-suite/action.yml"),
-      "utf8",
+      "utf8"
     );
     const uiAction = readFileSync(
       path.join(repoRoot, ".github/actions/run-ui-quality-suite/action.yml"),
-      "utf8",
+      "utf8"
     );
     const bundleAction = readFileSync(
       path.join(repoRoot, ".github/actions/run-bundle-analysis-suite/action.yml"),
-      "utf8",
+      "utf8"
     );
     const setupCiNode = readFileSync(
       path.join(repoRoot, ".github/actions/setup-ci-node/action.yml"),
-      "utf8",
+      "utf8"
     );
     const setupAtlasCi = readFileSync(
       path.join(repoRoot, ".github/actions/setup-atlas-ci/action.yml"),
-      "utf8",
+      "utf8"
     );
 
     assert.doesNotMatch(trusted, /CI_CHECKOUT_DIR:/);
@@ -426,21 +502,25 @@ describe("CI runner policy", () => {
       assert.doesNotMatch(content, /inputs\.checkout-dir/, label);
     }
 
+    assert.match(ciAction, /node scripts\/ci-change-paths\.mjs --git-diff/);
+    assert.match(ciAction, /pnpm test:coverage:all/);
+    assert.match(ciAction, /pnpm test:boundaries/);
+    assert.doesNotMatch(ciAction, /^\s+run: pnpm test$/m);
     assert.match(ciAction, /\.\/packages\/ui\/coverage\/coverage-final\.json/);
     assert.match(ciAction, /\.\/apps\/web\/coverage\/coverage-final\.json/);
     assert.match(ciAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
     assert.match(
       ciAction,
-      /corepack pnpm --filter @atlas\/web test:e2e & w=\$!; corepack pnpm --filter @atlas\/reference test:e2e & r=\$!; wait "\$w"; web_ec=\$\?; wait "\$r"; ref_ec=\$\?; exit \$\(\(web_ec \|\| ref_ec\)\)/,
+      /corepack pnpm --filter @atlas\/web test:e2e & w=\$!; corepack pnpm --filter @atlas\/reference test:e2e & r=\$!; wait "\$w"; web_ec=\$\?; wait "\$r"; ref_ec=\$\?; exit \$\(\(web_ec \|\| ref_ec\)\)/
     );
     assert.match(
       ciAction,
-      /else\s+pnpm --filter @atlas\/web test:e2e\s+pnpm --filter @atlas\/reference test:e2e/,
+      /else\s+pnpm --filter @atlas\/web test:e2e\s+pnpm --filter @atlas\/reference test:e2e/
     );
 
     const referencePlaywright = readFileSync(
       path.join(repoRoot, "apps/reference/playwright.config.ts"),
-      "utf8",
+      "utf8"
     );
     assert.match(referencePlaywright, /fullyParallel:\s*false/);
     assert.match(referencePlaywright, /workers:\s*process\.env\.CI \? 2 : 1/);
@@ -453,20 +533,18 @@ describe("CI runner policy", () => {
     assert.match(uiAction, /inputs\.runner-profile != 'self-hosted'/);
     assert.match(
       uiAction,
-      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:storybook && pnpm --filter @atlas\/ui test:storybook:cross-browser'/,
+      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:storybook && pnpm --filter @atlas\/ui test:storybook:cross-browser'/
     );
     assert.match(
       uiAction,
-      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:visual'/,
+      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:visual'/
     );
     assert.match(uiAction, /mcr\.microsoft\.com\/playwright:v\$\{pw_version\}-noble/);
-    assert.doesNotMatch(
-      uiAction,
-      /else\s+pnpm --filter @atlas\/ui test:visual/,
-    );
+    assert.doesNotMatch(uiAction, /else\s+pnpm --filter @atlas\/ui test:visual/);
     assert.match(setupCiNode, /package-manager-cache:\s*false/);
     assert.match(setupAtlasCi, /package-manager-cache:\s*false/);
     assert.match(setupAtlasCi, /cache:\s*pnpm/);
+    assert.match(bundleAction, /node scripts\/bundle-paths\.mjs --git-diff/);
     assert.match(bundleAction, /path: apps\/web\/\.next\/bundle-baseline\.json/);
   });
 });

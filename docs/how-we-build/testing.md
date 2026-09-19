@@ -276,9 +276,10 @@ pnpm test:risk-coverage
 That command collects Jest coverage for `@atlas/web` and `@atlas/ui`, then evaluates
 [`coverage-policy.json`](../../coverage-policy.json) via `scripts/coverage-policy.mjs`. Missing
 reports, missing subsystems, zero matched files, or a metric below the floor fail the gate. CI
-collects the full aggregate first (`pnpm test:coverage:all`) and then runs the same policy
-evaluator; `pnpm test:risk-coverage` remains the local command that regenerates the two high-risk
-reports and evaluates floors.
+collects the full aggregate once (`pnpm test:coverage:all`) without also running `pnpm test`, then
+runs the same policy evaluator. Architecture boundary tests run via `pnpm test:boundaries`.
+`pnpm test:risk-coverage` remains the local command that regenerates the two high-risk reports and
+evaluates floors.
 
 Suggested floors (do not lower them just to make CI green):
 

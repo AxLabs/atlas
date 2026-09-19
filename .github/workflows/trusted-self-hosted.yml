@@ -15,7 +15,9 @@ on:
   workflow_call:
     inputs:
       suite:
-        description: ci, ui-quality, or bundle
+        description:
+          ci or ui-quality occupy Turing. bundle remains valid for compatibility but Atlas callers
+          run Bundle Analysis on GitHub-hosted Ubuntu.
         type: string
         required: true
     secrets:

@@ -21,12 +21,48 @@ env:
     github.event.pull_request.head.repo.full_name == github.repository) }}
 
 jobs:
+  detect:
+    name: Detect UI changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ui: ${{ steps.detect.outputs.ui }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Detect UI changes
+        id: detect
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "ui=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          BOOTSTRAP_PATTERN='^(scripts/ui-quality-paths\.mjs|scripts/__tests__/ui-quality-paths\.test\.mjs|scripts/lib/ci-path-classification\.mjs|scripts/__tests__/ci-path-classification\.test\.mjs|scripts/storybook-critical-policy\.mjs|scripts/__tests__/storybook-critical-policy\.test\.mjs|scripts/__fixtures__/storybook-critical-policy/|scripts/license-exceptions\.mjs|scripts/license-policy\.mjs|packages/ui/\.storybook/critical-stories\.json|packages/ui/\.storybook/a11y-exceptions\.json|\.github/workflows/ui-quality\.yml|\.github/actions/run-ui-quality-suite/action\.yml)'
+
+          if git diff --name-only "$BASE" "$HEAD" | grep -qE "$BOOTSTRAP_PATTERN"; then
+            echo "ui=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          UI="$(node scripts/ui-quality-paths.mjs --git-diff "$BASE" "$HEAD")"
+          echo "ui=$UI" >> "$GITHUB_OUTPUT"
+
   ui-quality-hosted:
     name: UI Quality (hosted)
+    needs: detect
     if: |
-      vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted' ||
+      needs.detect.outputs.ui == 'true' &&
+      (vars.ATLAS_CI_RUNNER_PROFILE != 'self-hosted' ||
       (github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name != github.repository)
+      github.event.pull_request.head.repo.full_name != github.repository))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -47,7 +83,9 @@ jobs:
 
   ui-quality-trusted:
     name: UI Quality (trusted)
+    needs: detect
     if: |
+      needs.detect.outputs.ui == 'true' &&
       vars.ATLAS_CI_RUNNER_PROFILE == 'self-hosted' &&
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
@@ -60,16 +98,26 @@ jobs:
 
   ui-quality:
     name: UI Quality
-    needs: [ui-quality-hosted, ui-quality-trusted]
+    needs: [detect, ui-quality-hosted, ui-quality-trusted]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Aggregate UI Quality results
         run: |
+          detect="${{ needs.detect.result }}"
+          ui="${{ needs.detect.outputs.ui }}"
           hosted="${{ needs.ui-quality-hosted.result }}"
           trusted="${{ needs.ui-quality-trusted.result }}"
-          echo "hosted=${hosted} trusted=${trusted}"
+          echo "detect=${detect} ui=${ui} hosted=${hosted} trusted=${trusted}"
+          if [ "$detect" != success ]; then
+            echo "UI Quality path detection failed."
+            exit 1
+          fi
+          if [ "$ui" != "true" ]; then
+            echo "No UI-impacting changes; UI Quality skipped without occupying Turing."
+            exit 0
+          fi
           if { [ "$hosted" = success ] && [ "$trusted" = skipped ]; } || \
              { [ "$hosted" = skipped ] && [ "$trusted" = success ]; }; then
             exit 0
