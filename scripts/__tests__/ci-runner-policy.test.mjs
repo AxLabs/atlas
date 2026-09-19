@@ -516,12 +516,17 @@ describe("CI runner policy", () => {
     assert.match(ciAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
     assert.match(
       ciAction,
-      /corepack pnpm --filter @atlas\/web test:e2e & w=\$!; corepack pnpm --filter @atlas\/reference test:e2e & r=\$!; wait "\$w"; web_ec=\$\?; wait "\$r"; ref_ec=\$\?; exit \$\(\(web_ec \|\| ref_ec\)\)/
+      /corepack pnpm --filter @atlas\/web test:e2e\s+web_ec=\$\?\s+corepack pnpm --filter @atlas\/reference test:e2e\s+ref_ec=\$\?\s+exit \$\(\(web_ec \|\| ref_ec\)\)/
     );
     assert.match(
       ciAction,
-      /else\s+pnpm --filter @atlas\/web test:e2e\s+pnpm --filter @atlas\/reference test:e2e/
+      /pnpm --filter @atlas\/web test:e2e\s+web_ec=\$\?\s+pnpm --filter @atlas\/reference test:e2e\s+ref_ec=\$\?\s+exit \$\(\(web_ec \|\| ref_ec\)\)/
     );
+    assert.doesNotMatch(ciAction, /test:e2e & w=\$!/);
+    assert.match(ciAction, /apps\/web\/playwright-report\//);
+    assert.match(ciAction, /apps\/web\/test-results\//);
+    assert.match(ciAction, /apps\/reference\/playwright-report\//);
+    assert.match(ciAction, /apps\/reference\/test-results\//);
 
     const referencePlaywright = readFileSync(
       path.join(repoRoot, "apps/reference/playwright.config.ts"),
