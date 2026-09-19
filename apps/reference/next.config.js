@@ -11,7 +11,6 @@ const nextConfig = {
   turbopack: {},
   // Performance optimizations
   experimental: {
-    optimizeCss: true, // Enable CSS optimization
     optimizePackageImports: ["@atlas/ui", "lucide-react"],
   },
   // Compiler optimizations

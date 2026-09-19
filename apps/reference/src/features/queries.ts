@@ -64,10 +64,10 @@ export function useReferenceUserList(scenario?: string) {
 
   return useQuery<UserListResponse, ApiError>({
     queryKey: referenceKeys.custom("users", { scenario }),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
         const query = scenario ? `?scenario=${encodeURIComponent(scenario)}` : "";
-        return await api.get<UserListResponse>(`/users${query}`, { skipAuth: true });
+        return await api.get<UserListResponse>(`/users${query}`, { skipAuth: true, signal });
       } catch (error) {
         throw normalizeApiError(error);
       }

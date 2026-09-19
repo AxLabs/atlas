@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Serialize reference harness persona/scenario/reset mutations so completion feedback cannot be
+  overwritten by overlapping controls or slow users-preview requests.
+- Remove unused Next.js `experimental.optimizeCss` from starter and reference apps (it required
+  `critters`, which is not a dependency).
+- Run starter and reference Playwright suites sequentially on both CI runner profiles, and upload
+  reports/traces for both apps.
+
 ### Added
 
 - `atlas init` now ships a portable GitHub Actions workflow at `.github/workflows/ci.yml`. It runs

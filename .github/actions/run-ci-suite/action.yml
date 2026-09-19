@@ -217,6 +217,15 @@ runs:
         NEXT_PUBLIC_API_URL: http://localhost:3001/api
         SKIP_ENV_VALIDATION: false
       run: |
+        run_e2e_suites() {
+          set +e
+          pnpm --filter @atlas/web test:e2e
+          web_ec=$?
+          pnpm --filter @atlas/reference test:e2e
+          ref_ec=$?
+          exit $((web_ec || ref_ec))
+        }
+
         if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
           pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
           docker run --rm \
@@ -232,16 +241,26 @@ runs:
             -e SKIP_ENV_VALIDATION=false \
             -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
             "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e & w=$!; corepack pnpm --filter @atlas/reference test:e2e & r=$!; wait "$w"; web_ec=$?; wait "$r"; ref_ec=$?; exit $((web_ec || ref_ec))'
+            bash -lc 'mkdir -p "$HOME"
+              set +e
+              corepack pnpm --filter @atlas/web test:e2e
+              web_ec=$?
+              corepack pnpm --filter @atlas/reference test:e2e
+              ref_ec=$?
+              exit $((web_ec || ref_ec))'
         else
-          pnpm --filter @atlas/web test:e2e
-          pnpm --filter @atlas/reference test:e2e
+          run_e2e_suites
         fi
 
-    - name: Upload Playwright report
+    - name: Upload Playwright reports and traces
       if: always() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: playwright-report
-        path: apps/web/playwright-report/
+        name: playwright-reports-${{ inputs.runner-profile }}
+        path: |
+          apps/web/playwright-report/
+          apps/web/test-results/
+          apps/reference/playwright-report/
+          apps/reference/test-results/
+        if-no-files-found: warn
         retention-days: 30
