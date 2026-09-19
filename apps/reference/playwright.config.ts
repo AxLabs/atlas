@@ -12,7 +12,7 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL: "http://localhost:3001",
-    trace: "on-first-retry",
+    trace: process.env.CI ? "retain-on-failure" : "on-first-retry",
     // No storageState: Playwright gives each test a fresh BrowserContext
     // (empty cookies — no inherited users-store, session, or scenario cookie).
   },

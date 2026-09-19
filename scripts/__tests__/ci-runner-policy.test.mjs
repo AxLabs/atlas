@@ -528,6 +528,10 @@ describe("CI runner policy", () => {
     assert.match(ciAction, /apps\/reference\/playwright-report\//);
     assert.match(ciAction, /apps\/reference\/test-results\//);
 
+    const webPlaywright = readFileSync(
+      path.join(repoRoot, "apps/web/playwright.config.ts"),
+      "utf8"
+    );
     const referencePlaywright = readFileSync(
       path.join(repoRoot, "apps/reference/playwright.config.ts"),
       "utf8"
@@ -538,6 +542,16 @@ describe("CI runner policy", () => {
     assert.match(referencePlaywright, /failOnFlakyTests:\s*Boolean\(process\.env\.CI\)/);
     assert.match(referencePlaywright, /name:\s*"chromium"/);
     assert.match(referencePlaywright, /name:\s*"webkit"/);
+    for (const [label, content] of [
+      ["web playwright", webPlaywright],
+      ["reference playwright", referencePlaywright],
+    ]) {
+      assert.match(
+        content,
+        /trace:\s*process\.env\.CI \? "retain-on-failure" : "on-first-retry"/,
+        label
+      );
+    }
     assert.match(uiAction, /packages\/ui\/test-results\//);
     assert.match(uiAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
     assert.match(uiAction, /inputs\.runner-profile != 'self-hosted'/);

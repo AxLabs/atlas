@@ -4,6 +4,7 @@
 
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
 import {
@@ -18,6 +19,7 @@ import {
 
 import { getUserFacingMessage } from "@/lib/api";
 
+import { referenceKeys } from "../keys";
 import { useHarnessControlMutation } from "../mutations";
 import { useReferenceStatus, useReferenceUserList } from "../queries";
 
@@ -27,6 +29,9 @@ import type { UseSessionReturn } from "@/lib/auth";
 import type { ReferenceAuthPersona, ReferenceUsersScenario } from "@/lib/reference/scenario-types";
 
 const PERSONAS: ReferenceAuthPersona[] = ["anonymous", "reference-user", "reference-admin"];
+
+const referenceUsersQueryKey = [...referenceKeys.all(), "users"] as const;
+const successUsersQueryKey = referenceKeys.custom("users", { scenario: "success" });
 
 interface ReferenceHarnessPanelProps {
   session: UseSessionReturn;
@@ -48,6 +53,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
   } = useReferenceUserList(selectedScenario);
 
   const { mutate: mutateControl, isPending: controlsBusy } = useHarnessControlMutation(refresh);
+  const queryClient = useQueryClient();
 
   const currentPersona = useCallback((): ReferenceAuthPersona => {
     if (activePersona !== "anonymous") {
@@ -68,6 +74,16 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
   const refreshPreview = useCallback(() => {
     void refetchUsers();
   }, [refetchUsers]);
+
+  const refreshSuccessPreview = useCallback(() => {
+    void queryClient.cancelQueries({ queryKey: referenceUsersQueryKey }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: referenceUsersQueryKey,
+        refetchType: "none",
+      });
+      void queryClient.refetchQueries({ queryKey: successUsersQueryKey, type: "all" });
+    });
+  }, [queryClient]);
 
   const setPersona = useCallback(
     (persona: ReferenceAuthPersona) => {
@@ -134,14 +150,14 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
         onSuccess: () => {
           setSelectedScenario("success");
           setActionMessage("Reference state reset");
-          refreshPreview();
+          refreshSuccessPreview();
         },
         onError: (mutationError) => {
           setActionMessage(getUserFacingMessage(mutationError) || "Reset failed");
         },
       }
     );
-  }, [mutateControl, controlsBusy, refreshPreview]);
+  }, [mutateControl, controlsBusy, refreshSuccessPreview]);
 
   if (isLoading) {
     return <ReferenceLoadingState label="Loading reference status" />;
