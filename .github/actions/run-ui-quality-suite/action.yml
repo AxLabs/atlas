@@ -5,10 +5,6 @@ inputs:
     description: github-hosted (default) or self-hosted (persistent /var/cache/ci stores)
     required: false
     default: github-hosted
-  checkout-dir:
-    description: Isolated checkout subdirectory name on self-hosted runners
-    required: false
-    default: ""
 runs:
   using: composite
   steps:
@@ -82,14 +78,13 @@ runs:
       run: |
         if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
           pw_version="$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')"
-          checkout_dir="${GITHUB_WORKSPACE}/${{ inputs.checkout-dir }}"
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --ipc=host \
             --network host \
             -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
             -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
-            -w "${checkout_dir}" \
+            -w "${GITHUB_WORKSPACE}" \
             -e CI=true \
             -e HOME=/tmp/pw-home \
             -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
@@ -105,7 +100,7 @@ runs:
       with:
         name: ui-quality-visual-diffs
         path: |
-          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/packages/ui/test-results/', inputs.checkout-dir) || 'packages/ui/test-results/' }}
-          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/packages/ui/playwright-report-visual/', inputs.checkout-dir) || 'packages/ui/playwright-report-visual/' }}
-          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/packages/ui/playwright-report-storybook/', inputs.checkout-dir) || 'packages/ui/playwright-report-storybook/' }}
+          packages/ui/test-results/
+          packages/ui/playwright-report-visual/
+          packages/ui/playwright-report-storybook/
         retention-days: 14

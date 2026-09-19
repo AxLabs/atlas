@@ -117,6 +117,14 @@ aggregator uses `if: always()`, runs on GitHub-hosted Ubuntu, and:
 Governance, Secrets Scan, Security Audit, Release, Lighthouse, and visual-baseline updates stay on
 GitHub-hosted runners. No release/publish/deploy/signing work moves to Turing.
 
+## Workspace layout
+
+GitHub-hosted and Turing CI suites must see the same repository filesystem layout. Trusted checkout
+uses ordinary `actions/checkout` into `${{ github.workspace }}` (`package.json`, `apps/`,
+`packages/`, `scripts/`, `.github/`). Local composite actions are invoked as
+`./.github/actions/...`. Persistent pnpm/Turbo caches stay under `/var/cache/ci`; Playwright still
+runs in Docker on Turing.
+
 ## After merge (not part of Phase 2)
 
 Set `ATLAS_CI_RUNNER_PROFILE=self-hosted` only after this migration is on `main`. Do not mutate the

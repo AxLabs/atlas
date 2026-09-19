@@ -13,7 +13,6 @@ import {
   TRUSTED_WORKFLOW_ALLOWLIST,
   aggregateRequiredCheckResults,
   callersUseTrustedWorkflow,
-  resolveIsolatedWorkspacePath,
   selectCiExecutionPath,
   targetsLegacySelfHostedLabels,
   targetsTrustedRunnerGroup,
@@ -50,8 +49,14 @@ jobs:
             ci|ui-quality|bundle) ;;
             *) exit 1 ;;
           esac
-      - uses: ./ci-link-ci/.github/actions/run-ci-suite
+      - uses: ./.github/actions/setup-ci-node
+      - uses: ./.github/actions/run-ci-suite
         if: inputs.suite == 'ci'
+      - uses: ./.github/actions/run-ui-quality-suite
+        if: inputs.suite == 'ui-quality'
+      - uses: ./.github/actions/run-bundle-analysis-suite
+        if: inputs.suite == 'bundle'
+      - uses: ./.github/actions/cleanup-self-hosted-job
 `;
 
 const legacyCiWorkflow = `name: CI
@@ -381,29 +386,12 @@ describe("CI runner policy", () => {
     assert.equal(aggregateRequiredCheckResults("skipped", "skipped"), "failure");
   });
 
-  it("prefixes isolated-workspace paths for GitHub actions on the trusted profile", () => {
-    assert.equal(
-      resolveIsolatedWorkspacePath("packages/ui/test-results/", {
-        runnerProfile: "github-hosted",
-        checkoutDir: "ui-ws-r1",
-      }),
-      "packages/ui/test-results/",
+  it("checks out trusted work into github.workspace like hosted runners", () => {
+    const trusted = readFileSync(path.join(repoRoot, TRUSTED_SELF_HOSTED_WORKFLOW), "utf8");
+    const ciAction = readFileSync(
+      path.join(repoRoot, ".github/actions/run-ci-suite/action.yml"),
+      "utf8",
     );
-    assert.equal(
-      resolveIsolatedWorkspacePath("packages/ui/test-results/", {
-        runnerProfile: "self-hosted",
-        checkoutDir: "ui-ws-r1",
-      }),
-      "ui-ws-r1/packages/ui/test-results/",
-    );
-    assert.equal(
-      resolveIsolatedWorkspacePath("apps/web/.next/bundle-baseline.json", {
-        runnerProfile: "self-hosted",
-        checkoutDir: "bundle-ws-r1",
-      }),
-      "bundle-ws-r1/apps/web/.next/bundle-baseline.json",
-    );
-
     const uiAction = readFileSync(
       path.join(repoRoot, ".github/actions/run-ui-quality-suite/action.yml"),
       "utf8",
@@ -412,14 +400,29 @@ describe("CI runner policy", () => {
       path.join(repoRoot, ".github/actions/run-bundle-analysis-suite/action.yml"),
       "utf8",
     );
-    const trusted = readFileSync(path.join(repoRoot, TRUSTED_SELF_HOSTED_WORKFLOW), "utf8");
 
-    assert.match(uiAction, /format\('\{0\}\/packages\/ui\/test-results\/', inputs\.checkout-dir\)/);
-    assert.match(
-      bundleAction,
-      /format\('\{0\}\/apps\/web\/\.next\/bundle-baseline\.json', inputs\.checkout-dir\)/,
-    );
-    assert.ok(trusted.includes("checkout-dir: ${{ env.CI_CHECKOUT_DIR }}"));
+    assert.doesNotMatch(trusted, /CI_CHECKOUT_DIR:/);
+    assert.doesNotMatch(trusted, /uses:\s*\.\/ci-link-/);
+    assert.doesNotMatch(trusted, /^\s+path:/m);
+    assert.match(trusted, /uses: \.\/\.github\/actions\/setup-ci-node/);
+    assert.match(trusted, /uses: \.\/\.github\/actions\/run-ci-suite/);
     assert.match(trusted, /runner-profile: self-hosted/);
+    assert.match(trusted, /PNPM_STORE_DIR|setup-ci-node/);
+
+    for (const [label, content] of [
+      ["run-ci-suite", ciAction],
+      ["run-ui-quality-suite", uiAction],
+      ["run-bundle-analysis-suite", bundleAction],
+    ]) {
+      assert.doesNotMatch(content, /checkout-dir:/, label);
+      assert.doesNotMatch(content, /inputs\.checkout-dir/, label);
+    }
+
+    assert.match(ciAction, /\.\/packages\/ui\/coverage\/coverage-final\.json/);
+    assert.match(ciAction, /\.\/apps\/web\/coverage\/coverage-final\.json/);
+    assert.match(ciAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
+    assert.match(uiAction, /packages\/ui\/test-results\//);
+    assert.match(uiAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
+    assert.match(bundleAction, /path: apps\/web\/\.next\/bundle-baseline\.json/);
   });
 });
