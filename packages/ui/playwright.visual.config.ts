@@ -18,7 +18,8 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
-      // Canonical baselines are GitHub-hosted ubuntu-24.04 Chromium captures.
+      // Canonical baselines are Chromium captures from
+      // mcr.microsoft.com/playwright:v<playwright-version>-noble (hosted and Turing).
       // A tight ratio absorbs residual font/antialias rasterization between runs
       // without restoring the previous 1% full-viewport slack.
       maxDiffPixelRatio: 0.005,

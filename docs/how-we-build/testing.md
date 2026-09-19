@@ -312,9 +312,10 @@ Storybook complements Jest and application E2E — it does not replace them.
 | Cross-browser keyboard/focus | `pnpm --filter @atlas/ui test:storybook:cross-browser` | Chromium + WebKit         |
 | Visual regression            | `pnpm --filter @atlas/ui test:visual`                  | Chromium pixel baselines  |
 
-CI runs these in the **UI Quality** workflow on `ubuntu-24.04` with path filtering for
-`packages/ui/**`, Storybook critical-policy scripts, and related shared config. Pixel baselines are
-Chromium-only with `maxDiffPixelRatio: 0.005`; WebKit is exercised for interaction, not screenshots.
+CI runs these in the **UI Quality** workflow with path filtering for `packages/ui/**`, Storybook
+critical-policy scripts, and related shared config. Pixel baselines are Chromium-only captures from
+`mcr.microsoft.com/playwright:v<playwright-version>-noble` with `maxDiffPixelRatio: 0.005`; WebKit
+is exercised for interaction, not screenshots.
 
 Details: `packages/ui/.storybook/README.md`.
 

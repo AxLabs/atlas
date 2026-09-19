@@ -90,8 +90,9 @@ Visual tests render static Storybook iframes with deterministic themes and viewp
 target the protected component or portaled overlay (dialog, menu, listbox, tooltip) rather than the
 full viewport where practical, so empty pixels do not dilute regression sensitivity. **Pixel
 baselines are Chromium-only** and committed under `packages/ui/visual-tests/__snapshots__/`.
-Comparison uses a tight `maxDiffPixelRatio` of `0.005` after canonical GitHub-hosted `ubuntu-24.04`
-Chromium capture.
+Comparison uses a tight `maxDiffPixelRatio` of `0.005` after canonical Chromium capture in
+`mcr.microsoft.com/playwright:v<playwright-version>-noble` (the same image UI Quality uses on
+GitHub-hosted and Turing runners).
 
 Element-scoped baselines prove pixel stability of the captured element only, not full-page layout.
 Coverage notes:
@@ -122,8 +123,9 @@ then follow the canonical procedure below.
 **Canonical baseline-update procedure** (the only accepted source of truth):
 
 1. Trigger the **Update Visual Baselines** workflow manually via the GitHub Actions UI
-   (`Actions → Update Visual Baselines → Run workflow`). This runs on the same `ubuntu-24.04`
-   GitHub-hosted runner as regular UI Quality CI.
+   (`Actions → Update Visual Baselines → Run workflow`). This captures screenshots in
+   `mcr.microsoft.com/playwright:v<playwright-version>-noble`, matching regular UI Quality visual
+   CI.
 2. Wait for the workflow to complete. Download the `candidate-visual-baselines-<run-id>` artifact
    from the workflow run summary.
 3. **Review every PNG carefully.** Confirm each visual change is intentional.
@@ -134,9 +136,9 @@ then follow the canonical procedure below.
 The update workflow does **not** auto-commit or auto-approve visual changes — a human review step is
 required before any baseline lands on `main`.
 
-**Do not capture baselines locally or in Docker.** Font hinting and other rasterization details
-differ from the GitHub-hosted runner even with the same Playwright version; locally-captured
-baselines can pass locally but diff in CI (or vice versa).
+**Do not capture baselines on the host runner or a developer laptop.** Font hinting and other
+rasterization details differ outside the Playwright Docker image even with the same Playwright
+version; host-captured baselines can pass locally but diff in CI (or vice versa).
 
 CI uploads `test-results/`, `playwright-report-visual/`, and `playwright-report-storybook/` when
 visual tests fail (HTML reports are generated only in CI via the `CI=true` environment variable).
