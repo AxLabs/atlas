@@ -16,8 +16,9 @@ import {
   ErrorFallback,
 } from "@atlas/ui";
 
-import { apiPost } from "@/lib/api";
+import { getUserFacingMessage } from "@/lib/api";
 
+import { useHarnessControlMutation } from "../mutations";
 import { useReferenceStatus, useReferenceUserList } from "../queries";
 
 import { ReferenceLoadingState } from "./ReferenceLoadingState";
@@ -46,6 +47,8 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
     refetch: refetchUsers,
   } = useReferenceUserList(selectedScenario);
 
+  const { mutate: mutateControl, isPending: controlsBusy } = useHarnessControlMutation(refresh);
+
   const currentPersona = useCallback((): ReferenceAuthPersona => {
     if (activePersona !== "anonymous") {
       return activePersona;
@@ -62,56 +65,83 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
     return "reference-user";
   }, [activePersona, status, user]);
 
-  const persistHarnessState = useCallback(
-    async (persona: ReferenceAuthPersona, scenario: ReferenceUsersScenario) => {
-      await apiPost("/api/auth/session", {
-        persona,
-        scenario: { users: scenario },
-      });
-      await refresh();
-      await refetchUsers();
-    },
-    [refresh, refetchUsers]
-  );
+  const refreshPreview = useCallback(() => {
+    void refetchUsers();
+  }, [refetchUsers]);
 
   const setPersona = useCallback(
-    async (persona: ReferenceAuthPersona) => {
-      setActionMessage(null);
-      try {
-        await persistHarnessState(persona, selectedScenario);
-        setActivePersona(persona);
-        setActionMessage(`Persona set to ${persona}`);
-      } catch (error) {
-        setActionMessage(error instanceof Error ? error.message : "Failed to set persona");
+    (persona: ReferenceAuthPersona) => {
+      if (controlsBusy) {
+        return;
       }
+
+      setActionMessage(null);
+      mutateControl(
+        { kind: "persona", persona, scenario: selectedScenario },
+        {
+          onSuccess: (result) => {
+            if (result.kind !== "persona") {
+              return;
+            }
+            setActivePersona(result.persona);
+            setActionMessage(`Persona set to ${result.persona}`);
+            refreshPreview();
+          },
+          onError: (mutationError) => {
+            setActionMessage(getUserFacingMessage(mutationError));
+          },
+        }
+      );
     },
-    [persistHarnessState, selectedScenario]
+    [mutateControl, controlsBusy, refreshPreview, selectedScenario]
   );
 
   const setScenario = useCallback(
-    async (scenario: ReferenceUsersScenario) => {
-      setActionMessage(null);
-      setSelectedScenario(scenario);
-      try {
-        await persistHarnessState(currentPersona(), scenario);
-        setActionMessage(`Scenario set to ${scenario}`);
-      } catch (error) {
-        setActionMessage(error instanceof Error ? error.message : "Failed to set scenario");
+    (scenario: ReferenceUsersScenario) => {
+      if (controlsBusy) {
+        return;
       }
+
+      setActionMessage(null);
+      mutateControl(
+        { kind: "scenario", persona: currentPersona(), scenario },
+        {
+          onSuccess: (result) => {
+            if (result.kind !== "scenario") {
+              return;
+            }
+            setSelectedScenario(result.scenario);
+            setActionMessage(`Scenario set to ${result.scenario}`);
+          },
+          onError: (mutationError) => {
+            setActionMessage(getUserFacingMessage(mutationError));
+          },
+        }
+      );
     },
-    [currentPersona, persistHarnessState]
+    [mutateControl, controlsBusy, currentPersona]
   );
 
-  const resetReference = useCallback(async () => {
-    setActionMessage(null);
-    try {
-      await apiPost("/api/reset");
-      await refetchUsers();
-      setActionMessage("Reference state reset");
-    } catch {
-      setActionMessage("Reset failed");
+  const resetReference = useCallback(() => {
+    if (controlsBusy) {
+      return;
     }
-  }, [refetchUsers]);
+
+    setActionMessage(null);
+    mutateControl(
+      { kind: "reset" },
+      {
+        onSuccess: () => {
+          setSelectedScenario("success");
+          setActionMessage("Reference state reset");
+          refreshPreview();
+        },
+        onError: (mutationError) => {
+          setActionMessage(getUserFacingMessage(mutationError) || "Reset failed");
+        },
+      }
+    );
+  }, [mutateControl, controlsBusy, refreshPreview]);
 
   if (isLoading) {
     return <ReferenceLoadingState label="Loading reference status" />;
@@ -149,7 +179,13 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
           </p>
           <div className="flex flex-wrap gap-2">
             {PERSONAS.map((persona) => (
-              <Button key={persona} variant="outline" size="sm" onClick={() => setPersona(persona)}>
+              <Button
+                key={persona}
+                variant="outline"
+                size="sm"
+                disabled={controlsBusy}
+                onClick={() => setPersona(persona)}
+              >
                 {persona}
               </Button>
             ))}
@@ -168,6 +204,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
                 key={scenario}
                 variant={selectedScenario === scenario ? "default" : "outline"}
                 size="sm"
+                disabled={controlsBusy}
                 onClick={() => setScenario(scenario as ReferenceUsersScenario)}
               >
                 {scenario}
@@ -196,7 +233,7 @@ export function ReferenceHarnessPanel({ session }: ReferenceHarnessPanelProps) {
             </ul>
           )}
 
-          <Button variant="outline" size="sm" onClick={resetReference}>
+          <Button variant="outline" size="sm" disabled={controlsBusy} onClick={resetReference}>
             Reset reference state
           </Button>
         </CardContent>
