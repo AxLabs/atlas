@@ -25,22 +25,9 @@ runs:
         echo "PNPM_STORE_DIR=${pnpm_store}" >> "$GITHUB_ENV"
         echo "TURBO_CACHE_DIR=${turbo_cache}" >> "$GITHUB_ENV"
 
-    - name: Resolve package manifest for pnpm
-      shell: bash
-      run: |
-        if [[ -n "${CI_CHECKOUT_DIR:-}" && -f "${GITHUB_WORKSPACE}/${CI_CHECKOUT_DIR}/package.json" ]]; then
-          manifest="${CI_CHECKOUT_DIR}/package.json"
-        elif [[ -n "${CI_FIXED_WORKSPACE:-}" && -f "${GITHUB_WORKSPACE}/${CI_FIXED_WORKSPACE}/package.json" ]]; then
-          manifest="${CI_FIXED_WORKSPACE}/package.json"
-        else
-          manifest="package.json"
-        fi
-        echo "PNPM_PACKAGE_JSON=${manifest}" >> "$GITHUB_ENV"
-        echo "Using package manifest: ${manifest}"
-
     - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
       with:
-        package_json_file: ${{ env.PNPM_PACKAGE_JSON }}
+        package_json_file: package.json
 
     # Self-hosted runners use the persistent PNPM_STORE_DIR above. Omit setup-node
     # cache so post steps do not try to save GitHub Actions pnpm cache paths.

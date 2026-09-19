@@ -63,12 +63,32 @@ export function aggregateRequiredCheckResults(hostedResult, trustedResult) {
   return "failure";
 }
 
-export function resolveIsolatedWorkspacePath(relativePath, { runnerProfile, checkoutDir } = {}) {
-  const normalized = String(relativePath).replace(/^\.\//, "");
-  if (runnerProfile === "self-hosted" && checkoutDir) {
-    return `${String(checkoutDir).replace(/\/$/, "")}/${normalized}`;
+export function findNestedWorkspaceViolations(content, relativePath) {
+  const errors = [];
+  const normalized = normalizeWorkflowPath(relativePath);
+
+  if (/\n {2}checkout-dir:/.test(content) || /^ {2}checkout-dir:/.test(content)) {
+    errors.push(
+      `${normalized}: suite actions must not accept checkout-dir; trusted CI checks out into github.workspace`,
+    );
   }
-  return normalized;
+  if (/CI_CHECKOUT_DIR:/.test(content)) {
+    errors.push(
+      `${normalized}: must not define CI_CHECKOUT_DIR; trusted CI checks out into github.workspace`,
+    );
+  }
+  if (/uses:\s*\.\/ci-link-/.test(content)) {
+    errors.push(
+      `${normalized}: must call local actions from the github.workspace checkout (not ci-link-* symlinks)`,
+    );
+  }
+  if (/defaults:\s*\n\s+run:\s*\n\s+working-directory:/.test(content)) {
+    errors.push(
+      `${normalized}: must not redirect the default working directory away from github.workspace`,
+    );
+  }
+
+  return errors;
 }
 
 function collectWorkflowJobs(content) {
@@ -383,6 +403,25 @@ export function validateTrustedWorkflowDefinition(trustedContent, trustedRelativ
   if (!/ci\|ui-quality\|bundle/.test(trustedContent)) {
     errors.push(`${trustedRelative}: trusted self-hosted workflow must validate allowed suite values`);
   }
+  if (/uses:\s*actions\/checkout/.test(trustedContent) && /^\s+path:/m.test(trustedContent)) {
+    errors.push(
+      `${trustedRelative}: trusted checkout must land directly in github.workspace (do not set checkout path:)`,
+    );
+  }
+  for (const action of [
+    "setup-ci-node",
+    "run-ci-suite",
+    "run-ui-quality-suite",
+    "run-bundle-analysis-suite",
+    "cleanup-self-hosted-job",
+  ]) {
+    if (!trustedContent.includes(`uses: ./.github/actions/${action}`)) {
+      errors.push(
+        `${trustedRelative}: must call ./.github/actions/${action} from the github.workspace checkout`,
+      );
+    }
+  }
+  errors.push(...findNestedWorkspaceViolations(trustedContent, trustedRelative));
   errors.push(...findDynamicLocalActionUses(trustedContent, trustedRelative));
 
   return errors;
@@ -640,6 +679,7 @@ export function validateGithubWorkflows(root = DEFAULT_REPO_ROOT) {
     }
 
     errors.push(...findPullRequestTargetRisks(uncommented, relativePath));
+    errors.push(...findNestedWorkspaceViolations(uncommented, relativePath));
     errors.push(...findGitleaksPinIssues(content, policy));
     errors.push(...findFailOpenSecurityPolicy(content, relativePath));
   }

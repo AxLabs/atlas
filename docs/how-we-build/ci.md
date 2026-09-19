@@ -54,15 +54,14 @@ pnpm lint && pnpm typecheck && pnpm test
 
 ## Composite actions
 
-| Action                       | Purpose                                                                    |
-| ---------------------------- | -------------------------------------------------------------------------- |
-| `setup-atlas-ci`             | Node 22 + pnpm; GitHub Actions pnpm cache or self-hosted persistent stores |
-| `setup-self-hosted-checkout` | Isolated checkout + persistent caches on trusted self-hosted runners       |
-| `setup-ci-node`              | Self-hosted Node/pnpm setup for isolated per-job checkouts                 |
-| `run-ci-suite`               | Shared CI checks for GitHub-hosted and trusted self-hosted paths           |
-| `run-ui-quality-suite`       | Shared Storybook, accessibility, and visual regression checks              |
-| `run-bundle-analysis-suite`  | Shared bundle size analysis and budget checks                              |
-| `cleanup-self-hosted-job`    | Clears per-job temp HOME on self-hosted runners                            |
+| Action                      | Purpose                                                                    |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `setup-atlas-ci`            | Node 22 + pnpm; GitHub Actions pnpm cache or self-hosted persistent stores |
+| `setup-ci-node`             | Self-hosted Node/pnpm setup with persistent `/var/cache/ci` stores         |
+| `run-ci-suite`              | Shared CI checks for GitHub-hosted and trusted self-hosted paths           |
+| `run-ui-quality-suite`      | Shared Storybook, accessibility, and visual regression checks              |
+| `run-bundle-analysis-suite` | Shared bundle size analysis and budget checks                              |
+| `cleanup-self-hosted-job`   | Clears per-job temp HOME on self-hosted runners                            |
 
 ## GitHub-hosted (default)
 
@@ -157,8 +156,12 @@ command uses `corepack pnpm dev` so the webServer subprocess can resolve pnpm in
 Ensure Docker is installed and the runner user can run containers. Atlas workflows do not mount the
 host Docker socket into jobs.
 
-Trusted jobs use an isolated per-run checkout subdirectory under `${{ github.workspace }}` (so a
-poisoned default workdir does not block `actions/checkout`) and persistent stores:
+Trusted self-hosted Atlas CI must execute the checked-out repository directly from
+`${{ github.workspace }}`, matching GitHub-hosted workspace semantics. Self-hosted differences are
+limited to infrastructure concerns such as persistent caches and Playwright Docker execution. A
+small pre-checkout repair step can chown root-owned leftovers in the runner work directory so
+`actions/checkout` can clean the default workspace; it must not introduce nested checkout
+directories. Persistent stores remain:
 
 | Variable          | Default path                            |
 | ----------------- | --------------------------------------- |
