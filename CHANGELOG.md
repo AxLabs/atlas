@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-19
+
+### Added
+
+- `atlas init` now ships a portable GitHub Actions workflow at `.github/workflows/ci.yml`. It runs
+  on GitHub-hosted Ubuntu (Doctor, lint, typecheck, tests, production build) and is consumer-owned
+  after generation. It is not Atlas maintainer CI and does not include Playwright E2E.
+
+### Changed
+
+- Stabilize reference harness control mutations, keep reset preview cache consistent with server
+  state, retain Playwright traces on CI failure, and drop unused Next.js `optimizeCss` from starter
+  config so consumer and maintainer CI no longer depend on missing Critters.
+- Generate a portable GitHub Actions CI workflow in projects created by `atlas init`.
+
 ### Fixed
 
 - Serialize reference harness persona/scenario/reset mutations so completion feedback cannot be
@@ -16,12 +31,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `critters`, which is not a dependency).
 - Run starter and reference Playwright suites sequentially on both CI runner profiles, and upload
   reports/traces for both apps.
-
-### Added
-
-- `atlas init` now ships a portable GitHub Actions workflow at `.github/workflows/ci.yml`. It runs
-  on GitHub-hosted Ubuntu (Doctor, lint, typecheck, tests, production build) and is consumer-owned
-  after generation. It is not Atlas maintainer CI and does not include Playwright E2E.
 
 ## [1.0.1] - 2026-09-19
 
@@ -124,7 +133,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.4.0...v0.5.0
