@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `atlas init` now ships a portable GitHub Actions workflow at `.github/workflows/ci.yml`. It runs
+  on GitHub-hosted Ubuntu (Doctor, lint, typecheck, tests, production build) and is consumer-owned
+  after generation. It is not Atlas maintainer CI and does not include Playwright E2E.
+
 ## [1.0.1] - 2026-09-19
 
 ### Changed

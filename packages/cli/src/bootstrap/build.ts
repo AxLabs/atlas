@@ -24,6 +24,7 @@ import {
   SKIP_DIRECTORY_NAMES,
   SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH,
 } from "./constants";
+import { CONSUMER_CI_WORKFLOW_DESTINATION, toConsumerCiWorkflow } from "./consumer-ci";
 import {
   CONSUMER_UI_PACKAGE_JSON_DESTINATION,
   toConsumerUiPackageManifest,
@@ -288,7 +289,8 @@ export function expandSourceBootstrapManifest(
 function copyExpandedFile(
   file: ExpandedFile,
   filesRoot: string,
-  repoRoot: string
+  repoRoot: string,
+  atlasVersion: string
 ): PackagedBootstrapManifestEntry {
   const { realPath, mode } = assertRegularFileInsideRoot(
     file.absoluteSource,
@@ -301,6 +303,12 @@ function copyExpandedFile(
     writeFileSync(
       destinationPath,
       toConsumerUiPackageManifest(readFileSync(realPath, "utf8")),
+      "utf8"
+    );
+  } else if (file.destination === CONSUMER_CI_WORKFLOW_DESTINATION) {
+    writeFileSync(
+      destinationPath,
+      toConsumerCiWorkflow(readFileSync(realPath, "utf8"), atlasVersion),
       "utf8"
     );
   } else {
@@ -336,10 +344,11 @@ export function buildBootstrapAssets(
   const filesRoot = packagedBootstrapFilesRoot(outputDir);
   mkdirSync(filesRoot, { recursive: true });
 
-  const entries = expanded.map((file) => copyExpandedFile(file, filesRoot, repoRoot));
+  const atlasVersion = readPackageVersion(packageRoot);
+  const entries = expanded.map((file) => copyExpandedFile(file, filesRoot, repoRoot, atlasVersion));
   const packaged: PackagedBootstrapManifest = {
     schemaVersion: BOOTSTRAP_MANIFEST_SCHEMA_VERSION,
-    atlasVersion: readPackageVersion(packageRoot),
+    atlasVersion,
     generatedAtInit: sourceManifest.generatedAtInit,
     entries,
   };

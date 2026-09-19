@@ -30,6 +30,9 @@ describe("generated consumer workspace files", () => {
     expect(readme).toContain("pnpm dev");
     expect(readme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} doctor`);
     expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
+    expect(readme).toContain(".github/workflows/ci.yml");
+    expect(readme).toContain("GitHub-hosted Ubuntu");
+    expect(readme).toContain("does not use BlitzCraft infrastructure");
     expect(readme).toContain(
       "https://github.com/blitzcraftlabs/atlas/blob/main/docs/public/README.md"
     );

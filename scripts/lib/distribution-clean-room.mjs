@@ -61,6 +61,7 @@ export const EXPECTED_INIT_PATHS = Object.freeze([
   "atlas.config.json",
   "package.json",
   "pnpm-workspace.yaml",
+  ".github/workflows/ci.yml",
 ]);
 
 export const FORBIDDEN_GENERATED_PATHS = Object.freeze([

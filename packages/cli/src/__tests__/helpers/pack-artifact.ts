@@ -52,13 +52,28 @@ export const REQUIRED_BOOTSTRAP_FILE_PATHS = [
   "packages/config/package.json",
   "pnpm-workspace.yaml",
   "lighthouserc.json",
+  ".github/workflows/ci.yml",
+] as const;
+
+export const CONSUMER_CI_WORKFLOW_DESTINATION = ".github/workflows/ci.yml";
+
+export const MAINTAINER_CI_LEAK_MARKERS = [
+  "Blitzcraft Trusted CI",
+  "turing-ci-1",
+  "turing-ci-2",
+  "ATLAS_CI_RUNNER_PROFILE",
+  "trusted-self-hosted.yml",
+  "/var/cache/ci",
+  "CODECOV_TOKEN",
+  "runner-group:",
+  "runs-on: self-hosted",
+  "atlas-turing-trusted-ci",
 ] as const;
 
 export const FORBIDDEN_BOOTSTRAP_PATH_PREFIXES = [
   "apps/reference/",
   "packages/cli/",
   "packages/project/",
-  ".github/",
   "releases/",
   "packages/ui/.storybook/",
   "packages/ui/visual-tests/",
@@ -100,6 +115,16 @@ export const FORBIDDEN_PACKED_PATH_PATTERNS: { id: string; test: (entry: string)
   { id: "node-modules", test: (entry) => entry.includes("/node_modules/") },
   { id: "scripts", test: (entry) => entry.startsWith("package/scripts/") },
 ];
+
+export function isForbiddenBootstrapPath(file: string): boolean {
+  if (file === CONSUMER_CI_WORKFLOW_DESTINATION) {
+    return false;
+  }
+  if (file === ".github" || file.startsWith(".github/")) {
+    return true;
+  }
+  return FORBIDDEN_BOOTSTRAP_PATH_PREFIXES.some((prefix) => file.startsWith(prefix));
+}
 
 export function packedBootstrapFilePath(destination: string): string {
   return `package/assets/bootstrap/files/${destination}`;

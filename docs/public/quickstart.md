@@ -12,6 +12,7 @@ Atlas is an open-source frontend platform for Next.js teams. When you run it, yo
 - Source-owned UI, config, and consent packages in your repository
 - An executable `atlas.config.json` project contract
 - Configured tooling (linting, testing, type checking)
+- A default GitHub Actions workflow on GitHub-hosted Ubuntu
 - A **starter application** (`apps/web`) with minimal `/examples` pattern pages
 - A separate **reference application** (`apps/reference`) that demonstrates a finished Atlas product
 
@@ -33,6 +34,11 @@ Requires Node.js `>=22` and pnpm `>=10`. `@blitzcraftlabs/atlas` is live on npm.
 are listed on [npm](https://www.npmjs.com/package/@blitzcraftlabs/atlas) and
 [GitHub Releases](https://github.com/blitzcraftlabs/atlas/releases). Canonical GitHub `v1.0.0`
 remains the first stable platform release; `v1.0.1` is the first npm-published Atlas release.
+
+After `pnpm install`, commit `pnpm-lock.yaml` and push to GitHub. `.github/workflows/ci.yml` is
+yours: GitHub-hosted Ubuntu, no BlitzCraft runners or secrets. It runs Doctor, lint, typecheck,
+tests, and a production build. Playwright E2E is omitted by default. Replace the workflow if you use
+another CI provider.
 
 ---
 

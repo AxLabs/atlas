@@ -1,5 +1,10 @@
 # Continuous Integration
 
+This document describes **Atlas maintainer CI** for `blitzcraftlabs/atlas`. Generated consumer
+projects receive a separate portable workflow from `atlas init` (`.github/workflows/ci.yml` in the
+new repo). That file is consumer-owned, uses GitHub-hosted Ubuntu, and does not require BlitzCraft
+infrastructure. See [Atlas CLI](cli.md).
+
 Atlas ships a single portable CI workflow (`.github/workflows/ci.yml`) that runs on **GitHub-hosted
 runners by default**. Teams with a self-hosted fleet can opt in without replacing workflow files.
 

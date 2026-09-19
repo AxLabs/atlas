@@ -47,6 +47,9 @@ atlas/
 └── tools/                      # Developer tooling
 ```
 
+`atlas init` also writes `.github/workflows/ci.yml` in the generated project: a GitHub-hosted
+quality baseline that you own after generation. It is not Atlas maintainer CI. See [CLI](cli.md).
+
 ## Key Directories Explained
 
 ### `apps/web/src/app/`
