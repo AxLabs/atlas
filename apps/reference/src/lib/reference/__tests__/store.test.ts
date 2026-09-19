@@ -35,4 +35,18 @@ describe("reference users store", () => {
     expect(user.createdAt).toBe("2024-02-01T12:00:00Z");
     expect(user.updatedAt).toBe("2024-02-01T12:00:00Z");
   });
+
+  it("isolates mutations across store ids", () => {
+    resetReferenceUsersStore("store-a");
+    resetReferenceUsersStore("store-b");
+
+    createReferenceUser({ email: "temp@atlas.local", name: "Temp User", role: "user" }, "store-a");
+
+    expect(getReferenceUsers("store-a")).toHaveLength(4);
+    expect(getReferenceUsers("store-b")).toHaveLength(3);
+
+    resetReferenceUsersStore("store-a");
+    expect(getReferenceUsers("store-a")).toHaveLength(3);
+    expect(getReferenceUsers("store-b")).toHaveLength(3);
+  });
 });

@@ -1,5 +1,5 @@
 /**
- * Reset deterministic reference state (users store and scenario cookie).
+ * Reset deterministic reference state (this browser's users store and scenario cookie).
  *
  * @module api/reference/reset
  */
@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 
 import { assertReferenceModeEnabled } from "@/lib/reference/mode";
 import { REFERENCE_SCENARIO_COOKIE } from "@/lib/reference/scenario";
-import { resetReferenceUsersStore } from "@/lib/reference/users/store";
+import { resetReferenceUsersStoreForRequest } from "@/lib/reference/users/store-scope";
 
 export async function POST(): Promise<NextResponse> {
   try {
@@ -19,7 +19,7 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ code: "REFERENCE_MODE_DISABLED", message }, { status: 403 });
   }
 
-  resetReferenceUsersStore();
+  await resetReferenceUsersStoreForRequest();
 
   const cookieStore = await cookies();
   cookieStore.set(REFERENCE_SCENARIO_COOKIE, "", {
