@@ -1,7 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 
-test.beforeEach(async ({ request }) => {
-  await request.post("/api/reset");
+test.beforeEach(async ({ page }) => {
+  // page.request shares this test's cookie jar so reset scopes to this browser,
+  // not a global in-memory store shared with the other Playwright worker.
+  const response = await page.request.post("/api/reset");
+  if (!response.ok()) {
+    throw new Error(`Failed to reset reference harness: ${response.status()}`);
+  }
 });
 
 async function openMobileNavAndGoTo(page: Page, linkName: string) {

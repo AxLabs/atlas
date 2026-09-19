@@ -240,8 +240,11 @@ export const KeyboardInteraction: Story = {
     const canvas = within(canvasElement);
     const trigger = await canvas.findByRole("button", { name: "Open menu" });
 
-    // Keyboard-open highlights the first item. Pointer-open often leaves highlight unset, so the
-    // next ArrowDown lands on Profile and ArrowUp wraps to Logout (`loopFocus`).
+    // Keyboard-open moves DOM focus to the first item. Pointer-open often leaves focus on the
+    // trigger, so a later ArrowDown would land on Profile and ArrowUp would wrap to Logout.
+    // Assert focus (the keyboard contract) rather than Base UI's `data-highlighted` attribute —
+    // menu item chrome uses `focus:` styles, and that attribute is not always present when the
+    // menuitem is already the active descendant.
     trigger.focus();
     await userEvent.keyboard("{ArrowDown}");
     await screen.findByRole("menu");
@@ -249,12 +252,12 @@ export const KeyboardInteraction: Story = {
     const profileItem = () => screen.getByRole("menuitem", { name: "Profile" });
     const settingsItem = () => screen.getByRole("menuitem", { name: "Settings" });
 
-    await waitFor(() => expect(profileItem()).toHaveAttribute("data-highlighted"));
+    await waitFor(() => expect(profileItem()).toHaveFocus());
     // Navigate down then back up to land on Profile, then Enter to activate it.
     await userEvent.keyboard("{ArrowDown}");
-    await waitFor(() => expect(settingsItem()).toHaveAttribute("data-highlighted"));
+    await waitFor(() => expect(settingsItem()).toHaveFocus());
     await userEvent.keyboard("{ArrowUp}");
-    await waitFor(() => expect(profileItem()).toHaveAttribute("data-highlighted"));
+    await waitFor(() => expect(profileItem()).toHaveFocus());
     await userEvent.keyboard("{Enter}");
     await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();

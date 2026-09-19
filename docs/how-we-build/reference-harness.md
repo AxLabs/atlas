@@ -97,7 +97,8 @@ const header = referenceScenarioHeader({ auth: "reference-user", users: "empty" 
 curl -X POST http://localhost:3001/api/reset --cookie cookies.txt
 ```
 
-Resets the in-memory users store and clears the scenario cookie.
+Resets this browser's cookie-scoped in-memory users store (concurrent sessions do not share
+mutations) and clears the scenario cookie.
 
 ## Production safety
 
