@@ -1,5 +1,11 @@
 # @blitzcraftlabs/atlas
 
+## 1.1.0
+
+### Minor Changes
+
+- 7231f0a: Generate a portable GitHub Actions CI workflow in projects created by `atlas init`.
+
 ## 1.0.1
 
 ### Patch Changes
