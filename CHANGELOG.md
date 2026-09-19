@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-19
+
+### Changed
+
+- Polish the public launch surface so Atlas 1.0.1 can be the first npm-published version. Canonical
+  GitHub v1.0.0 remains the immutable first stable platform release.
+
 ## [1.0.0] - 2026-09-17
 
 ### Security
@@ -102,7 +109,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.3.0...v0.4.0
