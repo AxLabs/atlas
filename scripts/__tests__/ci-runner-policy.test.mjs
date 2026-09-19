@@ -11,7 +11,9 @@ import {
   TRUSTED_WORKFLOW_PIN,
   TRUSTED_WORKFLOW_USES,
   TRUSTED_WORKFLOW_ALLOWLIST,
+  TRUSTED_CI_EXCLUSIVITY_GROUP,
   aggregateRequiredCheckResults,
+  findTrustedCiExclusivityViolations,
   callersUseTrustedWorkflow,
   selectBundleExecutionPath,
   selectCiExecutionPath,
@@ -40,6 +42,9 @@ on:
 jobs:
   execute:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    concurrency:
+      group: \${{ inputs.suite == 'ci' && '${TRUSTED_CI_EXCLUSIVITY_GROUP}' || format('atlas-trusted-{0}-{1}', inputs.suite, github.run_id) }}
+      cancel-in-progress: false
     runs-on:
       group: \${{ vars.ATLAS_CI_RUNNER_GROUP || '${DEFAULT_RUNNER_GROUP}' }}
       labels: ci
@@ -546,5 +551,73 @@ describe("CI runner policy", () => {
     assert.match(setupAtlasCi, /cache:\s*pnpm/);
     assert.match(bundleAction, /node scripts\/bundle-paths\.mjs --git-diff/);
     assert.match(bundleAction, /path: apps\/web\/\.next\/bundle-baseline\.json/);
+  });
+
+  it("serializes trusted ci across refs without cancelling in-progress runs", () => {
+    const trusted = readFileSync(path.join(repoRoot, TRUSTED_SELF_HOSTED_WORKFLOW), "utf8");
+    const ci = readFileSync(path.join(repoRoot, ".github/workflows/ci.yml"), "utf8");
+    const ui = readFileSync(path.join(repoRoot, ".github/workflows/ui-quality.yml"), "utf8");
+    const bundle = readFileSync(path.join(repoRoot, ".github/workflows/perf-bundle.yml"), "utf8");
+
+    assert.equal(TRUSTED_CI_EXCLUSIVITY_GROUP, "atlas-turing-trusted-ci");
+    assert.deepEqual(findTrustedCiExclusivityViolations(trusted, TRUSTED_SELF_HOSTED_WORKFLOW), []);
+    assert.match(trusted, /inputs\.suite == 'ci' && 'atlas-turing-trusted-ci'/);
+    assert.match(trusted, /format\('atlas-trusted-\{0\}-\{1\}',/);
+    assert.match(trusted, /github\.run_id/);
+    assert.match(trusted, /cancel-in-progress:\s*false/);
+    assert.doesNotMatch(trusted.split("concurrency:")[1].split("runs-on:")[0], /github\.ref/);
+    assert.match(ci, /suite:\s*ci/);
+    assert.match(ci, new RegExp(TRUSTED_WORKFLOW_USES.replaceAll(".", "\\.")));
+    assert.doesNotMatch(ui, /atlas-turing-trusted-ci/);
+    assert.doesNotMatch(bundle, /atlas-turing-trusted-ci/);
+    assert.doesNotMatch(bundle, /trusted-self-hosted\.yml/);
+  });
+
+  it("rejects a ref-scoped trusted ci exclusivity group", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "atlas-ci-policy-"));
+    writePhase2Callers(root);
+    writeWorkflow(
+      root,
+      TRUSTED_SELF_HOSTED_WORKFLOW,
+      trustedWorkflow.replace(
+        `group: \${{ inputs.suite == 'ci' && '${TRUSTED_CI_EXCLUSIVITY_GROUP}' || format('atlas-trusted-{0}-{1}', inputs.suite, github.run_id) }}`,
+        "group: ${{ github.ref }}"
+      )
+    );
+
+    const errors = validateCiRunnerPolicy(root).join("\n");
+    assert.match(errors, /must not include github\.ref/);
+  });
+
+  it("rejects cancel-in-progress on the trusted ci exclusivity lock", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "atlas-ci-policy-"));
+    writePhase2Callers(root);
+    writeWorkflow(
+      root,
+      TRUSTED_SELF_HOSTED_WORKFLOW,
+      trustedWorkflow.replace("cancel-in-progress: false", "cancel-in-progress: true")
+    );
+
+    const errors = validateCiRunnerPolicy(root).join("\n");
+    assert.match(errors, /must not set cancel-in-progress: true/);
+  });
+
+  it("rejects a second suite: ci job that bypasses the trusted reusable workflow", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "atlas-ci-policy-"));
+    writePhase2Callers(root, {
+      ci: `${phase2Caller}
+  rogue-ci:
+    name: Rogue CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: echo bypass
+    with:
+      suite: ci
+`,
+    });
+
+    const errors = validateCiRunnerPolicy(root).join("\n");
+    assert.match(errors, /Turing exclusivity cannot be bypassed/);
   });
 });

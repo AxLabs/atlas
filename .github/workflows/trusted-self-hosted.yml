@@ -30,6 +30,14 @@ jobs:
     if: |
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
+    # Suite `ci` is one VM-wide Turing slot across main and all PR refs.
+    # Other suites keep a unique per-run group so UI Quality is not serialized here.
+    # Job-level concurrency may use `inputs` on workflow_call (GitHub concurrency docs).
+    concurrency:
+      group:
+        ${{ inputs.suite == 'ci' && 'atlas-turing-trusted-ci' || format('atlas-trusted-{0}-{1}',
+        inputs.suite, github.run_id) }}
+      cancel-in-progress: false
     runs-on:
       group: ${{ vars.ATLAS_CI_RUNNER_GROUP || 'Blitzcraft Trusted CI' }}
       labels: ci

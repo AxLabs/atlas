@@ -30,6 +30,7 @@ export const TRUSTED_WORKFLOW_ALLOWLIST =
   "blitzcraftlabs/atlas/.github/workflows/trusted-self-hosted.yml@refs/heads/main";
 export const DEFAULT_RUNNER_GROUP = "Blitzcraft Trusted CI";
 export const LEGACY_RUNNER_GROUP = "Blitzcraft OSS Trusted";
+export const TRUSTED_CI_EXCLUSIVITY_GROUP = "atlas-turing-trusted-ci";
 export const WORKFLOWS_REQUIRING_HOSTED_FALLBACK = [
   ".github/workflows/ci.yml",
   ".github/workflows/ui-quality.yml",
@@ -360,6 +361,92 @@ export function findReusableWorkflowCallerViolations(content, relativePath) {
   return errors;
 }
 
+export function findTrustedCiExclusivityViolations(trustedContent, trustedRelative) {
+  const errors = [];
+  const execute = collectWorkflowJobs(trustedContent).find((job) => job.name === "execute");
+  if (!execute) {
+    errors.push(`${trustedRelative}: trusted self-hosted workflow must define an execute job`);
+    return errors;
+  }
+
+  if (!/concurrency:/.test(execute.body)) {
+    errors.push(
+      `${trustedRelative}: execute job must declare concurrency so trusted ci suites serialize across refs`
+    );
+    return errors;
+  }
+
+  if (!/cancel-in-progress:\s*false/.test(execute.body)) {
+    errors.push(`${trustedRelative}: trusted CI exclusivity must set cancel-in-progress: false`);
+  }
+  if (/cancel-in-progress:\s*true/.test(execute.body)) {
+    errors.push(`${trustedRelative}: trusted CI exclusivity must not set cancel-in-progress: true`);
+  }
+
+  const lines = execute.body.split("\n").map((line) => line.trim());
+  const groupIdx = lines.findIndex((line) => line.startsWith("group:"));
+  if (groupIdx === -1) {
+    errors.push(`${trustedRelative}: execute job concurrency must declare a group`);
+    return errors;
+  }
+  let groupText = lines[groupIdx].slice("group:".length).trim();
+  for (let index = groupIdx + 1; index < lines.length; index += 1) {
+    if (/^(cancel-in-progress:|queue:|[a-zA-Z].*:)/.test(lines[index])) {
+      break;
+    }
+    groupText += ` ${lines[index]}`;
+  }
+  if (!groupText.includes(TRUSTED_CI_EXCLUSIVITY_GROUP)) {
+    errors.push(
+      `${trustedRelative}: execute job must use static group ${TRUSTED_CI_EXCLUSIVITY_GROUP} for suite ci`
+    );
+  }
+  if (!/inputs\.suite\s*==\s*'ci'/.test(groupText)) {
+    errors.push(
+      `${trustedRelative}: trusted CI exclusivity group must apply only when inputs.suite == 'ci'`
+    );
+  }
+  if (/github\.ref/.test(groupText)) {
+    errors.push(
+      `${trustedRelative}: trusted CI exclusivity group must not include github.ref (main and PRs must share one slot)`
+    );
+  }
+  if (!/github\.run_id/.test(groupText)) {
+    errors.push(
+      `${trustedRelative}: non-ci trusted suites must use a per-run concurrency group (github.run_id)`
+    );
+  }
+
+  return errors;
+}
+
+export function findTrustedCiCallerBypassViolations(content, relativePath) {
+  const errors = [];
+  const uncommented = content.replace(/#.*$/gm, "");
+
+  for (const job of collectWorkflowJobs(uncommented)) {
+    if (!/suite:\s*ci\b/.test(job.body)) {
+      continue;
+    }
+    if (!job.body.includes("trusted-self-hosted.yml")) {
+      errors.push(
+        `${relativePath}: job "${job.name}" with suite: ci must call the trusted reusable workflow so Turing exclusivity cannot be bypassed`
+      );
+    }
+  }
+
+  if (
+    relativePath === BUNDLE_ANALYSIS_WORKFLOW &&
+    uncommented.includes(TRUSTED_CI_EXCLUSIVITY_GROUP)
+  ) {
+    errors.push(
+      `${relativePath}: Bundle Analysis must stay outside the ${TRUSTED_CI_EXCLUSIVITY_GROUP} Turing heavy-CI lane`
+    );
+  }
+
+  return errors;
+}
+
 export function validateTrustedWorkflowDefinition(trustedContent, trustedRelative) {
   const errors = [];
 
@@ -428,6 +515,7 @@ export function validateTrustedWorkflowDefinition(trustedContent, trustedRelativ
   }
   errors.push(...findNestedWorkspaceViolations(trustedContent, trustedRelative));
   errors.push(...findDynamicLocalActionUses(trustedContent, trustedRelative));
+  errors.push(...findTrustedCiExclusivityViolations(trustedContent, trustedRelative));
 
   return errors;
 }
@@ -616,6 +704,23 @@ export function validateCiRunnerPolicyPhase2(root = DEFAULT_REPO_ROOT) {
   }
 
   errors.push(...validateBundleAnalysisHostedPolicy(root));
+
+  const workflowDir = path.join(root, ".github", "workflows");
+  if (existsSync(workflowDir)) {
+    for (const entry of readdirSync(workflowDir, { withFileTypes: true })) {
+      if (!entry.isFile() || !/\.ya?ml$/i.test(entry.name)) {
+        continue;
+      }
+      const relativePath = normalizeWorkflowPath(
+        path.relative(root, path.join(workflowDir, entry.name))
+      );
+      if (relativePath === TRUSTED_SELF_HOSTED_WORKFLOW) {
+        continue;
+      }
+      const content = stripComments(readFileSync(path.join(workflowDir, entry.name), "utf8"));
+      errors.push(...findTrustedCiCallerBypassViolations(content, relativePath));
+    }
+  }
 
   return errors;
 }
