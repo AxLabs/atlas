@@ -1,5 +1,12 @@
 # @blitzcraftlabs/atlas
 
+## 1.0.1
+
+### Patch Changes
+
+- b1351c4: Polish the public launch surface so Atlas 1.0.1 can be the first npm-published version.
+  Canonical GitHub v1.0.0 remains the immutable first stable platform release.
+
 ## 1.0.0
 
 ### Major Changes
