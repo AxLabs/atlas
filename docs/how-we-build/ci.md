@@ -140,8 +140,11 @@ Set repository variables (Settings → Actions → Variables):
 Register runners in the `Blitzcraft Trusted CI` runner group with the `ci` capability label.
 `ATLAS_CI_RUNNER_GROUP` is optional; the trusted workflow defaults to `Blitzcraft Trusted CI`. The
 group is shared with selected private BlitzCraft CI workflows; Atlas reaches it only through the
-main-pinned reusable workflow. Turing capacity is two runners (`turing-ci-1`, `turing-ci-2`).
-Bootstrap each host:
+main-pinned reusable workflow. Turing capacity is two runners (`turing-ci-1`, `turing-ci-2`), but
+trusted **`suite: ci`** jobs serialize on a repository-wide concurrency group
+(`atlas-turing-trusted-ci`, `cancel-in-progress: false`) so two full Atlas CI suites cannot occupy
+the guest at once. UI Quality keeps its own per-ref caller concurrency; Bundle Analysis stays on
+GitHub-hosted Ubuntu and is not in that lane. Bootstrap each host:
 
 ```bash
 sudo mkdir -p /var/cache/ci
