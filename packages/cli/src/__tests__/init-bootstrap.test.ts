@@ -27,8 +27,10 @@ import { runInit } from "../commands/init";
 import { CliError, CliErrorCode } from "../errors/cli-error";
 import { ExitCode } from "../exit-codes";
 import {
+  CONSUMER_CI_WORKFLOW_DESTINATION,
   FORBIDDEN_BOOTSTRAP_EXACT_PATHS,
-  FORBIDDEN_BOOTSTRAP_PATH_PREFIXES,
+  MAINTAINER_CI_LEAK_MARKERS,
+  isForbiddenBootstrapPath,
 } from "./helpers/pack-artifact";
 import { runAtlasCli } from "./helpers/run-cli";
 import { CLI_PACKAGE_NAME } from "../version";
@@ -531,7 +533,10 @@ describe("atlas init bootstrap generated project", () => {
         expect(existsSync(path.join(destination, "packages/cli"))).toBe(false);
         expect(existsSync(path.join(destination, "packages/project"))).toBe(false);
         expect(existsSync(path.join(destination, "releases"))).toBe(false);
-        expect(existsSync(path.join(destination, ".github"))).toBe(false);
+        expect(existsSync(path.join(destination, CONSUMER_CI_WORKFLOW_DESTINATION))).toBe(true);
+        expect(
+          existsSync(path.join(destination, ".github/workflows/trusted-self-hosted.yml"))
+        ).toBe(false);
         expect(existsSync(path.join(destination, ".changeset"))).toBe(false);
         expect(existsSync(path.join(destination, "CONTRIBUTING.md"))).toBe(false);
         expect(existsSync(path.join(destination, "packages/ui/README.md"))).toBe(false);
@@ -548,11 +553,27 @@ describe("atlas init bootstrap generated project", () => {
           }
           expect(generatedFiles).not.toContain(forbidden);
         }
-        expect(
-          generatedFiles.filter((file) =>
-            FORBIDDEN_BOOTSTRAP_PATH_PREFIXES.some((prefix) => file.startsWith(prefix))
-          )
-        ).toEqual([]);
+        expect(generatedFiles.filter((file) => isForbiddenBootstrapPath(file))).toEqual([]);
+
+        const consumerCi = readFileSync(
+          path.join(destination, CONSUMER_CI_WORKFLOW_DESTINATION),
+          "utf8"
+        );
+        expect(consumerCi).toContain("runs-on: ubuntu-latest");
+        expect(consumerCi).toContain("pnpm install --frozen-lockfile");
+        expect(consumerCi).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${manifest.atlasVersion} doctor`
+        );
+        expect(consumerCi).toMatch(/^\s+run: pnpm lint$/m);
+        expect(consumerCi).toMatch(/^\s+run: pnpm typecheck$/m);
+        expect(consumerCi).toMatch(/^\s+run: pnpm test$/m);
+        expect(consumerCi).toMatch(/^\s+run: pnpm build$/m);
+        expect(consumerCi).toContain("permissions:\n  contents: read");
+        expect(consumerCi).not.toMatch(/test:e2e/);
+        expect(consumerCi).not.toContain("{{ATLAS_CLI_VERSION}}");
+        for (const marker of MAINTAINER_CI_LEAK_MARKERS) {
+          expect(consumerCi).not.toContain(marker);
+        }
 
         const packageJson = JSON.parse(
           readFileSync(path.join(destination, "package.json"), "utf8")
@@ -597,6 +618,7 @@ describe("atlas init bootstrap generated project", () => {
         expect(readme).toContain("pnpm install");
         expect(readme).toContain("pnpm dev");
         expect(readme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${manifest.atlasVersion} doctor`);
+        expect(readme).toContain(".github/workflows/ci.yml");
         expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
         expect(readme).not.toContain("pnpm atlas -- doctor");
         expect(readme).not.toContain("pnpm atlas");

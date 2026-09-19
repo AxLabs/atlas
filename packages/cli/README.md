@@ -39,6 +39,7 @@ The generated project stays in the directory you created. Atlas does not host yo
 - `apps/web` — the Next.js App Router product application
 - source-owned UI, config, and consent packages inside the generated repository
 - `atlas.config.json` — the executable project contract
+- `.github/workflows/ci.yml` — a portable GitHub-hosted quality baseline
 - Atlas ownership and sync metadata used by Doctor and upgrades
 
 The generated application, packages, and configuration live in your repository. You modify them

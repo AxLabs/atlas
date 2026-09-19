@@ -96,6 +96,7 @@ package/
         ├── packages/ui/...
         ├── packages/consent/...
         ├── packages/config/...
+        ├── .github/workflows/ci.yml
         └── selected root files
 ```
 
@@ -124,7 +125,9 @@ The packaged UI workspace omits Storybook, visual baselines, Husky, `packages/ui
 generation derives a consumer-safe `packages/ui/package.json` from the maintainer manifest so
 scripts and unused Storybook/visual/Husky `devDependencies` match that trimmed tree. Root
 `CONTRIBUTING.md` is repository/maintainer-only and is not packaged. `lighthouserc.json` is packaged
-so `apps/web`'s `perf:lhci` script resolves.
+so `apps/web`'s `perf:lhci` script resolves. `.github/workflows/ci.yml` is a **consumer** GitHub
+Actions baseline (GitHub-hosted Ubuntu, Doctor + lint + typecheck + test + production build). It is
+not a copy of Atlas maintainer CI and does not include Playwright E2E.
 
 `atlas init <project>` materializes that packaged tree into a new directory. It does not clone
 GitHub, copy the canonical monorepo, or read starter files from the caller's Atlas checkout.
@@ -266,6 +269,12 @@ Generated-at-init files are written deliberately rather than copied from the Atl
 | `jest.config.js`      | Jest projects for the generated workspace (no `apps/reference`)                                |
 | `pnpm-lock.yaml`      | Left absent until the consumer runs `pnpm install`                                             |
 | `apps/web/.env.local` | Absent by default; `--env copy` copies `.env.example` when present                             |
+
+Packaged (not generated-at-init) consumer CI:
+
+| Path                       | Responsibility                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
+| `.github/workflows/ci.yml` | Source-owned GitHub-hosted quality baseline. Consumers may replace it. Not Atlas maintainer CI. |
 
 `--reference` is checkout-init only. The generated project does not include `apps/reference`.
 

@@ -5,6 +5,12 @@ import path from "node:path";
 import { buildBootstrapAssets, readSourceBootstrapManifest } from "../bootstrap/build";
 import { SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH } from "../bootstrap/constants";
 import {
+  CONSUMER_CI_ATLAS_VERSION_PLACEHOLDER,
+  CONSUMER_CI_WORKFLOW_DESTINATION,
+  CONSUMER_CI_WORKFLOW_SOURCE,
+  toConsumerCiWorkflow,
+} from "../bootstrap/consumer-ci";
+import {
   CONSUMER_UI_PACKAGE_JSON_DESTINATION,
   shouldOmitConsumerUiDevDependency,
   shouldOmitConsumerUiScript,
@@ -17,6 +23,8 @@ import {
   AGENT_DOCUMENTATION_REFERENCES,
 } from "../context/documentation-registry";
 import { loadAppInfrastructureManifest } from "../template-sync/manifest";
+import { readCliAtlasVersion } from "../version";
+import { MAINTAINER_CI_LEAK_MARKERS } from "./helpers/pack-artifact";
 import { getRepoRoot } from "./helpers/run-cli";
 
 const CLI_PACKAGE_ROOT = path.resolve(__dirname, "../..");
@@ -230,6 +238,7 @@ describe("bootstrap asset build", () => {
     expect(destinations.has("packages/project")).toBe(false);
     expect(destinations.has("CONTRIBUTING.md")).toBe(false);
     expect(destinations.has("lighthouserc.json")).toBe(true);
+    expect(destinations.has(CONSUMER_CI_WORKFLOW_DESTINATION)).toBe(true);
   });
 
   it(
@@ -257,6 +266,54 @@ describe("bootstrap asset build", () => {
         expect(destinations.has("packages/ui/README.md")).toBe(false);
         expect(existsSync(path.join(filesRoot, "CONTRIBUTING.md"))).toBe(false);
         expect(existsSync(path.join(filesRoot, "packages", "ui", "README.md"))).toBe(false);
+      } finally {
+        rmSync(outputDir, { recursive: true, force: true });
+      }
+    },
+    BUILD_TIMEOUT_MS
+  );
+
+  it(
+    "packages a portable consumer CI workflow instead of Atlas maintainer CI",
+    () => {
+      const outputDir = mkdtempSync(path.join(os.tmpdir(), "atlas-bootstrap-ci-"));
+      try {
+        const packaged = buildBootstrapAssets({
+          repoRoot,
+          packageRoot: CLI_PACKAGE_ROOT,
+          outputDir,
+        });
+        const atlasVersion = readCliAtlasVersion();
+        const sourceWorkflow = readFileSync(
+          path.join(repoRoot, CONSUMER_CI_WORKFLOW_SOURCE),
+          "utf8"
+        );
+        const maintainerWorkflow = readFileSync(
+          path.join(repoRoot, ".github", "workflows", "ci.yml"),
+          "utf8"
+        );
+        const packagedWorkflow = readFileSync(
+          path.join(outputDir, "files", ...CONSUMER_CI_WORKFLOW_DESTINATION.split("/")),
+          "utf8"
+        );
+
+        expect(
+          packaged.entries.some((entry) => entry.destination === CONSUMER_CI_WORKFLOW_DESTINATION)
+        ).toBe(true);
+        expect(sourceWorkflow).toContain(CONSUMER_CI_ATLAS_VERSION_PLACEHOLDER);
+        expect(packagedWorkflow).toBe(toConsumerCiWorkflow(sourceWorkflow, atlasVersion));
+        expect(packagedWorkflow).not.toBe(maintainerWorkflow);
+        expect(maintainerWorkflow).toContain("ATLAS_CI_RUNNER_PROFILE");
+        expect(packagedWorkflow).toContain("runs-on: ubuntu-latest");
+        expect(packagedWorkflow).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} doctor`);
+        expect(packagedWorkflow).toMatch(/^\s+run: pnpm lint$/m);
+        expect(packagedWorkflow).toMatch(/^\s+run: pnpm typecheck$/m);
+        expect(packagedWorkflow).toMatch(/^\s+run: pnpm test$/m);
+        expect(packagedWorkflow).toMatch(/^\s+run: pnpm build$/m);
+        expect(packagedWorkflow).not.toMatch(/test:e2e/);
+        for (const marker of MAINTAINER_CI_LEAK_MARKERS) {
+          expect(packagedWorkflow).not.toContain(marker);
+        }
       } finally {
         rmSync(outputDir, { recursive: true, force: true });
       }

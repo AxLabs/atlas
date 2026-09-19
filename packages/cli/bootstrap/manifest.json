@@ -113,6 +113,10 @@
       "destination": "scripts/ensure-pnpm.js"
     },
     {
+      "source": "packages/cli/bootstrap/github-workflows/ci.yml",
+      "destination": ".github/workflows/ci.yml"
+    },
+    {
       "source": "docs/how-we-build/agents.md",
       "destination": "docs/how-we-build/agents.md"
     },

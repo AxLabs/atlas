@@ -4,8 +4,9 @@ import path from "node:path";
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "../doctor/static-imports";
 import { CLI_PACKAGE_NAME, readCliAtlasVersion } from "../version";
 import {
+  CONSUMER_CI_WORKFLOW_DESTINATION,
   FORBIDDEN_BOOTSTRAP_EXACT_PATHS,
-  FORBIDDEN_BOOTSTRAP_PATH_PREFIXES,
+  MAINTAINER_CI_LEAK_MARKERS,
   REQUIRED_BOOTSTRAP_FILE_PATHS,
   REQUIRED_PACKED_PATHS,
   collectRuntimeAtlasDependencies,
@@ -15,6 +16,7 @@ import {
   expectCommandSuccess,
   extractTarballJsFiles,
   findPackedTarball,
+  isForbiddenBootstrapPath,
   isPackedPathForbidden,
   listPackedBootstrapFiles,
   listTarballEntries,
@@ -106,12 +108,27 @@ describe("Atlas CLI pack and clean-room install", () => {
     const forbiddenExact = bootstrapFiles.filter((file) =>
       (FORBIDDEN_BOOTSTRAP_EXACT_PATHS as readonly string[]).includes(file)
     );
-    const forbiddenPrefixed = bootstrapFiles.filter((file) =>
-      FORBIDDEN_BOOTSTRAP_PATH_PREFIXES.some((prefix) => file.startsWith(prefix))
-    );
+    const forbiddenPrefixed = bootstrapFiles.filter((file) => isForbiddenBootstrapPath(file));
 
     expect(forbiddenExact).toEqual([]);
     expect(forbiddenPrefixed).toEqual([]);
+
+    const consumerCi = readTarballFile(
+      tarballPath as string,
+      packedBootstrapFilePath(CONSUMER_CI_WORKFLOW_DESTINATION)
+    );
+    expect(consumerCi).toContain("runs-on: ubuntu-latest");
+    expect(consumerCi).toContain(`pnpm dlx @blitzcraftlabs/atlas@${cliVersion} doctor`);
+    expect(consumerCi).toContain("pnpm install --frozen-lockfile");
+    expect(consumerCi).toMatch(/^\s+run: pnpm lint$/m);
+    expect(consumerCi).toMatch(/^\s+run: pnpm typecheck$/m);
+    expect(consumerCi).toMatch(/^\s+run: pnpm test$/m);
+    expect(consumerCi).toMatch(/^\s+run: pnpm build$/m);
+    expect(consumerCi).not.toMatch(/test:e2e/);
+    expect(consumerCi).not.toContain("{{ATLAS_CLI_VERSION}}");
+    for (const marker of MAINTAINER_CI_LEAK_MARKERS) {
+      expect(consumerCi).not.toContain(marker);
+    }
 
     const uiPackage = JSON.parse(
       readTarballFile(tarballPath as string, packedBootstrapFilePath("packages/ui/package.json"))
@@ -365,6 +382,16 @@ process.stdout.write(JSON.stringify({
       expect(existsSync(path.join(generatedRoot, "packages/config/package.json"))).toBe(true);
       expect(existsSync(path.join(generatedRoot, "atlas.config.json"))).toBe(true);
       expect(existsSync(path.join(generatedRoot, "package.json"))).toBe(true);
+      expect(existsSync(path.join(generatedRoot, CONSUMER_CI_WORKFLOW_DESTINATION))).toBe(true);
+      const generatedCi = readFileSync(
+        path.join(generatedRoot, CONSUMER_CI_WORKFLOW_DESTINATION),
+        "utf8"
+      );
+      expect(generatedCi).toContain("runs-on: ubuntu-latest");
+      expect(generatedCi).toContain(`pnpm dlx @blitzcraftlabs/atlas@${cliVersion} doctor`);
+      for (const marker of MAINTAINER_CI_LEAK_MARKERS) {
+        expect(generatedCi).not.toContain(marker);
+      }
       expect(existsSync(path.join(generatedRoot, "apps/reference"))).toBe(false);
       expect(existsSync(path.join(generatedRoot, "packages/cli"))).toBe(false);
       expect(existsSync(path.join(generatedRoot, "pnpm-lock.yaml"))).toBe(false);

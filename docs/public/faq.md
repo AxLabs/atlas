@@ -39,6 +39,12 @@ Yes. Create a project with `pnpm dlx @blitzcraftlabs/atlas init my-app`, or clon
 repository, under Apache License 2.0. Commercial engineering, support, or consulting is a separate
 matter and is not required to use the source.
 
+### Does Atlas require BlitzCraft CI infrastructure?
+
+No. `atlas init` adds `.github/workflows/ci.yml` that runs on GitHub-hosted Ubuntu with no
+repository secrets. After generation it is your file: keep it, replace it, or switch CI providers.
+It encodes Atlas's quality baseline, not Atlas maintainer CI.
+
 ---
 
 ## Technical
