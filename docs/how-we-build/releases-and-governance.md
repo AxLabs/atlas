@@ -23,8 +23,8 @@ The repository is public. Internal `@atlas/*` workspace packages remain unpublis
 Releases are published automatically after a Version PR merges to `main`. npm publication of that
 same Atlas version is a separate fail-closed job on the same workflow. The first registry version
 was a human-authenticated publish of the validated `.tgz` from canonical **`v1.0.1`**. Later
-versions use GitHub Actions OIDC / npm Trusted Publishing once that npm-side publisher is
-configured. Do not retag `v1.0.0`. Do not bootstrap npm with `0.5.0` or `1.0.0`.
+versions use GitHub Actions OIDC / npm Trusted Publishing, which is configured for `release.yml`. Do
+not retag `v1.0.0`. Do not bootstrap npm with `0.5.0` or `1.0.0`.
 
 ---
 
@@ -240,19 +240,19 @@ platform release and must not be retagged. Do not publish `0.5.0` or `1.0.0`. Th
 a human-authenticated publish of the validated tarball because Trusted Publishing cannot create a
 package that does not yet exist.
 
-Configure npm Trusted Publishing on `@blitzcraftlabs/atlas` so later versions can use GitHub Actions
-OIDC:
+npm Trusted Publishing is configured on `@blitzcraftlabs/atlas` for GitHub Actions `release.yml`:
 
-| Field             | Value            |
-| ----------------- | ---------------- |
-| Provider          | GitHub Actions   |
-| Organization/user | `blitzcraftlabs` |
-| Repository        | `atlas`          |
-| Workflow filename | `release.yml`    |
-| Allowed action    | `npm publish`    |
+| Field             | Value                                 |
+| ----------------- | ------------------------------------- |
+| Provider          | GitHub Actions                        |
+| Organization/user | `blitzcraftlabs`                      |
+| Repository        | `atlas`                               |
+| Workflow filename | `release.yml`                         |
+| Environment       | none                                  |
+| Permissions       | `npm publish` and `npm stage publish` |
 
-Subsequent Atlas versions publish from GitHub Actions OIDC when that npm publisher is configured. Do
-not store a long-lived `NPM_TOKEN` for this workflow.
+Subsequent Atlas versions publish from GitHub Actions OIDC. Do not store a long-lived `NPM_TOKEN`
+for this workflow.
 
 Publication does not claim SLSA or a formal security audit. npm provenance is generated
 automatically for OIDC publishes from this public repository.

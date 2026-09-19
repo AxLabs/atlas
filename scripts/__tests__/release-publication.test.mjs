@@ -708,7 +708,7 @@ describe("release notes", () => {
     assert.match(notes, /Breaking public-contract changes after 1\.0 require a major version/);
     assert.match(notes, /No LTS programme/);
     assert.match(notes, /public npm package identity/);
-    assert.match(notes, /npm Trusted Publishing may attach npm provenance/);
+    assert.match(notes, /npm Trusted Publishing attaches npm provenance/);
     assert.doesNotMatch(notes, /formal security audit completed/);
     assert.doesNotMatch(notes, /Atlas remains pre-1\.0/);
   });

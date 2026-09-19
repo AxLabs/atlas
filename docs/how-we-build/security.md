@@ -159,9 +159,10 @@ Documented in [`SECURITY.md`](../../SECURITY.md) and [upgrades.md](upgrades.md).
 workspace packages are not published to npm. `@blitzcraftlabs/atlas` is the public npm package
 identity. npm distribution occurs after the canonical GitHub Release; registry availability is
 verified separately. The first npm publication was a human-authenticated publish of
-`@blitzcraftlabs/atlas@1.0.1` from the exact canonical tarball. Later releases may use Trusted
-Publishing. Canonical GitHub Releases do not include signed provenance or SLSA attestation. npm
-provenance on later Trusted Publishing releases is not a GitHub Release attestation.
+`@blitzcraftlabs/atlas@1.0.1` from the exact canonical tarball. Later releases use GitHub Actions
+OIDC / npm Trusted Publishing (`release.yml`). Canonical GitHub Releases do not include signed
+provenance or SLSA attestation. npm provenance on later Trusted Publishing releases is not a GitHub
+Release attestation.
 
 ## Current limitations
 

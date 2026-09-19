@@ -246,8 +246,8 @@ and evaluate it.
 - **Accepted:** Internal `@atlas/*` workspaces stay unpublished npm internals
 - **Accepted:** `@blitzcraftlabs/atlas` is the public CLI identity. The first npm-published version
   is canonical `@blitzcraftlabs/atlas@1.0.1` from Git tag `v1.0.1`. Canonical `v1.0.0` remains the
-  first GitHub/platform release and is not retagged. Later versions may use GitHub Actions OIDC /
-  npm Trusted Publishing.
+  first GitHub/platform release and is not retagged. Later versions use GitHub Actions OIDC / npm
+  Trusted Publishing (`release.yml`).
 - **Mitigated:** Qualified claims and the claims register constrain overstatement
 
 ---

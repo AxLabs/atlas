@@ -187,9 +187,9 @@ After a version exists on npm, `pnpm distribution:verify-registry <version>` rep
 from the registry and must not fall back to a local tarball.
 
 The first npm publication of `@blitzcraftlabs/atlas` was a human-authenticated publish of the
-validated `v1.0.1` tarball. Later missing versions of that existing package may publish with OIDC
-when npm Trusted Publishing is configured. Do not republish an existing version, retag `v1.0.0`, or
-bootstrap npm with `0.5.0` or `1.0.0`.
+validated `v1.0.1` tarball. Later missing versions of that existing package publish with OIDC via
+npm Trusted Publishing on GitHub Actions `release.yml`. Do not republish an existing version, retag
+`v1.0.0`, or bootstrap npm with `0.5.0` or `1.0.0`.
 
 The one-time bootstrap procedure for a **new** unpublished package name remains:
 
