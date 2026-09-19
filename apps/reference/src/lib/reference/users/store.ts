@@ -2,8 +2,9 @@
  * In-memory store for reference users API.
  *
  * Browser sessions are isolated by `atlas_reference_users_store` so concurrent
- * Playwright projects (Chromium + WebKit) can share one Next.js process without
- * `/api/reset` wiping another worker's created users.
+ * Playwright projects (Chromium + WebKit) can share one Next.js process.
+ * Fresh browser contexts allocate a store lazily from the canonical seed;
+ * `/api/reset` remains for explicit same-session reset of the current scope.
  *
  * @module lib/users/store
  */

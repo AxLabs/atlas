@@ -1,13 +1,35 @@
 import { test, expect, type Page } from "@playwright/test";
 
-test.beforeEach(async ({ page }) => {
-  // page.request shares this test's cookie jar so reset scopes to this browser,
-  // not a global in-memory store shared with the other Playwright worker.
-  const response = await page.request.post("/api/reset");
-  if (!response.ok()) {
-    throw new Error(`Failed to reset reference harness: ${response.status()}`);
+const SEEDED_USER_EMAILS = [
+  "reference.user@atlas.local",
+  "reference.admin@atlas.local",
+  "extra.user@atlas.local",
+] as const;
+
+async function signInAsAdminWithSuccess(page: Page) {
+  await page.goto("/harness");
+  await page.getByRole("button", { name: "reference-admin" }).click();
+  await expect(page.getByText(/Session status: authenticated/)).toBeVisible();
+  await page.getByRole("button", { name: "success" }).click();
+  await expect(page.getByText(/Scenario set to success/)).toBeVisible();
+}
+
+async function createUserViaUi(page: Page, email: string, name: string) {
+  await page.goto("/users/new");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Name").fill(name);
+  await page.getByRole("button", { name: "Create user" }).click();
+  await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
+  await expect(page.getByRole("cell", { name: email, exact: true })).toBeVisible();
+}
+
+async function expectSeededUsersList(page: Page) {
+  await page.goto("/users");
+  await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
+  for (const email of SEEDED_USER_EMAILS) {
+    await expect(page.getByRole("cell", { name: email, exact: true })).toBeVisible();
   }
-});
+}
 
 async function openMobileNavAndGoTo(page: Page, linkName: string) {
   const menuButton = page.getByRole("button", { name: "Open navigation menu" });
@@ -422,5 +444,65 @@ test.describe("API recovery, flags, and consent traffic", () => {
     await page.goto("/");
     await expect(page.getByText("Sign in required")).toBeVisible();
     expect(analyticsHits).toEqual([]);
+  });
+});
+
+test.describe("Cookie-scoped store isolation", () => {
+  test("each test starts with a fresh browser context and no persisted storage", async ({
+    context,
+  }) => {
+    const state = await context.storageState();
+    expect(state.cookies).toEqual([]);
+    expect(state.origins).toEqual([]);
+  });
+
+  test("independent browser scopes do not share mutations and reset is scope-local", async ({
+    browser,
+  }) => {
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+
+    try {
+      await signInAsAdminWithSuccess(pageA);
+      await signInAsAdminWithSuccess(pageB);
+
+      const emailA = `scope-a-${Date.now()}@atlas.local`;
+      await createUserViaUi(pageA, emailA, "Scope A User");
+
+      await expectSeededUsersList(pageB);
+      await expect(pageB.getByRole("cell", { name: emailA, exact: true })).toHaveCount(0);
+
+      const emailB = `scope-b-${Date.now()}@atlas.local`;
+      await createUserViaUi(pageB, emailB, "Scope B User");
+
+      const reset = await pageA.request.post("/api/reset");
+      expect(reset.ok()).toBeTruthy();
+
+      await signInAsAdminWithSuccess(pageA);
+      await expectSeededUsersList(pageA);
+      await expect(pageA.getByRole("cell", { name: emailA, exact: true })).toHaveCount(0);
+      await expect(pageA.getByRole("cell", { name: emailB, exact: true })).toHaveCount(0);
+
+      await pageB.goto("/users");
+      await expect(pageB.getByRole("cell", { name: emailB, exact: true })).toBeVisible();
+      await expect(pageB.getByRole("cell", { name: emailA, exact: true })).toHaveCount(0);
+    } finally {
+      await contextA.close();
+      await contextB.close();
+    }
+  });
+
+  test("a brand-new browser scope starts from the canonical seed", async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      await signInAsAdminWithSuccess(page);
+      await expectSeededUsersList(page);
+    } finally {
+      await context.close();
+    }
   });
 });

@@ -49,4 +49,31 @@ describe("reference users store", () => {
     expect(getReferenceUsers("store-a")).toHaveLength(3);
     expect(getReferenceUsers("store-b")).toHaveLength(3);
   });
+
+  it("lazy-allocates the canonical seed for a never-seen store id", () => {
+    expect(getReferenceUsers("never-seen-scope").map((user) => user.id)).toEqual([
+      "reference-user",
+      "reference-admin",
+      "reference-user-extra",
+    ]);
+  });
+
+  it("reset of one store leaves another store's mutations intact", () => {
+    createReferenceUser(
+      { email: "keep@atlas.local", name: "Keep User", role: "user" },
+      "store-keep"
+    );
+    createReferenceUser(
+      { email: "drop@atlas.local", name: "Drop User", role: "user" },
+      "store-drop"
+    );
+
+    resetReferenceUsersStore("store-drop");
+
+    expect(getReferenceUsers("store-keep").map((user) => user.email)).toContain("keep@atlas.local");
+    expect(getReferenceUsers("store-drop").map((user) => user.email)).not.toContain(
+      "drop@atlas.local"
+    );
+    expect(getReferenceUsers("store-drop")).toHaveLength(3);
+  });
 });
