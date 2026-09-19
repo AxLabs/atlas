@@ -4,6 +4,12 @@
 
 **Accepted**
 
+**Launch update (2026-09-19):** `@blitzcraftlabs/atlas@1.0.1` is published on npm from canonical Git
+tag `v1.0.1`. `pnpm dlx @blitzcraftlabs/atlas` is the supported public bootstrap. Canonical GitHub
+`v1.0.0` remains the first stable platform release and is not retagged. npm Trusted Publishing for
+later GitHub Actions OIDC publishes still requires the npm-side publisher configuration documented
+in [releases-and-governance.md](../how-we-build/releases-and-governance.md).
+
 ## Context
 
 Atlas is now a public, source-owned frontend platform, but its supported adoption path still assumes
@@ -499,18 +505,18 @@ registry version is `@blitzcraftlabs/atlas@1.0.1`.
 6. **Clean-room CI**
    - pack/install/init/install/build/Doctor/generate/context outside the monorepo;
    - matrix Linux/macOS x64/arm64 as infrastructure permits.
-7. **npm namespace + trusted publishing setup** — **in progress in-repo**. The public package
-   identity `@blitzcraftlabs/atlas` is resolved. The release workflow is prepared for GitHub Actions
-   OIDC / npm Trusted Publishing. The first npm version is **1.0.1**, published by a human from the
-   exact canonical `v1.0.1` tarball because the package does not yet exist on the registry. Do not
-   bootstrap npm with `0.5.0` or `1.0.0`, and do not retag `v1.0.0`.
-8. **Release integration** — **in progress in-repo**. Publication is tied to the canonical Atlas
-   version after GitHub Release. Fail closed on identity mismatch, existing versions, a dirty
-   checkout, or a substituted artifact. Live registry publication is not complete until the 1.0.1
-   bootstrap publish and `pnpm distribution:verify-registry 1.0.1` succeed.
-9. **Public quickstart** — **not started as a live registry path**. Do not replace clone-first
-   onboarding with `pnpm dlx @blitzcraftlabs/atlas` until `@blitzcraftlabs/atlas@1.0.1` exists on
-   npm and registry verification passes.
+7. **npm namespace + trusted publishing setup** — **in-repo complete; npm-side publisher still
+   required**. The public package identity `@blitzcraftlabs/atlas` is resolved. The release workflow
+   is prepared for GitHub Actions OIDC / npm Trusted Publishing. The first npm version is **1.0.1**,
+   published by a human from the exact canonical `v1.0.1` tarball because Trusted Publishing cannot
+   create a package that does not yet exist. Do not bootstrap npm with `0.5.0` or `1.0.0`, and do
+   not retag `v1.0.0`.
+8. **Release integration** — **in-repo complete for 1.0.1**. Publication is tied to the canonical
+   Atlas version after GitHub Release. Fail closed on identity mismatch, existing versions, a dirty
+   checkout, or a substituted artifact. `@blitzcraftlabs/atlas@1.0.1` exists on npm after the
+   bootstrap publish and `pnpm distribution:verify-registry 1.0.1`.
+9. **Public quickstart** — **live**. Consumer onboarding uses `pnpm dlx @blitzcraftlabs/atlas`. The
+   clone path remains for contributors and evaluation.
 10. **Selective package review**
     - separately evaluate whether any source-owned workspace deserves a public npm API.
 

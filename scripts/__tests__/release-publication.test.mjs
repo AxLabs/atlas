@@ -681,7 +681,7 @@ describe("release notes", () => {
     assert.match(notes, /Internal `@atlas\/\*` workspace packages remain `private`/);
     assert.match(notes, /public npm package identity/);
     assert.match(notes, /npm distribution occurs after the canonical GitHub Release/);
-    assert.match(notes, /documented human bootstrap/);
+    assert.match(notes, /first npm publication was a human-authenticated publish/);
     assert.match(notes, /Trusted Publishing/);
     assert.match(notes, /This GitHub Release does \*\*not\*\* include signed provenance, SLSA attestation/);
     assert.match(notes, /not a GitHub Release attestation and is not SLSA/);
