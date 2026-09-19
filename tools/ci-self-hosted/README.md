@@ -55,9 +55,10 @@ Delete `ATLAS_CI_RUNNER_PROFILE` or set it to `github-hosted`.
 | `github-hosted` (default) | `ubuntu-latest` / `ubuntu-24.04` in caller workflows              | GitHub Actions `cache: pnpm`      | Per-job local `.turbo`       |
 | `self-hosted`             | Main-pinned `trusted-self-hosted.yml` → runner group + `ci` label | `/var/cache/ci/pnpm-store/<repo>` | `/var/cache/ci/turbo/<repo>` |
 
-Postgres seeding and isolated checkout directories are **not** part of this overlay. Consumer apps
-that need DB-backed CI checks should add their own scripts (see Aviatopia's `infra/docker/scripts/`
-as a reference).
+Trusted jobs check out into `${{ github.workspace }}` exactly as GitHub-hosted jobs do. Postgres
+seeding and nested checkout directories are **not** part of this overlay. Consumer apps that need
+DB-backed CI checks should add their own scripts (see Aviatopia's `infra/docker/scripts/` as a
+reference).
 
 ## Documentation
 

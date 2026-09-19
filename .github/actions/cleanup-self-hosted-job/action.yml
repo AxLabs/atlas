@@ -9,9 +9,8 @@ runs:
       run: |
         set -euo pipefail
 
-        # Checkouts are reclaimed by hourly host cron (cleanup-runner-workdirs.sh).
-        # Do not delete them here: composite action post steps still need the
-        # checkout tree, and fixed paths like ci-workspace race across back-to-back jobs.
+        # Leave github.workspace for actions/checkout clean:true on the next job.
+        # Persistent /var/cache/ci stores are outside the workspace and must remain.
 
         if [[ -n "${RUNNER_TEMP:-}" && -d "${RUNNER_TEMP}" ]]; then
           rm -rf "${RUNNER_TEMP}"/home-* "${RUNNER_TEMP}"/setup-pnpm 2>/dev/null || \

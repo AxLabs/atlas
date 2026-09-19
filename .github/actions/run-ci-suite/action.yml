@@ -5,10 +5,6 @@ inputs:
     description: github-hosted (default) or self-hosted (persistent /var/cache/ci stores)
     required: false
     default: github-hosted
-  checkout-dir:
-    description: Isolated checkout subdirectory name on self-hosted runners
-    required: false
-    default: ""
 runs:
   using: composite
   steps:
@@ -172,9 +168,6 @@ runs:
         do
           if [ -f "$f" ]; then
             echo "Found $f"
-          elif [ "${{ inputs.runner-profile }}" = "self-hosted" ] && \
-            [ -f "${{ inputs.checkout-dir }}/$f" ]; then
-            echo "Found ${{ inputs.checkout-dir }}/$f"
           else
             echo "Missing coverage report: $f"
             missing=1
@@ -194,12 +187,7 @@ runs:
       uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
       with:
         disable_search: true
-        files:
-          ${{ inputs.runner-profile == 'self-hosted' &&
-          format('{0}/apps/web/coverage/coverage-final.json,{0}/apps/reference/coverage/coverage-final.json,{0}/packages/ui/coverage/coverage-final.json,{0}/packages/cli/coverage/coverage-final.json,{0}/packages/project/coverage/coverage-final.json,{0}/packages/consent/coverage/coverage-final.json,{0}/coverage/scripts/lcov.info',
-          inputs.checkout-dir) ||
-          './apps/web/coverage/coverage-final.json,./apps/reference/coverage/coverage-final.json,./packages/ui/coverage/coverage-final.json,./packages/cli/coverage/coverage-final.json,./packages/project/coverage/coverage-final.json,./packages/consent/coverage/coverage-final.json,./coverage/scripts/lcov.info'
-          }}
+        files: ./apps/web/coverage/coverage-final.json,./apps/reference/coverage/coverage-final.json,./packages/ui/coverage/coverage-final.json,./packages/cli/coverage/coverage-final.json,./packages/project/coverage/coverage-final.json,./packages/consent/coverage/coverage-final.json,./coverage/scripts/lcov.info
         token: ${{ env.CODECOV_TOKEN }}
         fail_ci_if_error: false
 
@@ -245,14 +233,13 @@ runs:
       run: |
         if [ "${{ inputs.runner-profile }}" = "self-hosted" ]; then
           pw_version="$(pnpm --filter @atlas/web exec playwright --version | awk '{print $2}')"
-          checkout_dir="${GITHUB_WORKSPACE}/${{ inputs.checkout-dir }}"
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --ipc=host \
             --network host \
             -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
             -v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" \
-            -w "${checkout_dir}" \
+            -w "${GITHUB_WORKSPACE}" \
             -e CI=true \
             -e HOME=/tmp/pw-home \
             -e NEXT_PUBLIC_API_URL=http://localhost:3001/api \
@@ -270,7 +257,5 @@ runs:
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: playwright-report
-        path:
-          ${{ inputs.runner-profile == 'self-hosted' && format('{0}/apps/web/playwright-report/',
-          inputs.checkout-dir) || 'apps/web/playwright-report/' }}
+        path: apps/web/playwright-report/
         retention-days: 30
