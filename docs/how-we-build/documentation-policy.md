@@ -15,7 +15,7 @@
 | **Agent rules**             | `AGENTS.md`          | Coding agent authority                        |
 | **Component docs**          | Storybook            | UI components with examples                   |
 | **API contracts**           | `openapi/`           | OpenAPI specification                         |
-| **Quick start**             | Root `README.md`     | Getting started, links                        |
+| **Public product landing**  | Root `README.md`     | OSS product page: identity, quick start, docs |
 | **Historical/experimental** | `docs/_archive/`     | Superseded documentation (non-canonical)      |
 
 ## Rules
@@ -36,14 +36,17 @@ Create an ADR when you:
 - Deprecate or replace an existing pattern
 - Make a decision that's hard to reverse
 
-### 3. Keep README Minimal
+### 3. Root README is the public product landing page
 
-The root `README.md` is a **map, not the territory**:
+The root `README.md` is Atlas's **public product landing page**. Deep architecture, contributor
+procedures, and implementation conventions remain canonical in docs.
 
-- Quick start only
-- Links to `docs/public/`, `CONTRIBUTING.md`, and `docs/how-we-build/`
-- Links to common tasks
-- No long explanations
+The landing page should:
+
+- state the product identity clearly;
+- show the public CLI path and, until registry verification passes, the executable clone path;
+- summarize verified capabilities with links into docs;
+- not duplicate contributor command dumps, example route tables, or How We Build indexes.
 
 ### 4. Archive, Don't Delete
 
@@ -135,6 +138,7 @@ It does **not** check external HTTP links unless you pass `--external` (best-eff
 ## Quick Reference
 
 ```
+README.md             ← Public product landing page
 CONTRIBUTING.md       ← How to contribute
 AGENTS.md             ← Coding agent authority
 docs/
@@ -145,4 +149,5 @@ docs/
 └── _archive/         ← Historical only (non-canonical)
 ```
 
-**Canonical platform guidance lives in `AGENTS.md`, `docs/public`, and `docs/how-we-build/`.**
+**The root README is Atlas's public product landing page. Canonical platform guidance lives in
+`AGENTS.md`, `docs/public`, and `docs/how-we-build/`.**

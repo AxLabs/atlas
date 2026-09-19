@@ -18,6 +18,8 @@ export interface PackedManifest {
   bin?: Record<string, string>;
   files?: string[];
   engines?: { node?: string };
+  description?: string;
+  keywords?: string[];
   repository?: { type?: string; url?: string; directory?: string };
   bugs?: { url?: string };
   publishConfig?: { access?: string };

@@ -400,6 +400,14 @@ describe("CI runner policy", () => {
       path.join(repoRoot, ".github/actions/run-bundle-analysis-suite/action.yml"),
       "utf8",
     );
+    const setupCiNode = readFileSync(
+      path.join(repoRoot, ".github/actions/setup-ci-node/action.yml"),
+      "utf8",
+    );
+    const setupAtlasCi = readFileSync(
+      path.join(repoRoot, ".github/actions/setup-atlas-ci/action.yml"),
+      "utf8",
+    );
 
     assert.doesNotMatch(trusted, /CI_CHECKOUT_DIR:/);
     assert.doesNotMatch(trusted, /uses:\s*\.\/ci-link-/);
@@ -423,6 +431,23 @@ describe("CI runner policy", () => {
     assert.match(ciAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
     assert.match(uiAction, /packages\/ui\/test-results\//);
     assert.match(uiAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
+    assert.match(uiAction, /inputs\.runner-profile != 'self-hosted'/);
+    assert.match(
+      uiAction,
+      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:storybook && pnpm --filter @atlas\/ui test:storybook:cross-browser'/,
+    );
+    assert.match(
+      uiAction,
+      /corepack enable --install-directory "\$HOME\/bin" pnpm && export PATH="\$HOME\/bin:\$PATH" && pnpm --filter @atlas\/ui test:visual'/,
+    );
+    assert.match(uiAction, /mcr\.microsoft\.com\/playwright:v\$\{pw_version\}-noble/);
+    assert.doesNotMatch(
+      uiAction,
+      /else\s+pnpm --filter @atlas\/ui test:visual/,
+    );
+    assert.match(setupCiNode, /package-manager-cache:\s*false/);
+    assert.match(setupAtlasCi, /package-manager-cache:\s*false/);
+    assert.match(setupAtlasCi, /cache:\s*pnpm/);
     assert.match(bundleAction, /path: apps\/web\/\.next\/bundle-baseline\.json/);
   });
 });

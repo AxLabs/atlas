@@ -17,7 +17,7 @@
     "api:gen": "openapi-typescript ../../openapi/openapi.json -o src/lib/api/contracts/schema.ts --empty-objects-unknown",
     "test": "jest && node --test eslint.boundaries.test.mjs",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=json --coverageReporters=lcov",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "clean": "rm -rf .next .turbo node_modules",

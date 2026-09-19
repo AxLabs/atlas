@@ -1,8 +1,9 @@
 # Contributing to Atlas
 
-Atlas is a **forkable frontend platform template**. It is **open source under Apache License 2.0**.
-The canonical repository is [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas).
-Anyone can clone, fork, and propose changes.
+Atlas is an **open-source frontend platform for Next.js teams**. It is **open source under Apache
+License 2.0**. The canonical repository is
+[`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas). Anyone can clone, fork, and
+propose changes.
 
 This guide is for Atlas maintainers, external contributors, and downstream consumers who fork Atlas
 into a product.
@@ -108,6 +109,7 @@ Also run when your change touches the affected areas:
 | Build-affecting code            | `pnpm build`                                             |
 | User-facing flows               | `pnpm --filter @atlas/web test:e2e`                      |
 | Shared UI / auth / API coverage | `pnpm test:risk-coverage`                                |
+| Repository coverage reports     | `pnpm test:coverage:all`                                 |
 
 CI runs internal documentation link checks on every pull request. External URL checks are optional
 locally: `pnpm docs:check --external`.
@@ -127,8 +129,9 @@ locally: `pnpm docs:check --external`.
 
 Atlas versions the **repository/platform snapshot** as one line. Changesets collect release metadata
 and open **Version PRs**. They do **not** publish npm packages. After a Version PR merges,
-automation publishes the canonical Git tag and GitHub Release. The next canonical release is
-**1.0.0** (first supported public distribution).
+automation publishes the canonical Git tag and GitHub Release. Canonical `v1.0.0` is the first
+stable GitHub/platform release. The next canonical release is **1.0.1** (launch-surface polish and
+first npm registry distribution).
 
 Canonical policy: [Releases and Governance](docs/how-we-build/releases-and-governance.md).
 
@@ -139,7 +142,7 @@ Canonical policy: [Releases and Governance](docs/how-we-build/releases-and-gover
   - **patch** — bug fixes and small non-breaking work (`1.0.0 → 1.0.1`)
   - **minor** — compatible features (`1.0.0 → 1.1.0`)
   - **major** — breaking public-contract changes (`1.0.0 → 2.0.0`)
-- This 1.0 decision uses **major** to advance `0.5.0` → `1.0.0`.
+- This 1.0 decision used **major** to advance `0.5.0` → `1.0.0`.
 - Breaking changes require migration notes in the changeset body and changelog; add
   `docs/migrations/` guides when steps are non-trivial.
 

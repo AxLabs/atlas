@@ -29,11 +29,13 @@ runs:
       with:
         package_json_file: package.json
 
-    # Self-hosted runners use the persistent PNPM_STORE_DIR above. Omit setup-node
-    # cache so post steps do not try to save GitHub Actions pnpm cache paths.
+    # Self-hosted runners use the persistent PNPM_STORE_DIR above. setup-node@v5
+    # otherwise auto-enables package-manager-cache when package.json has
+    # "packageManager", then fails in the post step after cleanup removes HOME.
     - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
       with:
         node-version: 22
+        package-manager-cache: false
 
     - name: Configure pnpm persistent store
       shell: bash

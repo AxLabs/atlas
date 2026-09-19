@@ -1,31 +1,60 @@
-# @blitzcraftlabs/atlas
+# `@blitzcraftlabs/atlas`
 
-Atlas is a forkable frontend platform template (Next.js App Router, TypeScript, Tailwind CSS, pnpm
-workspaces). This package is the public **Atlas CLI**: `atlas`.
+Atlas is an open-source frontend platform for Next.js teams. It gives you a production-shaped
+workspace, executable architecture contracts, generators, quality gates, and versioned upgrades —
+while keeping your application in your repository and under your control.
 
-The package identity is `@blitzcraftlabs/atlas`. Internal `@atlas/*` workspaces stay private source
-inside Atlas and generated projects. They are not published to npm.
+This package is the public **Atlas CLI**: `atlas`. Internal `@atlas/*` workspaces stay private
+source inside Atlas and generated projects. They are not published to npm.
 
-## Requirements
+## Quick start
 
-- Node.js `>=22`
-- pnpm `>=10` for the supported Atlas workflow
+```bash
+pnpm dlx @blitzcraftlabs/atlas init my-app
+cd my-app
+pnpm install
+pnpm dev
+```
 
-## Intended install (after the first npm publication)
+Requires Node.js `>=22` and pnpm `>=10`.
 
-Atlas is not on the npm registry yet. The first public version is `@blitzcraftlabs/atlas@1.0.0`.
-Once that version is published from canonical Git tag `v1.0.0` and
-`pnpm distribution:verify-registry 1.0.0` passes, the intended commands are:
+You can also install the CLI globally:
 
 ```bash
 pnpm add -g @blitzcraftlabs/atlas
 atlas init my-app
 ```
 
-Until then, use this repository and `pnpm atlas` / a packed tarball. Do not treat a `0.5.0` tarball
-as the public npm bootstrap.
+The generated project stays in the directory you created. Atlas does not host your application.
 
-## Commands
+## Requirements
+
+- Node.js `>=22`
+- pnpm `>=10` for the supported Atlas workflow
+
+## What Atlas creates
+
+`atlas init my-app` materializes a complete source-owned workspace:
+
+- `apps/web` — the Next.js App Router product application
+- source-owned UI, config, and consent packages inside the generated repository
+- `atlas.config.json` — the executable project contract
+- Atlas ownership and sync metadata used by Doctor and upgrades
+
+The generated application, packages, and configuration live in your repository. You modify them
+there. Atlas does not replace Next.js, and it does not publish those internal `@atlas/*` packages as
+independent npm products.
+
+## CLI
+
+```bash
+atlas init my-app
+atlas doctor
+atlas generate feature users --query --mutation --form
+atlas generate page settings/profile
+atlas context --json
+atlas upgrade --to <version> --dry-run --json
+```
 
 | Command                        | Purpose                                                            |
 | ------------------------------ | ------------------------------------------------------------------ |
@@ -33,23 +62,59 @@ as the public npm bootstrap.
 | `atlas doctor`                 | Check Atlas contract and architecture drift                        |
 | `atlas generate feature\|page` | Scaffold structural product surfaces                               |
 | `atlas context [--json]`       | Resolve the executable project contract for agents                 |
-| `atlas upgrade --to <version>` | Plan/apply a supported Atlas upgrade                               |
+| `atlas upgrade --to <version>` | Plan or apply a supported Atlas upgrade                            |
 
-`atlas upgrade` loads production release evidence from **this installed package**, not from a
-consumer `releases/` tree. The support window is the current Atlas release plus the immediately
-previous supported production release, adjacent upgrades only.
+Selected supported flags:
 
-`--releases-dir` is an explicit fixture/maintainer override. Missing packaged evidence fails closed.
+- `atlas init`: `--dry-run`, `--json`, `--env skip|copy`
+- `atlas doctor`: `--json`, `--cwd <path>`
+- `atlas generate`: `--query`, `--mutation`, `--form`, `--tests`, `--dry-run`, `--json`
+- `atlas context`: `--json`, `--cwd <path>`
+- `atlas upgrade`: `--to <version>`, `--dry-run`, `--json`, `--allow-dirty`
 
-## Upgrade support
+Which surfaces are SemVer-frozen is defined by the
+[1.0 stability contract](https://github.com/blitzcraftlabs/atlas/blob/main/docs/how-we-build/releases-and-governance.md#atlas-10-stability-contract).
 
-- Production snapshots are package-owned.
-- Generated consumers do not carry Atlas release history.
-- Repository `releases/0.1.0` and `releases/0.2.0` are rehearsal-only and are not public support.
-- After 1.0, breaking public-contract changes require a major version.
+Run `atlas <command> --help` for the full command surface.
+
+## Architecture contract
+
+Doctor, generators, and context share the same executable project contract (`atlas.config.json`,
+resolved through Atlas's contract loader). They do not infer architecture from documentation or
+ad-hoc file layout.
+
+That is why `atlas context --json` is the agent entry point, `atlas generate` scaffolds into
+contract-defined locations, and `atlas doctor` reports drift against the same ownership and
+workspace rules.
+
+## Upgrades
+
+`atlas upgrade --to <version>` loads production release evidence from **this installed package**,
+not from a consumer `releases/` tree.
+
+- The support window is the current Atlas release plus the immediately previous supported production
+  release, adjacent upgrades only.
+- Consumer-owned and modified synced paths are never overwritten automatically.
+- Missing packaged evidence fails closed.
+
+After 1.0, breaking public-contract changes require a major version.
+
+## What this package is not
+
+- Not a Next.js replacement
+- Not a hosted SaaS or PaaS
+- Not a public collection of `@atlas/*` npm packages
+- Not a component library published independently of the Atlas workspace
+
+Internal `@atlas/*` packages are source-owned internals that ship inside generated projects. The
+only public npm package is `@blitzcraftlabs/atlas`.
 
 ## Links
 
-- Source: [github.com/blitzcraftlabs/atlas](https://github.com/blitzcraftlabs/atlas)
-- Site: [shipwithatlas.com](https://shipwithatlas.com)
-- License: Apache-2.0
+- GitHub: [https://github.com/blitzcraftlabs/atlas](https://github.com/blitzcraftlabs/atlas)
+- Website: [https://shipwithatlas.com](https://shipwithatlas.com)
+- Documentation:
+  [https://github.com/blitzcraftlabs/atlas/blob/main/docs/public/README.md](https://github.com/blitzcraftlabs/atlas/blob/main/docs/public/README.md)
+- Issues:
+  [https://github.com/blitzcraftlabs/atlas/issues](https://github.com/blitzcraftlabs/atlas/issues)
+- License: [Apache-2.0](https://github.com/blitzcraftlabs/atlas/blob/main/LICENSE)

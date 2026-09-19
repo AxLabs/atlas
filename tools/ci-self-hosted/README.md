@@ -6,6 +6,8 @@ group** with persistent disk caches.
 The default `.github/workflows/ci.yml` runs on `ubuntu-latest` and needs no host setup. This overlay
 routes trusted same-repository work through the main-pinned reusable workflow
 `.github/workflows/trusted-self-hosted.yml` and persistent pnpm/Turbo stores under `/var/cache/ci`.
+Browser tests use the shared Docker daemon (`mcr.microsoft.com/playwright`), not host-installed
+browsers or a global Storybook binary.
 
 Fork pull requests and downstream forks always stay on GitHub-hosted runners.
 

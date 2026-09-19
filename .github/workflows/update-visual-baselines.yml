@@ -1,8 +1,8 @@
 name: Update Visual Baselines
 
-# Manually triggered only. A maintainer runs this workflow to produce candidate visual baselines on
-# the canonical ubuntu-24.04 GitHub-hosted runner, downloads and reviews the artifact, then commits
-# the reviewed PNGs so regular UI Quality CI can verify them.
+# Manually triggered only. A maintainer runs this workflow to produce candidate visual baselines in
+# the canonical Playwright Docker image, downloads and reviews the artifact, then commits the
+# reviewed PNGs so regular UI Quality CI can verify them.
 #
 # Procedure:
 #   1. Trigger this workflow via "Run workflow" in the GitHub Actions UI.
@@ -13,8 +13,9 @@ name: Update Visual Baselines
 #   6. Let the regular UI Quality CI job verify the new baselines.
 #
 # This workflow does NOT auto-commit or auto-approve visual changes.
-# Do NOT capture baselines locally or in Docker — font rasterisation differs even with the same
-# Playwright version. The only canonical source of truth is this workflow's ubuntu-24.04 runner.
+# Do NOT capture baselines on the host runner or a developer laptop — font rasterisation differs
+# even with the same Playwright version. The only canonical source of truth is
+# mcr.microsoft.com/playwright:v<playwright-version>-noble.
 
 on:
   workflow_dispatch:
@@ -45,14 +46,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: pnpm --filter @atlas/ui exec playwright install --with-deps chromium
-
       - name: Build Storybook
         run: pnpm --filter @atlas/ui build-storybook
 
       - name: Generate candidate visual baselines
-        run: pnpm --filter @atlas/ui test:visual:update
+        run: |
+          pw_version="$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --ipc=host \
+            --network host \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            -w "${GITHUB_WORKSPACE}" \
+            -e CI=true \
+            -e HOME=/tmp/pw-home \
+            "mcr.microsoft.com/playwright:v${pw_version}-noble" \
+            bash -lc 'mkdir -p "$HOME/bin" && corepack enable --install-directory "$HOME/bin" pnpm && export PATH="$HOME/bin:$PATH" && pnpm --filter @atlas/ui test:visual:update'
 
       - name: Upload candidate baselines (review before committing)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

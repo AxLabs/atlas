@@ -21,11 +21,11 @@ Atlas is **open source under Apache License 2.0**. The canonical public reposito
 The repository is public. Internal `@atlas/*` workspace packages remain unpublished npm internals
 (`private: true`). The public CLI package identity is `@blitzcraftlabs/atlas`. Canonical GitHub
 Releases are published automatically after a Version PR merges to `main`. npm publication of that
-same Atlas version is a separate fail-closed job on the same workflow: the first version is a
-human-authenticated publish of the validated `.tgz` from canonical **`v1.0.0`**, and later versions
-use GitHub Actions OIDC / npm Trusted Publishing. Do not treat `pnpm dlx @blitzcraftlabs/atlas` as
-live until registry verification has passed for that published version. Do not bootstrap npm with
-`0.5.0`.
+same Atlas version is a separate fail-closed job on the same workflow: the first registry version is
+a human-authenticated publish of the validated `.tgz` from canonical **`v1.0.1`**, and later
+versions use GitHub Actions OIDC / npm Trusted Publishing. Do not treat
+`pnpm dlx @blitzcraftlabs/atlas` as live until registry verification has passed for that published
+version. Do not retag `v1.0.0`. Do not bootstrap npm with `0.5.0` or `1.0.0`.
 
 ---
 
@@ -63,7 +63,8 @@ Atlas uses **[Semantic Versioning](https://semver.org/)** for repository release
 Atlas **0.x** GitHub releases were the platform-development and proving line. They remain historical
 repository snapshots. They are **not** the first public npm distribution.
 
-Atlas **1.0.0** is the first supported public distribution and the first stable public contract:
+Atlas **1.0.0** is the first supported public GitHub/platform release and the first stable public
+contract:
 
 - Public CLI, generated-project, upgrade, and distribution contracts below are treated as stable.
 - Breaking those public contracts after 1.0 requires a **major** version.
@@ -72,9 +73,9 @@ Atlas **1.0.0** is the first supported public distribution and the first stable 
 - There is **no LTS programme**. Atlas does not claim formal security certification, independent
   audit completion, or perfect backward compatibility forever.
 
-The next canonical release from the current `0.5.0` line is **1.0.0**, produced by a Changesets
-**major** bump after this maintainer decision merges. Do not invent a `0.5.1` or `0.6.0` public npm
-bootstrap.
+Canonical `v1.0.0` is immutable. The first npm registry version is
+**`@blitzcraftlabs/atlas@1.0.1`**, packed from canonical Git tag `v1.0.1` after that GitHub Release
+exists. Do not invent a `0.5.1` or `0.6.0` public npm bootstrap, and do not retag `v1.0.0`.
 
 ### What 1.0 treats as stable
 
@@ -108,11 +109,12 @@ bootstrap.
 
 ### Historical / internal tags
 
-| Tag                | Meaning                                                 |
-| ------------------ | ------------------------------------------------------- |
-| `v0.1.0-pre-split` | Internal pre-split snapshot                             |
-| `v1.0.0-platform`  | Internal milestone — **not** the public `v1.0.0` tag    |
-| `v0.2.0`–`v0.5.0`  | Proving-line GitHub Releases; not the first npm package |
+| Tag                | Meaning                                                    |
+| ------------------ | ---------------------------------------------------------- |
+| `v0.1.0-pre-split` | Internal pre-split snapshot                                |
+| `v1.0.0-platform`  | Internal milestone — **not** the public `v1.0.0` tag       |
+| `v0.2.0`–`v0.5.0`  | Proving-line GitHub Releases; not the first npm package    |
+| `v1.0.0`           | First stable GitHub/platform release; not published to npm |
 
 Canonical release tags: `v{MAJOR}.{MINOR}.{PATCH}` (e.g. `v1.0.0`). `0.1.0` remains a historical
 internal snapshot and must not receive a public tag. `v1.0.0-platform` is not `v1.0.0`.
@@ -223,7 +225,7 @@ public npm package. After the GitHub Release job completes, a separate `npm-publ
 2. **Bootstrap skip** if the package does not exist yet (Trusted Publishing cannot create the first
    package). The job still packs only from the exact canonical tag. Maintainers publish that
    validated `.tgz` with a human-authenticated `npm publish` of that file — never a rebuilt copy of
-   `packages/cli` and never a `0.5.0` artifact
+   `packages/cli` and never a `0.5.0` or `1.0.0` artifact
 3. **OIDC publish** of that same `.tgz` with npm provenance when the package exists, the version is
    unpublished, and HEAD is the exact matching `vX.Y.Z` tag. npm provenance is not a GitHub Release
    attestation and is not SLSA
@@ -233,19 +235,20 @@ requests or `workflow_dispatch`, and does not publish internal `@atlas/*` worksp
 
 ### First npm publication
 
-The first public npm version is **`@blitzcraftlabs/atlas@1.0.0`**, packed from canonical Git tag
-`v1.0.0` after the GitHub Release exists. Do not publish `0.5.0`. Artifact hashes do not exist until
-that tag exists; do not pack from this feature branch.
+The first public npm version is **`@blitzcraftlabs/atlas@1.0.1`**, packed from canonical Git tag
+`v1.0.1` after the GitHub Release exists. Canonical `v1.0.0` remains the first stable GitHub
+platform release and must not be retagged. Do not publish `0.5.0` or `1.0.0`. Artifact hashes do not
+exist until that `v1.0.1` tag exists; do not pack from this feature branch.
 
 ```bash
 git fetch --tags
-git worktree add /tmp/atlas-v1.0.0 v1.0.0
-cd /tmp/atlas-v1.0.0
+git worktree add /tmp/atlas-v1.0.1 v1.0.1
+cd /tmp/atlas-v1.0.1
 pnpm install --frozen-lockfile
 pnpm distribution:prepare-publish --require-release-tag
 # prints tarball path, bytes, sha256, tag, commit SHA, and:
 npm publish <printed-tarball> --access public --ignore-scripts
-pnpm distribution:verify-registry 1.0.0
+pnpm distribution:verify-registry 1.0.1
 ```
 
 Then configure npm Trusted Publishing on `@blitzcraftlabs/atlas`:
@@ -328,7 +331,7 @@ After `changeset version`, `scripts/consolidate-atlas-release.mjs`:
 | Older 0.x snapshots            | Rehearsal `0.1.0` / `0.2.0` are not production upgrade support                   |
 | Adjacent 1.0 upgrade           | `0.5.0` → `1.0.0` once both production snapshots are packaged                    |
 | LTS                            | **No LTS programme** at this stage                                               |
-| npm CLI                        | First public version is `@blitzcraftlabs/atlas@1.0.0` after GitHub `v1.0.0`      |
+| npm CLI                        | First public version is `@blitzcraftlabs/atlas@1.0.1` after GitHub `v1.0.1`      |
 
 ---
 
@@ -383,7 +386,7 @@ products. All workspace packages share one version via a **fixed** changeset gro
 | Public repo today?           | Yes — [`blitzcraftlabs/atlas`](https://github.com/blitzcraftlabs/atlas)             |
 | Versioned product?           | Atlas repository snapshot                                                           |
 | Tag format?                  | `vX.Y.Z`                                                                            |
-| Next canonical release?      | `1.0.0` via Changesets **major**                                                    |
+| Next canonical release?      | `1.0.1` via Changesets **patch** (launch-surface polish + first npm)                |
 | Breaking change bump (1.0+)? | **major** changeset                                                                 |
-| npm publish?                 | `@blitzcraftlabs/atlas` only; first version is canonical `v1.0.0` tarball bootstrap |
+| npm publish?                 | `@blitzcraftlabs/atlas` only; first version is canonical `v1.0.1` tarball bootstrap |
 | GitHub Release today?        | After Version PR merge (`vX.Y.Z`); never `v0.1.0`                                   |

@@ -20,6 +20,7 @@
     "format:write": "prettier --write \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=json --coverageReporters=lcov",
     "test:watch": "jest --watch",
     "resolve": "tsx scripts/resolve-contract.ts",
     "capture-baseline": "node scripts/capture-platform-baseline.mjs",

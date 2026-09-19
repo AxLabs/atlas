@@ -252,6 +252,19 @@ await screen.findByText("Welcome");
 await user.click(button);
 ```
 
+## Repository aggregate coverage
+
+`pnpm test:coverage:all` measures first-party Atlas logic that already has automated tests. It is
+**reporting**, not a quality score and not a merge gate.
+
+Use it for:
+
+- public Codecov visibility (dynamic README badge)
+- finding untested areas
+- merging coverage from web, reference, UI, CLI, project-contract, consent, and root scripts
+
+Do **not** treat the Codecov percentage as a guarantee. There is no repository-wide coverage floor.
+
 ## Risk-based coverage
 
 Atlas does **not** aim for repository-wide 80% coverage. Critical owned subsystems must not regress:
@@ -262,7 +275,10 @@ pnpm test:risk-coverage
 
 That command collects Jest coverage for `@atlas/web` and `@atlas/ui`, then evaluates
 [`coverage-policy.json`](../../coverage-policy.json) via `scripts/coverage-policy.mjs`. Missing
-reports, missing subsystems, zero matched files, or a metric below the floor fail the gate.
+reports, missing subsystems, zero matched files, or a metric below the floor fail the gate. CI
+collects the full aggregate first (`pnpm test:coverage:all`) and then runs the same policy
+evaluator; `pnpm test:risk-coverage` remains the local command that regenerates the two high-risk
+reports and evaluates floors.
 
 Suggested floors (do not lower them just to make CI green):
 
@@ -296,9 +312,10 @@ Storybook complements Jest and application E2E — it does not replace them.
 | Cross-browser keyboard/focus | `pnpm --filter @atlas/ui test:storybook:cross-browser` | Chromium + WebKit         |
 | Visual regression            | `pnpm --filter @atlas/ui test:visual`                  | Chromium pixel baselines  |
 
-CI runs these in the **UI Quality** workflow on `ubuntu-24.04` with path filtering for
-`packages/ui/**`, Storybook critical-policy scripts, and related shared config. Pixel baselines are
-Chromium-only with `maxDiffPixelRatio: 0.005`; WebKit is exercised for interaction, not screenshots.
+CI runs these in the **UI Quality** workflow with path filtering for `packages/ui/**`, Storybook
+critical-policy scripts, and related shared config. Pixel baselines are Chromium-only captures from
+`mcr.microsoft.com/playwright:v<playwright-version>-noble` with `maxDiffPixelRatio: 0.005`; WebKit
+is exercised for interaction, not screenshots.
 
 Details: `packages/ui/.storybook/README.md`.
 
@@ -338,10 +355,13 @@ pnpm test:scripts
 # Critical subsystem coverage gate
 pnpm test:risk-coverage
 
+# Repository aggregate (measurement / Codecov; not a floor)
+pnpm test:coverage:all
+
 # Watch mode
 pnpm test:watch
 
-# Package coverage (feeds the gate)
+# Package coverage (feeds the risk gate)
 pnpm --filter @atlas/web test:coverage
 pnpm --filter @atlas/ui test:coverage
 

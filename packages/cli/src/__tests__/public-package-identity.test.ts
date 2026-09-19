@@ -12,6 +12,8 @@ const manifest = JSON.parse(readFileSync(path.join(PACKAGE_ROOT, "package.json")
   bin?: Record<string, string>;
   files?: string[];
   engines?: { node?: string };
+  description?: string;
+  keywords?: string[];
   repository?: { type?: string; url?: string; directory?: string };
   bugs?: { url?: string };
   publishConfig?: { access?: string };
@@ -35,6 +37,22 @@ describe("public CLI package identity", () => {
     expect(manifest.homepage).toBe("https://shipwithatlas.com");
     expect(manifest.bugs?.url).toBe("https://github.com/blitzcraftlabs/atlas/issues");
     expect(manifest.engines?.node).toBe(">=22.0.0");
+    expect(manifest.description).toBe(
+      "Source-owned frontend platform CLI for Next.js — bootstrap, diagnose, generate, inspect, and upgrade Atlas applications."
+    );
+    expect(manifest.keywords).toEqual([
+      "atlas",
+      "nextjs",
+      "react",
+      "typescript",
+      "frontend",
+      "platform",
+      "cli",
+      "scaffolding",
+      "codegen",
+      "architecture",
+      "pnpm",
+    ]);
   });
 
   it("keeps a strict files allowlist and no runtime workspace protocol", () => {
@@ -51,5 +69,17 @@ describe("public CLI package identity", () => {
     expect(
       Object.values(manifest.dependencies ?? {}).some((range) => range.includes("workspace:"))
     ).toBe(false);
+  });
+
+  it("ships an npm-ready README without pre-publication wording", () => {
+    const readme = readFileSync(path.join(PACKAGE_ROOT, "README.md"), "utf8");
+
+    expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas init my-app");
+    expect(readme).toContain("https://github.com/blitzcraftlabs/atlas");
+    expect(readme).toContain("https://shipwithatlas.com");
+    expect(readme).not.toContain("Atlas is not on the npm registry yet");
+    expect(readme).not.toContain("after the first npm publication");
+    expect(readme).not.toContain("once publication is finalized");
+    expect(readme).not.toContain("publication path is finalized");
   });
 });

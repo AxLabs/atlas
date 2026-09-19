@@ -62,17 +62,7 @@ runs:
       shell: bash
       run: node scripts/storybook-critical-policy.mjs
 
-    - name: Run Storybook interaction and accessibility tests
-      if: steps.detect.outputs.ui == 'true'
-      shell: bash
-      run: pnpm --filter @atlas/ui test:storybook
-
-    - name: Run cross-browser keyboard and focus checks
-      if: steps.detect.outputs.ui == 'true'
-      shell: bash
-      run: pnpm --filter @atlas/ui test:storybook:cross-browser
-
-    - name: Run visual regression tests
+    - name: Run Storybook interaction and cross-browser tests
       if: steps.detect.outputs.ui == 'true'
       shell: bash
       run: |
@@ -89,10 +79,32 @@ runs:
             -e HOME=/tmp/pw-home \
             -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
             "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/ui test:visual'
+            bash -lc 'mkdir -p "$HOME/bin" && corepack enable --install-directory "$HOME/bin" pnpm && export PATH="$HOME/bin:$PATH" && pnpm --filter @atlas/ui test:storybook && pnpm --filter @atlas/ui test:storybook:cross-browser'
         else
-          pnpm --filter @atlas/ui test:visual
+          pnpm --filter @atlas/ui test:storybook
+          pnpm --filter @atlas/ui test:storybook:cross-browser
         fi
+
+    - name: Run visual regression tests
+      if: steps.detect.outputs.ui == 'true'
+      shell: bash
+      run: |
+        pw_version="$(pnpm --filter @atlas/ui exec playwright --version | awk '{print $2}')"
+        store_args=()
+        if [ -n "${PNPM_STORE_DIR:-}" ]; then
+          store_args=(-v "${PNPM_STORE_DIR}:${PNPM_STORE_DIR}" -e PNPM_STORE_DIR="${PNPM_STORE_DIR}")
+        fi
+        docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          --ipc=host \
+          --network host \
+          -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+          "${store_args[@]}" \
+          -w "${GITHUB_WORKSPACE}" \
+          -e CI=true \
+          -e HOME=/tmp/pw-home \
+          "mcr.microsoft.com/playwright:v${pw_version}-noble" \
+          bash -lc 'mkdir -p "$HOME/bin" && corepack enable --install-directory "$HOME/bin" pnpm && export PATH="$HOME/bin:$PATH" && pnpm --filter @atlas/ui test:visual'
 
     - name: Upload visual diff artifacts
       if: failure() && steps.detect.outputs.ui == 'true'

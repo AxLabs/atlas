@@ -1,242 +1,242 @@
 {
   "assets": {
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-dark-desktop-chromium.png": {
-      "sha256": "6b9eb82e5258fc3aaaa0620bfc98a0cacd6e95d9c8000e9d757d60f8e859fc8f",
+      "sha256": "3aa67b69729182d46b62e96ed96152b3881bfc61ebf00eb6ce67f138705ccc7a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/button-all-variants-light-desktop-chromium.png": {
-      "sha256": "4ff0b44f1edde802266f9e99eb0f11015c56b0703239989bd3477f00cf56bfe9",
+      "sha256": "285c3b5f97cc256f618cb2f44460ff9889f6f895d22138db7e6eb44d28d83c3f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-desktop-chromium.png": {
-      "sha256": "ba583ad523e2ab513f52479553ca4d3d55630a1d1ae6fb16e96ff875ce431c36",
+      "sha256": "88e6b6d7765cb4dc65a311a4d8776672493266068679c399d4f96b5228c36551",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-dark-mobile-chromium.png": {
-      "sha256": "6e28f3e077b3c736163b61f5e0b4fab8c268c85d38156e9137561973b00f74f3",
+      "sha256": "6c57242cc23a082b656b2e359337eb46e4594782c5b1597e8352fcafd1f9d335",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-18"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-desktop-chromium.png": {
-      "sha256": "ec3e8ecceddf6962c6cab4e30e48b6bfef17f45ff0a3a998ea18dc587f175795",
+      "sha256": "0509350374425e1167cbddf01d7bf68b81acf9d3748dc441bfcada852f800ac6",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dialog-open-light-mobile-chromium.png": {
-      "sha256": "9f2b205235e7acdfe7527694807ea468c12def16e2c00971b4a2bb2da58d9d01",
+      "sha256": "9acf5652f1384be5d23a84076b0febc2538c8c0afb24add855e3ddc409f5629f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-18"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-desktop-chromium.png": {
-      "sha256": "6dd65d1527c55534cb349737606b2ba2935187ebcfee363e8ccee5919ec52d5e",
+      "sha256": "5ea9adfd41fcf27e8ac415c1a95e117a64ff2893597ab4a2893240841f14abb3",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-dark-mobile-chromium.png": {
-      "sha256": "398957904d1e1e65f20df908f9ee1766279818abb120694b92d7fa98da9fe06a",
+      "sha256": "48c698f0ea558a7e638f2afe0f4282f8fd46039dad22a5fdc9c406916cba1b28",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-desktop-chromium.png": {
-      "sha256": "a626684544908f0ad0cb3baab211f6a9c74ac2b835541c7fbc554d0303797cf4",
+      "sha256": "c37f17f4c0f6d276ab76be54166c20f3f62a5c4d59c8e77dd4d7407b84c004d5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/dropdown-open-light-mobile-chromium.png": {
-      "sha256": "731868b7bb402bb5374a493a2ea95dfec966dc3bad4140ec2cb738ee4e2af2e7",
+      "sha256": "264fdf39c3d704104f98738dc4c8ba740deba08055011cb35da2d6085ad3a828",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-desktop-chromium.png": {
-      "sha256": "43bb297a71457c02c3b08e957269a30b723944dde8891e8ad2927d5314bc3fd8",
+      "sha256": "ec366765322069c8baff591f6286bedc8602da962f413cc499b5f064d76343e8",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-dark-mobile-chromium.png": {
-      "sha256": "94ecf956750bfc5888155cbbc1684374764bd7ace04d761b65456a04b508161c",
+      "sha256": "b6bc2a3fa9db2ebe6be808ce84c8ca1140e77e530520a6c9cc2f5b2a5912761a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-desktop-chromium.png": {
-      "sha256": "044b89330968353e51683630f46b02223db48b00bcb787167c605688dc2b991d",
+      "sha256": "27d1f0ec234ffe4ee3b433a342f39c7e9ce68aeaa430ace6dffc3fcbe2f51cbd",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/empty-state-light-mobile-chromium.png": {
-      "sha256": "2eeb5f1835ae24b69309edd6df7af4320f64065e9dc925228a0ac8896f065dab",
+      "sha256": "e628a4e3cc68b583b5024591d17497738821e82a1d2b7664030ef59f5ed6ee21",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width EmptyState story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-desktop-chromium.png": {
-      "sha256": "63bef9c86b60249a5101ea4cb1b7a0bd2b009dc2ee999ba2d8bf49a96047bf06",
+      "sha256": "7d2a9c2a91f9dae1fff2b63a742cf1cf15a340e1a1691b5ae730ef1aeda75c36",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-dark-mobile-chromium.png": {
-      "sha256": "d656a6b64f19029d778e86bdae009b9d24af4313f77a684716d000d46aafc15f",
+      "sha256": "335035e844638b1b946bcac51a920c9a7ca82f96bdd9d65d82e11e56c62e0e15",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-desktop-chromium.png": {
-      "sha256": "1120c1045a405421dab2859e1caa5c61d368120fa22475cc02d6ab5b1e03c337",
+      "sha256": "de0faa53d340f87c6dac085a24d8b76078b3e873911505de0c16c1183e6aec80",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/error-fallback-light-mobile-chromium.png": {
-      "sha256": "2bc29371eec72ae45dcd44401aa4ffe71e418a82312030c2d83880430676ea5d",
+      "sha256": "4826e556aedad874c76f3277861a0faac06a024fa1ffb8d9c1677e65156882aa",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
-      "reviewedOn": "2026-09-11"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion); updated after responsive-width ErrorFallback story wrapper change (PR #67)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-dark-desktop-chromium.png": {
-      "sha256": "feb74a1f7b0c65708dade10d6121dc50f46ac7e1dc6bfb89af9b06201d7d5416",
+      "sha256": "522018d3393ede1b1d4be23fa51447e2aa6628dc85bc045fc289a810798d731e",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-disabled-light-desktop-chromium.png": {
-      "sha256": "a2fdad0772c498ce7e5df77786db56053e77f6c40f94c9ee82a9340498b4d19a",
+      "sha256": "d18fdb3b299c4bc89758482bcd9490bf4f3e68b1d46d2cd90362e5333e44651f",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-desktop-chromium.png": {
-      "sha256": "3b20252c1ea71fe5864c15ec60a59827c6b1e345dfd8a669286c57391d82fc37",
+      "sha256": "17d3f49440c22620c443389b65c3c6933359d18c3d5f1b856176cbbf9ffbdc65",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-dark-mobile-chromium.png": {
-      "sha256": "0cdff40d56a6545a0e18227fe578921676ed7569507156b737a607f8457d32a8",
+      "sha256": "55173a862721dd0ee07e68e3c17d6c7f7e8f0acbb0b239a872ad68cde3e2b091",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-desktop-chromium.png": {
-      "sha256": "ea31257b6a3778eb0bed4ab01ad815261ba876dfdf27feef0f95332b7f10360b",
+      "sha256": "2eb8268978d427149e2fd3ea0a87c050fcc37ecab1f3915b1551d1d2631b29a5",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/form-error-light-mobile-chromium.png": {
-      "sha256": "74b38c55c7c9ccb2f6b0b0d37e55b9ed44f007cd451b3c3f5ac89f8b29677f74",
+      "sha256": "7a4b0800e402a1f0c19584df009422d1c9640f6e712adcf41112c04875d7e4ef",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-desktop-chromium.png": {
-      "sha256": "73d46f9f0ce87ac34ebd83add6f00810dcc96a72ba991633ddf018c09e4b8070",
+      "sha256": "30b09b08d9179932091f7207ef9bd4b4c4252ef2e410eb34bc65816b92582a9a",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-18"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-dark-mobile-chromium.png": {
-      "sha256": "640bffc781bcfda2c84434137bca041db3f5fbf34bf7da534606bed4d6e0a8a5",
+      "sha256": "7ebe3857f90bee7dc530209daa272e8bfaa78d76fce14568655ed1657455b780",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-18"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-desktop-chromium.png": {
-      "sha256": "a69a64e654b7486f30f2ed13c113c953fdc17cc846940c39f51a2c94e2cbe2f8",
+      "sha256": "12100ab420a1a9de922c689e112077a41dca5c6c09268f8685567ca62ea3437b",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-18"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-closed-light-mobile-chromium.png": {
-      "sha256": "920e6677d179aaac0b48e6f29dc132be73f741221bc2003a3d9cb1579399b93a",
+      "sha256": "fffc45089e976af6164e446149093e91101010d708768f0ee1b6b4ebaf896e21",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-18"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-desktop-chromium.png": {
-      "sha256": "67c60b02171f920cbb32e448f7e80ee726a74c5e14baeef49bcb710d59ce41c3",
+      "sha256": "ae0140f7990fa25ba17c879cceb4ac0cd4c55cbada71238977595eda4781f6ca",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-dark-mobile-chromium.png": {
-      "sha256": "67c60b02171f920cbb32e448f7e80ee726a74c5e14baeef49bcb710d59ce41c3",
+      "sha256": "f98398b6c86775484efaedb926b57aa8dd39f966ecd0ecac22dea7c1396ef1ae",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-desktop-chromium.png": {
-      "sha256": "88c53af5f8a1ee7c9c363fc62b5d6e87ad47e1b09432a3617b26db0eedf74f52",
+      "sha256": "4fb81a25d088f73e73da3ebc9c93fe3920aaa6bb8aca4e38e924ec503f6ba71c",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/select-open-light-mobile-chromium.png": {
-      "sha256": "88c53af5f8a1ee7c9c363fc62b5d6e87ad47e1b09432a3617b26db0eedf74f52",
+      "sha256": "4fb81a25d088f73e73da3ebc9c93fe3920aaa6bb8aca4e38e924ec503f6ba71c",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-dark-desktop-chromium.png": {
-      "sha256": "f9da2479ef1216809870a0432cc2a23a3f89b535b91e2d53cc568b3bc761d476",
+      "sha256": "b1641e0230cdb9083055afe9ac5f58e9fc389a4525dbf03fd9557cf5eda5f962",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     },
     "packages/ui/visual-tests/__snapshots__/visual.spec.ts/tooltip-visible-light-desktop-chromium.png": {
-      "sha256": "8ee0fdb8141e4f0689774329def15667cb84152cf127104048cf873849b46955",
+      "sha256": "f49da9d4430f7683c24b5323fa26fc251c35547a5a2b7f1981e0d6ed75bd9aa4",
       "origin": "Atlas-generated",
       "license": "Apache-2.0",
-      "reason": "Playwright visual regression baseline: element-scoped screenshot captured on GitHub-hosted ubuntu-24.04 Chromium (locale en-US, timezone UTC, reduced motion)",
-      "reviewedOn": "2026-09-10"
+      "reason": "Playwright visual regression baseline: element-scoped screenshot captured in mcr.microsoft.com/playwright Chromium (locale en-US, timezone UTC, reduced motion)",
+      "reviewedOn": "2026-09-19"
     }
   }
 }

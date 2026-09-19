@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
@@ -39,6 +39,18 @@ describe("npm publication identity", () => {
     assert.equal(
       canonicalTarballFileName(PUBLIC_CLI_PACKAGE_NAME, "1.0.0"),
       "blitzcraftlabs-atlas-1.0.0.tgz"
+    );
+    assert.equal(expectedGitTag("1.0.1"), "v1.0.1");
+    assert.equal(
+      canonicalTarballFileName(PUBLIC_CLI_PACKAGE_NAME, "1.0.1"),
+      "blitzcraftlabs-atlas-1.0.1.tgz"
+    );
+    assert.doesNotThrow(() =>
+      assertSafeNpmIdentity({
+        packageName: PUBLIC_CLI_PACKAGE_NAME,
+        version: "1.0.1",
+        tag: "v1.0.1",
+      })
     );
     assert.doesNotThrow(() =>
       assertSafeNpmIdentity({
@@ -102,6 +114,15 @@ describe("npm publication identity", () => {
         issue.includes("catalog")
       )
     );
+  });
+});
+
+describe("first npm publication help", () => {
+  it("does not hard-code 1.0.0 as the only first-publish tag", () => {
+    const source = readFileSync(new URL("../prepare-npm-publish.mjs", import.meta.url), "utf8");
+    assert.doesNotMatch(source, /First npm publication of 1\.0\.0/);
+    assert.match(source, /canonical Git tag matching the unpublished package version/);
+    assert.match(source, /git worktree add \/tmp\/atlas-vX\.Y\.Z vX\.Y\.Z/);
   });
 });
 

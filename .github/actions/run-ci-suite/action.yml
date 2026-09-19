@@ -145,10 +145,40 @@ runs:
       env:
         CI: true
 
+    - name: Collect repository coverage
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: pnpm test:coverage:all
+      env:
+        CI: true
+
+    - name: Verify coverage reports exist
+      if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
+      shell: bash
+      run: |
+        missing=0
+        for f in \
+          apps/web/coverage/coverage-final.json \
+          apps/reference/coverage/coverage-final.json \
+          packages/ui/coverage/coverage-final.json \
+          packages/cli/coverage/coverage-final.json \
+          packages/project/coverage/coverage-final.json \
+          packages/consent/coverage/coverage-final.json \
+          coverage/scripts/lcov.info
+        do
+          if [ -f "$f" ]; then
+            echo "Found $f"
+          else
+            echo "Missing coverage report: $f"
+            missing=1
+          fi
+        done
+        exit "$missing"
+
     - name: Enforce critical subsystem coverage
       if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
       shell: bash
-      run: pnpm test:risk-coverage
+      run: node scripts/coverage-policy.mjs
       env:
         CI: true
 
@@ -156,7 +186,8 @@ runs:
       if: success() && (steps.detect.outputs.app == 'true' || github.event_name == 'push')
       uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
       with:
-        files: ./packages/ui/coverage/coverage-final.json,./apps/web/coverage/coverage-final.json
+        disable_search: true
+        files: ./apps/web/coverage/coverage-final.json,./apps/reference/coverage/coverage-final.json,./packages/ui/coverage/coverage-final.json,./packages/cli/coverage/coverage-final.json,./packages/project/coverage/coverage-final.json,./packages/consent/coverage/coverage-final.json,./coverage/scripts/lcov.info
         token: ${{ env.CODECOV_TOKEN }}
         fail_ci_if_error: false
 

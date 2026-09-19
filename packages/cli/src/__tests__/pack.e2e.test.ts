@@ -152,6 +152,11 @@ describe("Atlas CLI pack and clean-room install", () => {
     expect(catalog.rehearsalOnlyVersions).toEqual(["0.1.0", "0.2.0"]);
     expect(packedEntries).toContain("package/README.md");
     expect(packedEntries).toContain("package/THIRD_PARTY_NOTICES.md");
+    const packedReadme = readTarballFile(tarballPath as string, "package/README.md");
+    expect(packedReadme).toContain("pnpm dlx @blitzcraftlabs/atlas init my-app");
+    expect(packedReadme).not.toContain("Atlas is not on the npm registry yet");
+    expect(packedReadme).not.toContain("after the first npm publication");
+    expect(packedReadme).not.toContain("publication path is finalized");
     expect(packedEntries).toContain(`package/assets/releases/${cliVersion}/release.snapshot.json`);
     expect(packedEntries.some((entry) => entry.includes("assets/releases/0.1.0"))).toBe(false);
     expect(packedEntries.some((entry) => entry.includes("assets/releases/0.2.0"))).toBe(false);
@@ -178,6 +183,20 @@ describe("Atlas CLI pack and clean-room install", () => {
     expect(manifest.bugs?.url).toBe("https://github.com/blitzcraftlabs/atlas/issues");
     expect(manifest.license).toBe("Apache-2.0");
     expect(manifest.engines?.node).toContain("22");
+    expect(manifest.description).toContain("Source-owned frontend platform CLI");
+    expect(manifest.keywords).toEqual([
+      "atlas",
+      "nextjs",
+      "react",
+      "typescript",
+      "frontend",
+      "platform",
+      "cli",
+      "scaffolding",
+      "codegen",
+      "architecture",
+      "pnpm",
+    ]);
     expect(collectWorkspaceProtocolLeaks(manifest)).toEqual([]);
     expect(collectRuntimeAtlasDependencies(manifest)).toEqual([]);
     expect(manifest.dependencies?.["@atlas/project"]).toBeUndefined();
@@ -370,11 +389,17 @@ process.stdout.write(JSON.stringify({
       const generatedReadme = readFileSync(path.join(generatedRoot, "README.md"), "utf8");
       expect(generatedReadme).toContain("pnpm install");
       expect(generatedReadme).toContain("pnpm dev");
+      expect(generatedReadme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${cliVersion} doctor`);
+      expect(generatedReadme).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
       expect(generatedReadme).not.toContain("pnpm atlas -- doctor");
+      expect(generatedReadme).not.toContain("publication path is finalized");
 
       expect(init.stdout).toContain("pnpm install");
       expect(init.stdout).toContain("pnpm dev");
+      expect(init.stdout).toContain(`pnpm dlx @blitzcraftlabs/atlas@${cliVersion} doctor`);
+      expect(init.stdout).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
       expect(init.stdout).not.toContain("pnpm atlas -- doctor");
+      expect(init.stdout).not.toContain("publication path is finalized");
 
       const context = runInstalledAtlas(
         cleanRoom,

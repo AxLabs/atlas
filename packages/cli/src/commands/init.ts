@@ -57,7 +57,7 @@ export function formatInitResult(result: CommandResult, dryRun: boolean): string
         `  cd ${result.repoRoot}`,
         "  pnpm install",
         "  pnpm dev",
-        "Atlas CLI validation will be documented once the package publication path is finalized."
+        `  pnpm dlx @blitzcraftlabs/atlas@${result.atlasVersion} doctor`
       );
     }
 

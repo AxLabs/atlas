@@ -470,9 +470,13 @@ baseline should be a manifest-selected asset tree derived from real source.
 ## Implementation Sequence
 
 After this ADR is accepted, Distribution v1 should proceed in dependency order. **Items 1–6 plus the
-1.0 public-contract audit and in-repo npm publication machinery are complete.** Remaining work is
-merge → Version PR `1.0.0` → GitHub `v1.0.0` → first human npm publish of that exact artifact →
-registry verification → Trusted Publisher → public one-command quickstart.
+1.0 public-contract audit and in-repo npm publication machinery are complete.** GitHub `v1.0.0` is
+the immutable first stable platform release. Remaining work is Version PR `1.0.1` → GitHub `v1.0.1`
+→ first human npm publish of that exact artifact → registry verification → Trusted Publisher →
+public one-command quickstart.
+
+**Launch sequencing update:** do not publish or retag `v1.0.0` as the first npm package. The first
+registry version is `@blitzcraftlabs/atlas@1.0.1`.
 
 1. **Packable CLI boundary**
    - internalize `@atlas/project`;
@@ -497,16 +501,16 @@ registry verification → Trusted Publisher → public one-command quickstart.
    - matrix Linux/macOS x64/arm64 as infrastructure permits.
 7. **npm namespace + trusted publishing setup** — **in progress in-repo**. The public package
    identity `@blitzcraftlabs/atlas` is resolved. The release workflow is prepared for GitHub Actions
-   OIDC / npm Trusted Publishing. The first npm version is **1.0.0**, published by a human from the
-   exact canonical `v1.0.0` tarball because the package does not yet exist on the registry. Do not
-   bootstrap npm with `0.5.0`.
+   OIDC / npm Trusted Publishing. The first npm version is **1.0.1**, published by a human from the
+   exact canonical `v1.0.1` tarball because the package does not yet exist on the registry. Do not
+   bootstrap npm with `0.5.0` or `1.0.0`, and do not retag `v1.0.0`.
 8. **Release integration** — **in progress in-repo**. Publication is tied to the canonical Atlas
    version after GitHub Release. Fail closed on identity mismatch, existing versions, a dirty
-   checkout, or a substituted artifact. Live registry publication is not complete until the 1.0.0
-   bootstrap publish and `pnpm distribution:verify-registry 1.0.0` succeed.
-9. **Public quickstart** — **not started**. Do not replace clone-first onboarding with
-   `pnpm dlx @blitzcraftlabs/atlas` until `@blitzcraftlabs/atlas@1.0.0` exists on npm and registry
-   verification passes.
+   checkout, or a substituted artifact. Live registry publication is not complete until the 1.0.1
+   bootstrap publish and `pnpm distribution:verify-registry 1.0.1` succeed.
+9. **Public quickstart** — **not started as a live registry path**. Do not replace clone-first
+   onboarding with `pnpm dlx @blitzcraftlabs/atlas` until `@blitzcraftlabs/atlas@1.0.1` exists on
+   npm and registry verification passes.
 10. **Selective package review**
     - separately evaluate whether any source-owned workspace deserves a public npm API.
 

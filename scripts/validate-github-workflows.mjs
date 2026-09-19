@@ -479,6 +479,31 @@ export function validateCiRunnerPolicyPhase1(root = DEFAULT_REPO_ROOT) {
     }
   }
 
+  const setupCiNodePath = path.join(root, ".github/actions/setup-ci-node/action.yml");
+  if (existsSync(setupCiNodePath)) {
+    const setupCiNode = stripComments(readFileSync(setupCiNodePath, "utf8"));
+    if (!/package-manager-cache:\s*false/.test(setupCiNode)) {
+      errors.push(
+        ".github/actions/setup-ci-node/action.yml: self-hosted setup-node must set package-manager-cache: false",
+      );
+    }
+  }
+
+  const setupAtlasCiPath = path.join(root, ".github/actions/setup-atlas-ci/action.yml");
+  if (existsSync(setupAtlasCiPath)) {
+    const setupAtlasCi = stripComments(readFileSync(setupAtlasCiPath, "utf8"));
+    if (!/package-manager-cache:\s*false/.test(setupAtlasCi)) {
+      errors.push(
+        ".github/actions/setup-atlas-ci/action.yml: self-hosted setup-node must set package-manager-cache: false",
+      );
+    }
+    if (!/cache:\s*pnpm/.test(setupAtlasCi)) {
+      errors.push(
+        ".github/actions/setup-atlas-ci/action.yml: GitHub-hosted setup-node must keep cache: pnpm",
+      );
+    }
+  }
+
   return errors;
 }
 
