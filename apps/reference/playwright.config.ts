@@ -13,6 +13,8 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3001",
     trace: "on-first-retry",
+    // No storageState: Playwright gives each test a fresh BrowserContext
+    // (empty cookies — no inherited users-store, session, or scenario cookie).
   },
   projects: [
     {

@@ -98,7 +98,9 @@ curl -X POST http://localhost:3001/api/reset --cookie cookies.txt
 ```
 
 Resets this browser's cookie-scoped in-memory users store (concurrent sessions do not share
-mutations) and clears the scenario cookie.
+mutations) and clears the scenario cookie. Playwright isolation is a fresh `BrowserContext` per test
+plus lazy store allocation — not a global `/api/reset` hook. Keep `/api/reset` for explicit
+same-session reset (harness UI, curl, evaluator workflows).
 
 ## Production safety
 
