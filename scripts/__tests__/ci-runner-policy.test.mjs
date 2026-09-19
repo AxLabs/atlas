@@ -429,6 +429,25 @@ describe("CI runner policy", () => {
     assert.match(ciAction, /\.\/packages\/ui\/coverage\/coverage-final\.json/);
     assert.match(ciAction, /\.\/apps\/web\/coverage\/coverage-final\.json/);
     assert.match(ciAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
+    assert.match(
+      ciAction,
+      /corepack pnpm --filter @atlas\/web test:e2e & w=\$!; corepack pnpm --filter @atlas\/reference test:e2e & r=\$!; wait "\$w"; web_ec=\$\?; wait "\$r"; ref_ec=\$\?; exit \$\(\(web_ec \|\| ref_ec\)\)/,
+    );
+    assert.match(
+      ciAction,
+      /else\s+pnpm --filter @atlas\/web test:e2e\s+pnpm --filter @atlas\/reference test:e2e/,
+    );
+
+    const referencePlaywright = readFileSync(
+      path.join(repoRoot, "apps/reference/playwright.config.ts"),
+      "utf8",
+    );
+    assert.match(referencePlaywright, /fullyParallel:\s*false/);
+    assert.match(referencePlaywright, /workers:\s*process\.env\.CI \? 2 : 1/);
+    assert.match(referencePlaywright, /retries:\s*process\.env\.CI \? 2 : 0/);
+    assert.match(referencePlaywright, /failOnFlakyTests:\s*Boolean\(process\.env\.CI\)/);
+    assert.match(referencePlaywright, /name:\s*"chromium"/);
+    assert.match(referencePlaywright, /name:\s*"webkit"/);
     assert.match(uiAction, /packages\/ui\/test-results\//);
     assert.match(uiAction, /-w "\$\{GITHUB_WORKSPACE\}"/);
     assert.match(uiAction, /inputs\.runner-profile != 'self-hosted'/);

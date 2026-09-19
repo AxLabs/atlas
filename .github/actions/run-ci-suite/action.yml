@@ -246,7 +246,7 @@ runs:
             -e SKIP_ENV_VALIDATION=false \
             -e PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
             "mcr.microsoft.com/playwright:v${pw_version}-noble" \
-            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e && corepack pnpm --filter @atlas/reference test:e2e'
+            bash -lc 'mkdir -p "$HOME" && corepack pnpm --filter @atlas/web test:e2e & w=$!; corepack pnpm --filter @atlas/reference test:e2e & r=$!; wait "$w"; web_ec=$?; wait "$r"; ref_ec=$?; exit $((web_ec || ref_ec))'
         else
           pnpm --filter @atlas/web test:e2e
           pnpm --filter @atlas/reference test:e2e

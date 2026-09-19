@@ -6,7 +6,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   failOnFlakyTests: Boolean(process.env.CI),
-  workers: 1,
+  workers: process.env.CI ? 2 : 1,
   reporter: "html",
   use: {
     baseURL: "http://localhost:3001",

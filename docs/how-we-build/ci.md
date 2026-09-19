@@ -147,16 +147,17 @@ system libraries are available without `sudo apt-get` or a host browser cache (t
 cannot elevate for `playwright install --with-deps`). GitHub-hosted CI installs both required
 browsers explicitly. Self-hosted `setup-ci-node` disables `actions/setup-node` package-manager
 caching; Turing already persists pnpm under `/var/cache/ci/pnpm-store/<owner-repo>`. Playwright
-configs define the same projects locally and in CI. Web and reference suites run sequentially in one
-container to reduce runner disk pressure. Installs on self-hosted runners materialize host-only
-optional dependencies (`linux`/`x64` override); the Governance job on `ubuntu-latest` still installs
-the full Atlas-supported architecture set for deterministic license auditing. The container runs as
-the host runner user (`--user "$(id -u):$(id -g)"`) so Playwright and Next.js artifacts written
-through the bind-mounted workspace are not owned by root. pnpm is invoked via `corepack pnpm` from
-the repository root so Corepack honors the repo's `packageManager` field without `corepack enable`.
-Playwright's dev server command uses `corepack pnpm dev` so the webServer subprocess can resolve
-pnpm inside the container. Ensure Docker is installed and the runner user can run containers. Atlas
-workflows do not mount the host Docker socket into jobs.
+configs define the same projects locally and in CI. Web (`:3000`) and reference (`:3001`) E2E suites
+run concurrently in that container; GitHub-hosted CI still runs them sequentially. Installs on
+self-hosted runners materialize host-only optional dependencies (`linux`/`x64` override); the
+Governance job on `ubuntu-latest` still installs the full Atlas-supported architecture set for
+deterministic license auditing. The container runs as the host runner user
+(`--user "$(id -u):$(id -g)"`) so Playwright and Next.js artifacts written through the bind-mounted
+workspace are not owned by root. pnpm is invoked via `corepack pnpm` from the repository root so
+Corepack honors the repo's `packageManager` field without `corepack enable`. Playwright's dev server
+command uses `corepack pnpm dev` so the webServer subprocess can resolve pnpm inside the container.
+Ensure Docker is installed and the runner user can run containers. Atlas workflows do not mount the
+host Docker socket into jobs.
 
 Trusted self-hosted Atlas CI must execute the checked-out repository directly from
 `${{ github.workspace }}`, matching GitHub-hosted workspace semantics. Self-hosted differences are
