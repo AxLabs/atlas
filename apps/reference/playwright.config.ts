@@ -6,6 +6,8 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   failOnFlakyTests: Boolean(process.env.CI),
+  // CI uses two workers (Chromium + WebKit against one Next.js process). That is
+  // valid only because the reference users store is cookie-scoped per browser.
   workers: process.env.CI ? 2 : 1,
   reporter: "html",
   use: {

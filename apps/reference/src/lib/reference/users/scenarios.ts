@@ -17,6 +17,7 @@ import {
   getReferenceUsers,
   updateReferenceUser,
 } from "./store";
+import { resolveReferenceUsersStoreId } from "./store-scope";
 
 import type { ReferenceUsersScenario } from "../scenario-types";
 import type { components } from "@/lib/api/contracts";
@@ -129,7 +130,7 @@ export async function handleListUsersScenario(
     default: {
       const page = Number(request.nextUrl.searchParams.get("page") ?? "1");
       const pageSize = Number(request.nextUrl.searchParams.get("pageSize") ?? "20");
-      const data = getReferenceUsers();
+      const data = getReferenceUsers(await resolveReferenceUsersStoreId());
 
       return jsonWithCorrelation<UserListResponse>(
         {
@@ -183,7 +184,7 @@ export async function handleGetUserScenario(
     });
   }
 
-  const user = getReferenceUser(userId);
+  const user = getReferenceUser(userId, await resolveReferenceUsersStoreId());
   if (!user) {
     return errorResponse(404, {
       code: "NOT_FOUND",
@@ -237,7 +238,7 @@ export async function handleCreateUserScenario(
     });
   }
 
-  const user = createReferenceUser(body);
+  const user = createReferenceUser(body, await resolveReferenceUsersStoreId());
   return jsonWithCorrelation(user, 201, correlationId);
 }
 
@@ -273,7 +274,7 @@ export async function handleUpdateUserScenario(
     });
   }
 
-  const updated = updateReferenceUser(userId, body);
+  const updated = updateReferenceUser(userId, body, await resolveReferenceUsersStoreId());
   if (!updated) {
     return errorResponse(404, {
       code: "NOT_FOUND",
@@ -303,7 +304,7 @@ export async function handleDeleteUserScenario(
     });
   }
 
-  const deleted = deleteReferenceUser(userId);
+  const deleted = deleteReferenceUser(userId, await resolveReferenceUsersStoreId());
   if (!deleted) {
     return errorResponse(404, {
       code: "NOT_FOUND",
