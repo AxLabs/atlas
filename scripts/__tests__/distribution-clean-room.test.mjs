@@ -21,9 +21,12 @@ import {
   filterPathForCleanRoom,
   finalizeCleanRoom,
   formatStageFailure,
+  generatedProjectPnpmArgs,
   isExplicitKeepRequested,
+  parseDeclaredPnpmVersion,
   parseJsonEnvelope,
   removeDirectory,
+  resolveGeneratedProjectPnpm,
   sanitizeCleanRoomEnv,
   shouldKeepCleanRoom,
   valueIncludesRepo,
@@ -382,5 +385,95 @@ describe("distribution clean-room helpers", () => {
         /is not inside the generated project/
       );
     });
+  });
+
+  it("parses the generated packageManager contract as a pnpm version", () => {
+    assert.equal(parseDeclaredPnpmVersion("pnpm@10.19.0"), "10.19.0");
+    assert.throws(() => parseDeclaredPnpmVersion("npm@10.19.0"), /pnpm@x\.y\.z/);
+    assert.throws(() => parseDeclaredPnpmVersion(undefined), /missing packageManager/);
+  });
+
+  it("resolves generated-project pnpm through Corepack at the declared version", () => {
+    const generatedRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-clean-room-pnpm-"));
+    writeManifest(generatedRoot, "package.json", {
+      name: "test-app",
+      version: "0.1.0",
+      packageManager: "pnpm@10.19.0",
+    });
+
+    const resolved = resolveGeneratedProjectPnpm({
+      generatedRoot,
+      env: { PATH: "/usr/bin" },
+      resolveCommand: (command) => {
+        if (command === "corepack") {
+          return "/usr/bin/corepack";
+        }
+        throw new Error(`unexpected ${command}`);
+      },
+      run: () => {
+        throw new Error("Corepack resolution must not probe ambient pnpm");
+      },
+    });
+
+    assert.deepEqual(resolved, {
+      command: "/usr/bin/corepack",
+      prefixArgs: ["pnpm@10.19.0"],
+      version: "10.19.0",
+      source: "corepack",
+    });
+    assert.deepEqual(generatedProjectPnpmArgs(resolved, ["install"]), [
+      "pnpm@10.19.0",
+      "install",
+    ]);
+  });
+
+  it("falls back to ambient pnpm only when it matches the declared version", () => {
+    const generatedRoot = mkdtempSync(path.join(os.tmpdir(), "atlas-clean-room-pnpm-amb-"));
+    writeManifest(generatedRoot, "package.json", {
+      name: "test-app",
+      version: "0.1.0",
+      packageManager: "pnpm@10.19.0",
+    });
+
+    const resolved = resolveGeneratedProjectPnpm({
+      generatedRoot,
+      resolveCommand: (command) => {
+        if (command === "corepack") {
+          throw new Error("Unable to resolve corepack on PATH");
+        }
+        if (command === "pnpm") {
+          return "/usr/bin/pnpm";
+        }
+        throw new Error(`unexpected ${command}`);
+      },
+      run: () => ({
+        status: 0,
+        stdout: "10.19.0\n",
+        stderr: "",
+        timedOut: false,
+      }),
+    });
+    assert.equal(resolved.source, "ambient");
+    assert.deepEqual(generatedProjectPnpmArgs(resolved, ["install"]), ["install"]);
+
+    assert.throws(
+      () =>
+        resolveGeneratedProjectPnpm({
+          generatedRoot,
+          resolveCommand: (command) => {
+            if (command === "corepack") {
+              throw new Error("Unable to resolve corepack on PATH");
+            }
+            return "/usr/bin/pnpm";
+          },
+          run: () => ({
+            status: 0,
+            stdout: "9.15.0\n",
+            stderr: "",
+            timedOut: false,
+          }),
+        }),
+      /ambient pnpm is 9\.15\.0/
+    );
   });
 });

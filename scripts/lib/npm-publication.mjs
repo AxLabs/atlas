@@ -614,7 +614,43 @@ export function packExactPublicCliTarball(options) {
   }
 }
 
+const NPM_REGISTRY_FETCH_HEADERS = Object.freeze({
+  accept: "application/json",
+  "cache-control": "no-cache",
+  pragma: "no-cache",
+});
+
 /**
+ * @param {string} packageName
+ * @param {string} [version]
+ */
+export function npmRegistryDocumentUrl(packageName, version) {
+  const encodedName = packageName.replace("/", "%2F");
+  if (version === undefined) {
+    return `${NPM_REGISTRY_URL}/${encodedName}`;
+  }
+  return `${NPM_REGISTRY_URL}/${encodedName}/${version}`;
+}
+
+/**
+ * @param {typeof fetch} fetchImpl
+ * @param {string} url
+ * @param {number} timeoutMs
+ */
+async function fetchNpmRegistryJson(fetchImpl, url, timeoutMs) {
+  return fetchImpl(url, {
+    method: "GET",
+    headers: NPM_REGISTRY_FETCH_HEADERS,
+    cache: "no-store",
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+}
+
+/**
+ * Query the version-specific npm document first so a stale package metadata
+ * cache cannot hide a version that was just published. Fall back to the
+ * package document only to distinguish a missing package from a missing version.
+ *
  * @param {{
  *   packageName?: string;
  *   version: string;
@@ -631,26 +667,60 @@ export async function queryNpmPackageVersion(options) {
     throw new Error(`Refusing non-npm registry ${registryUrl}`);
   }
 
-  const encodedName = packageName.replace("/", "%2F");
-  const url = `${registryUrl}/${encodedName}`;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   if (typeof fetchImpl !== "function") {
     throw new Error("fetch is not available to query the npm registry");
   }
 
-  let response;
+  const timeoutMs = options.timeoutMs ?? 15_000;
+  const versionUrl = npmRegistryDocumentUrl(packageName, options.version);
+  const packageUrl = npmRegistryDocumentUrl(packageName);
+
+  let versionResponse;
   try {
-    response = await fetchImpl(url, {
-      method: "GET",
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),
-    });
+    versionResponse = await fetchNpmRegistryJson(fetchImpl, versionUrl, timeoutMs);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to query npm registry for ${packageName}: ${message}`);
   }
 
-  if (response.status === 404) {
+  if (versionResponse.ok) {
+    const document = await versionResponse.json();
+    if (
+      !document ||
+      typeof document !== "object" ||
+      document.version !== options.version ||
+      (typeof document.name === "string" && document.name !== packageName)
+    ) {
+      throw new Error(
+        `npm version document for ${packageName}@${options.version} is malformed`
+      );
+    }
+    return {
+      packageName,
+      version: options.version,
+      packageExists: true,
+      versionExists: true,
+      status: "version-exists",
+      versions: [options.version],
+    };
+  }
+
+  if (versionResponse.status !== 404) {
+    throw new Error(
+      `npm registry query for ${packageName}@${options.version} failed with HTTP ${versionResponse.status}`
+    );
+  }
+
+  let packageResponse;
+  try {
+    packageResponse = await fetchNpmRegistryJson(fetchImpl, packageUrl, timeoutMs);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to query npm registry for ${packageName}: ${message}`);
+  }
+
+  if (packageResponse.status === 404) {
     return {
       packageName,
       version: options.version,
@@ -660,11 +730,11 @@ export async function queryNpmPackageVersion(options) {
     };
   }
 
-  if (!response.ok) {
-    throw new Error(`npm registry query for ${packageName} failed with HTTP ${response.status}`);
+  if (!packageResponse.ok) {
+    throw new Error(`npm registry query for ${packageName} failed with HTTP ${packageResponse.status}`);
   }
 
-  const document = await response.json();
+  const document = await packageResponse.json();
   const versions =
     document &&
     typeof document === "object" &&

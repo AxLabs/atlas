@@ -23,6 +23,7 @@ import {
   finalizeCleanRoom,
   findPackedTarball,
   formatStageFailure,
+  generatedProjectPnpmArgs,
   isCiEnvironment,
   isExplicitKeepRequested,
   isInsideDirectory,
@@ -30,6 +31,7 @@ import {
   readGeneratedBaseline,
   resolveAtlasRepoRoot,
   resolveCommandPath,
+  resolveGeneratedProjectPnpm,
   runCommand,
   runStage,
   sanitizeCleanRoomEnv,
@@ -94,8 +96,15 @@ function assertExecutable(filePath, label) {
 
 function proveInstalledUpgradeBoundary(options) {
   process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.upgrade}\n`);
-  const { atlas, generatedRoot, cliInstalled, repoRoot, harness, pnpm, consumerToolingEnv } =
-    options;
+  const {
+    atlas,
+    generatedRoot,
+    cliInstalled,
+    repoRoot,
+    harness,
+    consumerPnpm,
+    consumerToolingEnv,
+  } = options;
 
   if (existsSync(path.join(generatedRoot, "releases"))) {
     throw new Error("Generated consumer must not contain a releases/ tree");
@@ -220,24 +229,34 @@ process.stdout.write(JSON.stringify({ root, catalog }));
         );
       }
 
-      runStage(CLEAN_ROOM_STAGES.typecheck, pnpm, ["typecheck"], {
-        cwd: generatedRoot,
-        env: sanitizeCleanRoomEnv({
-          repoRoot,
+      runStage(
+        CLEAN_ROOM_STAGES.typecheck,
+        consumerPnpm.command,
+        generatedProjectPnpmArgs(consumerPnpm, ["typecheck"]),
+        {
           cwd: generatedRoot,
-          extra: consumerToolingEnv,
-        }),
-        timeout: CLEAN_ROOM_TIMEOUTS_MS.typecheck,
-      });
-      runStage(CLEAN_ROOM_STAGES.build, pnpm, ["build"], {
-        cwd: generatedRoot,
-        env: sanitizeCleanRoomEnv({
-          repoRoot,
+          env: sanitizeCleanRoomEnv({
+            repoRoot,
+            cwd: generatedRoot,
+            extra: consumerToolingEnv,
+          }),
+          timeout: CLEAN_ROOM_TIMEOUTS_MS.typecheck,
+        }
+      );
+      runStage(
+        CLEAN_ROOM_STAGES.build,
+        consumerPnpm.command,
+        generatedProjectPnpmArgs(consumerPnpm, ["build"]),
+        {
           cwd: generatedRoot,
-          extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
-        }),
-        timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
-      });
+          env: sanitizeCleanRoomEnv({
+            repoRoot,
+            cwd: generatedRoot,
+            extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
+          }),
+          timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
+        }
+      );
     },
   });
 }
@@ -333,11 +352,23 @@ async function main() {
       cwd: generatedRoot,
       extra: consumerToolingEnv,
     });
-    runStage(CLEAN_ROOM_STAGES.installConsumer, pnpm, ["install"], {
-      cwd: generatedRoot,
+    const consumerPnpm = resolveGeneratedProjectPnpm({
+      generatedRoot,
       env: consumerEnv,
-      timeout: CLEAN_ROOM_TIMEOUTS_MS.installConsumer,
     });
+    process.stdout.write(
+      `${CLEAN_ROOM_STAGE_PREFIX} consumer pnpm@${consumerPnpm.version} via ${consumerPnpm.source}\n`
+    );
+    runStage(
+      CLEAN_ROOM_STAGES.installConsumer,
+      consumerPnpm.command,
+      generatedProjectPnpmArgs(consumerPnpm, ["install"]),
+      {
+        cwd: generatedRoot,
+        env: consumerEnv,
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.installConsumer,
+      }
+    );
     if (!existsSync(path.join(generatedRoot, "pnpm-lock.yaml"))) {
       throw new Error("pnpm install did not create pnpm-lock.yaml");
     }
@@ -355,11 +386,16 @@ async function main() {
       cwd: generatedRoot,
       extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
     });
-    runStage(CLEAN_ROOM_STAGES.build, pnpm, ["build"], {
-      cwd: generatedRoot,
-      env: buildEnv,
-      timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
-    });
+    runStage(
+      CLEAN_ROOM_STAGES.build,
+      consumerPnpm.command,
+      generatedProjectPnpmArgs(consumerPnpm, ["build"]),
+      {
+        cwd: generatedRoot,
+        env: buildEnv,
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
+      }
+    );
 
     const doctor = runStage(
       CLEAN_ROOM_STAGES.doctor,
@@ -404,15 +440,20 @@ async function main() {
     );
     assertGeneratorOutput(generatedRoot);
 
-    runStage(CLEAN_ROOM_STAGES.typecheck, pnpm, ["typecheck"], {
-      cwd: generatedRoot,
-      env: sanitizeCleanRoomEnv({
-        repoRoot,
+    runStage(
+      CLEAN_ROOM_STAGES.typecheck,
+      consumerPnpm.command,
+      generatedProjectPnpmArgs(consumerPnpm, ["typecheck"]),
+      {
         cwd: generatedRoot,
-        extra: consumerToolingEnv,
-      }),
-      timeout: CLEAN_ROOM_TIMEOUTS_MS.typecheck,
-    });
+        env: sanitizeCleanRoomEnv({
+          repoRoot,
+          cwd: generatedRoot,
+          extra: consumerToolingEnv,
+        }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.typecheck,
+      }
+    );
 
     const context = runStage(
       CLEAN_ROOM_STAGES.context,
@@ -440,7 +481,7 @@ async function main() {
       cliInstalled,
       repoRoot,
       harness: layout.harness,
-      pnpm,
+      consumerPnpm,
       consumerToolingEnv,
     });
 

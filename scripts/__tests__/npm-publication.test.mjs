@@ -22,6 +22,7 @@ import {
   decideNpmPublicationAction,
   expectedGitTag,
   hashFileSha256,
+  npmRegistryDocumentUrl,
   publishExactTarball,
   queryNpmPackageVersion,
   runNpmPublication,
@@ -151,21 +152,69 @@ describe("npm publication decisions", () => {
 });
 
 describe("npm registry query", () => {
+  const version = "0.5.0";
+  const versionUrl = npmRegistryDocumentUrl(PUBLIC_CLI_PACKAGE_NAME, version);
+  const packageUrl = npmRegistryDocumentUrl(PUBLIC_CLI_PACKAGE_NAME);
+
+  function fetchByUrl(handlers) {
+    return async (url, init) => {
+      assert.equal(init?.cache, "no-store");
+      assert.equal(init?.headers?.["cache-control"], "no-cache");
+      const href = String(url);
+      if (href === versionUrl) {
+        return handlers.version();
+      }
+      if (href === packageUrl) {
+        return handlers.package();
+      }
+      throw new Error(`unexpected registry URL ${href}`);
+    };
+  }
+
   it("treats HTTP 404 as a missing package without throwing", async () => {
     const result = await queryNpmPackageVersion({
-      version: "0.5.0",
-      fetchImpl: async () => new Response("Not Found", { status: 404 }),
+      version,
+      fetchImpl: fetchByUrl({
+        version: () => new Response("Not Found", { status: 404 }),
+        package: () => new Response("Not Found", { status: 404 }),
+      }),
     });
     assert.equal(result.packageExists, false);
     assert.equal(result.versionExists, false);
     assert.equal(result.status, "missing-package");
   });
 
-  it("detects an already-published version from the registry document", async () => {
+  it("detects an already-published version from the version-specific document", async () => {
+    const urls = [];
     const result = await queryNpmPackageVersion({
-      version: "0.5.0",
-      fetchImpl: async () =>
-        new Response(JSON.stringify({ versions: { "0.4.0": {}, "0.5.0": {} } }), { status: 200 }),
+      version,
+      fetchImpl: async (url, init) => {
+        urls.push(String(url));
+        assert.equal(init?.cache, "no-store");
+        return new Response(
+          JSON.stringify({ name: PUBLIC_CLI_PACKAGE_NAME, version }),
+          { status: 200 }
+        );
+      },
+    });
+    assert.deepEqual(urls, [versionUrl]);
+    assert.equal(result.packageExists, true);
+    assert.equal(result.versionExists, true);
+    assert.equal(result.status, "version-exists");
+  });
+
+  it("treats a newly published version as present even when package metadata is stale", async () => {
+    const result = await queryNpmPackageVersion({
+      version,
+      fetchImpl: fetchByUrl({
+        version: () =>
+          new Response(JSON.stringify({ name: PUBLIC_CLI_PACKAGE_NAME, version }), {
+            status: 200,
+          }),
+        package: () => {
+          throw new Error("stale package metadata must not be required once the version document exists");
+        },
+      }),
     });
     assert.equal(result.packageExists, true);
     assert.equal(result.versionExists, true);
@@ -174,9 +223,12 @@ describe("npm registry query", () => {
 
   it("detects a missing version of an existing package", async () => {
     const result = await queryNpmPackageVersion({
-      version: "0.5.0",
-      fetchImpl: async () =>
-        new Response(JSON.stringify({ versions: { "0.4.0": {} } }), { status: 200 }),
+      version,
+      fetchImpl: fetchByUrl({
+        version: () => new Response("Not Found", { status: 404 }),
+        package: () =>
+          new Response(JSON.stringify({ versions: { "0.4.0": {} } }), { status: 200 }),
+      }),
     });
     assert.equal(result.packageExists, true);
     assert.equal(result.versionExists, false);
@@ -187,7 +239,7 @@ describe("npm registry query", () => {
     await assert.rejects(
       () =>
         queryNpmPackageVersion({
-          version: "0.5.0",
+          version,
           fetchImpl: async () => {
             throw new Error("ECONNRESET");
           },
@@ -197,10 +249,27 @@ describe("npm registry query", () => {
     await assert.rejects(
       () =>
         queryNpmPackageVersion({
-          version: "0.5.0",
-          fetchImpl: async () => new Response("nope", { status: 500 }),
+          version,
+          fetchImpl: fetchByUrl({
+            version: () => new Response("nope", { status: 500 }),
+            package: () => {
+              throw new Error("must not fall through after HTTP 500");
+            },
+          }),
         }),
       /HTTP 500/
+    );
+  });
+
+  it("fails closed when the version document is malformed", async () => {
+    await assert.rejects(
+      () =>
+        queryNpmPackageVersion({
+          version,
+          fetchImpl: async () =>
+            new Response(JSON.stringify({ versions: { "0.5.0": {} } }), { status: 200 }),
+        }),
+      /malformed/
     );
   });
 });

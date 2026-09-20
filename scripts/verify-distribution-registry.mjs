@@ -28,12 +28,14 @@ import {
   collectWorkspaceResolutionIssues,
   createCleanRoomLayout,
   finalizeCleanRoom,
+  generatedProjectPnpmArgs,
   isCiEnvironment,
   isExplicitKeepRequested,
   parseJsonEnvelope,
   readGeneratedBaseline,
   resolveAtlasRepoRoot,
   resolveCommandPath,
+  resolveGeneratedProjectPnpm,
   runStage,
   sanitizeCleanRoomEnv,
 } from "./lib/distribution-clean-room.mjs";
@@ -227,15 +229,28 @@ async function main(argv = process.argv.slice(2)) {
       TURBO_CACHE_DIR: path.join(generatedRoot, "node_modules", ".cache", "turbo"),
       TURBO_DAEMON: "false",
     };
-    runStage(CLEAN_ROOM_STAGES.installConsumer, pnpm, ["install"], {
+    const consumerEnv = sanitizeCleanRoomEnv({
+      repoRoot,
       cwd: generatedRoot,
-      env: sanitizeCleanRoomEnv({
-        repoRoot,
-        cwd: generatedRoot,
-        extra: consumerToolingEnv,
-      }),
-      timeout: CLEAN_ROOM_TIMEOUTS_MS.installConsumer,
+      extra: consumerToolingEnv,
     });
+    const consumerPnpm = resolveGeneratedProjectPnpm({
+      generatedRoot,
+      env: consumerEnv,
+    });
+    process.stdout.write(
+      `${CLEAN_ROOM_STAGE_PREFIX} consumer pnpm@${consumerPnpm.version} via ${consumerPnpm.source}\n`
+    );
+    runStage(
+      CLEAN_ROOM_STAGES.installConsumer,
+      consumerPnpm.command,
+      generatedProjectPnpmArgs(consumerPnpm, ["install"]),
+      {
+        cwd: generatedRoot,
+        env: consumerEnv,
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.installConsumer,
+      }
+    );
     const workspaceIssues = auditGeneratedWorkspace(generatedRoot);
     if (workspaceIssues.length > 0) {
       throw new Error(`Generated workspace audit failed:\n${workspaceIssues.join("\n")}`);
@@ -245,15 +260,20 @@ async function main(argv = process.argv.slice(2)) {
       throw new Error(`Generated workspace resolution failed:\n${resolutionIssues.join("\n")}`);
     }
 
-    runStage(CLEAN_ROOM_STAGES.build, pnpm, ["build"], {
-      cwd: generatedRoot,
-      env: sanitizeCleanRoomEnv({
-        repoRoot,
+    runStage(
+      CLEAN_ROOM_STAGES.build,
+      consumerPnpm.command,
+      generatedProjectPnpmArgs(consumerPnpm, ["build"]),
+      {
         cwd: generatedRoot,
-        extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
-      }),
-      timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
-    });
+        env: sanitizeCleanRoomEnv({
+          repoRoot,
+          cwd: generatedRoot,
+          extra: { ...CONSUMER_BUILD_ENV, ...consumerToolingEnv },
+        }),
+        timeout: CLEAN_ROOM_TIMEOUTS_MS.build,
+      }
+    );
 
     const doctor = runStage(
       CLEAN_ROOM_STAGES.doctor,
