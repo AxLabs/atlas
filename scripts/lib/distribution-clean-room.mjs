@@ -181,6 +181,86 @@ export function assertOutsideRepo(repoRoot, candidate, label) {
   }
 }
 
+const DECLARED_PNPM_PATTERN = /^pnpm@(\d+\.\d+\.\d+)$/;
+
+/**
+ * @param {unknown} packageManager
+ * @returns {string}
+ */
+export function parseDeclaredPnpmVersion(packageManager) {
+  if (typeof packageManager !== "string" || packageManager.length === 0) {
+    throw new Error("Generated package.json is missing packageManager");
+  }
+  const match = DECLARED_PNPM_PATTERN.exec(packageManager);
+  if (!match || match[1] === undefined) {
+    throw new Error(`Generated packageManager must be pnpm@x.y.z, got ${String(packageManager)}`);
+  }
+  return match[1];
+}
+
+/**
+ * Prefer Corepack so generated-project install/build use the declared
+ * `packageManager` rather than whichever pnpm happens to be on PATH.
+ *
+ * @param {{
+ *   generatedRoot: string;
+ *   env?: NodeJS.ProcessEnv;
+ *   resolveCommand?: typeof resolveCommandPath;
+ *   run?: typeof runCommand;
+ * }} options
+ * @returns {{
+ *   command: string;
+ *   prefixArgs: string[];
+ *   version: string;
+ *   source: "corepack" | "ambient";
+ * }}
+ */
+export function resolveGeneratedProjectPnpm(options) {
+  const manifest = readJson(path.join(options.generatedRoot, "package.json"));
+  const version = parseDeclaredPnpmVersion(manifest.packageManager);
+  const env = options.env ?? process.env;
+  const resolve = options.resolveCommand ?? resolveCommandPath;
+  const run = options.run ?? runCommand;
+
+  try {
+    const corepack = resolve("corepack", env);
+    return {
+      command: corepack,
+      prefixArgs: [`pnpm@${version}`],
+      version,
+      source: "corepack",
+    };
+  } catch {
+    const pnpm = resolve("pnpm", env);
+    const probe = run(pnpm, ["--version"], {
+      cwd: options.generatedRoot,
+      env,
+      timeout: 15_000,
+    });
+    const actual = probe.stdout.trim();
+    if (probe.status !== 0 || probe.timedOut || actual !== version) {
+      throw new Error(
+        `Generated project declares pnpm@${version}, but Corepack is unavailable and ambient pnpm is ${actual || "unavailable"}`
+      );
+    }
+    return {
+      command: pnpm,
+      prefixArgs: [],
+      version,
+      source: "ambient",
+    };
+  }
+}
+
+/**
+ * @param {{ command: string; prefixArgs: string[] }} pnpm
+ * @param {string[]} args
+ * @returns {string[]}
+ */
+export function generatedProjectPnpmArgs(pnpm, args) {
+  return [...pnpm.prefixArgs, ...args];
+}
+
 /**
  * @param {string} command
  * @param {NodeJS.ProcessEnv} [env]

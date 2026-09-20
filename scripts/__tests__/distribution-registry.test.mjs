@@ -48,6 +48,7 @@ describe("registry verification arguments", () => {
     );
     assert.match(verifier, /queryNpmPackageVersion/);
     assert.match(verifier, /does not fall back to a local tarball/);
+    assert.match(verifier, /resolveGeneratedProjectPnpm/);
     assert.doesNotMatch(verifier, /packExactPublicCliTarball/);
     assert.doesNotMatch(verifier, /pnpm pack/);
     assert.doesNotMatch(verifier, /findPackedTarball/);
