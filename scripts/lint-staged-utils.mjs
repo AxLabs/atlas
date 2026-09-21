@@ -4,9 +4,12 @@ import path from "node:path";
 /** Workspaces with their own eslint.config.mjs (root config ignores apps/** and packages/**). */
 export const ESLINT_PACKAGES = [
   "apps/web",
+  "apps/reference",
   "packages/ui",
+  "packages/cli",
   "packages/consent",
   "packages/config",
+  "packages/project",
 ];
 
 /**
