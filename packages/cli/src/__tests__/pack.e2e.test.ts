@@ -1,4 +1,12 @@
-import { existsSync, readFileSync, readdirSync, realpathSync, rmSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "../doctor/static-imports";
@@ -26,6 +34,7 @@ import {
   runCommand,
 } from "./helpers/pack-artifact";
 import { getRepoRoot } from "./helpers/run-cli";
+import { verifyGeneratedGitHook } from "./helpers/verify-generated-git-hook";
 import type { PackagedBootstrapManifest } from "../bootstrap/schema";
 
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
@@ -472,6 +481,56 @@ process.stdout.write(JSON.stringify({
       );
       expect(generatedAgents).not.toContain("pnpm atlas");
       expect(generatedAgents).not.toContain("pnpm --filter @blitzcraftlabs/atlas build");
+
+      const shippedLighthouse = readFileSync(
+        path.resolve(__dirname, "fixtures/shipped-1.1.0/lighthouserc.json"),
+        "utf8"
+      );
+      writeFileSync(path.join(generatedRoot, "lighthouserc.json"), shippedLighthouse);
+      const dryPerf = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "perf-ci", "--dry-run", "--json", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(dryPerf.status).toBe(0);
+      expect(readFileSync(path.join(generatedRoot, "lighthouserc.json"), "utf8")).toBe(
+        shippedLighthouse
+      );
+
+      const enablePerf = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "perf-ci", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enablePerf.status).toBe(0);
+      const lighthouse = JSON.parse(
+        readFileSync(path.join(generatedRoot, "lighthouserc.json"), "utf8")
+      ) as {
+        ci: { collect: { settings: { chromeFlags: unknown; skipAudits: string[] } } };
+      };
+      expect(lighthouse.ci.collect.settings.chromeFlags).toBe(
+        "--no-sandbox --disable-gpu --headless=new"
+      );
+      expect(lighthouse.ci.collect.settings.skipAudits).toEqual([
+        "uses-http2",
+        "uses-long-cache-ttl",
+      ]);
+      const bundleWorkflow = readFileSync(
+        path.join(generatedRoot, ".github/workflows/perf-bundle.yml"),
+        "utf8"
+      );
+      expect(bundleWorkflow).toContain(
+        "github.event.pull_request.head.repo.full_name == github.repository"
+      );
+      expect(bundleWorkflow).not.toContain("pull_request_target");
+
+      const enableHooks = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "hooks", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableHooks.status).toBe(0);
+      verifyGeneratedGitHook(generatedRoot);
 
       const enableList = runInstalledAtlas(
         cleanRoom,

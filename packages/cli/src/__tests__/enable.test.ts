@@ -4,11 +4,18 @@ import path from "node:path";
 
 import { runInit } from "../commands/init";
 import { enableConsumerCapability, listConsumerCapabilities } from "../enable/apply";
-import { isKnownShippedConsumerDocumentation } from "../init/shipped-docs";
+import {
+  CANONICAL_CHROME_FLAGS,
+  CUSTOM_CHROME_FLAGS_REASON,
+  LEGACY_CHROME_FLAGS_REASON,
+} from "../enable/lighthouse-chrome-flags";
 import { selectConsumerPnpmOverrides } from "../init/consumer-overrides";
+import { isKnownShippedConsumerDocumentation } from "../init/shipped-docs";
+import { verifyGeneratedGitHook } from "./helpers/verify-generated-git-hook";
 
 const GENERATED_TIMEOUT_MS = 60_000;
 const SHIPPED_AGENTS = path.resolve(__dirname, "fixtures/shipped-1.1.0/AGENTS.md");
+const SHIPPED_LIGHTHOUSE = path.resolve(__dirname, "fixtures/shipped-1.1.0/lighthouserc.json");
 
 function snapshotTree(root: string, relative: string[]): Record<string, string | false> {
   const snapshot: Record<string, string | false> = {};
@@ -345,7 +352,7 @@ describe("atlas enable", () => {
       runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
       const destination = path.join(cwd, "test-app");
 
-      const remaining: Array<{ id: string; path: string }> = [
+      const remaining: { id: string; path: string }[] = [
         { id: "security", path: "scripts/security-audit.mjs" },
         { id: "updates", path: ".github/dependabot.yml" },
         { id: "hooks", path: ".husky/pre-commit" },
@@ -374,6 +381,24 @@ describe("atlas enable", () => {
       );
       expect(perfWorkflow).toContain("browser-actions/setup-chrome@");
       expect(perfWorkflow).toContain("CHROME_PATH");
+      const bundleWorkflow = readFileSync(
+        path.join(destination, ".github/workflows/perf-bundle.yml"),
+        "utf8"
+      );
+      expect(bundleWorkflow).toContain(
+        "github.event.pull_request.head.repo.full_name == github.repository"
+      );
+      expect(bundleWorkflow).not.toContain("pull_request_target");
+      expect(bundleWorkflow).toMatch(/name: Comment on PR[\s\S]*full_name == github\.repository/);
+      expect(bundleWorkflow).toContain("Fail if bundle check failed");
+      const commentIndex = bundleWorkflow.indexOf("name: Comment on PR");
+      const failIndex = bundleWorkflow.indexOf("name: Fail if bundle check failed");
+      expect(commentIndex).toBeGreaterThan(-1);
+      expect(failIndex).toBeGreaterThan(commentIndex);
+      const commentBlock = bundleWorkflow.slice(commentIndex, failIndex);
+      expect(commentBlock).toContain("full_name == github.repository");
+      const failBlock = bundleWorkflow.slice(failIndex);
+      expect(failBlock).not.toContain("full_name == github.repository");
       expect(existsSync(path.join(destination, "lint-staged.config.mjs"))).toBe(true);
       expect(
         existsSync(path.join(destination, ".cursor/skills/build-atlas-feature/SKILL.md"))
@@ -430,6 +455,96 @@ describe("atlas enable", () => {
         scripts: Record<string, string>;
       };
       expect(root.scripts["test:visual"]).toBe("pnpm --filter @atlas/ui test:visual:docker");
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  }, 120_000);
+
+  it(
+    "converts the Atlas 1.1.0 lighthouse chromeFlags array during perf-ci enable",
+    () => {
+      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-lhci-"));
+      try {
+        runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
+        const destination = path.join(cwd, "test-app");
+        const lighthousePath = path.join(destination, "lighthouserc.json");
+        const shipped = readFileSync(SHIPPED_LIGHTHOUSE, "utf8");
+        writeFileSync(lighthousePath, shipped);
+
+        const dryRun = enableConsumerCapability({
+          cwd: destination,
+          capability: "perf-ci",
+          dryRun: true,
+        });
+        expect(dryRun.actions.find((action) => action.path === "lighthouserc.json")?.kind).toBe(
+          "copy"
+        );
+        expect(dryRun.actions.find((action) => action.path === "lighthouserc.json")?.reason).toBe(
+          LEGACY_CHROME_FLAGS_REASON
+        );
+        expect(readFileSync(lighthousePath, "utf8")).toBe(shipped);
+
+        const applied = enableConsumerCapability({ cwd: destination, capability: "perf-ci" });
+        expect(applied.actions.find((action) => action.path === "lighthouserc.json")?.kind).toBe(
+          "copy"
+        );
+        const parsed = JSON.parse(readFileSync(lighthousePath, "utf8")) as {
+          ci: {
+            collect: {
+              numberOfRuns: number;
+              settings: { chromeFlags: unknown; preset: string; skipAudits: string[] };
+            };
+          };
+        };
+        expect(parsed.ci.collect.settings.chromeFlags).toBe(CANONICAL_CHROME_FLAGS);
+        expect(parsed.ci.collect.settings.preset).toBe("desktop");
+        expect(parsed.ci.collect.settings.skipAudits).toEqual([
+          "uses-http2",
+          "uses-long-cache-ttl",
+        ]);
+        expect(parsed.ci.collect.numberOfRuns).toBe(3);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    },
+    GENERATED_TIMEOUT_MS
+  );
+
+  it(
+    "reports a conflict for unsupported custom lighthouse chromeFlags",
+    () => {
+      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-lhci-custom-"));
+      try {
+        runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
+        const destination = path.join(cwd, "test-app");
+        const lighthousePath = path.join(destination, "lighthouserc.json");
+        const parsed = JSON.parse(readFileSync(lighthousePath, "utf8")) as {
+          ci: { collect: { settings: { chromeFlags: unknown; preset: string } } };
+        };
+        parsed.ci.collect.settings.chromeFlags = ["--disable-dev-shm-usage"];
+        writeFileSync(lighthousePath, `${JSON.stringify(parsed, null, 2)}\n`);
+
+        const result = enableConsumerCapability({ cwd: destination, capability: "perf-ci" });
+        const action = result.actions.find((entry) => entry.path === "lighthouserc.json");
+        expect(action?.kind).toBe("conflict");
+        expect(action?.reason).toBe(CUSTOM_CHROME_FLAGS_REASON);
+        const after = JSON.parse(readFileSync(lighthousePath, "utf8")) as typeof parsed;
+        expect(after.ci.collect.settings.chromeFlags).toEqual(["--disable-dev-shm-usage"]);
+        expect(after.ci.collect.settings.preset).toBe("desktop");
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    },
+    GENERATED_TIMEOUT_MS
+  );
+
+  it("blocks a commit on a workspace ESLint violation and passes after the file is corrected", () => {
+    const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-hooks-"));
+    try {
+      runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
+      const destination = path.join(cwd, "test-app");
+      enableConsumerCapability({ cwd: destination, capability: "hooks" });
+      verifyGeneratedGitHook(destination);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

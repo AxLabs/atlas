@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { shouldOmitConsumerUiDevDependency } from "../bootstrap/consumer-ui-manifest";
-import { collectDependencyNames, selectConsumerPnpmOverrides } from "../init/consumer-overrides";
 import { listGeneratedConsumerDocs, listGeneratedCursorFiles } from "../init/consumer-docs";
+import { collectDependencyNames, selectConsumerPnpmOverrides } from "../init/consumer-overrides";
 
 import type { CapabilityDefinition, PackageManifestPatch } from "./types";
 

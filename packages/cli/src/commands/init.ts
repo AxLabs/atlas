@@ -1,7 +1,7 @@
 import { runBootstrapInit } from "../init/bootstrap";
 import { runCheckoutInit } from "../init/checkout";
-
 import { atlasDlx, atlasDlxForEnable } from "../init/cli-release";
+
 import type { EnvPolicy, ReferencePolicy } from "../init/types";
 import type { CommandResult, PlannedAction } from "../types/result";
 

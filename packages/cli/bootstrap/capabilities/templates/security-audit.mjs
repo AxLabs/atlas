@@ -72,6 +72,45 @@ function normalizeId(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export function isAuditErrorDocument(audit) {
+  return isPlainObject(audit) && Object.hasOwn(audit, "error");
+}
+
+export function assertConsumerAuditDocument(audit) {
+  if (isAuditErrorDocument(audit)) {
+    const detail = isPlainObject(audit.error)
+      ? audit.error.message || audit.error.summary || audit.error.code || JSON.stringify(audit.error)
+      : String(audit.error);
+    throw new Error(`pnpm audit returned an error: ${detail}`);
+  }
+
+  if (!isPlainObject(audit)) {
+    throw new Error("audit document is missing or not an object");
+  }
+
+  const hasV2 = Object.hasOwn(audit, "vulnerabilities");
+  const hasV1 = Object.hasOwn(audit, "advisories");
+  const hasMetadata = Object.hasOwn(audit, "metadata");
+
+  if (!hasV2 && !hasV1 && !hasMetadata) {
+    throw new Error("unrecognized audit report: missing vulnerabilities, advisories, and metadata");
+  }
+
+  if (hasV2 && !isPlainObject(audit.vulnerabilities)) {
+    throw new Error("audit document vulnerabilities must be an object");
+  }
+
+  if (hasV1 && !isPlainObject(audit.advisories)) {
+    throw new Error("audit document advisories must be an object");
+  }
+
+  return audit;
+}
+
 export function collectAuditFindings(audit) {
   const findings = [];
   if (!audit || typeof audit !== "object") {
@@ -200,7 +239,13 @@ function parseArgs(argv) {
 
 function loadAudit(options) {
   if (options.auditJson) {
-    return JSON.parse(readFileSync(options.auditJson, "utf8"));
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(options.auditJson, "utf8"));
+    } catch (error) {
+      throw new Error(`audit fixture is not valid JSON: ${error.message}`);
+    }
+    return assertConsumerAuditDocument(parsed);
   }
 
   const result = spawnSync("pnpm", ["audit", "--json"], {
@@ -210,7 +255,7 @@ function loadAudit(options) {
   });
 
   if (result.error) {
-    throw new Error(result.error.message);
+    throw new Error(`pnpm audit failed to start: ${result.error.message}`);
   }
 
   const stdout = (result.stdout ?? "").trim();
@@ -220,7 +265,22 @@ function loadAudit(options) {
     );
   }
 
-  return JSON.parse(stdout);
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (error) {
+    throw new Error(`pnpm audit returned malformed JSON: ${error.message}`);
+  }
+
+  assertConsumerAuditDocument(parsed);
+
+  if (result.status !== 0 && result.status !== 1) {
+    throw new Error(
+      `pnpm audit failed with unexpected exit ${result.status}: ${(result.stderr ?? "").trim()}`
+    );
+  }
+
+  return parsed;
 }
 
 function main(argv = process.argv.slice(2)) {

@@ -4,19 +4,13 @@ import path from "node:path";
 import { type ResolvedAtlasProject, toResolvedAtlasProjectJson } from "@atlas/project";
 
 import { DOCTOR_CHECKS } from "../doctor/runner";
-import { listGeneratorDefinitions } from "../generators/registry";
 import { listCapabilityDefinitions } from "../enable/registry";
+import { listGeneratorDefinitions } from "../generators/registry";
 import {
   APP_INFRASTRUCTURE_MANIFEST_RELATIVE_PATH,
   type AppInfrastructureManifest,
   loadAppInfrastructureManifest,
 } from "../template-sync/manifest";
-import {
-  atlasCliInvocation,
-  detectWorkspaceKind,
-  enableCliInvocation,
-  type WorkspaceKind,
-} from "./workspace-kind";
 
 import {
   AGENT_ENTRY_POINT_PATH,
@@ -25,6 +19,12 @@ import {
   listAgentDocumentationReferences,
   SOURCE_OF_TRUTH_HIERARCHY,
 } from "./documentation-registry";
+import {
+  atlasCliInvocation,
+  detectWorkspaceKind,
+  enableCliInvocation,
+  type WorkspaceKind,
+} from "./workspace-kind";
 
 import type { AtlasCliContext } from "./atlas-context";
 

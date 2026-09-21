@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { CLI_PACKAGE_NAME } from "../version";
 import { atlasDlx, enableCliInvocation } from "../init/cli-release";
+import { CLI_PACKAGE_NAME } from "../version";
 
 export type WorkspaceKind = "platform" | "consumer";
 

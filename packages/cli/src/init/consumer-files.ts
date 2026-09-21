@@ -8,10 +8,12 @@ import {
   type RawAtlasProjectContract,
 } from "@atlas/project";
 
+import { CONSUMER_GENERATED_DOCUMENTATION_PATHS } from "../context/documentation-registry";
+
+import { atlasDlx, atlasDlxForEnable } from "./cli-release";
+
 import type { PlannedAction } from "../types/result";
 import type { EnvPolicy } from "./types";
-import { CONSUMER_GENERATED_DOCUMENTATION_PATHS } from "../context/documentation-registry";
-import { atlasDlx, atlasDlxForEnable } from "./cli-release";
 
 export const CONSUMER_NODE_ENGINE = ">=22.0.0";
 export const CONSUMER_PNPM_ENGINE = ">=10.0.0";

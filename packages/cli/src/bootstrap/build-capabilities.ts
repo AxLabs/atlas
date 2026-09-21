@@ -10,20 +10,21 @@ import {
 } from "node:fs";
 import path from "node:path";
 
-import { findCliPackageRoot } from "../version";
-import { listCapabilityDefinitions } from "../enable/registry";
 import { computeCapabilityPackagePatches } from "../enable/patches";
-import { formatPosixMode, sha256Bytes } from "./checksum";
+import { listCapabilityDefinitions } from "../enable/registry";
+import { findCliPackageRoot } from "../version";
+
 import { expandSourceBootstrapManifest } from "./build";
-import { BOOTSTRAP_MANIFEST_SCHEMA_VERSION } from "./constants";
-import { BootstrapAssetError } from "./errors";
-import { resolveContainedPath } from "./paths";
 import {
   CAPABILITIES_MANIFEST_SCHEMA_VERSION,
   packagedCapabilitiesAssetRoot,
   packagedCapabilitiesFilesRoot,
   packagedCapabilitiesManifestPath,
 } from "./capability-assets";
+import { formatPosixMode, sha256Bytes } from "./checksum";
+import { BOOTSTRAP_MANIFEST_SCHEMA_VERSION } from "./constants";
+import { BootstrapAssetError } from "./errors";
+import { resolveContainedPath } from "./paths";
 
 import type {
   PackagedCapabilitiesManifest,

@@ -36,6 +36,7 @@ import {
   mergePlatformBaselineIntoContract,
 } from "../upgrade/baseline";
 
+import { listGeneratedConsumerDocs } from "./consumer-docs";
 import {
   buildConsumerContract,
   buildConsumerJestConfig,
@@ -43,7 +44,6 @@ import {
   buildConsumerReadme,
   planGeneratedAtInitActions,
 } from "./consumer-files";
-import { listGeneratedConsumerDocs } from "./consumer-docs";
 import { collectDependencyNames, selectConsumerPnpmOverrides } from "./consumer-overrides";
 import {
   ensureDestinationParent,

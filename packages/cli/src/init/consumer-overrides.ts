@@ -10,11 +10,11 @@ export function overridePackageName(key: string): string {
 }
 
 export function collectDependencyNames(
-  manifests: Array<{
+  manifests: {
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
     peerDependencies?: Record<string, string>;
-  }>
+  }[]
 ): Set<string> {
   const names = new Set<string>();
   for (const manifest of manifests) {

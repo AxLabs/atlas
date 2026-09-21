@@ -1,20 +1,29 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { createAtlasContext } from "../context/atlas-context";
-import { CliError, CliErrorCode } from "../errors/cli-error";
-import { detectWorkspaceKind } from "../context/workspace-kind";
 import {
   findCapabilitiesAssetRoot,
   readCapabilitiesManifest,
   resolveCapabilityFile,
 } from "../bootstrap/capability-assets";
 import { sha256Bytes } from "../bootstrap/checksum";
-import { getCapabilityDefinition, listCapabilityDefinitions } from "./registry";
-import { generatedFilesForCapability } from "./patches";
+import { createAtlasContext } from "../context/atlas-context";
+import { detectWorkspaceKind } from "../context/workspace-kind";
+import { CliError, CliErrorCode } from "../errors/cli-error";
 
-import type { CapabilityDefinition, CapabilityId, PackagedCapability } from "./types";
+import {
+  applyCanonicalChromeFlags,
+  CUSTOM_CHROME_FLAGS_REASON,
+  getLighthouseCollectSettings,
+  LEGACY_CHROME_FLAGS_REASON,
+  LIGHTHOUSERC_DESTINATION,
+  observeLighthouseChromeFlags,
+} from "./lighthouse-chrome-flags";
+import { generatedFilesForCapability } from "./patches";
+import { getCapabilityDefinition, listCapabilityDefinitions } from "./registry";
+
 import type { PlannedAction } from "../types/result";
+import type { CapabilityDefinition, CapabilityId, PackagedCapability } from "./types";
 
 export type CapabilityInstallStatus =
   | "absent"
@@ -315,6 +324,94 @@ function planPackagedFile(options: {
   };
 }
 
+function planLighthouseChromeFlags(repoRoot: string): DeferredWrite {
+  const destination = LIGHTHOUSERC_DESTINATION;
+  const absolutePath = path.join(repoRoot, destination);
+  if (!existsSync(absolutePath)) {
+    return {
+      action: {
+        kind: "conflict",
+        path: destination,
+        reason: "lighthouserc.json is missing; cannot adopt chromeFlags",
+      },
+      apply: () => undefined,
+    };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(absolutePath, "utf8"));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      action: {
+        kind: "conflict",
+        path: destination,
+        reason: `lighthouserc.json is not valid JSON (${message})`,
+      },
+      apply: () => undefined,
+    };
+  }
+
+  const settings = getLighthouseCollectSettings(parsed);
+  if (!settings) {
+    return {
+      action: {
+        kind: "conflict",
+        path: destination,
+        reason: "lighthouserc.json is missing ci.collect.settings; cannot adopt chromeFlags",
+      },
+      apply: () => undefined,
+    };
+  }
+
+  const observation = observeLighthouseChromeFlags(parsed);
+  if (observation === "match") {
+    return {
+      action: {
+        kind: "skip",
+        path: destination,
+        reason: "chromeFlags already matches the Lighthouse CI string",
+      },
+      apply: () => undefined,
+    };
+  }
+  if (observation === "replaceable") {
+    const next = applyCanonicalChromeFlags(parsed);
+    return {
+      action: {
+        kind: "copy",
+        path: destination,
+        reason: LEGACY_CHROME_FLAGS_REASON,
+      },
+      apply: () => {
+        writeJson(absolutePath, next);
+      },
+    };
+  }
+
+  return {
+    action: {
+      kind: "conflict",
+      path: destination,
+      reason: CUSTOM_CHROME_FLAGS_REASON,
+    },
+    apply: () => undefined,
+  };
+}
+
+function observePerfCiLighthouse(repoRoot: string): FileObservationState {
+  const absolutePath = path.join(repoRoot, LIGHTHOUSERC_DESTINATION);
+  if (!existsSync(absolutePath)) {
+    return "missing";
+  }
+  try {
+    return observeLighthouseChromeFlags(JSON.parse(readFileSync(absolutePath, "utf8")));
+  } catch {
+    return "conflict";
+  }
+}
+
 function applyDeferredWrites(planned: DeferredWrite[], dryRun: boolean): PlannedAction[] {
   if (!dryRun) {
     for (const item of planned) {
@@ -461,6 +558,10 @@ export function inspectCapabilityStatus(options: {
     states.push(existsSync(detectPath) ? "match" : "missing");
   }
 
+  if (options.capability.id === "perf-ci") {
+    states.push(observePerfCiLighthouse(options.repoRoot));
+  }
+
   return deriveStatus(states);
 }
 
@@ -552,6 +653,10 @@ function planCapability(options: {
     for (const patch of packaged.packagePatches) {
       planned.push(...planPackagePatch({ repoRoot: options.repoRoot, patch }));
     }
+  }
+
+  if (options.definition.id === "perf-ci") {
+    planned.push(planLighthouseChromeFlags(options.repoRoot));
   }
 
   return planned;
