@@ -17,6 +17,7 @@ const OMITTED_UI_SCRIPT_NAMES = new Set([
   "test:storybook:cross-browser",
   "test:visual",
   "test:visual:update",
+  "test:visual:docker",
   "test:ui-quality",
 ]);
 

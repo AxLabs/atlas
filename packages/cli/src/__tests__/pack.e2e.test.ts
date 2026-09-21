@@ -1,4 +1,12 @@
-import { existsSync, readFileSync, readdirSync, realpathSync, rmSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 import { extractStaticModuleSpecifiers, packageRootFromSpecifier } from "../doctor/static-imports";
@@ -26,10 +34,139 @@ import {
   runCommand,
 } from "./helpers/pack-artifact";
 import { getRepoRoot } from "./helpers/run-cli";
+import { verifyGeneratedGitHook } from "./helpers/verify-generated-git-hook";
 import type { PackagedBootstrapManifest } from "../bootstrap/schema";
 
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 const PACK_TIMEOUT_MS = 180_000;
+const MIN_NPM_NODE_MAJOR = 22;
+const INCOMPLETE_NPM_PATTERN =
+  /Cannot find module .*walk-up-path|npm ERR! code MODULE_NOT_FOUND|valid "main" entry/i;
+const ALREADY_PUBLISHED_PATTERN = /cannot publish over the previously published versions/i;
+
+interface NpmPublishInvocation {
+  command: string;
+  prefixArgs: string[];
+  env?: NodeJS.ProcessEnv;
+}
+
+function nodeMajorFromPath(filePath: string): number | null {
+  const match = filePath.match(/[/\\]v(\d+)\.\d+/);
+  return match ? Number(match[1]) : null;
+}
+
+function withNodeBinFirst(binDir: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
+  };
+}
+
+/**
+ * Collect npm CLIs from Node >= 22 installs. PATH `npm` can resolve to an
+ * older broken nvm copy; incomplete bundled installs are skipped at publish time.
+ */
+function collectNpmPublishCandidates(): NpmPublishInvocation[] {
+  const candidates: (NpmPublishInvocation & { rank: number })[] = [];
+  const seen = new Set<string>();
+
+  const add = (candidate: NpmPublishInvocation, rank: number) => {
+    const key = `${candidate.command}\0${candidate.prefixArgs.join("\0")}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    candidates.push({ ...candidate, rank });
+  };
+
+  const nodeBinDir = path.dirname(process.execPath);
+  const currentMajor = Number(process.versions.node.split(".")[0]);
+  const adjacentNpmCli = path.resolve(nodeBinDir, "../lib/node_modules/npm/bin/npm-cli.js");
+  if (currentMajor >= MIN_NPM_NODE_MAJOR && existsSync(adjacentNpmCli)) {
+    add(
+      {
+        command: process.execPath,
+        prefixArgs: [adjacentNpmCli],
+        env: withNodeBinFirst(nodeBinDir),
+      },
+      currentMajor
+    );
+  }
+
+  const versionsRoot = path.resolve(nodeBinDir, "..", "..");
+  if (existsSync(versionsRoot)) {
+    for (const version of readdirSync(versionsRoot)) {
+      const major = nodeMajorFromPath(`/${version}/`);
+      if (major == null || major < MIN_NPM_NODE_MAJOR) {
+        continue;
+      }
+      const binDir = path.join(versionsRoot, version, "bin");
+      const nodeBin = path.join(binDir, "node");
+      const npmCli = path.join(
+        versionsRoot,
+        version,
+        "lib",
+        "node_modules",
+        "npm",
+        "bin",
+        "npm-cli.js"
+      );
+      if (existsSync(nodeBin) && existsSync(npmCli)) {
+        add(
+          {
+            command: nodeBin,
+            prefixArgs: [npmCli],
+            env: withNodeBinFirst(binDir),
+          },
+          major
+        );
+      }
+    }
+  }
+
+  add({ command: "npm", prefixArgs: [] }, MIN_NPM_NODE_MAJOR);
+
+  return candidates
+    .sort((left, right) => right.rank - left.rank)
+    .map((candidate) => ({
+      command: candidate.command,
+      prefixArgs: candidate.prefixArgs,
+      env: candidate.env,
+    }));
+}
+
+function runNpmPublishDryRun() {
+  const failures: string[] = [];
+
+  for (const npm of collectNpmPublishCandidates()) {
+    let result;
+    try {
+      result = runCommand(
+        npm.command,
+        [...npm.prefixArgs, "publish", "--dry-run", "--access", "public", "--ignore-scripts"],
+        { cwd: PACKAGE_ROOT, env: npm.env }
+      );
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
+      continue;
+    }
+
+    const combined = `${result.stdout}\n${result.stderr}`;
+    if (result.status === 0 || ALREADY_PUBLISHED_PATTERN.test(combined)) {
+      return { result, combined };
+    }
+    if (INCOMPLETE_NPM_PATTERN.test(combined)) {
+      failures.push(combined.trim());
+      continue;
+    }
+
+    return { result, combined };
+  }
+
+  throw new Error(
+    `Could not find a working npm executable for publish --dry-run\n${failures.join("\n---\n")}`
+  );
+}
 
 function runInstalledAtlas(cleanRoom: string, args: string[], cwd = cleanRoom) {
   const bin = path.join(cleanRoom, "node_modules", ".bin", "atlas");
@@ -112,6 +249,21 @@ describe("Atlas CLI pack and clean-room install", () => {
 
     expect(forbiddenExact).toEqual([]);
     expect(forbiddenPrefixed).toEqual([]);
+    expect(bootstrapFiles.some((file) => file.startsWith("packages/ui/.storybook/"))).toBe(false);
+    expect(bootstrapFiles).not.toContain("coverage-policy.json");
+    expect(bootstrapFiles).not.toContain("docker-compose.yml");
+
+    const capabilityManifest = JSON.parse(
+      readTarballFile(tarballPath as string, "package/assets/capabilities/manifest.json")
+    ) as { capabilities: { id: string; entries: { destination: string }[] }[] };
+    expect(
+      capabilityManifest.capabilities.some((capability) => capability.id === "storybook")
+    ).toBe(true);
+    expect(
+      packedEntries.some((entry) =>
+        entry.includes("assets/capabilities/files/storybook/packages/ui/.storybook/main.ts")
+      )
+    ).toBe(true);
 
     const consumerCi = readTarballFile(
       tarballPath as string,
@@ -223,14 +375,14 @@ describe("Atlas CLI pack and clean-room install", () => {
   });
 
   it("is accepted by npm publish --dry-run --access public without authentication", () => {
-    const result = runCommand(
-      "npm",
-      ["publish", "--dry-run", "--access", "public", "--ignore-scripts"],
-      { cwd: PACKAGE_ROOT }
-    );
+    const { result, combined } = runNpmPublishDryRun();
     try {
-      const combined = `${result.stdout}\n${result.stderr}`;
-      expect(result.status).toBe(0);
+      const alreadyPublished = ALREADY_PUBLISHED_PATTERN.test(combined);
+      if (result.status !== 0 && !alreadyPublished) {
+        throw new Error(
+          `npm publish --dry-run failed (${result.status})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+        );
+      }
       expect(combined).not.toMatch(/ENEEDAUTH|npm ERR! code ENEEDAUTH/i);
       expect(combined).toContain(CLI_PACKAGE_NAME);
       expect(combined).not.toMatch(/This package has been marked as private/i);
@@ -436,10 +588,197 @@ process.stdout.write(JSON.stringify({
       expect(context.status).toBe(0);
       const contextPayload = JSON.parse(context.stdout) as {
         ok: boolean;
-        result: { atlasVersion: string };
+        result: {
+          atlasVersion: string;
+          workspaceKind: string;
+          validation?: { recommended?: { id: string }[] };
+        };
       };
       expect(contextPayload.result.atlasVersion).toBe(cliVersion);
       expect(contextPayload.result.atlasVersion).not.toBe(generatedPackage.version);
+      expect(contextPayload.result.workspaceKind).toBe("consumer");
+      expect(
+        (contextPayload.result.validation?.recommended ?? []).some(
+          (entry: { id: string }) => entry.id === "reference-e2e" || entry.id === "governance-check"
+        )
+      ).toBe(false);
+
+      const generatedAgents = readFileSync(path.join(generatedRoot, "AGENTS.md"), "utf8");
+      expect(generatedAgents).toContain(
+        `pnpm dlx @blitzcraftlabs/atlas@${cliVersion} context --json`
+      );
+      expect(generatedAgents).not.toContain("pnpm atlas");
+      expect(generatedAgents).not.toContain("pnpm --filter @blitzcraftlabs/atlas build");
+
+      const shippedLighthouse = readFileSync(
+        path.resolve(__dirname, "fixtures/shipped-1.1.0/lighthouserc.json"),
+        "utf8"
+      );
+      writeFileSync(path.join(generatedRoot, "lighthouserc.json"), shippedLighthouse);
+      const dryPerf = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "perf-ci", "--dry-run", "--json", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(dryPerf.status).toBe(0);
+      expect(readFileSync(path.join(generatedRoot, "lighthouserc.json"), "utf8")).toBe(
+        shippedLighthouse
+      );
+
+      const enablePerf = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "perf-ci", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enablePerf.status).toBe(0);
+      const lighthouse = JSON.parse(
+        readFileSync(path.join(generatedRoot, "lighthouserc.json"), "utf8")
+      ) as {
+        ci: { collect: { settings: { chromeFlags: unknown; skipAudits: string[] } } };
+      };
+      expect(lighthouse.ci.collect.settings.chromeFlags).toBe(
+        "--no-sandbox --disable-gpu --headless=new"
+      );
+      expect(lighthouse.ci.collect.settings.skipAudits).toEqual([
+        "uses-http2",
+        "uses-long-cache-ttl",
+      ]);
+      const bundleWorkflow = readFileSync(
+        path.join(generatedRoot, ".github/workflows/perf-bundle.yml"),
+        "utf8"
+      );
+      expect(bundleWorkflow).toMatch(
+        /github\.event\.pull_request\.head\.repo\.full_name\s*==\s*\n?\s*github\.repository/
+      );
+      expect(bundleWorkflow).not.toContain("pull_request_target");
+
+      const enableHooks = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "hooks", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableHooks.status).toBe(0);
+      expect(existsSync(path.join(generatedRoot, "scripts/lint-staged-eslint.mjs"))).toBe(true);
+      verifyGeneratedGitHook(generatedRoot);
+
+      const enableSecurity = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "security", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableSecurity.status).toBe(0);
+      const packedAuditScript = path.join(generatedRoot, "scripts/security-audit.mjs");
+      expect(existsSync(packedAuditScript)).toBe(true);
+      const metadataNullPath = path.join(generatedRoot, "audit-metadata-null.json");
+      writeFileSync(metadataNullPath, `${JSON.stringify({ metadata: null })}\n`);
+      const metadataNull = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        metadataNullPath,
+      ]);
+      expect(metadataNull.status).toBe(1);
+      expect(metadataNull.stderr).toContain("metadata must be an object");
+      const metadataHighPath = path.join(generatedRoot, "audit-metadata-high.json");
+      writeFileSync(
+        metadataHighPath,
+        `${JSON.stringify({ metadata: { vulnerabilities: { high: 1, critical: 0 } } })}\n`
+      );
+      const metadataHigh = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        metadataHighPath,
+      ]);
+      expect(metadataHigh.status).toBe(1);
+      expect(metadataHigh.stderr).toMatch(/no evaluable high\/critical findings/);
+
+      const emptyAdvisoryPath = path.join(generatedRoot, "audit-empty-advisory.json");
+      writeFileSync(emptyAdvisoryPath, `${JSON.stringify({ advisories: { "1": {} } })}\n`);
+      const emptyAdvisory = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        emptyAdvisoryPath,
+      ]);
+      expect(emptyAdvisory.status).toBe(1);
+      expect(emptyAdvisory.stdout).not.toContain("No blocking high/critical advisories");
+
+      const emptyViaHighPath = path.join(generatedRoot, "audit-empty-via-high.json");
+      writeFileSync(
+        emptyViaHighPath,
+        `${JSON.stringify({ vulnerabilities: { example: { severity: "high", via: [] } } })}\n`
+      );
+      const emptyViaHigh = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        emptyViaHighPath,
+      ]);
+      expect(emptyViaHigh.status).toBe(1);
+      expect(emptyViaHigh.stderr).toMatch(/no evaluable advisory entries/);
+      expect(emptyViaHigh.stdout).not.toContain("No blocking high/critical advisories");
+
+      const lhciPath = "node_modules/@lhci/cli>tmp";
+      const otherPath = "node_modules/@turbo/gen>inquirer>tmp";
+      const tmpAdvisory = {
+        github_advisory_id: "GHSA-ph9p-34f9-6g65",
+        module_name: "tmp",
+        severity: "high",
+        title: "tmp advisory",
+        url: "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+      };
+      const runPackedAudit = (name: string, document: unknown) => {
+        const filePath = path.join(generatedRoot, name);
+        writeFileSync(filePath, `${JSON.stringify(document)}\n`);
+        return runCommand(process.execPath, [packedAuditScript, "--audit-json", filePath]);
+      };
+      const lhciFirst = runPackedAudit("audit-lhci-first.json", {
+        advisories: {
+          "1": {
+            ...tmpAdvisory,
+            findings: [
+              { version: "0.0.33", paths: [lhciPath] },
+              { version: "0.0.33", paths: [otherPath] },
+            ],
+          },
+        },
+      });
+      const otherFirst = runPackedAudit("audit-other-first.json", {
+        advisories: {
+          "1": {
+            ...tmpAdvisory,
+            findings: [
+              { version: "0.0.33", paths: [otherPath] },
+              { version: "0.0.33", paths: [lhciPath] },
+            ],
+          },
+        },
+      });
+      expect(lhciFirst.status).toBe(1);
+      expect(otherFirst.status).toBe(1);
+      expect(lhciFirst.stdout).not.toContain("No blocking high/critical advisories");
+      expect(otherFirst.stdout).not.toContain("No blocking high/critical advisories");
+
+      const enableList = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "list", "--json", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableList.status).toBe(0);
+      const enablePayload = JSON.parse(enableList.stdout) as {
+        ok: boolean;
+        result: { capabilities: { id: string; status: string }[] };
+      };
+      expect(
+        enablePayload.result.capabilities.some(
+          (entry) => entry.id === "storybook" && entry.status === "absent"
+        )
+      ).toBe(true);
+
+      const enableCoverage = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "coverage", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableCoverage.status).toBe(0);
+      expect(existsSync(path.join(generatedRoot, "coverage-policy.json"))).toBe(true);
 
       expect(existsSync(path.join(generatedRoot, "releases"))).toBe(false);
 

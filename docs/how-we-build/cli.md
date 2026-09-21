@@ -121,13 +121,10 @@ when those consumers are absent. `atlas.config.json`, the root `package.json`, a
 are generated later by `atlas init`, not copied from this repository.
 
 The packaged UI workspace omits Storybook, visual baselines, Husky, `packages/ui/scripts/**`, and
-`packages/ui/README.md` (canonical UI docs still describe those maintainer-only commands). Bootstrap
-generation derives a consumer-safe `packages/ui/package.json` from the maintainer manifest so
-scripts and unused Storybook/visual/Husky `devDependencies` match that trimmed tree. Root
-`CONTRIBUTING.md` is repository/maintainer-only and is not packaged. `lighthouserc.json` is packaged
-so `apps/web`'s `perf:lhci` script resolves. `.github/workflows/ci.yml` is a **consumer** GitHub
-Actions baseline (GitHub-hosted Ubuntu, Doctor + lint + typecheck + test + production build). It is
-not a copy of Atlas maintainer CI and does not include Playwright E2E.
+`packages/ui/README.md` from the **default** starter. `atlas enable storybook` (and `visual`,
+`hooks`, …) restore portable copies from packaged capability assets. Root `CONTRIBUTING.md` is
+repository/maintainer-only and is not packaged. `lighthouserc.json` is packaged so `apps/web`'s
+`perf:lhci` script resolves. `.github/workflows/ci.yml` is a **consumer** GitHub Actions baseline.
 
 `atlas init <project>` materializes that packaged tree into a new directory. It does not clone
 GitHub, copy the canonical monorepo, or read starter files from the caller's Atlas checkout.
@@ -261,14 +258,15 @@ half-created project.
 
 Generated-at-init files are written deliberately rather than copied from the Atlas monorepo:
 
-| Path                  | Responsibility                                                                                 |
-| --------------------- | ---------------------------------------------------------------------------------------------- |
-| `package.json`        | Consumer workspace manifest (`apps/web`, `packages/ui`, `packages/consent`, `packages/config`) |
-| `atlas.config.json`   | Project contract + `platform.baseline` checksums using the packaged Atlas version              |
-| `README.md`           | Short consumer quickstart                                                                      |
-| `jest.config.js`      | Jest projects for the generated workspace (no `apps/reference`)                                |
-| `pnpm-lock.yaml`      | Left absent until the consumer runs `pnpm install`                                             |
-| `apps/web/.env.local` | Absent by default; `--env copy` copies `.env.example` when present                             |
+| Path                                           | Responsibility                                                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `package.json`                                 | Consumer workspace manifest (`apps/web`, `packages/ui`, `packages/consent`, `packages/config`) |
+| `atlas.config.json`                            | Project contract + `platform.baseline` checksums using the packaged Atlas version              |
+| `README.md`                                    | Short consumer quickstart                                                                      |
+| `AGENTS.md` and selected `docs/how-we-build/*` | Consumer agent guidance, folder map, examples, tooling, and reference-pattern docs             |
+| `jest.config.js`                               | Jest projects for the generated workspace (no `apps/reference`)                                |
+| `pnpm-lock.yaml`                               | Left absent until the consumer runs `pnpm install`                                             |
+| `apps/web/.env.local`                          | Absent by default; `--env copy` copies `.env.example` when present                             |
 
 Packaged (not generated-at-init) consumer CI:
 
@@ -439,6 +437,37 @@ Reports are deterministic: stable `schemaVersion`, sorted paths, no timestamps.
 `platform.baseline.atlasVersion` from `atlas.config.json` so the application `package.json` version
 can stay independent. Source checkouts that still vendor `@blitzcraftlabs/atlas` continue to use the
 root package version, including when a historical upgrade baseline is present.
+
+Consumer workspaces report `workspaceKind: "consumer"` and `invocation.cli` as
+`pnpm dlx @blitzcraftlabs/atlas@<version>`. `validation.recommended` omits Atlas-maintainer commands
+such as `pnpm governance:check` and `pnpm --filter @atlas/reference test:e2e`. Documentation
+references are filtered to files that exist in that workspace.
+
+### `atlas enable`
+
+Opt-in consumer tooling. Default init stays lean; heavier quality and convenience tools are adopted
+explicitly. **Published Atlas 1.1.0 does not include this command.** Until the next CLI version is
+assigned, consumers invoke `pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable …`. That CLI
+release may differ from `platform.baseline.atlasVersion`. `atlas upgrade` does not install optional
+tooling, including a same-version upgrade to 1.1.0.
+
+```bash
+pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable list --json
+pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable storybook --dry-run
+pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable docs
+```
+
+`enable list --json` reports `status` (`absent` | `partial` | `installed` | `conflicted` |
+`replaceable`) plus `validationCommand`. `installed` means packaged/generated files match; it does
+not mean the validation command passed.
+
+Capabilities: `docs`, `storybook`, `visual`, `perf-ci`, `security`, `updates`, `coverage`, `hooks`,
+`cursor`, `docker`. `visual` requires `storybook` to be fully installed. Shipped visual PNG
+baselines are compared only in `mcr.microsoft.com/playwright:v<playwright-version>-noble` via
+`pnpm --filter @atlas/ui test:visual:docker`; generated comparison CI never updates snapshots.
+Enablement plans all writes before applying them, copies packaged assets, and merges `package.json`
+keys without overwriting customized files. Known-stale documentation is replaced only when the full
+file checksum matches a shipped copy. See [consumer-tooling.md](consumer-tooling.md).
 
 ### `atlas doctor`
 

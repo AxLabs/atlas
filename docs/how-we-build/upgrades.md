@@ -71,7 +71,8 @@ typical fork behavior — not requirements.
 | `src/components/*` (product)                       | Consumer-owned source            | App compositions                                          | Full ownership                                     | Never auto-touch                                       |
 | CI workflows (`.github/**`)                        | Consumer-owned after init        | Default GitHub-hosted workflow shipped at bootstrap       | Replace or extend freely                           | Not Atlas-upgrade-synced                               |
 | ESLint / architecture policy                       | Structural contract              | Per-app `eslint.config.mjs`                               | Policy tuning                                      | Doctor + manual                                        |
-| Storybook (`@atlas/ui`)                            | Versioned package + docs         | Package scripts                                           | Visual overrides in app                            | Package upgrade                                        |
+| Storybook (`@atlas/ui`)                            | Opt-in capability                | `atlas enable storybook`                                  | Visual overrides in app                            | Enable; not silent upgrade                             |
+| Consumer optional tooling                          | Opt-in capability                | `atlas enable <id>`                                       | Replace or extend freely                           | Conflicts skip customized files                        |
 | Testing infrastructure                             | Structural contract              | `@atlas/config`, app test utils                           | Consumer tests                                     | Manual merge                                           |
 | Docs / conventions                                 | Documentation/procedure          | Follow when building                                      | N/A                                                | Read upgrade guide                                     |
 | `apps/reference/**`                                | Reference-only                   | Optional workspace                                        | Delete or keep independently                       | Out of starter upgrade scope                           |
@@ -129,6 +130,13 @@ typical fork behavior — not requirements.
 | Structural convention                  | Doctor + migration docs                                   |
 | Breaking architecture                  | Migration guide + `atlas upgrade` codemod                 |
 | Documentation only                     | Read `docs/migrations/` + changelog                       |
+
+Optional consumer tooling (Storybook, visual tests, performance CI, security workflows, Dependabot,
+coverage floors, Git hooks, Cursor adapters, Docker) is **not** applied by `atlas upgrade`,
+including a same-version upgrade. Published Atlas 1.1.0 does not contain `atlas enable`. After a CLI
+release that includes `enable` is published, adopt those capabilities with that CLI — which may
+differ from the recorded platform baseline — using `atlas enable <id> --dry-run` then
+`atlas enable <id>`. See [consumer-tooling.md](consumer-tooling.md).
 
 ---
 

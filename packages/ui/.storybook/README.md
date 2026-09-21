@@ -138,7 +138,12 @@ required before any baseline lands on `main`.
 
 **Do not capture baselines on the host runner or a developer laptop.** Font hinting and other
 rasterization details differ outside the Playwright Docker image even with the same Playwright
-version; host-captured baselines can pass locally but diff in CI (or vice versa).
+version; host-captured baselines can pass locally but diff in CI (or vice versa). Generated consumer
+apps follow the same rule: `pnpm --filter @atlas/ui test:visual:docker` is the supported comparison.
+Host `test:visual` is blocked unless the process is inside that image.
+
+The inner `test:visual` / `test:visual:update` scripts run only inside the image (the config refuses
+host Chromium). `--update-snapshots` is never a CI comparison step.
 
 CI uploads `test-results/`, `playwright-report-visual/`, and `playwright-report-storybook/` when
 visual tests fail (HTML reports are generated only in CI via the `CI=true` environment variable).

@@ -172,7 +172,8 @@ The bootstrap contract should deliberately exclude:
 - `apps/reference` unless the user explicitly asks for reference/demo content;
 - Atlas maintainer-only CI/release tooling;
 - private/internal audit fixtures;
-- Storybook/visual baselines not required by the generated starter contract;
+- Storybook/visual baselines not required by the generated starter contract (optional later via
+  `atlas enable`);
 - historical GitHub metadata;
 - the full Atlas documentation corpus;
 - the full Atlas release-history tree when upgrade metadata can be supplied by the CLI artifact.

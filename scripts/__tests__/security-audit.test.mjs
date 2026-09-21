@@ -267,6 +267,105 @@ describe("security audit CLI", () => {
     assert.match(result.stderr, /vulnerabilities must be an object/);
   });
 
+  it("fails closed when metadata is null", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "metadata-null.json");
+    writeFileSync(filePath, `${JSON.stringify({ metadata: null })}\n`);
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /metadata must be an object/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("fails closed when metadata reports high issues with no evaluable findings", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "metadata-high.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify({ metadata: { vulnerabilities: { high: 1, critical: 0 } } })}\n`
+    );
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /no evaluable high\/critical findings/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("fails closed on an empty advisory record", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "empty-advisory.json");
+    writeFileSync(filePath, `${JSON.stringify({ advisories: { "1": {} } })}\n`);
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /unknown severity|missing a package name|does not identify/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("fails closed on a high vulnerability with no evaluable via entries", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "empty-via-high.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify({ vulnerabilities: { example: { severity: "high", via: [] } } })}\n`
+    );
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /no evaluable advisory entries/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("fails closed on missing severity", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "missing-severity.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify({ vulnerabilities: { example: { via: [] } } })}\n`
+    );
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /missing a known severity/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("resolves valid transitive string via references", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-audit-"));
+    const filePath = path.join(directory, "transitive-via.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify({
+        vulnerabilities: {
+          parent: { name: "parent", severity: "high", via: ["atlas-synthetic-high"] },
+          "atlas-synthetic-high": readFixture("high-vulnerability.json").vulnerabilities[
+            "atlas-synthetic-high"
+          ],
+        },
+      })}\n`
+    );
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    assert.match(result.stdout, /blocking: 1/);
+    assert.match(result.stdout, /GHSA-atls-high-0001/);
+    assert.match(result.stdout, /✗ Dependency vulnerability policy failed/);
+  });
+
+  it("fails closed on unresolved via references", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "unresolved-via.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify({ vulnerabilities: { parent: { severity: "high", via: ["missing"] } } })}\n`
+    );
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /unresolved via reference "missing"/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
   it("rejects wildcard exceptions", () => {
     const exceptions = writeExceptions([{ ...validException, advisory: "*" }]);
     const result = runCli([
@@ -296,6 +395,29 @@ describe("security audit policy helpers", () => {
     });
     assert.equal(evaluation.ok, false);
     assert.match(formatSecuritySummary(evaluation, policy), /Blocking vulnerabilities/);
+  });
+
+  it("does not let a duplicate lower-severity record hide a high finding", () => {
+    const high = readFixture("high-vulnerability.json").vulnerabilities["atlas-synthetic-high"];
+    const moderate = JSON.parse(JSON.stringify(high));
+    moderate.severity = "moderate";
+    moderate.via[0].severity = "moderate";
+    const policy = loadPolicy(repoRoot);
+
+    for (const order of [
+      { first: moderate, second: high },
+      { first: high, second: moderate },
+    ]) {
+      const evaluation = evaluateSecurityAudit({
+        audit: { vulnerabilities: { first: order.first, second: order.second } },
+        exceptions: [],
+        policy,
+      });
+      assert.equal(evaluation.ok, false);
+      assert.equal(evaluation.blocking.length, 1);
+      assert.equal(evaluation.blocking[0].severity, "high");
+      assert.equal(evaluation.blocking[0].advisoryId, "GHSA-atls-high-0001");
+    }
   });
 });
 

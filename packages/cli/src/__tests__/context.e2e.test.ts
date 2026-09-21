@@ -10,6 +10,7 @@ import { getRepoRoot, runAtlasCli } from "./helpers/run-cli";
 interface AgentContextJsonResult {
   schemaVersion: number;
   atlasVersion: string;
+  workspaceKind: string;
   project: {
     root: string;
     applications: string[];
@@ -24,6 +25,7 @@ interface AgentContextJsonResult {
   commands: {
     generators: { id: string }[];
     doctor: { checkIds: string[] };
+    enable: { capabilityIds: string[] };
     upgrade: {
       dryRunJsonSupported: boolean;
       decisionSource: string;
@@ -91,6 +93,8 @@ describe("atlas context CLI", () => {
     expect(context.commands.upgrade.resultStatusField).toBe("status");
     expect(context.commands.upgrade.planItemConflictField).toBe("conflict");
     expect(context.validation.recommended.some((entry) => entry.id === "lint")).toBe(true);
+    expect(context.workspaceKind).toBe("platform");
+    expect(context.commands.enable.capabilityIds).toContain("storybook");
     expect(context.documentation.workflow).toBe("docs/how-we-build/agents.md");
     expect(context.documentation.agentEntryPoint).toBe("AGENTS.md");
     expect(context.documentation.adrs.some((adr) => adr.id === "ADR-0010")).toBe(true);

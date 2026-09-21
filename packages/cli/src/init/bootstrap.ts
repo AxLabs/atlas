@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   renameSync,
   rmdirSync,
   rmSync,
@@ -35,6 +36,7 @@ import {
   mergePlatformBaselineIntoContract,
 } from "../upgrade/baseline";
 
+import { listGeneratedConsumerDocs } from "./consumer-docs";
 import {
   buildConsumerContract,
   buildConsumerJestConfig,
@@ -42,6 +44,7 @@ import {
   buildConsumerReadme,
   planGeneratedAtInitActions,
 } from "./consumer-files";
+import { collectDependencyNames, selectConsumerPnpmOverrides } from "./consumer-overrides";
 import {
   ensureDestinationParent,
   removeEmptyDirectories,
@@ -144,16 +147,44 @@ function maybeCopyEnvLocal(destinationRoot: string, env: EnvPolicy): PlannedActi
   };
 }
 
+function readJsonIfExists(filePath: string): Record<string, unknown> | undefined {
+  if (!existsSync(filePath)) {
+    return undefined;
+  }
+  return JSON.parse(readFileSync(filePath, "utf8")) as Record<string, unknown>;
+}
+
 function writeGeneratedFiles(options: {
   destinationRoot: string;
   projectName: string;
   atlasVersion: string;
   env: EnvPolicy;
+  pnpmOverrideCatalog?: Record<string, string>;
 }): PlannedAction[] {
+  const workspaceManifests = [
+    "apps/web/package.json",
+    "packages/ui/package.json",
+    "packages/consent/package.json",
+    "packages/config/package.json",
+  ]
+    .map((relativePath) => readJsonIfExists(path.join(options.destinationRoot, relativePath)))
+    .filter((value): value is Record<string, unknown> => value !== undefined)
+    .map((manifest) => ({
+      dependencies: manifest.dependencies as Record<string, string> | undefined,
+      devDependencies: manifest.devDependencies as Record<string, string> | undefined,
+      peerDependencies: manifest.peerDependencies as Record<string, string> | undefined,
+    }));
+
+  const pnpmOverrides = selectConsumerPnpmOverrides(
+    options.pnpmOverrideCatalog ?? {},
+    collectDependencyNames(workspaceManifests)
+  );
+
   const packageJson = buildConsumerPackageManifest({
     projectName: options.projectName,
     atlasVersion: options.atlasVersion,
     includePerfCommands: existsSync(path.join(options.destinationRoot, "lighthouserc.json")),
+    pnpmOverrides,
   });
   writeFileSync(path.join(options.destinationRoot, "package.json"), packageJson, "utf8");
   writeFileSync(
@@ -169,6 +200,15 @@ function writeGeneratedFiles(options: {
     buildConsumerJestConfig(),
     "utf8"
   );
+
+  for (const file of listGeneratedConsumerDocs({
+    projectName: options.projectName,
+    atlasVersion: options.atlasVersion,
+  })) {
+    const destinationPath = path.join(options.destinationRoot, file.destination);
+    mkdirSync(path.dirname(destinationPath), { recursive: true });
+    writeFileSync(destinationPath, file.content, "utf8");
+  }
 
   normalizeGeneratedInfrastructureManifest(options.destinationRoot);
 
@@ -294,6 +334,7 @@ export function runBootstrapInit(options: BootstrapInitOptions): CommandResult {
         projectName,
         atlasVersion,
         env: options.env,
+        pnpmOverrideCatalog: manifest.pnpmOverrideCatalog,
       }),
     ];
     plan.warnings = validatePrerequisites(stagingRoot);

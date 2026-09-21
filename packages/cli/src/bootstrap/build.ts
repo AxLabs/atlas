@@ -345,12 +345,16 @@ export function buildBootstrapAssets(
   mkdirSync(filesRoot, { recursive: true });
 
   const atlasVersion = readPackageVersion(packageRoot);
+  const atlasRoot = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")) as {
+    pnpm?: { overrides?: Record<string, string> };
+  };
   const entries = expanded.map((file) => copyExpandedFile(file, filesRoot, repoRoot, atlasVersion));
   const packaged: PackagedBootstrapManifest = {
     schemaVersion: BOOTSTRAP_MANIFEST_SCHEMA_VERSION,
     atlasVersion,
     generatedAtInit: sourceManifest.generatedAtInit,
     entries,
+    pnpmOverrideCatalog: atlasRoot.pnpm?.overrides,
   };
 
   writeFileSync(

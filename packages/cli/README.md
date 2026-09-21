@@ -54,6 +54,7 @@ atlas doctor
 atlas generate feature users --query --mutation --form
 atlas generate page settings/profile
 atlas context --json
+atlas enable list --json
 atlas upgrade --to <version> --dry-run --json
 ```
 
@@ -63,7 +64,13 @@ atlas upgrade --to <version> --dry-run --json
 | `atlas doctor`                 | Check Atlas contract and architecture drift                        |
 | `atlas generate feature\|page` | Scaffold structural product surfaces                               |
 | `atlas context [--json]`       | Resolve the executable project contract for agents                 |
+| `atlas enable <id>`            | Opt in to Storybook, coverage, hooks, Docker, and other tooling    |
 | `atlas upgrade --to <version>` | Plan or apply a supported Atlas upgrade                            |
+
+Published npm 1.1.0 does **not** include `atlas enable`. This command ships in the next CLI release.
+Until that version is assigned, pin `pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable …`.
+That CLI may differ from a consumer's recorded platform baseline. `atlas upgrade` does not install
+optional tooling.
 
 Selected supported flags:
 
@@ -71,6 +78,7 @@ Selected supported flags:
 - `atlas doctor`: `--json`, `--cwd <path>`
 - `atlas generate`: `--query`, `--mutation`, `--form`, `--tests`, `--dry-run`, `--json`
 - `atlas context`: `--json`, `--cwd <path>`
+- `atlas enable`: `--dry-run`, `--json`, `--cwd <path>`
 - `atlas upgrade`: `--to <version>`, `--dry-run`, `--json`, `--allow-dirty`
 
 Which surfaces are SemVer-frozen is defined by the

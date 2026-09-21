@@ -41,6 +41,16 @@ export const AGENT_DOCUMENTATION_REFERENCES: DocumentationReference[] = [
     title: "Folder structure",
   },
   { id: "examples", path: "docs/how-we-build/examples.md", title: "Example patterns" },
+  {
+    id: "consumer-tooling",
+    path: "docs/how-we-build/consumer-tooling.md",
+    title: "Consumer tooling",
+  },
+  {
+    id: "reference-patterns",
+    path: "docs/how-we-build/reference-patterns.md",
+    title: "Reference patterns",
+  },
   { id: "security", path: "docs/how-we-build/security.md", title: "Security posture" },
   { id: "threat-model", path: "docs/security/threat-model.md", title: "Atlas threat model" },
 ];
@@ -68,8 +78,22 @@ export const AGENT_ADR_REFERENCES: DocumentationReference[] = [
   },
 ];
 
+export const CONSUMER_GENERATED_DOCUMENTATION_PATHS = [
+  AGENT_ENTRY_POINT_PATH,
+  AGENT_WORKFLOW_DOC_PATH,
+  "docs/how-we-build/folder-structure.md",
+  "docs/how-we-build/examples.md",
+  "docs/how-we-build/consumer-tooling.md",
+  "docs/how-we-build/reference-patterns.md",
+] as const;
+
 export function listAgentDocumentationReferences(): DocumentationReference[] {
   return [...AGENT_DOCUMENTATION_REFERENCES].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+export function listPackagedConsumerDocumentationReferences(): DocumentationReference[] {
+  const generated = new Set<string>(CONSUMER_GENERATED_DOCUMENTATION_PATHS);
+  return listAgentDocumentationReferences().filter((reference) => !generated.has(reference.path));
 }
 
 export function listAgentAdrReferences(): DocumentationReference[] {

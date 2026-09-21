@@ -37,6 +37,7 @@ export interface PackagedBootstrapManifest {
   atlasVersion: string;
   generatedAtInit: GeneratedAtInitEntry[];
   entries: PackagedBootstrapManifestEntry[];
+  pnpmOverrideCatalog?: Record<string, string>;
 }
 
 const generatedAtInitSchema = z
@@ -77,6 +78,7 @@ const packagedManifestSchema = z
     atlasVersion: z.string().min(1),
     generatedAtInit: z.array(generatedAtInitSchema),
     entries: z.array(packagedEntrySchema).min(1),
+    pnpmOverrideCatalog: z.record(z.string(), z.string()).optional(),
   })
   .strict();
 
@@ -203,6 +205,7 @@ export function parsePackagedBootstrapManifest(raw: unknown): PackagedBootstrapM
     atlasVersion: parsed.data.atlasVersion,
     generatedAtInit: normalizeGeneratedAtInit(parsed.data.generatedAtInit),
     entries: sortedEntries,
+    pnpmOverrideCatalog: parsed.data.pnpmOverrideCatalog,
   };
 }
 
@@ -214,6 +217,9 @@ export function serializePackagedBootstrapManifest(manifest: PackagedBootstrapMa
       atlasVersion: normalized.atlasVersion,
       generatedAtInit: normalized.generatedAtInit,
       entries: normalized.entries,
+      ...(normalized.pnpmOverrideCatalog
+        ? { pnpmOverrideCatalog: normalized.pnpmOverrideCatalog }
+        : {}),
     },
     null,
     2

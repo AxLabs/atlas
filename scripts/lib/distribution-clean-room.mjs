@@ -61,6 +61,10 @@ export const EXPECTED_INIT_PATHS = Object.freeze([
   "atlas.config.json",
   "package.json",
   "pnpm-workspace.yaml",
+  "AGENTS.md",
+  "docs/how-we-build/agents.md",
+  "docs/how-we-build/consumer-tooling.md",
+  "docs/how-we-build/reference-patterns.md",
   ".github/workflows/ci.yml",
 ]);
 
@@ -69,6 +73,11 @@ export const FORBIDDEN_GENERATED_PATHS = Object.freeze([
   "packages/cli",
   "packages/project",
   "releases",
+  "packages/ui/.storybook",
+  "packages/ui/visual-tests",
+  "docker-compose.yml",
+  "coverage-policy.json",
+  ".husky",
 ]);
 
 export const EXPECTED_WORKSPACE_PACKAGE_NAMES = Object.freeze([
@@ -899,6 +908,19 @@ export function assertContextReport(contextEnvelope, expectations) {
     );
   }
 
+  if (report.workspaceKind !== "consumer") {
+    issues.push(`Context workspaceKind is ${String(report.workspaceKind)}, expected consumer`);
+  }
+  if (
+    typeof report?.invocation?.cli !== "string" ||
+    !report.invocation.cli.includes("pnpm dlx @blitzcraftlabs/atlas@")
+  ) {
+    issues.push("Consumer context invocation.cli must be a pinned pnpm dlx command");
+  }
+  if (!Array.isArray(report?.commands?.enable?.capabilityIds) || !report.commands.enable.capabilityIds.includes("storybook")) {
+    issues.push("Consumer context must advertise atlas enable capability ids");
+  }
+
   const applications = report?.project?.applications;
   if (!Array.isArray(applications) || !applications.includes("apps/web")) {
     issues.push("Context applications must include apps/web");
@@ -911,6 +933,30 @@ export function assertContextReport(contextEnvelope, expectations) {
     )
   ) {
     issues.push("Context JSON contains the canonical Atlas repository realpath");
+  }
+
+  const recommended = report?.validation?.recommended ?? [];
+  if (!Array.isArray(recommended) || recommended.length === 0) {
+    issues.push("Context validation.recommended is missing");
+  }
+  if (
+    recommended.some(
+      (entry) =>
+        typeof entry?.command === "string" &&
+        (entry.command.includes("@atlas/reference") || entry.id === "governance-check")
+    )
+  ) {
+    issues.push("Consumer context advertises Atlas-maintainer-only validation commands");
+  }
+  if (
+    recommended.some(
+      (entry) =>
+        typeof entry?.command === "string" &&
+        entry.command.includes("pnpm atlas") &&
+        !entry.command.includes("dlx")
+    )
+  ) {
+    issues.push("Consumer context still uses unpinned workspace CLI invocations");
   }
 
   issues.push(...collectRepoPathLeaks(report, expectations.repoRoot));

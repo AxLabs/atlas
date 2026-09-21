@@ -142,7 +142,68 @@ export function validateAuditDocumentShape(audit) {
     throw operationalError("audit document advisories must be an object");
   }
 
+  if (hasMetadata && !isPlainObject(audit.metadata)) {
+    throw operationalError("audit document metadata must be an object");
+  }
+
+  assertMetadataBlockingCounts(audit);
   return audit;
+}
+
+/**
+ * @param {Record<string, unknown>} audit
+ * @returns {{ high: number; critical: number } | null}
+ */
+export function readMetadataBlockingCounts(audit) {
+  if (!isPlainObject(audit) || !Object.hasOwn(audit, "metadata")) {
+    return null;
+  }
+  if (!isPlainObject(audit.metadata)) {
+    throw operationalError("audit document metadata must be an object");
+  }
+  if (!Object.hasOwn(audit.metadata, "vulnerabilities")) {
+    return null;
+  }
+  const counts = audit.metadata.vulnerabilities;
+  if (!isPlainObject(counts)) {
+    throw operationalError("audit document metadata.vulnerabilities must be an object");
+  }
+  for (const key of ["high", "critical"]) {
+    const value = counts[key];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      throw operationalError(
+        `audit document metadata.vulnerabilities.${key} must be a non-negative number`
+      );
+    }
+  }
+  return { high: counts.high, critical: counts.critical };
+}
+
+/**
+ * @param {Record<string, unknown>} audit
+ */
+function assertMetadataBlockingCounts(audit) {
+  readMetadataBlockingCounts(audit);
+}
+
+/**
+ * Fail closed when metadata reports high/critical issues that cannot be evaluated.
+ * @param {Record<string, unknown>} audit
+ * @param {{ severity: string }[]} findings
+ */
+export function assertMetadataTotalsAreEvaluable(audit, findings) {
+  const counts = readMetadataBlockingCounts(audit);
+  if (!counts || (counts.high === 0 && counts.critical === 0)) {
+    return;
+  }
+  const evaluable = findings.filter(
+    (finding) => finding.severity === "high" || finding.severity === "critical"
+  );
+  if (evaluable.length === 0) {
+    throw operationalError(
+      `audit metadata reports high=${counts.high} critical=${counts.critical} but no evaluable high/critical findings were present`
+    );
+  }
 }
 
 export function assertAuditDocument(audit) {
@@ -168,10 +229,6 @@ export function validateVulnerabilityRecord(packageName, entry) {
 }
 
 export function validateViaRecord(packageName, via, parentSeverity) {
-  if (typeof via === "string") {
-    return [];
-  }
-
   if (!isPlainObject(via)) {
     throw operationalError(`vulnerability record "${packageName}" has a malformed via entry`);
   }
@@ -224,6 +281,71 @@ export function validateViaRecord(packageName, via, parentSeverity) {
           : null,
     },
   ];
+}
+
+function assertBlockingRecordIsEvaluable(packageName, severity, findings) {
+  if (findings.length > 0) {
+    return;
+  }
+  if (severity === "high" || severity === "critical") {
+    throw operationalError(
+      `vulnerability record "${packageName}" has ${severity} severity but no evaluable advisory entries`
+    );
+  }
+}
+
+function collectFromVulnerability(packageName, entry, vulnerabilities, visiting) {
+  const record = validateVulnerabilityRecord(packageName, entry);
+  const parentSeverity = normalizeSeverity(record.severity);
+  const findings = [];
+  const patched =
+    record.fixAvailable && typeof record.fixAvailable === "object" && record.fixAvailable.version
+      ? record.fixAvailable.version
+      : null;
+  visiting.add(packageName);
+
+  for (const via of record.via) {
+    if (typeof via === "string") {
+      const ref = via.trim();
+      if (!ref) {
+        throw operationalError(
+          `vulnerability record "${packageName}" has an empty via reference`
+        );
+      }
+      if (!Object.hasOwn(vulnerabilities, ref) || !isPlainObject(vulnerabilities[ref])) {
+        throw operationalError(
+          `vulnerability record "${packageName}" has an unresolved via reference "${ref}"`
+        );
+      }
+      if (visiting.has(ref)) {
+        continue;
+      }
+      findings.push(
+        ...collectFromVulnerability(ref, vulnerabilities[ref], vulnerabilities, visiting)
+      );
+      continue;
+    }
+
+    for (const finding of validateViaRecord(record.name || packageName, via, record.severity)) {
+      if (!finding.patchedVersions && patched) {
+        finding.patchedVersions = patched;
+      }
+      if (!finding.range && typeof record.range === "string") {
+        finding.range = record.range;
+      }
+      findings.push(finding);
+    }
+  }
+
+  visiting.delete(packageName);
+
+  if (findings.length === 0 && !parentSeverity && record.via.length === 0) {
+    throw operationalError(
+      `vulnerability record "${packageName}" is missing a known severity`
+    );
+  }
+  assertBlockingRecordIsEvaluable(packageName, parentSeverity, findings);
+  return findings;
 }
 
 export function validateLegacyAdvisoryRecord(key, advisory) {
@@ -301,36 +423,31 @@ function normalizeAdvisoryId(value) {
 export function collectFindings(audit) {
   const document = validateAuditDocumentShape(audit);
   const findings = [];
-  const seen = new Set();
 
   function addFinding(finding) {
     const key = `${finding.advisoryId}::${finding.packageName}`;
-    if (seen.has(key)) {
+    const existingIndex = findings.findIndex(
+      (entry) => `${entry.advisoryId}::${entry.packageName}` === key
+    );
+    if (existingIndex === -1) {
+      findings.push(finding);
       return;
     }
-    seen.add(key);
-    findings.push(finding);
+    const existing = findings[existingIndex];
+    if (SEVERITY_RANK[finding.severity] > SEVERITY_RANK[existing.severity]) {
+      findings[existingIndex] = finding;
+    }
   }
 
   if (Object.hasOwn(document, "vulnerabilities")) {
     for (const [packageName, entry] of Object.entries(document.vulnerabilities)) {
-      const record = validateVulnerabilityRecord(packageName, entry);
-      const parentSeverity = record.severity;
-      const patched =
-        record.fixAvailable && typeof record.fixAvailable === "object" && record.fixAvailable.version
-          ? record.fixAvailable.version
-          : null;
-
-      for (const via of record.via) {
-        for (const finding of validateViaRecord(record.name || packageName, via, parentSeverity)) {
-          if (!finding.patchedVersions && patched) {
-            finding.patchedVersions = patched;
-          }
-          if (!finding.range && typeof record.range === "string") {
-            finding.range = record.range;
-          }
-          addFinding(finding);
-        }
+      for (const finding of collectFromVulnerability(
+        packageName,
+        entry,
+        document.vulnerabilities,
+        new Set()
+      )) {
+        addFinding(finding);
       }
     }
   }
@@ -340,6 +457,8 @@ export function collectFindings(audit) {
       addFinding(validateLegacyAdvisoryRecord(key, advisory));
     }
   }
+
+  assertMetadataTotalsAreEvaluable(document, findings);
 
   return findings.sort((left, right) => {
     const severityDelta = SEVERITY_RANK[right.severity] - SEVERITY_RANK[left.severity];

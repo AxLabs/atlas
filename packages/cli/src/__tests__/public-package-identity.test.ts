@@ -63,6 +63,8 @@ describe("public CLI package identity", () => {
       "THIRD_PARTY_NOTICES.md",
       "assets/bootstrap/manifest.json",
       "assets/bootstrap/files/**",
+      "assets/capabilities/manifest.json",
+      "assets/capabilities/files/**",
       "assets/releases/catalog.json",
       "assets/releases/**",
     ]);

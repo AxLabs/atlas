@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -33,6 +34,7 @@ import {
   isForbiddenBootstrapPath,
 } from "./helpers/pack-artifact";
 import { runAtlasCli } from "./helpers/run-cli";
+import { atlasDlxForEnable } from "../init/cli-release";
 import { CLI_PACKAGE_NAME } from "../version";
 
 function writePackagedBootstrapFixture(options?: {
@@ -208,7 +210,7 @@ describe("atlas init bootstrap destination safety", () => {
 
       expect(result.initMode).toBe("bootstrap");
       expect(result.atlasVersion).toBe("9.9.9");
-      expect(result.repoRoot).toBe(destination);
+      expect(realpathSync(result.repoRoot)).toBe(realpathSync(destination));
       expect(existsSync(path.join(destination, "apps/web/package.json"))).toBe(true);
       expect(existsSync(path.join(destination, "package.json"))).toBe(true);
       expect(existsSync(path.join(destination, "pnpm-lock.yaml"))).toBe(false);
@@ -255,7 +257,7 @@ describe("atlas init bootstrap destination safety", () => {
         assetRoot: packaged.assetRoot,
       });
 
-      expect(result.repoRoot).toBe(path.join(cwd, "nested", "my-app"));
+      expect(realpathSync(result.repoRoot)).toBe(realpathSync(path.join(cwd, "nested", "my-app")));
       expect(existsSync(path.join(cwd, "nested", "my-app", "package.json"))).toBe(true);
       const packageJson = JSON.parse(
         readFileSync(path.join(cwd, "nested", "my-app", "package.json"), "utf8")
@@ -541,7 +543,12 @@ describe("atlas init bootstrap generated project", () => {
         expect(existsSync(path.join(destination, "CONTRIBUTING.md"))).toBe(false);
         expect(existsSync(path.join(destination, "packages/ui/README.md"))).toBe(false);
         expect(existsSync(path.join(destination, "packages/ui/.storybook"))).toBe(false);
+        expect(existsSync(path.join(destination, "packages/ui/visual-tests"))).toBe(false);
         expect(existsSync(path.join(destination, "packages/ui/.husky"))).toBe(false);
+        expect(existsSync(path.join(destination, "docker-compose.yml"))).toBe(false);
+        expect(existsSync(path.join(destination, "coverage-policy.json"))).toBe(false);
+        expect(existsSync(path.join(destination, ".husky"))).toBe(false);
+        expect(existsSync(path.join(destination, ".github/dependabot.yml"))).toBe(false);
         expect(existsSync(path.join(destination, "pnpm-lock.yaml"))).toBe(false);
         expect(existsSync(path.join(destination, "apps/web/.env.local"))).toBe(false);
         expect(existsSync(path.join(destination, "apps/web/.env.example"))).toBe(true);
@@ -624,6 +631,30 @@ describe("atlas init bootstrap generated project", () => {
         expect(readme).not.toContain("pnpm atlas");
         expect(readme).not.toContain("publication path is finalized");
         expect(readme).not.toContain("Enterprise frontend platform monorepo");
+
+        const agents = readFileSync(path.join(destination, "AGENTS.md"), "utf8");
+        expect(agents).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${manifest.atlasVersion} context --json`
+        );
+        expect(agents).toContain(`${atlasDlxForEnable(manifest.atlasVersion)} enable list --json`);
+        expect(agents).not.toContain("pnpm atlas");
+        expect(agents).not.toContain("pnpm --filter @blitzcraftlabs/atlas build");
+        expect(agents).not.toContain("packages/cli");
+        expect(existsSync(path.join(destination, "docs/how-we-build/consumer-tooling.md"))).toBe(
+          true
+        );
+        expect(existsSync(path.join(destination, "docs/how-we-build/reference-patterns.md"))).toBe(
+          true
+        );
+        expect(existsSync(path.join(destination, "packages/ui/.storybook"))).toBe(false);
+        expect(existsSync(path.join(destination, "docker-compose.yml"))).toBe(false);
+        expect(existsSync(path.join(destination, "coverage-policy.json"))).toBe(false);
+
+        const rootManifest = JSON.parse(
+          readFileSync(path.join(destination, "package.json"), "utf8")
+        ) as { pnpm?: { overrides?: Record<string, string> } };
+        expect(rootManifest.pnpm?.overrides?.react).toBeDefined();
+        expect(rootManifest.pnpm?.overrides?.vite).toBeUndefined();
 
         const jestConfig = readFileSync(path.join(destination, "jest.config.js"), "utf8");
         expect(jestConfig).toContain("apps/web");

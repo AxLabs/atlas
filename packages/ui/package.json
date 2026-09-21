@@ -32,6 +32,7 @@
     "test:storybook:cross-browser": "playwright test -c playwright.storybook.config.ts",
     "test:visual": "playwright test -c playwright.visual.config.ts",
     "test:visual:update": "playwright test -c playwright.visual.config.ts --update-snapshots",
+    "test:visual:docker": "node scripts/run-visual-in-playwright-docker.mjs",
     "test:ui-quality": "pnpm build-storybook && pnpm test:storybook && pnpm test:storybook:cross-browser && pnpm test:visual",
     "clean": "rm -rf .turbo node_modules coverage storybook-static",
     "prepare": "husky"

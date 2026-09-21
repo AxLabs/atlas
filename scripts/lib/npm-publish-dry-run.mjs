@@ -35,6 +35,31 @@ function isSecretEnvPath(entry) {
   return base.startsWith(".env.") && !base.endsWith(".example");
 }
 
+const PACKAGED_STORYBOOK_VISUAL_ASSET_PREFIXES = [
+  "assets/capabilities/files/storybook/",
+  "assets/capabilities/files/visual/",
+];
+
+/**
+ * Opt-in Storybook and visual capability files are packaged under
+ * `assets/capabilities/files/{storybook,visual}/`. Those destinations are
+ * intentional; Storybook paths anywhere else remain forbidden.
+ * @param {string} entry
+ */
+export function isPackagedStorybookOrVisualCapabilityAsset(entry) {
+  return PACKAGED_STORYBOOK_VISUAL_ASSET_PREFIXES.some((prefix) => entry.startsWith(prefix));
+}
+
+/**
+ * @param {string} entry
+ */
+export function isForbiddenStorybookPackedPath(entry) {
+  if (isPackagedStorybookOrVisualCapabilityAsset(entry)) {
+    return false;
+  }
+  return entry.includes(".storybook/") || /(^|\/)storybook(\.|$)/i.test(entry);
+}
+
 export const FORBIDDEN_PACKED_PATH_PATTERNS = [
   {
     id: "src",
@@ -78,7 +103,7 @@ export const FORBIDDEN_PACKED_PATH_PATTERNS = [
   },
   {
     id: "storybook",
-    test: (entry) => entry.includes(".storybook/") || /(^|\/)storybook(\.|$)/i.test(entry),
+    test: isForbiddenStorybookPackedPath,
   },
 ];
 
@@ -92,6 +117,7 @@ export function normalizePackedEntry(entry) {
 
 const AUTH_FAILURE_PATTERN = /ENEEDAUTH|npm ERR! code ENEEDAUTH/i;
 const AUTH_WARNING_PATTERN = /This command requires you to be logged in[^\n]*\(dry-run\)/i;
+const ALREADY_PUBLISHED_PATTERN = /cannot publish over the previously published versions/i;
 
 /**
  * @param {unknown} value
@@ -262,6 +288,16 @@ export function detectNpmAuthRequirement(output, status = null) {
 }
 
 /**
+ * npm 11+ dry-run may exit non-zero when the version already exists on the
+ * registry. Pack contents and public-access checks still succeeded.
+ * @param {string} output
+ * @param {number | null} [status]
+ */
+export function detectAlreadyPublishedDryRun(output, status = null) {
+  return status !== 0 && ALREADY_PUBLISHED_PATTERN.test(output);
+}
+
+/**
  * @param {string} directory
  */
 export function removeGeneratedTarballs(directory) {
@@ -358,7 +394,8 @@ export function verifyNpmPublishDryRun(options) {
         "npm publish --dry-run unexpectedly required authentication. Stopped without introducing credentials."
       );
     }
-    if (publish.status !== 0 || publish.timedOut) {
+    const alreadyPublished = detectAlreadyPublishedDryRun(combined, publish.status);
+    if ((publish.status !== 0 || publish.timedOut) && !alreadyPublished) {
       throw new Error(
         `npm publish --dry-run --access public failed (${publish.timedOut ? "timed out" : publish.status})\nstdout:\n${publish.stdout}\nstderr:\n${publish.stderr}`
       );

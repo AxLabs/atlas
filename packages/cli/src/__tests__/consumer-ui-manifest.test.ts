@@ -37,6 +37,7 @@ describe("consumer UI package manifest transform", () => {
     expect(packaged.scripts?.["test:storybook:cross-browser"]).toBeUndefined();
     expect(packaged.scripts?.["test:visual"]).toBeUndefined();
     expect(packaged.scripts?.["test:visual:update"]).toBeUndefined();
+    expect(packaged.scripts?.["test:visual:docker"]).toBeUndefined();
     expect(packaged.scripts?.["test:ui-quality"]).toBeUndefined();
     expect(packaged.scripts?.prepare).toBeUndefined();
 

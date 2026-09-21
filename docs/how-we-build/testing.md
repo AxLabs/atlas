@@ -316,7 +316,9 @@ Storybook complements Jest and application E2E — it does not replace them.
 CI runs these in the **UI Quality** workflow with path filtering for `packages/ui/**`, Storybook
 critical-policy scripts, and related shared config. Pixel baselines are Chromium-only captures from
 `mcr.microsoft.com/playwright:v<playwright-version>-noble` with `maxDiffPixelRatio: 0.005`; WebKit
-is exercised for interaction, not screenshots.
+is exercised for interaction, not screenshots. Generated consumers that `atlas enable visual` use
+the same image via `pnpm --filter @atlas/ui test:visual:docker` and a comparison workflow that never
+updates snapshots.
 
 Details: `packages/ui/.storybook/README.md`.
 
