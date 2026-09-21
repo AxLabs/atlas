@@ -23,6 +23,17 @@ export interface PackageManifestPatch {
   scripts?: Record<string, string>;
   devDependencies?: Record<string, string>;
   pnpmOverrides?: Record<string, string>;
+  /**
+   * Current `devDependencies` values that Atlas may replace (known shipped
+   * specifiers). Other values conflict and are left untouched.
+   */
+  replaceableDevDependencies?: Record<string, string[]>;
+  /**
+   * `conflicts-only` ignores match/missing/replaceable keys when deriving
+   * capability status. Use for keys that also exist on the default starter
+   * (aligned Playwright) so Storybook/visual stay absent until their files exist.
+   */
+  statusMode?: "all" | "conflicts-only";
 }
 
 export interface CapabilityDefinition {

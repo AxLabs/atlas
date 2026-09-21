@@ -6,10 +6,8 @@
  * Ensures pnpm is the only package manager used in this repository.
  * This prevents toolchain drift, lockfile conflicts, and dependency inconsistencies.
  *
- * @see docs/TOOLCHAIN_POLICY.md
+ * Package manager policy: use pnpm only (see docs/how-we-build/cli.md).
  */
-
-const { execSync } = require("child_process");
 
 // ANSI color codes for better terminal output
 const colors = {
@@ -72,7 +70,7 @@ Run:
    ${colors.cyan}pnpm install${colors.reset}
 
 ${colors.yellow}MORE INFO:${colors.reset}
-See docs/TOOLCHAIN_POLICY.md for the full toolchain policy.
+See docs/how-we-build/cli.md for Atlas CLI and workspace tooling.
 
 ${colors.red}${colors.bold}Installation aborted.${colors.reset}
 `);

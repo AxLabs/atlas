@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { runInit } from "../commands/init";
 import { enableConsumerCapability, listConsumerCapabilities } from "../enable/apply";
+import { generatedFilesForCapability } from "../enable/patches";
 import {
   CANONICAL_CHROME_FLAGS,
   CUSTOM_CHROME_FLAGS_REASON,
@@ -298,11 +299,94 @@ describe("atlas enable", () => {
         expect(root.pnpm?.overrides?.vite).toBeDefined();
         expect(root.pnpm?.overrides?.["@playwright/test"]).toBeDefined();
         expect(root.pnpm?.overrides?.playwright).toBeDefined();
+        const web = JSON.parse(
+          readFileSync(path.join(destination, "apps/web/package.json"), "utf8")
+        ) as { devDependencies: Record<string, string> };
+        expect(web.devDependencies["@playwright/test"]).toBe(
+          ui.devDependencies["@playwright/test"]
+        );
         expect(
           listConsumerCapabilities({ cwd: destination }).capabilities.find(
             (entry) => entry.id === "storybook"
           )?.status
         ).toBe("installed");
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    },
+    GENERATED_TIMEOUT_MS
+  );
+
+  it(
+    "pins generated enable commands to a running CLI that includes enable, not the baseline",
+    () => {
+      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-cli-pin-"));
+      try {
+        runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
+        const destination = path.join(cwd, "test-app");
+        const files = generatedFilesForCapability({
+          capabilityId: "docs",
+          repoRoot: destination,
+          atlasVersion: "1.1.0",
+          runningCliVersion: "99.0.0",
+        });
+        const agents = files.find((file) => file.destination === "AGENTS.md");
+        expect(agents?.content).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
+        expect(agents?.content).toContain(
+          "pnpm dlx @blitzcraftlabs/atlas@99.0.0 enable list --json"
+        );
+        expect(agents?.content).not.toContain("<next-cli-release>");
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    },
+    GENERATED_TIMEOUT_MS
+  );
+
+  it(
+    "replaces the known Atlas web Playwright specifier and preserves custom pins",
+    () => {
+      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-pw-"));
+      try {
+        runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
+        const destination = path.join(cwd, "test-app");
+        const webPackageJson = path.join(destination, "apps/web/package.json");
+        const readWeb = () =>
+          JSON.parse(readFileSync(webPackageJson, "utf8")) as {
+            devDependencies: Record<string, string>;
+          };
+
+        const stale = readWeb();
+        stale.devDependencies["@playwright/test"] = "^1.61.0";
+        writeFileSync(webPackageJson, `${JSON.stringify(stale, null, 2)}\n`);
+        const replaced = enableConsumerCapability({ cwd: destination, capability: "storybook" });
+        expect(
+          replaced.actions.find(
+            (action) => action.path === "apps/web/package.json#devDependencies.@playwright/test"
+          )?.kind
+        ).toBe("copy");
+        const ui = JSON.parse(
+          readFileSync(path.join(destination, "packages/ui/package.json"), "utf8")
+        ) as { devDependencies: Record<string, string> };
+        expect(readWeb().devDependencies["@playwright/test"]).toBe(
+          ui.devDependencies["@playwright/test"]
+        );
+
+        const customized = readWeb();
+        customized.devDependencies["@playwright/test"] = "1.99.0";
+        writeFileSync(webPackageJson, `${JSON.stringify(customized, null, 2)}\n`);
+        const preserved = enableConsumerCapability({ cwd: destination, capability: "storybook" });
+        expect(
+          preserved.actions.find(
+            (action) => action.path === "apps/web/package.json#devDependencies.@playwright/test"
+          )?.kind
+        ).toBe("conflict");
+        expect(readWeb().devDependencies["@playwright/test"]).toBe("1.99.0");
+        expect(
+          listConsumerCapabilities({ cwd: destination }).capabilities.find(
+            (entry) => entry.id === "storybook"
+          )?.status
+        ).toBe("conflicted");
       } finally {
         rmSync(cwd, { recursive: true, force: true });
       }

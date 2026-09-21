@@ -446,10 +446,12 @@ references are filtered to files that exist in that workspace.
 ### `atlas enable`
 
 Opt-in consumer tooling. Default init stays lean; heavier quality and convenience tools are adopted
-explicitly. **Published Atlas 1.1.0 does not include this command.** Until the next CLI version is
-assigned, consumers invoke `pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable …`. That CLI
-release may differ from `platform.baseline.atlasVersion`. `atlas upgrade` does not install optional
-tooling, including a same-version upgrade to 1.1.0.
+explicitly. **Published Atlas 1.1.0 does not include this command.** Until Changesets assigns a CLI
+version that contains `enable`, generated consumers invoke
+`pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable …`. That pin is **not** the consumer
+`platform.baseline.atlasVersion` when the baseline predates `enable`. After the assigned release is
+out of `CLI_RELEASES_WITHOUT_ENABLE`, generated enable commands use that CLI version.
+`atlas upgrade` does not install optional tooling, including a same-version upgrade to 1.1.0.
 
 ```bash
 pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable list --json
