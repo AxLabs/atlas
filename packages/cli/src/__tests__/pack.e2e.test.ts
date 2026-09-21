@@ -530,7 +530,38 @@ process.stdout.write(JSON.stringify({
         generatedRoot
       );
       expect(enableHooks.status).toBe(0);
+      expect(existsSync(path.join(generatedRoot, "scripts/lint-staged-eslint.mjs"))).toBe(true);
       verifyGeneratedGitHook(generatedRoot);
+
+      const enableSecurity = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "security", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableSecurity.status).toBe(0);
+      const packedAuditScript = path.join(generatedRoot, "scripts/security-audit.mjs");
+      expect(existsSync(packedAuditScript)).toBe(true);
+      const metadataNullPath = path.join(generatedRoot, "audit-metadata-null.json");
+      writeFileSync(metadataNullPath, `${JSON.stringify({ metadata: null })}\n`);
+      const metadataNull = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        metadataNullPath,
+      ]);
+      expect(metadataNull.status).toBe(1);
+      expect(metadataNull.stderr).toContain("metadata must be an object");
+      const metadataHighPath = path.join(generatedRoot, "audit-metadata-high.json");
+      writeFileSync(
+        metadataHighPath,
+        `${JSON.stringify({ metadata: { vulnerabilities: { high: 1, critical: 0 } } })}\n`
+      );
+      const metadataHigh = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        metadataHighPath,
+      ]);
+      expect(metadataHigh.status).toBe(1);
+      expect(metadataHigh.stderr).toMatch(/no evaluable high\/critical findings/);
 
       const enableList = runInstalledAtlas(
         cleanRoom,

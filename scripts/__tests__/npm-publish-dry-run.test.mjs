@@ -106,6 +106,63 @@ describe("npm publish dry-run helpers", () => {
     );
   });
 
+  it("allows packaged Storybook and visual capability assets", () => {
+    const files = [
+      "package.json",
+      "dist/cli.js",
+      "dist/index.js",
+      "dist/dependency-validation.js",
+      "dist/bootstrap-assets.js",
+      "dist/release-assets.js",
+      "LICENSE",
+      "README.md",
+      "THIRD_PARTY_NOTICES.md",
+      "assets/bootstrap/manifest.json",
+      "assets/releases/catalog.json",
+      "assets/capabilities/files/storybook/packages/ui/.storybook/main.ts",
+      "assets/capabilities/files/storybook/packages/ui/playwright.storybook.config.ts",
+      "assets/capabilities/files/visual/packages/ui/visual-tests/storybook.ts",
+    ];
+    assert.deepEqual(collectPackedFileIssues(files), []);
+  });
+
+  it("still rejects unintended Storybook files outside capability assets", () => {
+    const files = [
+      "package.json",
+      "dist/cli.js",
+      "dist/index.js",
+      "dist/dependency-validation.js",
+      "dist/bootstrap-assets.js",
+      "dist/release-assets.js",
+      "LICENSE",
+      "README.md",
+      "THIRD_PARTY_NOTICES.md",
+      "assets/bootstrap/manifest.json",
+      "assets/releases/catalog.json",
+    ];
+    assert.ok(
+      collectPackedFileIssues([...files, "packages/ui/.storybook/main.ts"]).some((issue) =>
+        issue.includes("storybook")
+      )
+    );
+    assert.ok(
+      collectPackedFileIssues([...files, ".storybook/main.ts"]).some((issue) =>
+        issue.includes("storybook")
+      )
+    );
+    assert.ok(
+      collectPackedFileIssues([
+        ...files,
+        "assets/bootstrap/files/packages/ui/.storybook/main.ts",
+      ]).some((issue) => issue.includes("storybook"))
+    );
+    assert.ok(
+      collectPackedFileIssues([...files, "storybook.config.ts"]).some((issue) =>
+        issue.includes("storybook")
+      )
+    );
+  });
+
   it("parses npm pack JSON and detects unexpected auth requirements", () => {
     const payload = extractJsonPayload(
       'npm notice\n{"name":"@blitzcraftlabs/atlas","version":"0.4.0","files":[{"path":"package.json"}]}'

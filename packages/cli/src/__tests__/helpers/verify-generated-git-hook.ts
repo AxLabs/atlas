@@ -4,6 +4,7 @@ import {
   copyFileSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -113,6 +114,10 @@ export function verifyGeneratedGitHook(generatedRoot: string): void {
       path.join(fixture, "scripts/lint-staged-utils.mjs")
     );
     copyFileSync(
+      path.join(generatedRoot, "scripts/lint-staged-eslint.mjs"),
+      path.join(fixture, "scripts/lint-staged-eslint.mjs")
+    );
+    copyFileSync(
       path.join(generatedRoot, ".husky/pre-commit"),
       path.join(fixture, ".husky/pre-commit")
     );
@@ -122,9 +127,30 @@ export function verifyGeneratedGitHook(generatedRoot: string): void {
     expectSuccess("git", ["init"], fixture, hookEnv);
     expectSuccess("git", ["config", "core.hooksPath", ".husky"], fixture, hookEnv);
 
+    writeFileSync(path.join(fixture, "README.md"), "fixture\n");
+    writeFileSync(path.join(fixture, "notes.txt"), "keep\n");
+    expectSuccess("git", ["add", "README.md", "notes.txt"], fixture, hookEnv);
+    expectSuccess(
+      "git",
+      [
+        "-c",
+        "user.name=Atlas Test",
+        "-c",
+        "user.email=atlas-test@example.com",
+        "commit",
+        "--no-gpg-sign",
+        "-m",
+        "chore: initial commit",
+      ],
+      fixture,
+      hookEnv
+    );
+
     const violatingPath = path.join(fixture, "apps/web/src/page.tsx");
     writeFileSync(violatingPath, "export const value = 1;\nconsole.log(value);\n");
     expectSuccess("git", ["add", "apps/web/src/page.tsx"], fixture, hookEnv);
+    writeFileSync(violatingPath, "export const value = 1;\n");
+    writeFileSync(path.join(fixture, "notes.txt"), "unstaged notes\n");
 
     const blocked = run(
       "git",
@@ -152,9 +178,23 @@ export function verifyGeneratedGitHook(generatedRoot: string): void {
         `blocked commit did not report an ESLint violation\nstdout:\n${blocked.stdout}\nstderr:\n${blocked.stderr}`
       );
     }
+    const stagedAfterFailure = run("git", ["show", ":apps/web/src/page.tsx"], fixture, hookEnv);
+    if (!stagedAfterFailure.stdout.includes("console.log")) {
+      throw new Error(
+        `failed hook did not preserve the invalid staged copy\nstdout:\n${stagedAfterFailure.stdout}`
+      );
+    }
+    if (readFileSync(violatingPath, "utf8") !== "export const value = 1;\n") {
+      throw new Error("failed hook did not preserve the corrected unstaged working copy");
+    }
+    if (readFileSync(path.join(fixture, "notes.txt"), "utf8") !== "unstaged notes\n") {
+      throw new Error("failed hook did not preserve unrelated unstaged changes");
+    }
 
     writeFileSync(violatingPath, "export const value = 1;\n");
+    writeFileSync(path.join(fixture, "notes.txt"), "keep\n");
     expectSuccess("git", ["add", "apps/web/src/page.tsx"], fixture, hookEnv);
+    writeFileSync(violatingPath, "export const value = 1;\nconsole.log(value);\n");
     const passed = run(
       "git",
       [
@@ -174,6 +214,13 @@ export function verifyGeneratedGitHook(generatedRoot: string): void {
       throw new Error(
         `corrected commit should pass\nstdout:\n${passed.stdout}\nstderr:\n${passed.stderr}`
       );
+    }
+    const committed = run("git", ["show", "HEAD:apps/web/src/page.tsx"], fixture, hookEnv);
+    if (committed.stdout !== "export const value = 1;\n") {
+      throw new Error(`commit included unstaged edits:\n${committed.stdout}`);
+    }
+    if (readFileSync(violatingPath, "utf8") !== "export const value = 1;\nconsole.log(value);\n") {
+      throw new Error("valid commit did not leave the invalid unstaged edit in the working tree");
     }
   } finally {
     rmSync(fixture, { recursive: true, force: true });

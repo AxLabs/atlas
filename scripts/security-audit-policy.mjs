@@ -142,7 +142,68 @@ export function validateAuditDocumentShape(audit) {
     throw operationalError("audit document advisories must be an object");
   }
 
+  if (hasMetadata && !isPlainObject(audit.metadata)) {
+    throw operationalError("audit document metadata must be an object");
+  }
+
+  assertMetadataBlockingCounts(audit);
   return audit;
+}
+
+/**
+ * @param {Record<string, unknown>} audit
+ * @returns {{ high: number; critical: number } | null}
+ */
+export function readMetadataBlockingCounts(audit) {
+  if (!isPlainObject(audit) || !Object.hasOwn(audit, "metadata")) {
+    return null;
+  }
+  if (!isPlainObject(audit.metadata)) {
+    throw operationalError("audit document metadata must be an object");
+  }
+  if (!Object.hasOwn(audit.metadata, "vulnerabilities")) {
+    return null;
+  }
+  const counts = audit.metadata.vulnerabilities;
+  if (!isPlainObject(counts)) {
+    throw operationalError("audit document metadata.vulnerabilities must be an object");
+  }
+  for (const key of ["high", "critical"]) {
+    const value = counts[key];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      throw operationalError(
+        `audit document metadata.vulnerabilities.${key} must be a non-negative number`
+      );
+    }
+  }
+  return { high: counts.high, critical: counts.critical };
+}
+
+/**
+ * @param {Record<string, unknown>} audit
+ */
+function assertMetadataBlockingCounts(audit) {
+  readMetadataBlockingCounts(audit);
+}
+
+/**
+ * Fail closed when metadata reports high/critical issues that cannot be evaluated.
+ * @param {Record<string, unknown>} audit
+ * @param {{ severity: string }[]} findings
+ */
+export function assertMetadataTotalsAreEvaluable(audit, findings) {
+  const counts = readMetadataBlockingCounts(audit);
+  if (!counts || (counts.high === 0 && counts.critical === 0)) {
+    return;
+  }
+  const evaluable = findings.filter(
+    (finding) => finding.severity === "high" || finding.severity === "critical"
+  );
+  if (evaluable.length === 0) {
+    throw operationalError(
+      `audit metadata reports high=${counts.high} critical=${counts.critical} but no evaluable high/critical findings were present`
+    );
+  }
 }
 
 export function assertAuditDocument(audit) {
@@ -340,6 +401,8 @@ export function collectFindings(audit) {
       addFinding(validateLegacyAdvisoryRecord(key, advisory));
     }
   }
+
+  assertMetadataTotalsAreEvaluable(document, findings);
 
   return findings.sort((left, right) => {
     const severityDelta = SEVERITY_RANK[right.severity] - SEVERITY_RANK[left.severity];

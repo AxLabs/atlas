@@ -160,6 +160,57 @@ process.exit(1);
     expect(result.stdout).toContain("No blocking high/critical advisories");
   });
 
+  it("fails closed when metadata is null", () => {
+    const result = runAudit({ metadata: null });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("metadata must be an object");
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("fails closed when metadata reports high issues with no evaluable findings", () => {
+    const result = runAudit({ metadata: { vulnerabilities: { high: 1, critical: 0 } } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/no evaluable high\/critical findings/);
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("fails closed on a malformed vulnerabilities entry", () => {
+    const result = runAudit({
+      vulnerabilities: { "left-pad": null },
+      metadata: { vulnerabilities: { high: 0, critical: 0 } },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/malformed/);
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("evaluates a valid vulnerability report returned with exit 1", () => {
+    const result = runSpawnedAudit(`
+process.stdout.write(JSON.stringify({
+  vulnerabilities: {
+    "left-pad": {
+      name: "left-pad",
+      severity: "high",
+      via: [{
+        name: "left-pad",
+        title: "synthetic",
+        url: "https://github.com/advisories/GHSA-xxxx-yyyy-zzzz",
+        severity: "high",
+        range: "1.0.0"
+      }],
+      nodes: ["left-pad"]
+    }
+  },
+  metadata: { vulnerabilities: { high: 1, critical: 0 } }
+}) + "\\n");
+process.exit(1);
+`);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("left-pad");
+    expect(result.stderr).toContain("GHSA-xxxx-yyyy-zzzz");
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
   it("still honors documented advisory exceptions on a valid report", () => {
     const result = runAudit({
       advisories: {

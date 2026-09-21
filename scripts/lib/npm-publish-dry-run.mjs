@@ -35,6 +35,31 @@ function isSecretEnvPath(entry) {
   return base.startsWith(".env.") && !base.endsWith(".example");
 }
 
+const PACKAGED_STORYBOOK_VISUAL_ASSET_PREFIXES = [
+  "assets/capabilities/files/storybook/",
+  "assets/capabilities/files/visual/",
+];
+
+/**
+ * Opt-in Storybook and visual capability files are packaged under
+ * `assets/capabilities/files/{storybook,visual}/`. Those destinations are
+ * intentional; Storybook paths anywhere else remain forbidden.
+ * @param {string} entry
+ */
+export function isPackagedStorybookOrVisualCapabilityAsset(entry) {
+  return PACKAGED_STORYBOOK_VISUAL_ASSET_PREFIXES.some((prefix) => entry.startsWith(prefix));
+}
+
+/**
+ * @param {string} entry
+ */
+export function isForbiddenStorybookPackedPath(entry) {
+  if (isPackagedStorybookOrVisualCapabilityAsset(entry)) {
+    return false;
+  }
+  return entry.includes(".storybook/") || /(^|\/)storybook(\.|$)/i.test(entry);
+}
+
 export const FORBIDDEN_PACKED_PATH_PATTERNS = [
   {
     id: "src",
@@ -78,7 +103,7 @@ export const FORBIDDEN_PACKED_PATH_PATTERNS = [
   },
   {
     id: "storybook",
-    test: (entry) => entry.includes(".storybook/") || /(^|\/)storybook(\.|$)/i.test(entry),
+    test: isForbiddenStorybookPackedPath,
   },
 ];
 

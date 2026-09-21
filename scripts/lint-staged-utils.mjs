@@ -103,6 +103,29 @@ export function buildEslintInvocations(
 }
 
 /**
+ * Build the lint-staged task-phase command for the workspace ESLint runner.
+ * Returning a string (instead of running ESLint while the config function is
+ * evaluated) lets lint-staged hide unstaged changes before ESLint runs.
+ * @param {string[]} filenames
+ * @param {object} [options]
+ * @param {string} [options.cwd]
+ */
+export function buildEslintCommand(filenames, { cwd = process.cwd() } = {}) {
+  const relativeFiles = filenames.map((file) => toRepoRelativePosix(file, cwd));
+  return `node ${quote("scripts/lint-staged-eslint.mjs")} -- ${relativeFiles.map(quote).join(" ")}`;
+}
+
+/**
+ * Parse filenames from a lint-staged runner argv list. Everything after `--`
+ * is a path; without `--`, all remaining args are paths.
+ * @param {string[]} argv
+ */
+export function parseLintStagedFilenames(argv) {
+  const separator = argv.indexOf("--");
+  return separator === -1 ? argv.slice() : argv.slice(separator + 1);
+}
+
+/**
  * Execute ESLint for staged files using workspace-local configuration.
  * @param {string[]} filenames
  * @param {object} [options]

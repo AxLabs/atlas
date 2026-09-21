@@ -201,6 +201,10 @@ export const CONSUMER_CAPABILITIES: CapabilityDefinition[] = [
         source: "scripts/lint-staged-utils.mjs",
         destination: "scripts/lint-staged-utils.mjs",
       },
+      {
+        source: "scripts/lint-staged-eslint.mjs",
+        destination: "scripts/lint-staged-eslint.mjs",
+      },
     ],
     validationCommand: "pnpm exec husky && pnpm exec lint-staged",
   },

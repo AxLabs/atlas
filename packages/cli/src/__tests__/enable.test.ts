@@ -401,6 +401,7 @@ describe("atlas enable", () => {
       const failBlock = bundleWorkflow.slice(failIndex);
       expect(failBlock).not.toMatch(/full_name/);
       expect(existsSync(path.join(destination, "lint-staged.config.mjs"))).toBe(true);
+      expect(existsSync(path.join(destination, "scripts/lint-staged-eslint.mjs"))).toBe(true);
       expect(
         existsSync(path.join(destination, ".cursor/skills/build-atlas-feature/SKILL.md"))
       ).toBe(true);

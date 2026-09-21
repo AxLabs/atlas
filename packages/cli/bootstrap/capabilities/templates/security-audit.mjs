@@ -7,7 +7,7 @@
  * This is not the Atlas maintainer security-audit policy (Gitleaks, SBOM, workflow pins).
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const BLOCKING_SEVERITIES = new Set(["high", "critical"]);
@@ -108,7 +108,50 @@ export function assertConsumerAuditDocument(audit) {
     throw new Error("audit document advisories must be an object");
   }
 
+  if (hasMetadata && !isPlainObject(audit.metadata)) {
+    throw new Error("audit document metadata must be an object");
+  }
+
+  readMetadataBlockingCounts(audit);
   return audit;
+}
+
+function readMetadataBlockingCounts(audit) {
+  if (!isPlainObject(audit) || !Object.hasOwn(audit, "metadata")) {
+    return null;
+  }
+  if (!isPlainObject(audit.metadata)) {
+    throw new Error("audit document metadata must be an object");
+  }
+  if (!Object.hasOwn(audit.metadata, "vulnerabilities")) {
+    return null;
+  }
+  const counts = audit.metadata.vulnerabilities;
+  if (!isPlainObject(counts)) {
+    throw new Error("audit document metadata.vulnerabilities must be an object");
+  }
+  for (const key of ["high", "critical"]) {
+    const value = counts[key];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      throw new Error(
+        `audit document metadata.vulnerabilities.${key} must be a non-negative number`
+      );
+    }
+  }
+  return { high: counts.high, critical: counts.critical };
+}
+
+export function assertAuditFindingsAreEvaluable(audit, findings) {
+  const counts = readMetadataBlockingCounts(audit);
+  if (!counts || (counts.high === 0 && counts.critical === 0)) {
+    return;
+  }
+  const evaluable = findings.filter((finding) => BLOCKING_SEVERITIES.has(finding.severity));
+  if (evaluable.length === 0) {
+    throw new Error(
+      `audit metadata reports high=${counts.high} critical=${counts.critical} but no evaluable high/critical findings were present`
+    );
+  }
 }
 
 export function collectAuditFindings(audit) {
@@ -117,10 +160,10 @@ export function collectAuditFindings(audit) {
     return findings;
   }
 
-  const advisories = audit.advisories && typeof audit.advisories === "object" ? Object.values(audit.advisories) : [];
-  for (const advisory of advisories) {
-    if (!advisory || typeof advisory !== "object") {
-      continue;
+  const advisories = audit.advisories && typeof audit.advisories === "object" ? Object.entries(audit.advisories) : [];
+  for (const [key, advisory] of advisories) {
+    if (!isPlainObject(advisory)) {
+      throw new Error(`advisory record "${key}" is malformed`);
     }
     const packageName = advisory.module_name ?? advisory.name ?? "";
     const severity = typeof advisory.severity === "string" ? advisory.severity.toLowerCase() : "";
@@ -157,15 +200,20 @@ export function collectAuditFindings(audit) {
       ? Object.entries(audit.vulnerabilities)
       : [];
   for (const [name, vulnerability] of vulnerabilities) {
-    if (!vulnerability || typeof vulnerability !== "object") {
-      continue;
+    if (!isPlainObject(vulnerability)) {
+      throw new Error(`vulnerability record "${name}" is malformed`);
     }
     const severity = typeof vulnerability.severity === "string" ? vulnerability.severity.toLowerCase() : "";
-    const via = Array.isArray(vulnerability.via) ? vulnerability.via : [];
+    if (!Array.isArray(vulnerability.via)) {
+      throw new Error(`vulnerability record "${name}" via must be an array`);
+    }
     const nodes = Array.isArray(vulnerability.nodes) ? vulnerability.nodes.map((entry) => String(entry)) : [];
-    for (const item of via) {
-      if (!item || typeof item !== "object") {
+    for (const item of vulnerability.via) {
+      if (typeof item === "string") {
         continue;
+      }
+      if (!isPlainObject(item)) {
+        throw new Error(`vulnerability record "${name}" has a malformed via entry`);
       }
       findings.push({
         advisory: advisoryIdFromUrl(item.url) || normalizeId(item.source != null ? String(item.source) : ""),
@@ -202,7 +250,10 @@ export function exceptionApplies(finding, exception, now) {
 }
 
 export function evaluateConsumerSecurityAudit(audit, exceptions = CONSUMER_SECURITY_EXCEPTIONS, now = todayUtc()) {
-  const findings = collectAuditFindings(audit).filter((finding) => BLOCKING_SEVERITIES.has(finding.severity));
+  assertConsumerAuditDocument(audit);
+  const collected = collectAuditFindings(audit);
+  assertAuditFindingsAreEvaluable(audit, collected);
+  const findings = collected.filter((finding) => BLOCKING_SEVERITIES.has(finding.severity));
   const blocking = [];
   const ignored = [];
 
@@ -285,39 +336,51 @@ function loadAudit(options) {
 
 function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  let audit;
   try {
-    audit = loadAudit(options);
+    const audit = loadAudit(options);
+    const { blocking, ignored } = evaluateConsumerSecurityAudit(
+      audit,
+      CONSUMER_SECURITY_EXCEPTIONS,
+      options.now
+    );
+
+    if (ignored.length > 0) {
+      process.stdout.write(
+        `Ignored ${ignored.length} high/critical finding(s) with documented advisory/version/path exceptions.\n`
+      );
+    }
+
+    if (blocking.length === 0) {
+      process.stdout.write("No blocking high/critical advisories.\n");
+      process.exit(0);
+    }
+
+    process.stderr.write("Blocking high/critical advisories:\n");
+    for (const finding of blocking) {
+      process.stderr.write(
+        `- ${finding.packageName}@${finding.version} (${finding.advisory}, ${finding.severity}): ${finding.title} ${finding.url}\n`
+      );
+    }
+    process.exit(1);
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exit(1);
   }
-
-  const { blocking, ignored } = evaluateConsumerSecurityAudit(audit, CONSUMER_SECURITY_EXCEPTIONS, options.now);
-
-  if (ignored.length > 0) {
-    process.stdout.write(
-      `Ignored ${ignored.length} high/critical finding(s) with documented advisory/version/path exceptions.\n`
-    );
-  }
-
-  if (blocking.length === 0) {
-    process.stdout.write("No blocking high/critical advisories.\n");
-    process.exit(0);
-  }
-
-  process.stderr.write("Blocking high/critical advisories:\n");
-  for (const finding of blocking) {
-    process.stderr.write(
-      `- ${finding.packageName}@${finding.version} (${finding.advisory}, ${finding.severity}): ${finding.title} ${finding.url}\n`
-    );
-  }
-  process.exit(1);
 }
 
-const invokedDirectly =
-  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
+function isInvokedDirectly() {
+  if (!process.argv[1]) {
+    return false;
+  }
+  let invokedPath = process.argv[1];
+  try {
+    invokedPath = realpathSync(invokedPath);
+  } catch {
+    // Keep the original path when it cannot be resolved.
+  }
+  return import.meta.url === pathToFileURL(invokedPath).href;
+}
 
-if (invokedDirectly) {
+if (isInvokedDirectly()) {
   main();
 }

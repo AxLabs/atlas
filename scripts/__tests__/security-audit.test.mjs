@@ -267,6 +267,31 @@ describe("security audit CLI", () => {
     assert.match(result.stderr, /vulnerabilities must be an object/);
   });
 
+  it("fails closed when metadata is null", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "metadata-null.json");
+    writeFileSync(filePath, `${JSON.stringify({ metadata: null })}\n`);
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /metadata must be an object/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
+  it("fails closed when metadata reports high issues with no evaluable findings", () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), "atlas-bad-audit-"));
+    const filePath = path.join(directory, "metadata-high.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify({ metadata: { vulnerabilities: { high: 1, critical: 0 } } })}\n`
+    );
+    const result = runCli(["--audit-json", filePath, "--exceptions", emptyExceptions]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /failed closed/);
+    assert.match(result.stderr, /no evaluable high\/critical findings/);
+    assert.doesNotMatch(result.stdout, /✓ Dependency vulnerability policy passed/);
+  });
+
   it("rejects wildcard exceptions", () => {
     const exceptions = writeExceptions([{ ...validException, advisory: "*" }]);
     const result = runCli([
