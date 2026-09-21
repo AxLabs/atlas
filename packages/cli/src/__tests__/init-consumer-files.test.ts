@@ -1,4 +1,5 @@
 import { formatInitResult } from "../commands/init";
+import { atlasDlxForEnable, ENABLE_CLI_RELEASE_PLACEHOLDER } from "../init/cli-release";
 import { buildConsumerPackageManifest, buildConsumerReadme } from "../init/consumer-files";
 
 describe("generated consumer workspace files", () => {
@@ -19,6 +20,19 @@ describe("generated consumer workspace files", () => {
     expect(JSON.stringify(manifest.scripts)).not.toContain("git diff");
   });
 
+  it("adds a root start script when performance commands are included", () => {
+    const manifest = JSON.parse(
+      buildConsumerPackageManifest({
+        projectName: "my-app",
+        atlasVersion: "1.1.0",
+        includePerfCommands: true,
+      })
+    ) as { scripts: Record<string, string> };
+
+    expect(manifest.scripts.start).toBe("pnpm --filter @atlas/web start");
+    expect(manifest.scripts["perf:lhci"]).toBe("pnpm --filter @atlas/web perf:lhci");
+  });
+
   it("documents only commands the generated project owns", () => {
     const atlasVersion = "0.3.0";
     const readme = buildConsumerReadme({
@@ -29,6 +43,8 @@ describe("generated consumer workspace files", () => {
     expect(readme).toContain("pnpm install");
     expect(readme).toContain("pnpm dev");
     expect(readme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} doctor`);
+    expect(readme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} context --json`);
+    expect(readme).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} enable list --json`);
     expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
     expect(readme).toContain(".github/workflows/ci.yml");
     expect(readme).toContain("GitHub-hosted Ubuntu");
@@ -42,6 +58,31 @@ describe("generated consumer workspace files", () => {
     expect(readme).not.toContain("template:check");
     expect(readme).not.toContain("template:sync");
     expect(readme).not.toContain("api:check");
+  });
+
+  it("points enable at the upcoming-release placeholder for published 1.1.0", () => {
+    const readme = buildConsumerReadme({
+      projectName: "my-app",
+      atlasVersion: "1.1.0",
+    });
+    const lines = formatInitResult(
+      {
+        repoRoot: "/tmp/my-app",
+        atlasVersion: "1.1.0",
+        initMode: "bootstrap",
+        actions: [],
+        warnings: [],
+      },
+      false
+    ).join("\n");
+
+    expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
+    expect(readme).toContain(`${atlasDlxForEnable("1.1.0")} enable list --json`);
+    expect(readme).toContain(`@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list`);
+    expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
+    expect(lines).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
+    expect(lines).toContain(`${atlasDlxForEnable("1.1.0")} enable list --json`);
+    expect(lines).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
   });
 
   it("does not advertise an unsupported atlas command after bootstrap init", () => {
@@ -60,6 +101,8 @@ describe("generated consumer workspace files", () => {
     expect(lines).toContain("pnpm install");
     expect(lines).toContain("pnpm dev");
     expect(lines).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} doctor`);
+    expect(lines).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} context --json`);
+    expect(lines).toContain(`pnpm dlx @blitzcraftlabs/atlas@${atlasVersion} enable list --json`);
     expect(lines).not.toContain("pnpm dlx @blitzcraftlabs/atlas doctor");
     expect(lines).not.toContain("package publication path is finalized");
     expect(lines).not.toContain("pnpm atlas -- doctor");

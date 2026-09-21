@@ -1,0 +1,59 @@
+# Consumer-owned visual regression. GitHub-hosted Ubuntu. No BlitzCraft runners.
+# Canonical comparison environment: mcr.microsoft.com/playwright:v<playwright-version>-noble
+# via `pnpm --filter @atlas/ui test:visual:docker`. Never --update-snapshots in this workflow.
+name: Visual regression
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/ui/**"
+      - ".github/workflows/ui-visual.yml"
+      - ".github/workflows/update-visual-baselines.yml"
+  pull_request:
+    paths:
+      - "packages/ui/**"
+      - ".github/workflows/ui-visual.yml"
+      - ".github/workflows/update-visual-baselines.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    name: Visual regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Storybook
+        run: pnpm --filter @atlas/ui build-storybook
+
+      - name: Compare visual baselines
+        run: pnpm --filter @atlas/ui test:visual:docker
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: visual-diffs
+          path: |
+            packages/ui/test-results/
+            packages/ui/playwright-report-visual/
+          retention-days: 14

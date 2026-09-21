@@ -66,7 +66,7 @@ describe("atlas CLI executable", () => {
     expect(result.stdout).toContain("generate");
     expect(result.stdout).toContain("doctor");
     expect(result.stdout).toContain("sync");
-    expect(result.stdout).toContain("context");
+    expect(result.stdout).toContain("enable");
   });
 
   it("prints version with exit 0", () => {

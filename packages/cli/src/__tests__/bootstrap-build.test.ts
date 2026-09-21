@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { buildBootstrapAssets, readSourceBootstrapManifest } from "../bootstrap/build";
+import { buildCapabilityAssets } from "../bootstrap/build-capabilities";
 import { SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH } from "../bootstrap/constants";
 import {
   CONSUMER_CI_ATLAS_VERSION_PLACEHOLDER,
@@ -20,7 +21,7 @@ import { verifyPackagedBootstrapTree } from "../bootstrap/integrity";
 import { serializePackagedBootstrapManifest } from "../bootstrap/schema";
 import {
   AGENT_ADR_REFERENCES,
-  AGENT_DOCUMENTATION_REFERENCES,
+  listPackagedConsumerDocumentationReferences,
 } from "../context/documentation-registry";
 import { loadAppInfrastructureManifest } from "../template-sync/manifest";
 import { readCliAtlasVersion } from "../version";
@@ -137,16 +138,23 @@ describe("bootstrap asset build", () => {
     BUILD_TIMEOUT_MS
   );
 
-  it("packages the documentation paths advertised by atlas context", () => {
+  it("packages the documentation paths advertised by atlas context that are not generated at init", () => {
     const source = readSourceBootstrapManifest(
       path.join(CLI_PACKAGE_ROOT, SOURCE_BOOTSTRAP_MANIFEST_RELATIVE_PATH)
     );
     const destinations = new Set(source.entries.map((entry) => entry.destination));
+    const generated = new Set(source.generatedAtInit.map((entry) => entry.destination));
 
-    for (const reference of [...AGENT_DOCUMENTATION_REFERENCES, ...AGENT_ADR_REFERENCES]) {
+    for (const reference of listPackagedConsumerDocumentationReferences()) {
       expect(destinations.has(reference.path)).toBe(true);
     }
-    expect(destinations.has("AGENTS.md")).toBe(true);
+    for (const reference of AGENT_ADR_REFERENCES) {
+      expect(destinations.has(reference.path)).toBe(true);
+    }
+    expect(generated.has("AGENTS.md")).toBe(true);
+    expect(generated.has("docs/how-we-build/agents.md")).toBe(true);
+    expect(destinations.has("AGENTS.md")).toBe(false);
+    expect(destinations.has("docs/how-we-build/agents.md")).toBe(false);
   });
 
   it(
@@ -314,6 +322,41 @@ describe("bootstrap asset build", () => {
         for (const marker of MAINTAINER_CI_LEAK_MARKERS) {
           expect(packagedWorkflow).not.toContain(marker);
         }
+      } finally {
+        rmSync(outputDir, { recursive: true, force: true });
+      }
+    },
+    BUILD_TIMEOUT_MS
+  );
+});
+
+describe("capability asset build", () => {
+  const repoRoot = getRepoRoot();
+
+  it(
+    "packages opt-in capability files separately from the default starter",
+    () => {
+      const outputDir = mkdtempSync(path.join(os.tmpdir(), "atlas-capability-build-"));
+      try {
+        const packaged = buildCapabilityAssets({
+          repoRoot,
+          packageRoot: CLI_PACKAGE_ROOT,
+          outputDir,
+        });
+        const storybook = packaged.capabilities.find((capability) => capability.id === "storybook");
+        const visual = packaged.capabilities.find((capability) => capability.id === "visual");
+        expect(
+          storybook?.entries.some((entry) => entry.destination === "packages/ui/.storybook/main.ts")
+        ).toBe(true);
+        expect(visual?.requires).toEqual(["storybook"]);
+        expect(
+          existsSync(
+            path.join(outputDir, "files", "storybook", "packages", "ui", ".storybook", "main.ts")
+          )
+        ).toBe(true);
+        expect(existsSync(path.join(outputDir, "files", "coverage", "coverage-policy.json"))).toBe(
+          true
+        );
       } finally {
         rmSync(outputDir, { recursive: true, force: true });
       }

@@ -43,6 +43,7 @@ export const REQUIRED_PACKED_PATHS = [
   "package/THIRD_PARTY_NOTICES.md",
   "package/assets/bootstrap/manifest.json",
   "package/assets/releases/catalog.json",
+  "package/assets/capabilities/manifest.json",
 ] as const;
 
 export const REQUIRED_BOOTSTRAP_FILE_PATHS = [
@@ -110,7 +111,10 @@ export const FORBIDDEN_PACKED_PATH_PATTERNS: { id: string; test: (entry: string)
     test: (entry) => isPackedCliNoisePath(entry) && /\/eslint\.config\.[^/]+$/.test(entry),
   },
   { id: "tests", test: (entry) => isPackedCliNoisePath(entry) && entry.includes("/__tests__/") },
-  { id: "coverage", test: (entry) => entry.includes("/coverage/") },
+  {
+    id: "coverage",
+    test: (entry) => entry.includes("/coverage/") && !entry.startsWith("package/assets/"),
+  },
   { id: "turbo", test: (entry) => entry.includes("/.turbo/") },
   { id: "node-modules", test: (entry) => entry.includes("/node_modules/") },
   { id: "scripts", test: (entry) => entry.startsWith("package/scripts/") },

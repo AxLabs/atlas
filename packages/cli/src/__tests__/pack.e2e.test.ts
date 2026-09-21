@@ -112,6 +112,21 @@ describe("Atlas CLI pack and clean-room install", () => {
 
     expect(forbiddenExact).toEqual([]);
     expect(forbiddenPrefixed).toEqual([]);
+    expect(bootstrapFiles.some((file) => file.startsWith("packages/ui/.storybook/"))).toBe(false);
+    expect(bootstrapFiles).not.toContain("coverage-policy.json");
+    expect(bootstrapFiles).not.toContain("docker-compose.yml");
+
+    const capabilityManifest = JSON.parse(
+      readTarballFile(tarballPath as string, "package/assets/capabilities/manifest.json")
+    ) as { capabilities: { id: string; entries: { destination: string }[] }[] };
+    expect(
+      capabilityManifest.capabilities.some((capability) => capability.id === "storybook")
+    ).toBe(true);
+    expect(
+      packedEntries.some((entry) =>
+        entry.includes("assets/capabilities/files/storybook/packages/ui/.storybook/main.ts")
+      )
+    ).toBe(true);
 
     const consumerCi = readTarballFile(
       tarballPath as string,
@@ -436,10 +451,51 @@ process.stdout.write(JSON.stringify({
       expect(context.status).toBe(0);
       const contextPayload = JSON.parse(context.stdout) as {
         ok: boolean;
-        result: { atlasVersion: string };
+        result: {
+          atlasVersion: string;
+          workspaceKind: string;
+          validation?: { recommended?: { id: string }[] };
+        };
       };
       expect(contextPayload.result.atlasVersion).toBe(cliVersion);
       expect(contextPayload.result.atlasVersion).not.toBe(generatedPackage.version);
+      expect(contextPayload.result.workspaceKind).toBe("consumer");
+      expect(
+        (contextPayload.result.validation?.recommended ?? []).some(
+          (entry: { id: string }) => entry.id === "reference-e2e" || entry.id === "governance-check"
+        )
+      ).toBe(false);
+
+      const generatedAgents = readFileSync(path.join(generatedRoot, "AGENTS.md"), "utf8");
+      expect(generatedAgents).toContain(
+        `pnpm dlx @blitzcraftlabs/atlas@${cliVersion} context --json`
+      );
+      expect(generatedAgents).not.toContain("pnpm atlas");
+      expect(generatedAgents).not.toContain("pnpm --filter @blitzcraftlabs/atlas build");
+
+      const enableList = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "list", "--json", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableList.status).toBe(0);
+      const enablePayload = JSON.parse(enableList.stdout) as {
+        ok: boolean;
+        result: { capabilities: { id: string; status: string }[] };
+      };
+      expect(
+        enablePayload.result.capabilities.some(
+          (entry) => entry.id === "storybook" && entry.status === "absent"
+        )
+      ).toBe(true);
+
+      const enableCoverage = runInstalledAtlas(
+        cleanRoom,
+        ["enable", "coverage", "--cwd", generatedRoot],
+        generatedRoot
+      );
+      expect(enableCoverage.status).toBe(0);
+      expect(existsSync(path.join(generatedRoot, "coverage-policy.json"))).toBe(true);
 
       expect(existsSync(path.join(generatedRoot, "releases"))).toBe(false);
 

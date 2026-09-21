@@ -2,6 +2,7 @@
 
 import { runContextCommand, writeContextHelp } from "./commands/context";
 import { runDoctorCommand, writeDoctorHelp } from "./commands/doctor";
+import { parseEnableArgs, runEnableCommand, writeEnableHelp } from "./commands/enable";
 import { parseGenerateArgs, runGenerateCommand, writeGenerateHelp } from "./commands/generate";
 import { formatInitResult, runInit, writeInitHelp } from "./commands/init";
 import {
@@ -50,6 +51,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return ExitCode.SUCCESS;
       }
 
+      if (parsed.command === "enable") {
+        writeEnableHelp(writer, parsed.json);
+        return ExitCode.SUCCESS;
+      }
+
       if (parsed.command === "doctor") {
         writeDoctorHelp(writer, parsed.json);
         return ExitCode.SUCCESS;
@@ -94,6 +100,8 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
         return runInitCommand(parsed, writer);
       case "generate":
         return runGenerateCliCommand(parsed, writer);
+      case "enable":
+        return runEnableCliCommand(parsed, writer);
       case "doctor":
         return runDoctorCommand({
           cwd: parsed.cwd,
@@ -119,6 +127,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<number> {
   } catch (error) {
     if (error instanceof CliError && error.message === "generate-help") {
       writeGenerateHelp(writer, argvIncludesFlag(argv, "--json"));
+      return ExitCode.SUCCESS;
+    }
+
+    if (error instanceof CliError && error.message === "enable-help") {
+      writeEnableHelp(writer, argvIncludesFlag(argv, "--json"));
       return ExitCode.SUCCESS;
     }
 
@@ -152,6 +165,17 @@ function runInitCommand(parsed: ParsedCli, writer: ReturnType<typeof createOutpu
   );
 
   return ExitCode.SUCCESS;
+}
+
+function runEnableCliCommand(
+  parsed: ParsedCli,
+  writer: ReturnType<typeof createOutputWriter>
+): number {
+  const enableParsed = parseEnableArgs(parsed.enableArgs);
+  enableParsed.cwd = enableParsed.cwd ?? parsed.cwd;
+  enableParsed.dryRun = enableParsed.dryRun || parsed.dryRun;
+  enableParsed.json = enableParsed.json || parsed.json;
+  return runEnableCommand({ parsed: enableParsed, writer });
 }
 
 function runGenerateCliCommand(

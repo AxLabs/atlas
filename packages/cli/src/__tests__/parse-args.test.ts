@@ -57,4 +57,11 @@ describe("parseCliArgs init", () => {
       expect((error as CliError).message).toContain("Unexpected arguments");
     }
   });
+
+  it("collects enable arguments after the enable command", () => {
+    const parsed = parseCliArgs(["enable", "storybook", "--dry-run"]);
+    expect(parsed.command).toBe("enable");
+    expect(parsed.enableArgs).toEqual(["storybook", "--dry-run"]);
+    expect(parsed.positionals).toEqual([]);
+  });
 });

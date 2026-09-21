@@ -9,7 +9,7 @@
       "settings": {
         "preset": "desktop",
         "throttlingMethod": "simulate",
-        "chromeFlags": ["--no-sandbox", "--disable-gpu", "--headless=new"],
+        "chromeFlags": "--no-sandbox --disable-gpu --headless=new",
         "skipAudits": ["uses-http2", "uses-long-cache-ttl"]
       }
     },

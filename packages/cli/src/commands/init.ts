@@ -1,6 +1,7 @@
 import { runBootstrapInit } from "../init/bootstrap";
 import { runCheckoutInit } from "../init/checkout";
 
+import { atlasDlx, atlasDlxForEnable } from "../init/cli-release";
 import type { EnvPolicy, ReferencePolicy } from "../init/types";
 import type { CommandResult, PlannedAction } from "../types/result";
 
@@ -57,7 +58,9 @@ export function formatInitResult(result: CommandResult, dryRun: boolean): string
         `  cd ${result.repoRoot}`,
         "  pnpm install",
         "  pnpm dev",
-        `  pnpm dlx @blitzcraftlabs/atlas@${result.atlasVersion} doctor`
+        `  ${atlasDlx(result.atlasVersion)} doctor`,
+        `  ${atlasDlx(result.atlasVersion)} context --json`,
+        `  ${atlasDlxForEnable(result.atlasVersion)} enable list --json`
       );
     }
 

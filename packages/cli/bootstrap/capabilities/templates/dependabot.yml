@@ -1,0 +1,29 @@
+# Dependabot for generated Atlas consumers. This file is consumer-owned after enablement.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      linting:
+        patterns:
+          - eslint*
+          - prettier*
+          - typescript-eslint
+      testing:
+        patterns:
+          - jest*
+          - "@testing-library/*"
+          - "@playwright/test"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions

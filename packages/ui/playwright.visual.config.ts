@@ -1,8 +1,19 @@
+import { existsSync } from "node:fs";
+
 import { defineConfig, devices } from "@playwright/test";
 
 const host = process.env.STORYBOOK_STATIC_HOST ?? "127.0.0.1";
 const port = Number(process.env.STORYBOOK_STATIC_PORT ?? 6006);
 const baseURL = `http://${host}:${port}`;
+
+const CANONICAL_PLAYWRIGHT_BROWSERS = "/ms-playwright";
+if (!existsSync(CANONICAL_PLAYWRIGHT_BROWSERS) && process.env.ATLAS_ALLOW_HOST_VISUAL !== "1") {
+  throw new Error(
+    "Visual baselines are compared only in mcr.microsoft.com/playwright:v<playwright-version>-noble. " +
+      "Run `pnpm --filter @atlas/ui test:visual:docker` (or the Update Visual Baselines workflow). " +
+      "Do not compare or --update-snapshots with host Chromium; font metrics differ and will not match shipped PNGs."
+  );
+}
 
 export default defineConfig({
   testDir: "./visual-tests",

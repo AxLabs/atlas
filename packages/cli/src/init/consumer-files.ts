@@ -10,6 +10,8 @@ import {
 
 import type { PlannedAction } from "../types/result";
 import type { EnvPolicy } from "./types";
+import { CONSUMER_GENERATED_DOCUMENTATION_PATHS } from "../context/documentation-registry";
+import { atlasDlx, atlasDlxForEnable } from "./cli-release";
 
 export const CONSUMER_NODE_ENGINE = ">=22.0.0";
 export const CONSUMER_PNPM_ENGINE = ">=10.0.0";
@@ -27,6 +29,7 @@ export function buildConsumerPackageManifest(options: {
   projectName: string;
   atlasVersion: string;
   includePerfCommands?: boolean;
+  pnpmOverrides?: Record<string, string>;
 }): string {
   const scripts: Record<string, string> = {
     preinstall: "node scripts/ensure-pnpm.js",
@@ -47,6 +50,7 @@ export function buildConsumerPackageManifest(options: {
   };
 
   if (options.includePerfCommands) {
+    scripts.start = "pnpm --filter @atlas/web start";
     scripts["perf:lhci"] = "pnpm --filter @atlas/web perf:lhci";
     scripts["perf:analyze"] = "pnpm --filter @atlas/web perf:analyze";
   }
@@ -64,6 +68,9 @@ export function buildConsumerPackageManifest(options: {
     packageManager: CONSUMER_PACKAGE_MANAGER,
     scripts,
     devDependencies: CONSUMER_ROOT_DEV_DEPENDENCIES,
+    ...(options.pnpmOverrides && Object.keys(options.pnpmOverrides).length > 0
+      ? { pnpm: { overrides: options.pnpmOverrides } }
+      : {}),
   };
 
   return `${JSON.stringify(manifest, null, 2)}\n`;
@@ -86,14 +93,28 @@ pnpm install
 pnpm dev
 \`\`\`
 
-## Atlas Doctor
+## Atlas CLI
 
-Generated projects do not include an \`atlas\` package script. From this directory, run Doctor with
-the published CLI:
+Generated projects do not include an \`atlas\` package script. Pin the published CLI:
 
 \`\`\`bash
-pnpm dlx @blitzcraftlabs/atlas@${options.atlasVersion} doctor
+${atlasDlx(options.atlasVersion)} doctor
+${atlasDlx(options.atlasVersion)} context --json
+${atlasDlx(options.atlasVersion)} generate list --json
+${atlasDlx(options.atlasVersion)} upgrade --to <version> --dry-run --json
+${atlasDlxForEnable(options.atlasVersion)} enable list --json
 \`\`\`
+
+Optional Storybook, visual tests, performance CI, security auditing, Dependabot, coverage floors,
+Git hooks, Cursor adapters, and Docker Compose are **opt-in**. See
+\`docs/how-we-build/consumer-tooling.md\`. Enablement does not overwrite customized files.
+
+Published Atlas 1.1.0 does **not** include \`atlas enable\`. Invoke a CLI release that contains the
+command; that CLI version may differ from \`platform.baseline.atlasVersion\`. \`atlas upgrade\`
+does not install optional tooling.
+
+Existing apps generated from an older CLI should run \`enable docs\` only against a known unmodified
+shipped \`AGENTS.md\` copy. Customized agent docs are left untouched.
 
 ## Continuous integration
 
@@ -109,6 +130,8 @@ running app. Commit \`pnpm-lock.yaml\` after \`pnpm install\` so \`--frozen-lock
 
 - Atlas public docs: https://github.com/blitzcraftlabs/atlas/blob/main/docs/public/README.md
 - Atlas Doctor: https://github.com/blitzcraftlabs/atlas/blob/main/docs/how-we-build/doctor.md
+- Consumer tooling: docs/how-we-build/consumer-tooling.md
+- Reference patterns: docs/how-we-build/reference-patterns.md
 `;
 }
 
@@ -183,6 +206,14 @@ export function planGeneratedAtInitActions(env: EnvPolicy): PlannedAction[] {
       path: "jest.config.js",
       reason: "Generate Jest projects for the materialized workspace",
     },
+    ...CONSUMER_GENERATED_DOCUMENTATION_PATHS.map((destination) => ({
+      kind: "create" as const,
+      path: destination,
+      reason:
+        destination === "AGENTS.md"
+          ? "Generate consumer agent guidance for the published CLI"
+          : "Generate consumer documentation for the published CLI",
+    })),
     env === "copy"
       ? {
           kind: "copy" as const,
