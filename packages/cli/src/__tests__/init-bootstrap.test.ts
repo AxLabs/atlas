@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -209,7 +210,7 @@ describe("atlas init bootstrap destination safety", () => {
 
       expect(result.initMode).toBe("bootstrap");
       expect(result.atlasVersion).toBe("9.9.9");
-      expect(result.repoRoot).toBe(destination);
+      expect(realpathSync(result.repoRoot)).toBe(realpathSync(destination));
       expect(existsSync(path.join(destination, "apps/web/package.json"))).toBe(true);
       expect(existsSync(path.join(destination, "package.json"))).toBe(true);
       expect(existsSync(path.join(destination, "pnpm-lock.yaml"))).toBe(false);
@@ -256,7 +257,7 @@ describe("atlas init bootstrap destination safety", () => {
         assetRoot: packaged.assetRoot,
       });
 
-      expect(result.repoRoot).toBe(path.join(cwd, "nested", "my-app"));
+      expect(realpathSync(result.repoRoot)).toBe(realpathSync(path.join(cwd, "nested", "my-app")));
       expect(existsSync(path.join(cwd, "nested", "my-app", "package.json"))).toBe(true);
       const packageJson = JSON.parse(
         readFileSync(path.join(cwd, "nested", "my-app", "package.json"), "utf8")
