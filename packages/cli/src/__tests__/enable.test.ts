@@ -385,20 +385,21 @@ describe("atlas enable", () => {
         path.join(destination, ".github/workflows/perf-bundle.yml"),
         "utf8"
       );
-      expect(bundleWorkflow).toContain(
-        "github.event.pull_request.head.repo.full_name == github.repository"
+      expect(bundleWorkflow).toMatch(
+        /github\.event\.pull_request\.head\.repo\.full_name\s*==\s*\n?\s*github\.repository/
       );
       expect(bundleWorkflow).not.toContain("pull_request_target");
-      expect(bundleWorkflow).toMatch(/name: Comment on PR[\s\S]*full_name == github\.repository/);
+      expect(bundleWorkflow).toMatch(/name: Comment on PR[\s\S]*full_name\s*==/);
       expect(bundleWorkflow).toContain("Fail if bundle check failed");
       const commentIndex = bundleWorkflow.indexOf("name: Comment on PR");
       const failIndex = bundleWorkflow.indexOf("name: Fail if bundle check failed");
       expect(commentIndex).toBeGreaterThan(-1);
       expect(failIndex).toBeGreaterThan(commentIndex);
       const commentBlock = bundleWorkflow.slice(commentIndex, failIndex);
-      expect(commentBlock).toContain("full_name == github.repository");
+      expect(commentBlock).toMatch(/full_name\s*==/);
+      expect(commentBlock).toContain("github.event_name == 'pull_request'");
       const failBlock = bundleWorkflow.slice(failIndex);
-      expect(failBlock).not.toContain("full_name == github.repository");
+      expect(failBlock).not.toMatch(/full_name/);
       expect(existsSync(path.join(destination, "lint-staged.config.mjs"))).toBe(true);
       expect(
         existsSync(path.join(destination, ".cursor/skills/build-atlas-feature/SKILL.md"))

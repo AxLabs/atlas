@@ -519,8 +519,8 @@ process.stdout.write(JSON.stringify({
         path.join(generatedRoot, ".github/workflows/perf-bundle.yml"),
         "utf8"
       );
-      expect(bundleWorkflow).toContain(
-        "github.event.pull_request.head.repo.full_name == github.repository"
+      expect(bundleWorkflow).toMatch(
+        /github\.event\.pull_request\.head\.repo\.full_name\s*==\s*\n?\s*github\.repository/
       );
       expect(bundleWorkflow).not.toContain("pull_request_target");
 
