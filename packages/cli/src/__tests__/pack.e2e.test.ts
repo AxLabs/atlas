@@ -691,6 +691,30 @@ process.stdout.write(JSON.stringify({
       expect(metadataHigh.status).toBe(1);
       expect(metadataHigh.stderr).toMatch(/no evaluable high\/critical findings/);
 
+      const emptyAdvisoryPath = path.join(generatedRoot, "audit-empty-advisory.json");
+      writeFileSync(emptyAdvisoryPath, `${JSON.stringify({ advisories: { "1": {} } })}\n`);
+      const emptyAdvisory = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        emptyAdvisoryPath,
+      ]);
+      expect(emptyAdvisory.status).toBe(1);
+      expect(emptyAdvisory.stdout).not.toContain("No blocking high/critical advisories");
+
+      const emptyViaHighPath = path.join(generatedRoot, "audit-empty-via-high.json");
+      writeFileSync(
+        emptyViaHighPath,
+        `${JSON.stringify({ vulnerabilities: { example: { severity: "high", via: [] } } })}\n`
+      );
+      const emptyViaHigh = runCommand(process.execPath, [
+        packedAuditScript,
+        "--audit-json",
+        emptyViaHighPath,
+      ]);
+      expect(emptyViaHigh.status).toBe(1);
+      expect(emptyViaHigh.stderr).toMatch(/no evaluable advisory entries/);
+      expect(emptyViaHigh.stdout).not.toContain("No blocking high/critical advisories");
+
       const enableList = runInstalledAtlas(
         cleanRoom,
         ["enable", "list", "--json", "--cwd", generatedRoot],

@@ -229,10 +229,6 @@ export function validateVulnerabilityRecord(packageName, entry) {
 }
 
 export function validateViaRecord(packageName, via, parentSeverity) {
-  if (typeof via === "string") {
-    return [];
-  }
-
   if (!isPlainObject(via)) {
     throw operationalError(`vulnerability record "${packageName}" has a malformed via entry`);
   }
@@ -285,6 +281,71 @@ export function validateViaRecord(packageName, via, parentSeverity) {
           : null,
     },
   ];
+}
+
+function assertBlockingRecordIsEvaluable(packageName, severity, findings) {
+  if (findings.length > 0) {
+    return;
+  }
+  if (severity === "high" || severity === "critical") {
+    throw operationalError(
+      `vulnerability record "${packageName}" has ${severity} severity but no evaluable advisory entries`
+    );
+  }
+}
+
+function collectFromVulnerability(packageName, entry, vulnerabilities, visiting) {
+  const record = validateVulnerabilityRecord(packageName, entry);
+  const parentSeverity = normalizeSeverity(record.severity);
+  const findings = [];
+  const patched =
+    record.fixAvailable && typeof record.fixAvailable === "object" && record.fixAvailable.version
+      ? record.fixAvailable.version
+      : null;
+  visiting.add(packageName);
+
+  for (const via of record.via) {
+    if (typeof via === "string") {
+      const ref = via.trim();
+      if (!ref) {
+        throw operationalError(
+          `vulnerability record "${packageName}" has an empty via reference`
+        );
+      }
+      if (!Object.hasOwn(vulnerabilities, ref) || !isPlainObject(vulnerabilities[ref])) {
+        throw operationalError(
+          `vulnerability record "${packageName}" has an unresolved via reference "${ref}"`
+        );
+      }
+      if (visiting.has(ref)) {
+        continue;
+      }
+      findings.push(
+        ...collectFromVulnerability(ref, vulnerabilities[ref], vulnerabilities, visiting)
+      );
+      continue;
+    }
+
+    for (const finding of validateViaRecord(record.name || packageName, via, record.severity)) {
+      if (!finding.patchedVersions && patched) {
+        finding.patchedVersions = patched;
+      }
+      if (!finding.range && typeof record.range === "string") {
+        finding.range = record.range;
+      }
+      findings.push(finding);
+    }
+  }
+
+  visiting.delete(packageName);
+
+  if (findings.length === 0 && !parentSeverity && record.via.length === 0) {
+    throw operationalError(
+      `vulnerability record "${packageName}" is missing a known severity`
+    );
+  }
+  assertBlockingRecordIsEvaluable(packageName, parentSeverity, findings);
+  return findings;
 }
 
 export function validateLegacyAdvisoryRecord(key, advisory) {
@@ -375,23 +436,13 @@ export function collectFindings(audit) {
 
   if (Object.hasOwn(document, "vulnerabilities")) {
     for (const [packageName, entry] of Object.entries(document.vulnerabilities)) {
-      const record = validateVulnerabilityRecord(packageName, entry);
-      const parentSeverity = record.severity;
-      const patched =
-        record.fixAvailable && typeof record.fixAvailable === "object" && record.fixAvailable.version
-          ? record.fixAvailable.version
-          : null;
-
-      for (const via of record.via) {
-        for (const finding of validateViaRecord(record.name || packageName, via, parentSeverity)) {
-          if (!finding.patchedVersions && patched) {
-            finding.patchedVersions = patched;
-          }
-          if (!finding.range && typeof record.range === "string") {
-            finding.range = record.range;
-          }
-          addFinding(finding);
-        }
+      for (const finding of collectFromVulnerability(
+        packageName,
+        entry,
+        document.vulnerabilities,
+        new Set()
+      )) {
+        addFinding(finding);
       }
     }
   }

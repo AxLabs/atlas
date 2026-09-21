@@ -225,4 +225,90 @@ process.exit(1);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Ignored 1");
   });
+
+  it("fails closed on an empty advisory record", () => {
+    const result = runAudit({ advisories: { "1": {} } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(
+      /unknown severity|missing a package name|does not identify an advisory/
+    );
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("fails closed on a high vulnerability with no evaluable via entries", () => {
+    const result = runAudit({
+      vulnerabilities: { example: { severity: "high", via: [] } },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/no evaluable advisory entries/);
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("fails closed on missing severity", () => {
+    const result = runAudit({
+      vulnerabilities: { example: { via: [] } },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/missing a known severity/);
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("fails closed on unknown severity", () => {
+    const result = runAudit({
+      vulnerabilities: {
+        example: {
+          severity: "severe",
+          via: [
+            {
+              name: "example",
+              title: "synthetic",
+              url: "https://github.com/advisories/GHSA-xxxx-yyyy-zzzz",
+              severity: "severe",
+              range: "1.0.0",
+            },
+          ],
+        },
+      },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/unknown severity/);
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("resolves valid transitive string via references", () => {
+    const result = runAudit({
+      vulnerabilities: {
+        parent: { name: "parent", severity: "high", via: ["example"], nodes: ["parent"] },
+        example: {
+          name: "example",
+          severity: "high",
+          via: [
+            {
+              name: "example",
+              title: "synthetic",
+              url: "https://github.com/advisories/GHSA-xxxx-yyyy-zzzz",
+              severity: "high",
+              range: "1.0.0",
+            },
+          ],
+          nodes: ["example"],
+        },
+      },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("example@1.0.0");
+    expect(result.stderr).toContain("GHSA-xxxx-yyyy-zzzz");
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
+
+  it("fails closed on unresolved via references", () => {
+    const result = runAudit({
+      vulnerabilities: {
+        parent: { severity: "high", via: ["missing"] },
+      },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/unresolved via reference "missing"/);
+    expect(result.stdout).not.toContain("No blocking high/critical advisories");
+  });
 });

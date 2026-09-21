@@ -11,6 +11,7 @@ import { readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const BLOCKING_SEVERITIES = new Set(["high", "critical"]);
+const RECOGNIZED_SEVERITIES = new Set(["info", "low", "moderate", "high", "critical"]);
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -70,6 +71,24 @@ function advisoryIdFromUrl(url) {
 
 function normalizeId(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function normalizeSeverity(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const normalized = value.trim().toLowerCase();
+  return RECOGNIZED_SEVERITIES.has(normalized) ? normalized : "";
+}
+
+function recordPackageName(record) {
+  if (typeof record.module_name === "string" && record.module_name.trim()) {
+    return record.module_name.trim();
+  }
+  if (typeof record.name === "string" && record.name.trim()) {
+    return record.name.trim();
+  }
+  return "";
 }
 
 function isPlainObject(value) {
@@ -160,18 +179,41 @@ export function collectAuditFindings(audit) {
     return findings;
   }
 
+  const seen = new Set();
+  function addFinding(finding) {
+    const key = `${finding.advisory}::${finding.packageName}::${finding.version}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    findings.push(finding);
+  }
+
   const advisories = audit.advisories && typeof audit.advisories === "object" ? Object.entries(audit.advisories) : [];
   for (const [key, advisory] of advisories) {
     if (!isPlainObject(advisory)) {
       throw new Error(`advisory record "${key}" is malformed`);
     }
-    const packageName = advisory.module_name ?? advisory.name ?? "";
-    const severity = typeof advisory.severity === "string" ? advisory.severity.toLowerCase() : "";
+    const severity = normalizeSeverity(advisory.severity);
+    if (!severity) {
+      throw new Error(
+        `advisory record "${key}" has unknown severity ${JSON.stringify(advisory.severity)}`
+      );
+    }
+    const packageName = recordPackageName(advisory);
+    if (!packageName) {
+      throw new Error(`advisory record "${key}" is missing a package name`);
+    }
     const advisoryId =
-      normalizeId(advisory.github_advisory_id) || advisoryIdFromUrl(advisory.url) || normalizeId(String(advisory.id ?? ""));
+      normalizeId(advisory.github_advisory_id) ||
+      advisoryIdFromUrl(advisory.url) ||
+      normalizeId(typeof advisory.id === "string" ? advisory.id : "");
+    if (!advisoryId) {
+      throw new Error(`advisory record "${key}" does not identify an advisory`);
+    }
     const nested = Array.isArray(advisory.findings) ? advisory.findings : [];
     if (nested.length === 0) {
-      findings.push({
+      addFinding({
         advisory: advisoryId,
         packageName,
         version: typeof advisory.version === "string" ? advisory.version : "",
@@ -183,7 +225,7 @@ export function collectAuditFindings(audit) {
       continue;
     }
     for (const finding of nested) {
-      findings.push({
+      addFinding({
         advisory: advisoryId,
         packageName,
         version: typeof finding?.version === "string" ? finding.version : "",
@@ -195,36 +237,96 @@ export function collectAuditFindings(audit) {
     }
   }
 
-  const vulnerabilities =
-    audit.vulnerabilities && typeof audit.vulnerabilities === "object"
-      ? Object.entries(audit.vulnerabilities)
-      : [];
-  for (const [name, vulnerability] of vulnerabilities) {
-    if (!isPlainObject(vulnerability)) {
-      throw new Error(`vulnerability record "${name}" is malformed`);
+  const vulnerabilities = isPlainObject(audit.vulnerabilities) ? audit.vulnerabilities : {};
+  if (isPlainObject(audit.vulnerabilities)) {
+    for (const [name, vulnerability] of Object.entries(vulnerabilities)) {
+      for (const finding of collectFromVulnerability(name, vulnerability, vulnerabilities, new Set())) {
+        addFinding(finding);
+      }
     }
-    const severity = typeof vulnerability.severity === "string" ? vulnerability.severity.toLowerCase() : "";
-    if (!Array.isArray(vulnerability.via)) {
-      throw new Error(`vulnerability record "${name}" via must be an array`);
-    }
-    const nodes = Array.isArray(vulnerability.nodes) ? vulnerability.nodes.map((entry) => String(entry)) : [];
-    for (const item of vulnerability.via) {
-      if (typeof item === "string") {
+  }
+
+  return findings;
+}
+
+function collectFromVulnerability(packageName, vulnerability, vulnerabilities, visiting) {
+  if (!isPlainObject(vulnerability)) {
+    throw new Error(`vulnerability record "${packageName}" is malformed`);
+  }
+  if (Object.hasOwn(vulnerability, "severity") && !normalizeSeverity(vulnerability.severity)) {
+    throw new Error(
+      `vulnerability record "${packageName}" has unknown severity ${JSON.stringify(vulnerability.severity)}`
+    );
+  }
+  if (!Array.isArray(vulnerability.via)) {
+    throw new Error(`vulnerability record "${packageName}" via must be an array`);
+  }
+
+  const parentSeverity = normalizeSeverity(vulnerability.severity);
+  const findings = [];
+  const nodes = Array.isArray(vulnerability.nodes) ? vulnerability.nodes.map((entry) => String(entry)) : [];
+  visiting.add(packageName);
+
+  for (const item of vulnerability.via) {
+    if (typeof item === "string") {
+      const ref = item.trim();
+      if (!ref) {
+        throw new Error(`vulnerability record "${packageName}" has an empty via reference`);
+      }
+      if (!Object.hasOwn(vulnerabilities, ref) || !isPlainObject(vulnerabilities[ref])) {
+        throw new Error(
+          `vulnerability record "${packageName}" has an unresolved via reference "${ref}"`
+        );
+      }
+      if (visiting.has(ref)) {
         continue;
       }
-      if (!isPlainObject(item)) {
-        throw new Error(`vulnerability record "${name}" has a malformed via entry`);
-      }
-      findings.push({
-        advisory: advisoryIdFromUrl(item.url) || normalizeId(item.source != null ? String(item.source) : ""),
-        packageName: item.name ?? name,
-        version: typeof item.range === "string" ? item.range : "",
-        paths: nodes,
-        severity,
-        title: item.title ?? vulnerability.title ?? "Untitled advisory",
-        url: item.url ?? "",
-      });
+      findings.push(...collectFromVulnerability(ref, vulnerabilities[ref], vulnerabilities, visiting));
+      continue;
     }
+    if (!isPlainObject(item)) {
+      throw new Error(`vulnerability record "${packageName}" has a malformed via entry`);
+    }
+    const viaSeverity = normalizeSeverity(item.severity) || parentSeverity;
+    if (Object.hasOwn(item, "severity") && !normalizeSeverity(item.severity)) {
+      throw new Error(
+        `via record for "${packageName}" has unknown severity ${JSON.stringify(item.severity)}`
+      );
+    }
+    if (!viaSeverity) {
+      throw new Error(`via record for "${packageName}" is missing a known severity`);
+    }
+    const viaName =
+      typeof item.name === "string" && item.name.trim()
+        ? item.name.trim()
+        : packageName;
+    const advisory =
+      advisoryIdFromUrl(item.url) ||
+      normalizeId(typeof item.github_advisory_id === "string" ? item.github_advisory_id : "") ||
+      normalizeId(item.source != null ? String(item.source) : "");
+    if (!advisory) {
+      throw new Error(`via record for "${packageName}" does not identify an advisory`);
+    }
+    findings.push({
+      advisory,
+      packageName: viaName,
+      version: typeof item.range === "string" ? item.range : "",
+      paths: nodes,
+      severity: viaSeverity,
+      title: item.title ?? vulnerability.title ?? "Untitled advisory",
+      url: item.url ?? "",
+    });
+  }
+
+  visiting.delete(packageName);
+
+  if (findings.length === 0 && !parentSeverity && vulnerability.via.length === 0) {
+    throw new Error(`vulnerability record "${packageName}" is missing a known severity`);
+  }
+  if (findings.length === 0 && BLOCKING_SEVERITIES.has(parentSeverity)) {
+    throw new Error(
+      `vulnerability record "${packageName}" has ${parentSeverity} severity but no evaluable advisory entries`
+    );
   }
 
   return findings;
