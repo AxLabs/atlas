@@ -423,15 +423,20 @@ function normalizeAdvisoryId(value) {
 export function collectFindings(audit) {
   const document = validateAuditDocumentShape(audit);
   const findings = [];
-  const seen = new Set();
 
   function addFinding(finding) {
     const key = `${finding.advisoryId}::${finding.packageName}`;
-    if (seen.has(key)) {
+    const existingIndex = findings.findIndex(
+      (entry) => `${entry.advisoryId}::${entry.packageName}` === key
+    );
+    if (existingIndex === -1) {
+      findings.push(finding);
       return;
     }
-    seen.add(key);
-    findings.push(finding);
+    const existing = findings[existingIndex];
+    if (SEVERITY_RANK[finding.severity] > SEVERITY_RANK[existing.severity]) {
+      findings[existingIndex] = finding;
+    }
   }
 
   if (Object.hasOwn(document, "vulnerabilities")) {

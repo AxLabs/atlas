@@ -396,6 +396,29 @@ describe("security audit policy helpers", () => {
     assert.equal(evaluation.ok, false);
     assert.match(formatSecuritySummary(evaluation, policy), /Blocking vulnerabilities/);
   });
+
+  it("does not let a duplicate lower-severity record hide a high finding", () => {
+    const high = readFixture("high-vulnerability.json").vulnerabilities["atlas-synthetic-high"];
+    const moderate = JSON.parse(JSON.stringify(high));
+    moderate.severity = "moderate";
+    moderate.via[0].severity = "moderate";
+    const policy = loadPolicy(repoRoot);
+
+    for (const order of [
+      { first: moderate, second: high },
+      { first: high, second: moderate },
+    ]) {
+      const evaluation = evaluateSecurityAudit({
+        audit: { vulnerabilities: { first: order.first, second: order.second } },
+        exceptions: [],
+        policy,
+      });
+      assert.equal(evaluation.ok, false);
+      assert.equal(evaluation.blocking.length, 1);
+      assert.equal(evaluation.blocking[0].severity, "high");
+      assert.equal(evaluation.blocking[0].advisoryId, "GHSA-atls-high-0001");
+    }
+  });
 });
 
 describe("GitHub workflow security validator", () => {

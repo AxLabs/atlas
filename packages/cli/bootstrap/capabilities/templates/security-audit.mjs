@@ -181,7 +181,18 @@ export function collectAuditFindings(audit) {
 
   const seen = new Set();
   function addFinding(finding) {
-    const key = `${finding.advisory}::${finding.packageName}::${finding.version}`;
+    // Deduplicate only identical records. Distinct path sets and severities
+    // must all reach exception evaluation so order cannot hide a blocker.
+    const paths = Array.isArray(finding.paths)
+      ? [...finding.paths].map((entry) => String(entry)).sort()
+      : [];
+    const key = [
+      finding.advisory,
+      finding.packageName,
+      finding.version,
+      finding.severity,
+      ...paths,
+    ].join("\0");
     if (seen.has(key)) {
       return;
     }

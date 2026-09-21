@@ -87,6 +87,90 @@ describe("consumer security audit exceptions", () => {
     expect(result.stderr).toContain("GHSA-ph9p-34f9-6g65");
   });
 
+  it("blocks separate LHCI and non-LHCI findings for the same advisory in either order", () => {
+    const lhci = ["node_modules/@lhci/cli>tmp"];
+    const other = ["node_modules/@turbo/gen>inquirer>tmp"];
+    const base = {
+      github_advisory_id: "GHSA-ph9p-34f9-6g65",
+      module_name: "tmp",
+      severity: "high",
+      title: "tmp advisory",
+      url: "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+    };
+
+    for (const nested of [
+      [
+        { version: "0.0.33", paths: lhci },
+        { version: "0.0.33", paths: other },
+      ],
+      [
+        { version: "0.0.33", paths: other },
+        { version: "0.0.33", paths: lhci },
+      ],
+    ]) {
+      const result = runAudit({
+        advisories: {
+          "1": { ...base, findings: nested },
+        },
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("tmp@0.0.33");
+      expect(result.stderr).toContain("GHSA-ph9p-34f9-6g65");
+      expect(result.stdout).not.toContain("No blocking high/critical advisories");
+    }
+  });
+
+  it("still ignores LHCI-only duplicate findings for the same advisory", () => {
+    const result = runAudit({
+      advisories: {
+        "1": {
+          github_advisory_id: "GHSA-ph9p-34f9-6g65",
+          module_name: "tmp",
+          severity: "high",
+          title: "tmp advisory",
+          url: "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+          findings: [
+            { version: "0.0.33", paths: ["node_modules/@lhci/cli>tmp"] },
+            { version: "0.0.33", paths: ["node_modules/@lhci/cli>tmp"] },
+          ],
+        },
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/Ignored [12]/);
+  });
+
+  it("does not let a duplicate lower-severity record hide a high finding", () => {
+    const shared = {
+      github_advisory_id: "GHSA-xxxx-yyyy-zzzz",
+      module_name: "left-pad",
+      title: "left-pad advisory",
+      url: "https://github.com/advisories/GHSA-xxxx-yyyy-zzzz",
+    };
+    for (const [first, second] of [
+      ["moderate", "high"],
+      ["high", "moderate"],
+    ] as const) {
+      const result = runAudit({
+        advisories: {
+          "1": {
+            ...shared,
+            severity: first,
+            findings: [{ version: "1.0.0", paths: ["left-pad"] }],
+          },
+          "2": {
+            ...shared,
+            severity: second,
+            findings: [{ version: "1.0.0", paths: ["left-pad"] }],
+          },
+        },
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("left-pad@1.0.0");
+      expect(result.stdout).not.toContain("No blocking high/critical advisories");
+    }
+  });
+
   it("does not apply an expired exception", () => {
     const result = runAudit(
       {

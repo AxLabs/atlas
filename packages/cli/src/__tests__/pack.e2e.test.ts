@@ -715,6 +715,47 @@ process.stdout.write(JSON.stringify({
       expect(emptyViaHigh.stderr).toMatch(/no evaluable advisory entries/);
       expect(emptyViaHigh.stdout).not.toContain("No blocking high/critical advisories");
 
+      const lhciPath = "node_modules/@lhci/cli>tmp";
+      const otherPath = "node_modules/@turbo/gen>inquirer>tmp";
+      const tmpAdvisory = {
+        github_advisory_id: "GHSA-ph9p-34f9-6g65",
+        module_name: "tmp",
+        severity: "high",
+        title: "tmp advisory",
+        url: "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+      };
+      const runPackedAudit = (name: string, document: unknown) => {
+        const filePath = path.join(generatedRoot, name);
+        writeFileSync(filePath, `${JSON.stringify(document)}\n`);
+        return runCommand(process.execPath, [packedAuditScript, "--audit-json", filePath]);
+      };
+      const lhciFirst = runPackedAudit("audit-lhci-first.json", {
+        advisories: {
+          "1": {
+            ...tmpAdvisory,
+            findings: [
+              { version: "0.0.33", paths: [lhciPath] },
+              { version: "0.0.33", paths: [otherPath] },
+            ],
+          },
+        },
+      });
+      const otherFirst = runPackedAudit("audit-other-first.json", {
+        advisories: {
+          "1": {
+            ...tmpAdvisory,
+            findings: [
+              { version: "0.0.33", paths: [otherPath] },
+              { version: "0.0.33", paths: [lhciPath] },
+            ],
+          },
+        },
+      });
+      expect(lhciFirst.status).toBe(1);
+      expect(otherFirst.status).toBe(1);
+      expect(lhciFirst.stdout).not.toContain("No blocking high/critical advisories");
+      expect(otherFirst.stdout).not.toContain("No blocking high/critical advisories");
+
       const enableList = runInstalledAtlas(
         cleanRoom,
         ["enable", "list", "--json", "--cwd", generatedRoot],
