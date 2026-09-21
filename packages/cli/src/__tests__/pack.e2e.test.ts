@@ -247,11 +247,18 @@ describe("Atlas CLI pack and clean-room install", () => {
   });
 
   it("is accepted by npm publish --dry-run --access public without authentication", () => {
-    const npmBin = path.join(path.dirname(process.execPath), "npm");
+    const nodeBinDir = path.dirname(process.execPath);
+    const npmBin = path.join(nodeBinDir, "npm");
     const result = runCommand(
       existsSync(npmBin) ? npmBin : "npm",
       ["publish", "--dry-run", "--access", "public", "--ignore-scripts"],
-      { cwd: PACKAGE_ROOT }
+      {
+        cwd: PACKAGE_ROOT,
+        env: {
+          ...process.env,
+          PATH: `${nodeBinDir}${path.delimiter}${process.env.PATH ?? ""}`,
+        },
+      }
     );
     try {
       const combined = `${result.stdout}\n${result.stderr}`;
