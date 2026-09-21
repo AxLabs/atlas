@@ -265,7 +265,11 @@ describe("Atlas CLI pack and clean-room install", () => {
       const alreadyPublished = /cannot publish over the previously published versions/i.test(
         combined
       );
-      expect(result.status === 0 || alreadyPublished).toBe(true);
+      if (result.status !== 0 && !alreadyPublished) {
+        throw new Error(
+          `npm publish --dry-run failed (${result.status})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+        );
+      }
       expect(combined).not.toMatch(/ENEEDAUTH|npm ERR! code ENEEDAUTH/i);
       expect(combined).toContain(CLI_PACKAGE_NAME);
       expect(combined).not.toMatch(/This package has been marked as private/i);
