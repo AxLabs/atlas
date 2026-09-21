@@ -6,6 +6,7 @@ import {
   assertPublicCliManifest,
   collectPackedFileIssues,
   collectRuntimeWorkspaceProtocolLeaks,
+  detectAlreadyPublishedDryRun,
   detectNpmAuthRequirement,
   extractJsonPayload,
   NPM_PACK_DRY_RUN_ARGS,
@@ -179,6 +180,14 @@ describe("npm publish dry-run helpers", () => {
       false
     );
     assert.equal(detectNpmAuthRequirement("npm notice total files: 12", 0), false);
+    assert.equal(
+      detectAlreadyPublishedDryRun(
+        "You cannot publish over the previously published versions: 1.1.0\n+ @blitzcraftlabs/atlas@1.1.0",
+        1
+      ),
+      true
+    );
+    assert.equal(detectAlreadyPublishedDryRun("npm notice total files: 12", 0), false);
   });
 
   it("uses dry-run pack and public dry-run publish arguments", () => {

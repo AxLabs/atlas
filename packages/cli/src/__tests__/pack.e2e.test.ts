@@ -40,6 +40,81 @@ import type { PackagedBootstrapManifest } from "../bootstrap/schema";
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 const PACK_TIMEOUT_MS = 180_000;
 
+function npmVersionLooksValid(result: { status: number | null; stdout: string; stderr: string }) {
+  return result.status === 0 && /\d+\.\d+/.test(`${result.stdout}\n${result.stderr}`);
+}
+
+function probeNpm(command: string, prefixArgs: string[] = [], env?: NodeJS.ProcessEnv): boolean {
+  try {
+    return npmVersionLooksValid(runCommand(command, [...prefixArgs, "-v"], { env }));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Jest may run under `.nvmrc` Node while PATH still has a complete npm from
+ * another nvm version. Prefer a working `npm -v` instead of assuming the
+ * Node-adjacent bundled CLI is intact.
+ */
+function resolveNpmPublishInvocation(): {
+  command: string;
+  prefixArgs: string[];
+  env?: NodeJS.ProcessEnv;
+} {
+  const candidates: { command: string; prefixArgs: string[]; env?: NodeJS.ProcessEnv }[] = [
+    { command: "npm", prefixArgs: [] },
+  ];
+
+  const nodeBinDir = path.dirname(process.execPath);
+  const adjacentNpmCli = path.resolve(nodeBinDir, "../lib/node_modules/npm/bin/npm-cli.js");
+  if (existsSync(adjacentNpmCli)) {
+    candidates.push({
+      command: process.execPath,
+      prefixArgs: [adjacentNpmCli],
+      env: {
+        ...process.env,
+        PATH: `${nodeBinDir}${path.delimiter}${process.env.PATH ?? ""}`,
+      },
+    });
+  }
+
+  const versionsRoot = path.resolve(nodeBinDir, "..", "..");
+  if (existsSync(versionsRoot)) {
+    for (const version of readdirSync(versionsRoot)) {
+      const binDir = path.join(versionsRoot, version, "bin");
+      const nodeBin = path.join(binDir, "node");
+      const npmCli = path.join(
+        versionsRoot,
+        version,
+        "lib",
+        "node_modules",
+        "npm",
+        "bin",
+        "npm-cli.js"
+      );
+      if (existsSync(nodeBin) && existsSync(npmCli)) {
+        candidates.push({
+          command: nodeBin,
+          prefixArgs: [npmCli],
+          env: {
+            ...process.env,
+            PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
+          },
+        });
+      }
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (probeNpm(candidate.command, candidate.prefixArgs, candidate.env)) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Could not find a working npm executable for publish --dry-run");
+}
+
 function runInstalledAtlas(cleanRoom: string, args: string[], cwd = cleanRoom) {
   const bin = path.join(cleanRoom, "node_modules", ".bin", "atlas");
   return runCommand(bin, args, { cwd });
@@ -247,17 +322,13 @@ describe("Atlas CLI pack and clean-room install", () => {
   });
 
   it("is accepted by npm publish --dry-run --access public without authentication", () => {
-    const nodeBinDir = path.dirname(process.execPath);
-    const npmCli = path.resolve(nodeBinDir, "../lib/node_modules/npm/bin/npm-cli.js");
+    const npm = resolveNpmPublishInvocation();
     const result = runCommand(
-      process.execPath,
-      [npmCli, "publish", "--dry-run", "--access", "public", "--ignore-scripts"],
+      npm.command,
+      [...npm.prefixArgs, "publish", "--dry-run", "--access", "public", "--ignore-scripts"],
       {
         cwd: PACKAGE_ROOT,
-        env: {
-          ...process.env,
-          PATH: `${nodeBinDir}${path.delimiter}${process.env.PATH ?? ""}`,
-        },
+        env: npm.env,
       }
     );
     try {
