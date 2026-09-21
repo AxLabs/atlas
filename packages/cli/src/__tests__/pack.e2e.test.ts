@@ -39,49 +39,67 @@ import type { PackagedBootstrapManifest } from "../bootstrap/schema";
 
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 const PACK_TIMEOUT_MS = 180_000;
+const MIN_NPM_NODE_MAJOR = 22;
+const INCOMPLETE_NPM_PATTERN =
+  /Cannot find module .*walk-up-path|npm ERR! code MODULE_NOT_FOUND|valid "main" entry/i;
+const ALREADY_PUBLISHED_PATTERN = /cannot publish over the previously published versions/i;
 
-function npmVersionLooksValid(result: { status: number | null; stdout: string; stderr: string }) {
-  return result.status === 0 && /\d+\.\d+/.test(`${result.stdout}\n${result.stderr}`);
-}
-
-function probeNpm(command: string, prefixArgs: string[] = [], env?: NodeJS.ProcessEnv): boolean {
-  try {
-    return npmVersionLooksValid(runCommand(command, [...prefixArgs, "-v"], { env }));
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Jest may run under `.nvmrc` Node while PATH still has a complete npm from
- * another nvm version. Prefer a working `npm -v` instead of assuming the
- * Node-adjacent bundled CLI is intact.
- */
-function resolveNpmPublishInvocation(): {
+interface NpmPublishInvocation {
   command: string;
   prefixArgs: string[];
   env?: NodeJS.ProcessEnv;
-} {
-  const candidates: { command: string; prefixArgs: string[]; env?: NodeJS.ProcessEnv }[] = [
-    { command: "npm", prefixArgs: [] },
-  ];
+}
+
+function nodeMajorFromPath(filePath: string): number | null {
+  const match = filePath.match(/[/\\]v(\d+)\.\d+/);
+  return match ? Number(match[1]) : null;
+}
+
+function withNodeBinFirst(binDir: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
+  };
+}
+
+/**
+ * Collect npm CLIs from Node >= 22 installs. PATH `npm` can resolve to an
+ * older broken nvm copy; incomplete bundled installs are skipped at publish time.
+ */
+function collectNpmPublishCandidates(): NpmPublishInvocation[] {
+  const candidates: (NpmPublishInvocation & { rank: number })[] = [];
+  const seen = new Set<string>();
+
+  const add = (candidate: NpmPublishInvocation, rank: number) => {
+    const key = `${candidate.command}\0${candidate.prefixArgs.join("\0")}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    candidates.push({ ...candidate, rank });
+  };
 
   const nodeBinDir = path.dirname(process.execPath);
+  const currentMajor = Number(process.versions.node.split(".")[0]);
   const adjacentNpmCli = path.resolve(nodeBinDir, "../lib/node_modules/npm/bin/npm-cli.js");
-  if (existsSync(adjacentNpmCli)) {
-    candidates.push({
-      command: process.execPath,
-      prefixArgs: [adjacentNpmCli],
-      env: {
-        ...process.env,
-        PATH: `${nodeBinDir}${path.delimiter}${process.env.PATH ?? ""}`,
+  if (currentMajor >= MIN_NPM_NODE_MAJOR && existsSync(adjacentNpmCli)) {
+    add(
+      {
+        command: process.execPath,
+        prefixArgs: [adjacentNpmCli],
+        env: withNodeBinFirst(nodeBinDir),
       },
-    });
+      currentMajor
+    );
   }
 
   const versionsRoot = path.resolve(nodeBinDir, "..", "..");
   if (existsSync(versionsRoot)) {
     for (const version of readdirSync(versionsRoot)) {
+      const major = nodeMajorFromPath(`/${version}/`);
+      if (major == null || major < MIN_NPM_NODE_MAJOR) {
+        continue;
+      }
       const binDir = path.join(versionsRoot, version, "bin");
       const nodeBin = path.join(binDir, "node");
       const npmCli = path.join(
@@ -94,25 +112,60 @@ function resolveNpmPublishInvocation(): {
         "npm-cli.js"
       );
       if (existsSync(nodeBin) && existsSync(npmCli)) {
-        candidates.push({
-          command: nodeBin,
-          prefixArgs: [npmCli],
-          env: {
-            ...process.env,
-            PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
+        add(
+          {
+            command: nodeBin,
+            prefixArgs: [npmCli],
+            env: withNodeBinFirst(binDir),
           },
-        });
+          major
+        );
       }
     }
   }
 
-  for (const candidate of candidates) {
-    if (probeNpm(candidate.command, candidate.prefixArgs, candidate.env)) {
-      return candidate;
+  add({ command: "npm", prefixArgs: [] }, MIN_NPM_NODE_MAJOR);
+
+  return candidates
+    .sort((left, right) => right.rank - left.rank)
+    .map((candidate) => ({
+      command: candidate.command,
+      prefixArgs: candidate.prefixArgs,
+      env: candidate.env,
+    }));
+}
+
+function runNpmPublishDryRun() {
+  const failures: string[] = [];
+
+  for (const npm of collectNpmPublishCandidates()) {
+    let result;
+    try {
+      result = runCommand(
+        npm.command,
+        [...npm.prefixArgs, "publish", "--dry-run", "--access", "public", "--ignore-scripts"],
+        { cwd: PACKAGE_ROOT, env: npm.env }
+      );
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
+      continue;
     }
+
+    const combined = `${result.stdout}\n${result.stderr}`;
+    if (result.status === 0 || ALREADY_PUBLISHED_PATTERN.test(combined)) {
+      return { result, combined };
+    }
+    if (INCOMPLETE_NPM_PATTERN.test(combined)) {
+      failures.push(combined.trim());
+      continue;
+    }
+
+    return { result, combined };
   }
 
-  throw new Error("Could not find a working npm executable for publish --dry-run");
+  throw new Error(
+    `Could not find a working npm executable for publish --dry-run\n${failures.join("\n---\n")}`
+  );
 }
 
 function runInstalledAtlas(cleanRoom: string, args: string[], cwd = cleanRoom) {
@@ -322,20 +375,9 @@ describe("Atlas CLI pack and clean-room install", () => {
   });
 
   it("is accepted by npm publish --dry-run --access public without authentication", () => {
-    const npm = resolveNpmPublishInvocation();
-    const result = runCommand(
-      npm.command,
-      [...npm.prefixArgs, "publish", "--dry-run", "--access", "public", "--ignore-scripts"],
-      {
-        cwd: PACKAGE_ROOT,
-        env: npm.env,
-      }
-    );
+    const { result, combined } = runNpmPublishDryRun();
     try {
-      const combined = `${result.stdout}\n${result.stderr}`;
-      const alreadyPublished = /cannot publish over the previously published versions/i.test(
-        combined
-      );
+      const alreadyPublished = ALREADY_PUBLISHED_PATTERN.test(combined);
       if (result.status !== 0 && !alreadyPublished) {
         throw new Error(
           `npm publish --dry-run failed (${result.status})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
