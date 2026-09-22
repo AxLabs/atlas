@@ -227,10 +227,18 @@ public npm package. After the GitHub Release job completes, a separate `npm-publ
    `packages/cli` and never a `0.5.0` or `1.0.0` artifact
 3. **OIDC publish** of that same `.tgz` with npm provenance when the package exists, the version is
    unpublished, and HEAD is the exact matching `vX.Y.Z` tag. npm provenance is not a GitHub Release
-   attestation and is not SLSA
+   attestation and is not SLSA. `npm publish` exit 0 is treated as registry acceptance, not proof
+   that the version document is publicly queryable. The publisher then polls the public npm version
+   document for up to 15 minutes (12s interval) until `@blitzcraftlabs/atlas@<version>` is
+   queryable. If npm accepted the publish but the version never appears, the job fails closed. Only
+   after that visibility check does consumer verification (`pnpm distribution:verify-registry`) run.
 
 The npm job requests `id-token: write` only. It does not use `NPM_TOKEN`, does not run on pull
 requests or `workflow_dispatch`, and does not publish internal `@atlas/*` workspaces.
+
+A `workflow_dispatch` with `verify_version` set runs public-registry consumer verification for that
+already-published Atlas version and does not pack or publish. Leave `verify_version` empty to run
+release rehearsal.
 
 ### First npm publication
 
@@ -264,8 +272,10 @@ pnpm governance:check   # policy invariants
 pnpm release:rehearse   # isolated worktree; version transform + publication dry-run
 ```
 
-GitHub Actions: run the **Release** workflow via `workflow_dispatch`. That path generates SBOM and
-release notes and must not create a Git tag or GitHub Release.
+GitHub Actions: run the **Release** workflow via `workflow_dispatch`. With `verify_version` empty,
+that path generates SBOM and release notes and must not create a Git tag, GitHub Release, or npm
+publish. Set `verify_version` to an already-published Atlas version (for example `1.2.0`) to run
+`pnpm distribution:verify-registry` against the public registry without packing or publishing.
 
 ### Commands
 

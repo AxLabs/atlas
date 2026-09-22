@@ -219,12 +219,12 @@ Add those in your product repo when you have a real database and content pipelin
 
 ## Optional workflows
 
-| Workflow              | Purpose                                                                            | Enable                                                                    |
-| --------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `security-audit.yml`  | Blocking Atlas vulnerability policy + workflow pin checks                          | On by default (PRs, `main`, weekly)                                       |
-| `perf-lighthouse.yml` | Lighthouse CI budgets                                                              | `pnpm perf:enable`                                                        |
-| `perf-bundle.yml`     | Bundle size analysis                                                               | `pnpm perf:enable`                                                        |
-| `release.yml`         | Version PR, GitHub Release, and npm Trusted Publishing for `@blitzcraftlabs/atlas` | On `main`; `workflow_dispatch` is rehearsal-only and does not publish npm |
+| Workflow              | Purpose                                                                            | Enable                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `security-audit.yml`  | Blocking Atlas vulnerability policy + workflow pin checks                          | On by default (PRs, `main`, weekly)                                                                                          |
+| `perf-lighthouse.yml` | Lighthouse CI budgets                                                              | `pnpm perf:enable`                                                                                                           |
+| `perf-bundle.yml`     | Bundle size analysis                                                               | `pnpm perf:enable`                                                                                                           |
+| `release.yml`         | Version PR, GitHub Release, and npm Trusted Publishing for `@blitzcraftlabs/atlas` | On `main`; empty `workflow_dispatch` is rehearsal-only. `verify_version` verifies a published npm version without publishing |
 
 Performance budget details live in `tools/perf/README.md` when workflows are enabled.
 
