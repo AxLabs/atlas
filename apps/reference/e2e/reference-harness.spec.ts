@@ -312,21 +312,35 @@ test.describe("Authorization", () => {
 
 test.describe("API recovery, flags, and consent traffic", () => {
   test("users list recovers after server-error via retry", async ({ page }) => {
-    await setReferenceSession(page, "reference-user", "server-error");
+    await setReferenceSession(page, "reference-user", "success");
+
+    let usersGetCount = 0;
+    await page.route("**/api/users", async (route) => {
+      if (route.request().method() === "GET") {
+        usersGetCount += 1;
+        if (usersGetCount === 1) {
+          await route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({
+              error: {
+                code: "INTERNAL_ERROR",
+                message: "Simulated outage",
+                userMessage: "The users service is unavailable.",
+              },
+            }),
+          });
+          return;
+        }
+      }
+      await route.continue();
+    });
 
     await page.goto("/users");
     await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
 
-    await setReferenceSession(page, "reference-user", "success");
-
-    await page.goto("/users");
-    const tryAgain = page.getByRole("button", { name: "Try again" });
-    if (await tryAgain.isVisible()) {
-      await tryAgain.click();
-    }
-    await expect(page.getByRole("cell", { name: "Reference User", exact: true })).toBeVisible({
-      timeout: 15000,
-    });
+    await page.getByRole("button", { name: "Try again" }).click();
+    await expect(page.getByRole("cell", { name: "Reference User", exact: true })).toBeVisible();
   });
 
   test("API 500 surfaces a user-visible error on users list", async ({ page }) => {
