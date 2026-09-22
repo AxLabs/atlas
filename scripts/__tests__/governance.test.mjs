@@ -318,6 +318,12 @@ describe("release workflow policy", () => {
       versionPrJob,
       /has-changesets:\s*\$\{\{\s*steps\.changesets\.outputs\.hasChangesets\s*\}\}/
     );
+    assert.match(versionPrJob, /steps\.changesets\.outcome/);
+    assert.match(versionPrJob, /pullRequestNumber/);
+    assert.doesNotMatch(versionPrJob, /hasChangesets[\s\S]{0,180}Version PR opened or updated/);
+    assert.match(versionPrJob, /Version PR created or updated/);
+    assert.match(versionPrJob, /Pending changesets remain/);
+    assert.match(versionPrJob, /Changesets action failed/);
 
     const publishJobStart = workflow.indexOf("  github-release:");
     const nextJob = workflow.slice(publishJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);

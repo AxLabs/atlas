@@ -1,6 +1,6 @@
 import { runBootstrapInit } from "../init/bootstrap";
 import { runCheckoutInit } from "../init/checkout";
-import { atlasDlx, atlasDlxForEnable } from "../init/cli-release";
+import { atlasDlx, atlasDlxForEnable, type EnableCliVersionOptions } from "../init/cli-release";
 import { readCliAtlasVersion } from "../version";
 
 import type { EnvPolicy, ReferencePolicy } from "../init/types";
@@ -39,9 +39,14 @@ export function runInit(options: InitOptions): CommandResult {
   });
 }
 
-export function formatInitResult(result: CommandResult, dryRun: boolean): string[] {
+export function formatInitResult(
+  result: CommandResult,
+  dryRun: boolean,
+  options: EnableCliVersionOptions = {}
+): string[] {
   if (result.initMode === "bootstrap") {
     const header = dryRun ? "Atlas init dry run." : "Atlas project created.";
+    const runningCliVersion = options.runningCliVersion ?? readCliAtlasVersion();
     const lines = [
       header,
       `Project root: ${result.repoRoot}`,
@@ -61,7 +66,7 @@ export function formatInitResult(result: CommandResult, dryRun: boolean): string
         "  pnpm dev",
         `  ${atlasDlx(result.atlasVersion)} doctor`,
         `  ${atlasDlx(result.atlasVersion)} context --json`,
-        `  ${atlasDlxForEnable(result.atlasVersion, { runningCliVersion: readCliAtlasVersion() })} enable list --json`
+        `  ${atlasDlxForEnable(result.atlasVersion, { runningCliVersion })} enable list --json`
       );
     }
 

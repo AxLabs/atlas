@@ -181,6 +181,20 @@ function checkReleaseWorkflow() {
         "version-pr job must expose steps.changesets.outputs.hasChangesets as the has-changesets job output"
       );
     }
+    if (!/steps\.changesets\.outcome/.test(versionPrJob)) {
+      fail("version-pr job must inspect steps.changesets.outcome when reporting Version PR status");
+    }
+    if (!/pullRequestNumber/.test(versionPrJob)) {
+      fail("version-pr job must inspect pullRequestNumber when reporting Version PR creation");
+    }
+    if (
+      /hasChangesets[\s\S]{0,180}Version PR opened or updated/.test(versionPrJob) ||
+      /HAS_CHANGESETS[\s\S]{0,180}Version PR opened or updated/.test(versionPrJob)
+    ) {
+      fail(
+        "version-pr reporting must not claim Version PR success solely because hasChangesets is true"
+      );
+    }
   }
 
   const publishJob = extractNamedJob(workflow, "github-release");
