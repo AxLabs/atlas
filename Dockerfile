@@ -19,6 +19,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY turbo.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/ui/package.json ./packages/ui/
+COPY packages/consent/package.json ./packages/consent/
 COPY packages/config/package.json ./packages/config/
 COPY scripts/ensure-pnpm.js ./scripts/ensure-pnpm.js
 
@@ -27,6 +28,8 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source files
 COPY . .
+
+RUN mkdir -p apps/web/public
 
 # Build the application
 RUN pnpm build --filter=@atlas/web
