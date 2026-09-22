@@ -17,6 +17,7 @@ export interface AppInfrastructureManifest {
   independentPaths: Record<string, Record<string, string>>;
   referenceOnlyPaths: string[];
   starterOnlyPaths: string[];
+  repositorySyncedPaths: string[];
   structuralConformance?: {
     requiredInfrastructureModules?: string[];
   };
@@ -127,6 +128,18 @@ function validateManifest(raw: unknown): AppInfrastructureManifest {
     validateInfrastructurePath(starterOnlyPath, `starterOnlyPaths entry "${starterOnlyPath}"`);
   }
 
+  const repositorySyncedPaths = readOptionalNonEmptyStringArray(
+    record.repositorySyncedPaths,
+    "repositorySyncedPaths"
+  );
+  assertUniqueEntries(repositorySyncedPaths, "repositorySyncedPaths");
+  for (const repositorySyncedPath of repositorySyncedPaths) {
+    validateInfrastructurePath(
+      repositorySyncedPath,
+      `repositorySyncedPaths entry "${repositorySyncedPath}"`
+    );
+  }
+
   const independentPaths = readIndependentPaths(record.independentPaths, consumerApplications);
 
   const requiredInfrastructureModules = readOptionalNonEmptyStringArray(
@@ -152,6 +165,20 @@ function validateManifest(raw: unknown): AppInfrastructureManifest {
     independentPaths,
   });
 
+  for (const repositorySyncedPath of repositorySyncedPaths) {
+    if (
+      syncedPaths.includes(repositorySyncedPath) ||
+      generatedPaths.includes(repositorySyncedPath) ||
+      referenceOnlyPaths.includes(repositorySyncedPath) ||
+      starterOnlyPaths.includes(repositorySyncedPath)
+    ) {
+      throw new CliError(
+        CliErrorCode.USAGE_ERROR,
+        `repositorySyncedPaths entry "${repositorySyncedPath}" must not also appear in application-level ownership lists.`
+      );
+    }
+  }
+
   return {
     schemaVersion: SUPPORTED_APP_INFRASTRUCTURE_MANIFEST_SCHEMA_VERSION,
     canonicalApplication,
@@ -161,6 +188,7 @@ function validateManifest(raw: unknown): AppInfrastructureManifest {
     independentPaths,
     referenceOnlyPaths,
     starterOnlyPaths,
+    repositorySyncedPaths,
     structuralConformance:
       requiredInfrastructureModules.length > 0 ? { requiredInfrastructureModules } : undefined,
   };

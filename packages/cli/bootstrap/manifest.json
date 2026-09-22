@@ -133,6 +133,14 @@
       "destination": "scripts/ensure-pnpm.js"
     },
     {
+      "source": "Dockerfile",
+      "destination": "Dockerfile"
+    },
+    {
+      "source": ".dockerignore",
+      "destination": ".dockerignore"
+    },
+    {
       "source": "packages/cli/bootstrap/github-workflows/ci.yml",
       "destination": ".github/workflows/ci.yml"
     },

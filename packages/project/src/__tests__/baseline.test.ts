@@ -222,4 +222,22 @@ describe("platform.baseline schema validation", () => {
       VALID_SHA256
     );
   });
+
+  it("accepts optional repositorySyncedPathChecksums without requiring them", () => {
+    const parsed = parseAtlasProjectContract({
+      schemaVersion: 1,
+      platform: {
+        baseline: {
+          atlasVersion: "1.2.0",
+          contractSchemaVersion: 1,
+          templateManifestSchemaVersion: 1,
+          syncedPathChecksums: {
+            "src/lib/api/client.ts": VALID_SHA256,
+          },
+        },
+      },
+    });
+
+    expect(parsed.platform?.baseline?.repositorySyncedPathChecksums).toBeUndefined();
+  });
 });

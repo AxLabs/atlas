@@ -5,6 +5,7 @@ import type { UpgradePlan, UpgradePlanItem } from "./types";
 
 export interface ApplySafeUpgradeOptions {
   applicationRoot: string;
+  repoRoot?: string;
   plan: UpgradePlan;
   targetSnapshot: Record<string, string>;
   dryRun?: boolean;
@@ -36,7 +37,11 @@ export function applySafeUpgradeReplacements(
       continue;
     }
 
-    const absolutePath = path.join(options.applicationRoot, item.relativePath);
+    const root =
+      item.pathScope === "repository"
+        ? (options.repoRoot ?? options.applicationRoot)
+        : options.applicationRoot;
+    const absolutePath = path.join(root, item.relativePath);
 
     if (item.action === "remove") {
       if (!options.dryRun) {

@@ -81,6 +81,7 @@ describe("upgrade rehearsal", () => {
         independentPaths: {},
         referenceOnlyPaths: [],
         starterOnlyPaths: [],
+        repositorySyncedPaths: [],
       },
     });
 

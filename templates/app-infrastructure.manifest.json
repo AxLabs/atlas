@@ -159,6 +159,7 @@
     "src/lib/reference/users/store.ts"
   ],
   "starterOnlyPaths": ["src/components/LandingSelect.tsx", "src/components/ThemeHotkey.tsx"],
+  "repositorySyncedPaths": ["Dockerfile", ".dockerignore"],
   "structuralConformance": {
     "requiredInfrastructureModules": [
       "src/lib/api/client.ts",

@@ -66,6 +66,9 @@ export const EXPECTED_INIT_PATHS = Object.freeze([
   "docs/how-we-build/consumer-tooling.md",
   "docs/how-we-build/reference-patterns.md",
   ".github/workflows/ci.yml",
+  "scripts/ensure-pnpm.js",
+  "Dockerfile",
+  ".dockerignore",
 ]);
 
 export const FORBIDDEN_GENERATED_PATHS = Object.freeze([

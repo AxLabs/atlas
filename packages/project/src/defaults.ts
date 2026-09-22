@@ -117,6 +117,15 @@ export function resolveAtlasProjectContract(raw: RawAtlasProjectContract): Resol
             left.localeCompare(right)
           )
         ),
+        ...(raw.platform.baseline.repositorySyncedPathChecksums
+          ? {
+              repositorySyncedPathChecksums: Object.fromEntries(
+                Object.entries(raw.platform.baseline.repositorySyncedPathChecksums).sort(
+                  ([left], [right]) => left.localeCompare(right)
+                )
+              ),
+            }
+          : {}),
       },
     };
   }

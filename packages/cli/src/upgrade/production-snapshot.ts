@@ -165,6 +165,9 @@ function serializeReleaseSnapshotManifest(manifest: ReleaseSnapshotManifest): st
       syncedPaths: manifest.syncedPaths,
       generatedPaths: manifest.generatedPaths,
       independentPaths: manifest.independentPaths,
+      ...(manifest.repositorySyncedPaths && manifest.repositorySyncedPaths.length > 0
+        ? { repositorySyncedPaths: manifest.repositorySyncedPaths }
+        : {}),
       packageVersions: manifest.packageVersions,
       ...(manifest.openApiSpecRelativePath
         ? { openApiSpecRelativePath: manifest.openApiSpecRelativePath }
@@ -194,6 +197,7 @@ export function generateProductionReleaseSnapshot(
   const syncedPaths = sortStrings(ownership.syncedPaths);
   const generatedPaths = sortStrings(ownership.generatedPaths);
   const independentPaths = collectCanonicalIndependentPaths(repoRoot, ownership);
+  const repositorySyncedPaths = sortStrings(ownership.repositorySyncedPaths ?? []);
   const openApiExists = existsSync(path.join(repoRoot, DEFAULT_OPENAPI_SPEC_RELATIVE_PATH));
 
   const snapshotManifest: ReleaseSnapshotManifest = {
@@ -205,6 +209,7 @@ export function generateProductionReleaseSnapshot(
     syncedPaths,
     generatedPaths,
     independentPaths,
+    ...(repositorySyncedPaths.length > 0 ? { repositorySyncedPaths } : {}),
     packageVersions: collectPackageVersions(repoRoot),
     openApiSpecRelativePath: openApiExists ? DEFAULT_OPENAPI_SPEC_RELATIVE_PATH : undefined,
   };
@@ -227,6 +232,14 @@ export function generateProductionReleaseSnapshot(
       repoRoot,
       outputDir,
       relativeFromRepo: path.posix.join(ownership.canonicalApplication, relativePath),
+    });
+  }
+
+  for (const relativePath of repositorySyncedPaths) {
+    copyReleaseFile({
+      repoRoot,
+      outputDir,
+      relativeFromRepo: relativePath,
     });
   }
 

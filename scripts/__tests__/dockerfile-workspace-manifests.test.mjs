@@ -109,4 +109,11 @@ describe("Dockerfile copies web workspace manifests before dependency install", 
       "apps/web/public must exist in the builder before the runner copies it"
     );
   });
+
+  it("does not claim a hard-coded source repository that would be wrong for consumers", () => {
+    const dockerfile = readFileSync(path.join(repoRoot, "Dockerfile"), "utf8");
+    assert.equal(dockerfile.includes("thedanielmark/atlas"), false);
+    assert.equal(dockerfile.includes("org.opencontainers.image.source"), false);
+    assert.equal(dockerfile.includes("LABEL maintainer="), false);
+  });
 });

@@ -38,6 +38,8 @@ export type UpgradeRunStatus =
   | "migration-failed"
   | "validation-failed";
 
+export type UpgradePathScope = "application" | "repository";
+
 export interface UpgradePlanItem {
   relativePath: string;
   ownershipChannel: UpgradeOwnershipChannel;
@@ -50,6 +52,7 @@ export interface UpgradePlanItem {
   sourceVersion?: string;
   targetVersion?: string;
   baselineStatus?: UpgradeBaselineStatus;
+  pathScope?: UpgradePathScope;
 }
 
 export interface UpgradePlanSummary {
@@ -77,6 +80,7 @@ export interface UpgradePlan {
 export interface UpgradeSnapshot {
   syncedPaths: Record<string, string>;
   generatedPaths?: Record<string, string>;
+  repositorySyncedPaths?: Record<string, string>;
   openApiSpec?: string;
 }
 
@@ -91,6 +95,11 @@ export interface PlanUpgradeOptions {
   syncedPaths: string[];
   generatedPaths: string[];
   independentPaths: string[];
+  repositoryRoot?: string;
+  sourceRepositorySyncedPaths?: string[];
+  repositorySyncedPaths?: string[];
+  baselineRepositoryChecksums?: Record<string, string>;
+  consumerRepositoryFiles?: Record<string, string>;
   sourceSnapshot: UpgradeSnapshot;
   targetSnapshot: UpgradeSnapshot;
   consumerFiles: Record<string, string>;

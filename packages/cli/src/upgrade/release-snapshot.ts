@@ -32,6 +32,7 @@ export interface ReleaseSnapshotManifest {
   syncedPaths: string[];
   generatedPaths: string[];
   independentPaths: string[];
+  repositorySyncedPaths?: string[];
   packageVersions: Record<string, string>;
   openApiSpecRelativePath?: string;
 }
@@ -93,11 +94,29 @@ function validateReleaseSnapshotManifest(raw: unknown): ReleaseSnapshotManifest 
   const syncedPaths = readValidatedPathArray(record.syncedPaths, "syncedPaths");
   const generatedPaths = readValidatedPathArray(record.generatedPaths, "generatedPaths");
   const independentPaths = readValidatedPathArray(record.independentPaths, "independentPaths");
+  const repositorySyncedPaths =
+    record.repositorySyncedPaths === undefined
+      ? []
+      : readValidatedPathArray(record.repositorySyncedPaths, "repositorySyncedPaths");
 
   assertNoPathListDuplicates(syncedPaths, "syncedPaths");
   assertNoPathListDuplicates(generatedPaths, "generatedPaths");
   assertNoPathListDuplicates(independentPaths, "independentPaths");
+  assertNoPathListDuplicates(repositorySyncedPaths, "repositorySyncedPaths");
   assertNoReleasePathOverlap({ syncedPaths, generatedPaths, independentPaths });
+
+  for (const repositorySyncedPath of repositorySyncedPaths) {
+    if (
+      syncedPaths.includes(repositorySyncedPath) ||
+      generatedPaths.includes(repositorySyncedPath) ||
+      independentPaths.includes(repositorySyncedPath)
+    ) {
+      throw new CliError(
+        CliErrorCode.UPGRADE_PREREQUISITE,
+        `Release snapshot repositorySyncedPaths entry "${repositorySyncedPath}" must not also appear in application-level path lists.`
+      );
+    }
+  }
 
   const packageVersions = readPackageVersions(record.packageVersions);
 
@@ -115,6 +134,7 @@ function validateReleaseSnapshotManifest(raw: unknown): ReleaseSnapshotManifest 
     syncedPaths,
     generatedPaths,
     independentPaths,
+    ...(repositorySyncedPaths.length > 0 ? { repositorySyncedPaths } : {}),
     packageVersions,
     openApiSpecRelativePath,
   };
@@ -215,6 +235,23 @@ function readReleaseFile(
   return readFileSync(absolutePath, "utf8");
 }
 
+function readReleaseRepositoryFile(releaseRoot: string, relativePath: string): string {
+  const absolutePath = resolvePathUnderReleaseRoot(
+    releaseRoot,
+    relativePath,
+    `release snapshot repository file ${relativePath}`
+  );
+
+  if (!existsSync(absolutePath)) {
+    throw new CliError(
+      CliErrorCode.UPGRADE_PREREQUISITE,
+      `Release snapshot is missing repository file ${relativePath} under ${releaseRoot}.`
+    );
+  }
+
+  return readFileSync(absolutePath, "utf8");
+}
+
 function buildUpgradeSnapshotFromRelease(
   releaseRoot: string,
   manifest: ReleaseSnapshotManifest
@@ -241,6 +278,13 @@ function buildUpgradeSnapshotFromRelease(
     );
   }
 
+  const repositorySyncedPaths: Record<string, string> = {};
+  for (const relativePath of [...(manifest.repositorySyncedPaths ?? [])].sort((left, right) =>
+    left.localeCompare(right)
+  )) {
+    repositorySyncedPaths[relativePath] = readReleaseRepositoryFile(releaseRoot, relativePath);
+  }
+
   let openApiSpec: string | undefined;
   if (manifest.openApiSpecRelativePath) {
     const openApiPath = resolvePathUnderReleaseRoot(
@@ -260,6 +304,7 @@ function buildUpgradeSnapshotFromRelease(
   return {
     syncedPaths,
     generatedPaths,
+    ...(Object.keys(repositorySyncedPaths).length > 0 ? { repositorySyncedPaths } : {}),
     openApiSpec,
   };
 }
@@ -329,6 +374,7 @@ export function buildManifestSubsetFromRelease(manifest: ReleaseSnapshotManifest
     independentPaths: {},
     referenceOnlyPaths: [],
     starterOnlyPaths: [],
+    repositorySyncedPaths: manifest.repositorySyncedPaths ?? [],
   };
 }
 

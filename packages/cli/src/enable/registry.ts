@@ -225,7 +225,7 @@ export const CONSUMER_CAPABILITIES: CapabilityDefinition[] = [
     id: "docker",
     title: "Docker Compose",
     description:
-      "Local Compose scaffold, optional Postgres/Redis example, and a production-ish web Dockerfile. Atlas itself needs no infrastructure.",
+      "Local Compose scaffold and optional Postgres/Redis example. Dockerfile and .dockerignore already ship with atlas init.",
     tier: "opt-in",
     heavier: false,
     requires: [],
@@ -241,11 +241,11 @@ export const CONSUMER_CAPABILITIES: CapabilityDefinition[] = [
         destination: "docs/how-we-build/local-dev-composition.md",
       },
       {
-        source: "packages/cli/bootstrap/capabilities/templates/Dockerfile",
+        source: "Dockerfile",
         destination: "Dockerfile",
       },
       {
-        source: "packages/cli/bootstrap/capabilities/templates/dockerignore",
+        source: ".dockerignore",
         destination: ".dockerignore",
       },
     ],

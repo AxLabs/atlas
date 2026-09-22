@@ -131,6 +131,12 @@ describe("bootstrap asset build", () => {
 
         expect(missing).toEqual([]);
         expect(destinations.has("apps/reference/package.json")).toBe(false);
+        for (const repositoryPath of templateManifest.repositorySyncedPaths) {
+          expect(destinations.has(repositoryPath)).toBe(true);
+        }
+        expect(destinations.has("Dockerfile")).toBe(true);
+        expect(destinations.has(".dockerignore")).toBe(true);
+        expect(destinations.has("scripts/ensure-pnpm.js")).toBe(true);
       } finally {
         rmSync(outputDir, { recursive: true, force: true });
       }

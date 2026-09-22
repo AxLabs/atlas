@@ -20,7 +20,7 @@ export class AtlasBaselineCaptureError extends Error {
     const listed = missingPaths.join(", ");
     super(
       `Baseline capture is incomplete: ${missingPaths.length} manifest synced path(s) are missing on disk (${listed}). ` +
-        "Restore the expected files or remove them from templates/app-infrastructure.manifest.json syncedPaths before recording platform.baseline."
+        "Restore the expected files or remove them from the Atlas ownership manifest before recording platform.baseline."
     );
     this.name = "AtlasBaselineCaptureError";
     this.missingPaths = missingPaths;
@@ -115,23 +115,72 @@ export function captureSyncedPathChecksumsStrict(
   return result.checksums;
 }
 
+export function captureRepositorySyncedPathChecksums(options: {
+  repoRoot: string;
+  repositorySyncedPaths: string[];
+}): CaptureSyncedPathChecksumsResult {
+  const checksums: Record<string, string> = {};
+  const missingPaths: string[] = [];
+
+  for (const relativePath of [...options.repositorySyncedPaths].sort((left, right) =>
+    left.localeCompare(right)
+  )) {
+    const absolutePath = joinRepoPath(options.repoRoot, relativePath);
+    const checksum = readFileBaselineChecksum(absolutePath);
+    if (checksum) {
+      checksums[relativePath] = checksum;
+    } else {
+      missingPaths.push(relativePath);
+    }
+  }
+
+  return {
+    checksums,
+    missingPaths,
+    isComplete: missingPaths.length === 0,
+  };
+}
+
+export function captureRepositorySyncedPathChecksumsStrict(options: {
+  repoRoot: string;
+  repositorySyncedPaths: string[];
+}): Record<string, string> {
+  const result = captureRepositorySyncedPathChecksums(options);
+  if (!result.isComplete) {
+    throw new AtlasBaselineCaptureError(result.missingPaths);
+  }
+
+  return result.checksums;
+}
+
 export interface BuildPlatformBaselineOptions {
   atlasVersion: string;
   contractSchemaVersion: number;
   templateManifestSchemaVersion: number;
   syncedPathChecksums: Record<string, string>;
+  repositorySyncedPathChecksums?: Record<string, string>;
 }
 
 export function buildPlatformBaseline(options: BuildPlatformBaselineOptions): PlatformBaseline {
   const syncedPathChecksums = Object.fromEntries(
     Object.entries(options.syncedPathChecksums).sort(([left], [right]) => left.localeCompare(right))
   );
+  const repositorySyncedPathChecksums = options.repositorySyncedPathChecksums
+    ? Object.fromEntries(
+        Object.entries(options.repositorySyncedPathChecksums).sort(([left], [right]) =>
+          left.localeCompare(right)
+        )
+      )
+    : undefined;
 
   return {
     atlasVersion: options.atlasVersion,
     contractSchemaVersion: options.contractSchemaVersion,
     templateManifestSchemaVersion: options.templateManifestSchemaVersion,
     syncedPathChecksums,
+    ...(repositorySyncedPathChecksums && Object.keys(repositorySyncedPathChecksums).length > 0
+      ? { repositorySyncedPathChecksums }
+      : {}),
   };
 }
 

@@ -27,6 +27,13 @@ export function serializeResolvedAtlasProject(project: ResolvedAtlasProject): st
               syncedPathChecksums: sortRecord({
                 ...project.platform.baseline.syncedPathChecksums,
               }),
+              ...(project.platform.baseline.repositorySyncedPathChecksums
+                ? {
+                    repositorySyncedPathChecksums: sortRecord({
+                      ...project.platform.baseline.repositorySyncedPathChecksums,
+                    }),
+                  }
+                : {}),
             }),
           },
         }

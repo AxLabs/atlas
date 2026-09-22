@@ -153,8 +153,10 @@ upgrades by `atlas upgrade`.
 }
 ```
 
-Checksums cover manifest `syncedPaths` relative to `application.root`. They detect consumer
-modifications — not enforce byte identity with the latest Atlas main branch.
+Checksums cover manifest `syncedPaths` relative to `application.root`. Optional
+`repositorySyncedPathChecksums` cover repository-root templates such as `Dockerfile` and
+`.dockerignore`. They detect consumer modifications — not enforce byte identity with the latest
+Atlas main branch. Existing 1.2.0 contracts without repository checksums remain valid.
 
 ### Capabilities
 

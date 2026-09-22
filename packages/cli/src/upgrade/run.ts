@@ -24,6 +24,7 @@ import {
   captureConsumerPlatformBaseline,
   mergePlatformBaselineIntoContract,
   readContractPlatformBaseline,
+  selectRepositorySyncedPathChecksumsForUpgrade,
 } from "./baseline";
 import { validateUpgradeSourceBaseline } from "./baseline-validation";
 import { applyPackageUpdates, hasUnresolvedRequiredPackageWork } from "./package-apply";
@@ -394,10 +395,15 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 
   const applicationRoot = targetRelease.manifest.canonicalApplication;
   const applicationAbsoluteRoot = joinRepoPath(options.repoRoot, applicationRoot);
+  const sourceRepositorySyncedPaths = sourceRelease.manifest.repositorySyncedPaths ?? [];
+  const targetRepositorySyncedPaths = targetRelease.manifest.repositorySyncedPaths ?? [];
   const consumerFiles = loadConsumerFiles(
     applicationAbsoluteRoot,
     collectConsumerRelativePaths(sourceRelease, targetRelease)
   );
+  const consumerRepositoryFiles = loadConsumerFiles(options.repoRoot, [
+    ...new Set([...sourceRepositorySyncedPaths, ...targetRepositorySyncedPaths]),
+  ]);
 
   const contractSchemaChanged =
     sourceRelease.manifest.contractSchemaVersion !== targetRelease.manifest.contractSchemaVersion;
@@ -413,6 +419,11 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     syncedPaths: targetManifest.syncedPaths,
     generatedPaths: targetManifest.generatedPaths,
     independentPaths: targetManifest.independentPaths,
+    repositoryRoot: options.repoRoot,
+    sourceRepositorySyncedPaths,
+    repositorySyncedPaths: targetRepositorySyncedPaths,
+    baselineRepositoryChecksums: baseline.repositorySyncedPathChecksums ?? {},
+    consumerRepositoryFiles,
     sourceSnapshot: sourceRelease.snapshot,
     targetSnapshot: targetRelease.snapshot,
     consumerFiles,
@@ -544,11 +555,15 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
 
   const applyResult = applySafeUpgradeReplacements({
     applicationRoot: applicationAbsoluteRoot,
+    repoRoot: options.repoRoot,
     plan: {
       ...templatePlan,
       items,
     },
-    targetSnapshot: targetRelease.snapshot.syncedPaths,
+    targetSnapshot: {
+      ...targetRelease.snapshot.syncedPaths,
+      ...(targetRelease.snapshot.repositorySyncedPaths ?? {}),
+    },
     dryRun: false,
   });
 
@@ -663,6 +678,24 @@ export async function runUpgrade(options: RunUpgradeOptions): Promise<UpgradeRun
     atlasVersion: targetVersion,
     contractSchemaVersion: targetRelease.manifest.contractSchemaVersion,
     manifest: targetManifestSubset,
+    repositorySyncedPathChecksums: selectRepositorySyncedPathChecksumsForUpgrade({
+      repoRoot: options.repoRoot,
+      targetRepositorySyncedPaths,
+      previousChecksums: baseline.repositorySyncedPathChecksums ?? {},
+      items,
+      consumerFiles: {
+        ...consumerRepositoryFiles,
+        ...Object.fromEntries(
+          applyResult.applied
+            .filter((item) => item.pathScope === "repository")
+            .flatMap((item) => {
+              const content = targetRelease.snapshot.repositorySyncedPaths?.[item.relativePath];
+              return content === undefined ? [] : [[item.relativePath, content] as const];
+            })
+        ),
+      },
+      targetContents: targetRelease.snapshot.repositorySyncedPaths ?? {},
+    }),
   });
 
   const refreshedContract = readAtlasProjectContractFile(options.repoRoot);

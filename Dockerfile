@@ -3,9 +3,6 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-LABEL maintainer="developers@thedanielmark.com"
-LABEL org.opencontainers.image.source="https://github.com/thedanielmark/atlas"
-
 # Install dependencies needed for build
 RUN apk add --no-cache libc6-compat
 
@@ -36,9 +33,6 @@ RUN pnpm build --filter=@atlas/web
 
 # Production stage
 FROM node:22-alpine AS runner
-
-LABEL maintainer="developers@thedanielmark.com"
-LABEL org.opencontainers.image.source="https://github.com/thedanielmark/atlas"
 
 # Install curl for healthchecks
 RUN apk add --no-cache curl
