@@ -52,6 +52,8 @@ describe("registry verification arguments", () => {
     assert.doesNotMatch(verifier, /packExactPublicCliTarball/);
     assert.doesNotMatch(verifier, /pnpm pack/);
     assert.doesNotMatch(verifier, /findPackedTarball/);
+    assert.doesNotMatch(verifier, /publishExactTarball/);
+    assert.doesNotMatch(verifier, /runNpmPublication/);
     assert.match(verifier, /--registry/);
   });
 });

@@ -365,7 +365,38 @@ describe("release workflow policy", () => {
     assert.match(npmJob, /distribution:verify-registry/);
     assert.match(npmJob, /fetch-tags:\s*true/);
     assert.match(npmJob, /steps\.npm\.outputs\.action != 'noop'/);
+    assert.match(npmJob, /success\(\) && steps\.npm\.outputs\.action == 'publish'/);
+    assert.match(npmJob, /timeout-minutes:\s*55/);
     assert.doesNotMatch(npmJob, /self-hosted/);
+    assert.doesNotMatch(npmJob, /workflow_dispatch/);
+
+    const rehearsalJobStart = workflow.indexOf("  rehearsal:");
+    const rehearsalNext = workflow
+      .slice(rehearsalJobStart + 1)
+      .search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
+    const rehearsalJob =
+      rehearsalNext === -1
+        ? workflow.slice(rehearsalJobStart)
+        : workflow.slice(rehearsalJobStart, rehearsalJobStart + 1 + rehearsalNext);
+    assert.match(rehearsalJob, /github\.event\.inputs\.verify_version == ''/);
+
+    const verifyJobStart = workflow.indexOf("  verify-registry:");
+    assert.notEqual(verifyJobStart, -1);
+    const verifyNext = workflow.slice(verifyJobStart + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
+    const verifyJob =
+      verifyNext === -1
+        ? workflow.slice(verifyJobStart)
+        : workflow.slice(verifyJobStart, verifyJobStart + 1 + verifyNext);
+    assert.match(verifyJob, /github\.event_name == 'workflow_dispatch'/);
+    assert.match(verifyJob, /github\.event\.inputs\.verify_version != ''/);
+    assert.match(verifyJob, /distribution:verify-registry/);
+    assert.match(verifyJob, /ATLAS_VERIFY_VERSION/);
+    assert.doesNotMatch(verifyJob, /publish-npm-package/);
+    assert.doesNotMatch(verifyJob, /--oidc/);
+    assert.doesNotMatch(verifyJob, /id-token:\s*write/);
+    assert.doesNotMatch(verifyJob, /\.tgz/);
+
+    assert.match(workflow, /verify_version:/);
   });
 
   it("disables setup-node package-manager caching on the SBOM job that never installs", () => {
@@ -392,7 +423,13 @@ describe("release workflow policy", () => {
     assert.doesNotMatch(sbomJob, /\bpnpm install\b/);
     assert.doesNotMatch(sbomJob, /cache:\s*pnpm/);
 
-    for (const jobId of ["rehearsal", "version-pr", "github-release", "npm-publish"]) {
+    for (const jobId of [
+      "rehearsal",
+      "version-pr",
+      "github-release",
+      "npm-publish",
+      "verify-registry",
+    ]) {
       const start = workflow.indexOf(`  ${jobId}:`);
       const next = workflow.slice(start + 1).search(/\n {2}[A-Za-z0-9_-]+:\s*\n/);
       const job = stripYamlComments(

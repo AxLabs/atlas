@@ -40,6 +40,11 @@ export const NPM_TRUSTED_PUBLISHING_MIN_NPM = "11.5.1";
 export const NPM_TRUSTED_PUBLISHING_MIN_NODE = "22.14.0";
 export const NPM_PUBLISH_ARGS = Object.freeze(["--access", "public", "--ignore-scripts"]);
 export const NPM_OIDC_PUBLISH_ARGS = Object.freeze([...NPM_PUBLISH_ARGS, "--provenance"]);
+/** Wall-clock bound for npm's publish-time malware scan before the version document is public. */
+export const NPM_REGISTRY_AVAILABILITY_TIMEOUT_MS = 15 * 60 * 1000;
+/** Poll interval for public version-document queries. Must not busy-loop. */
+export const NPM_REGISTRY_AVAILABILITY_POLL_INTERVAL_MS = 12_000;
+const REDACTED_SECRET = "[redacted]";
 
 export const NPM_PUBLICATION_ACTIONS = Object.freeze({
   publish: "publish",
@@ -344,6 +349,55 @@ export function stripNpmAuthEnv(sourceEnv = process.env) {
     }
   }
   return env;
+}
+
+/**
+ * Redact credential-shaped tokens from npm CLI output before logging.
+ *
+ * @param {unknown} text
+ * @returns {string}
+ */
+export function redactNpmProcessOutput(text) {
+  if (typeof text !== "string" || text.length === 0) {
+    return "";
+  }
+  return text
+    .replace(/npm_[A-Za-z0-9._-]{8,}/g, REDACTED_SECRET)
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, REDACTED_SECRET)
+    .replace(/Bearer\s+\S+/gi, `Bearer ${REDACTED_SECRET}`)
+    .replace(
+      /((?:NPM_TOKEN|NODE_AUTH_TOKEN|_authToken|_auth|_password)["'\s:=]+)[^\s'"]+/gi,
+      `$1${REDACTED_SECRET}`
+    );
+}
+
+/**
+ * @param {{ stdout?: unknown; stderr?: unknown } | null | undefined} result
+ * @returns {string}
+ */
+export function formatNpmPublishProcessOutput(result) {
+  if (!result || typeof result !== "object") {
+    return "";
+  }
+  const stdout = redactNpmProcessOutput(result.stdout).trimEnd();
+  const stderr = redactNpmProcessOutput(result.stderr).trimEnd();
+  const parts = [];
+  if (stdout) {
+    parts.push(`npm publish stdout:\n${stdout}`);
+  }
+  if (stderr) {
+    parts.push(`npm publish stderr:\n${stderr}`);
+  }
+  return parts.join("\n");
+}
+
+/**
+ * @param {number} ms
+ */
+function sleepMs(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /**
@@ -692,9 +746,7 @@ export async function queryNpmPackageVersion(options) {
       document.version !== options.version ||
       (typeof document.name === "string" && document.name !== packageName)
     ) {
-      throw new Error(
-        `npm version document for ${packageName}@${options.version} is malformed`
-      );
+      throw new Error(`npm version document for ${packageName}@${options.version} is malformed`);
     }
     return {
       packageName,
@@ -731,7 +783,9 @@ export async function queryNpmPackageVersion(options) {
   }
 
   if (!packageResponse.ok) {
-    throw new Error(`npm registry query for ${packageName} failed with HTTP ${packageResponse.status}`);
+    throw new Error(
+      `npm registry query for ${packageName} failed with HTTP ${packageResponse.status}`
+    );
   }
 
   const document = await packageResponse.json();
@@ -755,6 +809,114 @@ export async function queryNpmPackageVersion(options) {
     status: versionExists ? "version-exists" : "version-missing",
     versions,
   };
+}
+
+/**
+ * @param {{
+ *   packageName: string;
+ *   version: string;
+ *   timeoutMs: number;
+ *   lastStatus?: string | null;
+ *   lastError?: Error | null;
+ * }} details
+ */
+export function formatRegistryAvailabilityTimeoutError(details) {
+  const last =
+    details.lastError instanceof Error
+      ? `last registry query failed (${details.lastError.message})`
+      : `last registry status was ${details.lastStatus ?? "unknown"}`;
+  return (
+    `npm accepted publish of ${details.packageName}@${details.version}, but public registry ` +
+    `availability was not confirmed before timeout (${details.timeoutMs}ms). ${last}. ` +
+    "npm publish exit 0 means the registry accepted the package; it does not prove the version " +
+    "document is publicly queryable."
+  );
+}
+
+/**
+ * Poll the public npm version document until it exists. `version-missing` is the
+ * expected delayed-visibility state. Transport and HTTP failures are retried as
+ * distinct query errors and are never rewritten as "missing".
+ *
+ * @param {{
+ *   packageName?: string;
+ *   version: string;
+ *   queryRegistry?: typeof queryNpmPackageVersion;
+ *   timeoutMs?: number;
+ *   pollIntervalMs?: number;
+ *   sleep?: (ms: number) => Promise<void>;
+ *   now?: () => number;
+ *   stdout?: { write(chunk: string): unknown };
+ * }} options
+ */
+export async function waitForNpmPackageVersion(options) {
+  const packageName = options.packageName ?? PUBLIC_CLI_PACKAGE_NAME;
+  assertSafeNpmIdentity({ packageName, version: options.version });
+  const queryRegistry = options.queryRegistry ?? queryNpmPackageVersion;
+  const timeoutMs = options.timeoutMs ?? NPM_REGISTRY_AVAILABILITY_TIMEOUT_MS;
+  const pollIntervalMs = options.pollIntervalMs ?? NPM_REGISTRY_AVAILABILITY_POLL_INTERVAL_MS;
+  const sleep = options.sleep ?? sleepMs;
+  const now = options.now ?? Date.now;
+  const stdout = options.stdout ?? process.stdout;
+
+  if (!Number.isFinite(timeoutMs) || timeoutMs < 0) {
+    throw new Error(`Invalid registry availability timeout ${JSON.stringify(timeoutMs)}`);
+  }
+  if (!Number.isFinite(pollIntervalMs) || pollIntervalMs < 1) {
+    throw new Error(
+      `Registry availability poll interval must be a positive number of milliseconds, got ${JSON.stringify(pollIntervalMs)}`
+    );
+  }
+
+  const deadline = now() + timeoutMs;
+  let attempt = 0;
+  /** @type {string | null} */
+  let lastStatus = null;
+  /** @type {Error | null} */
+  let lastError = null;
+
+  while (true) {
+    attempt += 1;
+    try {
+      const result = await queryRegistry({ packageName, version: options.version });
+      if (result.status === "version-exists") {
+        return result;
+      }
+      if (result.status === "version-missing" || result.status === "missing-package") {
+        lastStatus = result.status;
+        lastError = null;
+      } else {
+        lastStatus = result.status ?? "unknown";
+        lastError = new Error(`Unexpected npm registry status ${lastStatus}`);
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      lastStatus = "query-error";
+    }
+
+    const remaining = deadline - now();
+    if (remaining <= 0) {
+      break;
+    }
+
+    const waitMs = Math.min(pollIntervalMs, remaining);
+    const last =
+      lastError instanceof Error ? `query error: ${lastError.message}` : (lastStatus ?? "unknown");
+    stdout.write(
+      `waiting for npm ${packageName}@${options.version} to become queryable (attempt ${attempt}, ${last})\n`
+    );
+    await sleep(waitMs);
+  }
+
+  throw new Error(
+    formatRegistryAvailabilityTimeoutError({
+      packageName,
+      version: options.version,
+      timeoutMs,
+      lastStatus,
+      lastError,
+    })
+  );
 }
 
 /**
@@ -805,6 +967,11 @@ export function decideNpmPublicationAction(state) {
  *   assertCheckout?: typeof assertCanonicalReleaseCheckout;
  *   writeManifest?: typeof writePublishManifest;
  *   appendOutput?: typeof appendGithubOutput;
+ *   waitForRegistry?: typeof waitForNpmPackageVersion;
+ *   registryAvailabilityTimeoutMs?: number;
+ *   registryAvailabilityPollIntervalMs?: number;
+ *   sleep?: (ms: number) => Promise<void>;
+ *   now?: () => number;
  *   stdout?: { write(chunk: string): unknown };
  * }} options
  */
@@ -815,11 +982,13 @@ export async function runNpmPublication(options) {
   const oidc = options.oidc === true;
   const githubActions = options.githubActions ?? process.env.GITHUB_ACTIONS === "true";
   const readIdentity = options.readIdentity ?? readPublicationIdentity;
-  const assertPrivateWorkspaces = options.assertPrivateWorkspaces ?? assertPrivateInternalWorkspaces;
+  const assertPrivateWorkspaces =
+    options.assertPrivateWorkspaces ?? assertPrivateInternalWorkspaces;
   const queryRegistry = options.queryRegistry ?? queryNpmPackageVersion;
   const assertCheckout = options.assertCheckout ?? assertCanonicalReleaseCheckout;
   const packTarball = options.packTarball ?? packExactPublicCliTarball;
   const publishTarball = options.publishTarball ?? publishExactTarball;
+  const waitForRegistry = options.waitForRegistry ?? waitForNpmPackageVersion;
   const hashFile = options.hashFile ?? hashFileSha256;
   const writeManifest = options.writeManifest ?? writePublishManifest;
   const appendOutput = options.appendOutput ?? appendGithubOutput;
@@ -961,19 +1130,37 @@ export async function runNpmPublication(options) {
     throw new Error("Tarball was substituted after the registry existence check");
   }
 
-  publishTarball({
+  const publishResult = publishTarball({
     tarballPath: packed.tarballPath,
     expectedSha256: packed.sha256,
     cwd: repoRoot,
     provenance: true,
   });
-  stdout.write(`✓ Published ${PUBLIC_CLI_PACKAGE_NAME}@${packed.identity.version}\n`);
+  const publishOutput = formatNpmPublishProcessOutput(publishResult);
+  if (publishOutput) {
+    stdout.write(`${publishOutput}\n`);
+  }
+  stdout.write("npm accepted publish; waiting for registry availability.\n");
+  const visible = await waitForRegistry({
+    packageName: packed.identity.packageName,
+    version: packed.identity.version,
+    queryRegistry,
+    timeoutMs: options.registryAvailabilityTimeoutMs,
+    pollIntervalMs: options.registryAvailabilityPollIntervalMs,
+    sleep: options.sleep,
+    now: options.now,
+    stdout,
+  });
+  stdout.write(
+    `✓ Published ${PUBLIC_CLI_PACKAGE_NAME}@${packed.identity.version} (registry queryable)\n`
+  );
   return {
     action: decision.action,
     reason: decision.reason,
     identity: packed.identity,
     registry,
     packed,
+    visible,
   };
 }
 

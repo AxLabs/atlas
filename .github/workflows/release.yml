@@ -5,6 +5,14 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      verify_version:
+        description:
+          "Published Atlas version to verify from npm without publishing. Leave empty for release
+          rehearsal."
+        required: false
+        type: string
+        default: ""
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +26,7 @@ permissions:
 jobs:
   rehearsal:
     name: Release Rehearsal
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.verify_version == ''
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -52,7 +60,9 @@ jobs:
 
   sbom:
     name: SBOM snapshot
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if:
+      github.event_name == 'push' || (github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.verify_version == '')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -209,7 +219,7 @@ jobs:
       - github-release
       - version-pr
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
     permissions:
       contents: read
       id-token: write
@@ -256,7 +266,7 @@ jobs:
           retention-days: 90
 
       - name: Verify the published package from npm
-        if: steps.npm.outputs.action == 'publish'
+        if: success() && steps.npm.outputs.action == 'publish'
         run: |
           pnpm distribution:verify-registry "${{ steps.npm.outputs.version }}" --retries 12 --retry-wait-ms 10000
 
@@ -264,3 +274,32 @@ jobs:
         if: steps.npm.outputs.action == 'bootstrap-required'
         run: |
           echo "::notice::@blitzcraftlabs/atlas does not exist on npm yet. Download the validated tarball artifact and publish that exact file with a human-authenticated npm publish. Do not rebuild."
+
+  verify-registry:
+    name: Verify published npm package
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.verify_version != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify the published package from npm
+        env:
+          ATLAS_VERIFY_VERSION: ${{ github.event.inputs.verify_version }}
+        run:
+          pnpm distribution:verify-registry "${ATLAS_VERIFY_VERSION}" --retries 12 --retry-wait-ms
+          10000

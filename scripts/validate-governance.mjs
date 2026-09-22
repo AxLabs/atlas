@@ -155,6 +155,10 @@ function checkReleaseWorkflow() {
     fail("release.yml must support workflow_dispatch for release rehearsal");
   }
 
+  if (!/verify_version:/.test(workflow)) {
+    fail("release.yml workflow_dispatch must accept an explicit verify_version input");
+  }
+
   if (!workflow.includes("publish-atlas-release")) {
     fail(
       "release.yml must invoke publish-atlas-release for fail-closed GitHub Release publication"
@@ -290,8 +294,55 @@ function checkReleaseWorkflow() {
         "npm-publish must not require a packed tarball when the exact npm version already exists"
       );
     }
+    if (!/success\(\)\s*&&\s*steps\.npm\.outputs\.action\s*==\s*'publish'/.test(npmPublishJob)) {
+      fail(
+        "npm-publish consumer verification must run only after a successful publish step reports action publish"
+      );
+    }
     if (/workflow_dispatch/.test(npmPublishJob)) {
       fail("npm-publish job must not run on workflow_dispatch");
+    }
+    if (!/timeout-minutes:\s*55/.test(npmPublishJob)) {
+      fail("npm-publish job must allow time for npm's publish-time malware scan window");
+    }
+  }
+
+  const rehearsalJob = extractNamedJob(workflow, "rehearsal");
+  if (!rehearsalJob) {
+    fail("release.yml is missing the rehearsal job");
+  } else if (
+    !/github\.event_name\s*==\s*'workflow_dispatch'/.test(rehearsalJob) ||
+    !/github\.event\.inputs\.verify_version\s*==\s*''/.test(rehearsalJob)
+  ) {
+    fail("rehearsal job must run only on workflow_dispatch when verify_version is empty");
+  }
+
+  const verifyRegistryJob = extractNamedJob(workflow, "verify-registry");
+  if (!verifyRegistryJob) {
+    fail("release.yml is missing the verify-registry job");
+  } else {
+    if (
+      !/github\.event_name\s*==\s*'workflow_dispatch'/.test(verifyRegistryJob) ||
+      !/github\.event\.inputs\.verify_version\s*!=\s*''/.test(verifyRegistryJob)
+    ) {
+      fail(
+        "verify-registry job must run only on workflow_dispatch with an explicit verify_version"
+      );
+    }
+    if (/publish-npm-package|--oidc/.test(verifyRegistryJob)) {
+      fail("verify-registry job must not attempt npm publication");
+    }
+    if (/id-token:\s*write/.test(verifyRegistryJob)) {
+      fail("verify-registry job must not request Trusted Publishing credentials");
+    }
+    if (!/distribution:verify-registry/.test(verifyRegistryJob)) {
+      fail("verify-registry job must run distribution:verify-registry against the public registry");
+    }
+    if (!/ATLAS_VERIFY_VERSION/.test(verifyRegistryJob)) {
+      fail("verify-registry job must pass verify_version through ATLAS_VERIFY_VERSION");
+    }
+    if (/artifacts\/npm|\.tgz/.test(verifyRegistryJob)) {
+      fail("verify-registry job must not fall back to a local tarball");
     }
   }
 
@@ -330,6 +381,12 @@ function checkReleaseWorkflow() {
     if (!npmPublicationLib.includes("publishExactTarball")) {
       fail("npm publisher must publish the hashed tarball rather than rebuilding");
     }
+    if (!npmPublicationLib.includes("waitForNpmPackageVersion")) {
+      fail("npm publication must wait for public registry visibility after npm accepts publish");
+    }
+    if (!npmPublicationLib.includes("npm accepted publish; waiting for registry availability")) {
+      fail("npm publication must not report Published immediately after npm publish exits 0");
+    }
   }
 
   const sbomJob = extractNamedJob(workflow, "sbom");
@@ -355,7 +412,13 @@ function checkReleaseWorkflow() {
     }
   }
 
-  for (const jobId of ["rehearsal", "version-pr", "github-release", "npm-publish"]) {
+  for (const jobId of [
+    "rehearsal",
+    "version-pr",
+    "github-release",
+    "npm-publish",
+    "verify-registry",
+  ]) {
     const job = extractNamedJob(workflow, jobId);
     if (!job) {
       fail(`release.yml is missing the ${jobId} job`);

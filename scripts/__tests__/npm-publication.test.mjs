@@ -9,6 +9,8 @@ import {
   NPM_OIDC_PUBLISH_ARGS,
   NPM_PUBLICATION_ACTIONS,
   NPM_PUBLISH_ARGS,
+  NPM_REGISTRY_AVAILABILITY_POLL_INTERVAL_MS,
+  NPM_REGISTRY_AVAILABILITY_TIMEOUT_MS,
   NPM_TRUSTED_PUBLISHING_MIN_NODE,
   NPM_TRUSTED_PUBLISHING_MIN_NPM,
   appendGithubOutput,
@@ -21,12 +23,16 @@ import {
   compareDotVersions,
   decideNpmPublicationAction,
   expectedGitTag,
+  formatNpmPublishProcessOutput,
+  formatRegistryAvailabilityTimeoutError,
   hashFileSha256,
   npmRegistryDocumentUrl,
   publishExactTarball,
   queryNpmPackageVersion,
+  redactNpmProcessOutput,
   runNpmPublication,
   stripNpmAuthEnv,
+  waitForNpmPackageVersion,
 } from "../lib/npm-publication.mjs";
 
 describe("npm publication identity", () => {
@@ -191,10 +197,9 @@ describe("npm registry query", () => {
       fetchImpl: async (url, init) => {
         urls.push(String(url));
         assert.equal(init?.cache, "no-store");
-        return new Response(
-          JSON.stringify({ name: PUBLIC_CLI_PACKAGE_NAME, version }),
-          { status: 200 }
-        );
+        return new Response(JSON.stringify({ name: PUBLIC_CLI_PACKAGE_NAME, version }), {
+          status: 200,
+        });
       },
     });
     assert.deepEqual(urls, [versionUrl]);
@@ -212,7 +217,9 @@ describe("npm registry query", () => {
             status: 200,
           }),
         package: () => {
-          throw new Error("stale package metadata must not be required once the version document exists");
+          throw new Error(
+            "stale package metadata must not be required once the version document exists"
+          );
         },
       }),
     });
@@ -226,8 +233,7 @@ describe("npm registry query", () => {
       version,
       fetchImpl: fetchByUrl({
         version: () => new Response("Not Found", { status: 404 }),
-        package: () =>
-          new Response(JSON.stringify({ versions: { "0.4.0": {} } }), { status: 200 }),
+        package: () => new Response(JSON.stringify({ versions: { "0.4.0": {} } }), { status: 200 }),
       }),
     });
     assert.equal(result.packageExists, true);
@@ -407,7 +413,7 @@ describe("npm publication orchestration", () => {
   }
 
   async function run(overrides = {}) {
-    const calls = { pack: 0, checkout: 0, publish: 0, packOptions: null };
+    const calls = { pack: 0, checkout: 0, publish: 0, query: 0, packOptions: null };
     const result = await runNpmPublication({
       repoRoot: "/tmp/atlas-fake",
       dryRun: true,
@@ -418,11 +424,21 @@ describe("npm publication orchestration", () => {
       stdout: silent(),
       readIdentity: () => identity,
       assertPrivateWorkspaces: () => {},
-      queryRegistry: async () => ({
-        packageExists: true,
-        versionExists: false,
-        status: "version-missing",
-      }),
+      queryRegistry: async () => {
+        calls.query += 1;
+        if (calls.query === 1) {
+          return {
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          };
+        }
+        return {
+          packageExists: true,
+          versionExists: true,
+          status: "version-exists",
+        };
+      },
       assertCheckout: () => {
         calls.checkout += 1;
         return packed.checkout;
@@ -549,6 +565,218 @@ describe("npm publication orchestration", () => {
     assert.equal(calls.pack, 1);
     assert.equal(calls.packOptions.requireReleaseTag, true);
     assert.equal(calls.publish, 1);
+    assert.ok(calls.query >= 2);
+    assert.equal(result.visible.status, "version-exists");
+  });
+
+  it("treats npm publish exit 0 as acceptance and succeeds after delayed registry visibility", async () => {
+    const sleeps = [];
+    let now = 0;
+    let queries = 0;
+    const logs = [];
+    const { result, calls } = await run({
+      dryRun: false,
+      oidc: true,
+      githubActions: true,
+      registryAvailabilityTimeoutMs: 1_000,
+      registryAvailabilityPollIntervalMs: 12,
+      now: () => now,
+      sleep: async (ms) => {
+        assert.ok(ms > 0);
+        sleeps.push(ms);
+        now += ms;
+      },
+      stdout: {
+        write(chunk) {
+          logs.push(String(chunk));
+        },
+      },
+      queryRegistry: async () => {
+        queries += 1;
+        if (queries < 4) {
+          return {
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          };
+        }
+        return {
+          packageExists: true,
+          versionExists: true,
+          status: "version-exists",
+        };
+      },
+    });
+    assert.equal(calls.publish, 1);
+    assert.equal(result.visible.status, "version-exists");
+    assert.equal(sleeps.length, 2);
+    assert.deepEqual(sleeps, [12, 12]);
+    const combined = logs.join("");
+    assert.match(combined, /npm accepted publish; waiting for registry availability/);
+    assert.match(combined, /registry queryable/);
+    assert.ok(combined.indexOf("npm accepted publish") < combined.indexOf("✓ Published"));
+  });
+
+  it("fails closed when npm accepted publish but the version never becomes queryable", async () => {
+    const logs = [];
+    await assert.rejects(
+      () =>
+        run({
+          dryRun: false,
+          oidc: true,
+          githubActions: true,
+          registryAvailabilityTimeoutMs: 0,
+          registryAvailabilityPollIntervalMs: 12,
+          stdout: {
+            write(chunk) {
+              logs.push(String(chunk));
+            },
+          },
+          queryRegistry: async () => ({
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          }),
+        }),
+      /accepted publish[\s\S]*availability was not confirmed[\s\S]*version-missing/
+    );
+    const combined = logs.join("");
+    assert.match(combined, /npm accepted publish; waiting for registry availability/);
+    assert.doesNotMatch(combined, /✓ Published/);
+  });
+
+  it("retries transient registry errors after publish without classifying them as missing", async () => {
+    const statuses = [];
+    let queries = 0;
+    let now = 0;
+    const { result, calls } = await run({
+      dryRun: false,
+      oidc: true,
+      githubActions: true,
+      registryAvailabilityTimeoutMs: 1_000,
+      registryAvailabilityPollIntervalMs: 10,
+      now: () => now,
+      sleep: async (ms) => {
+        now += ms;
+      },
+      queryRegistry: async () => {
+        queries += 1;
+        if (queries === 1) {
+          statuses.push("version-missing");
+          return {
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          };
+        }
+        if (queries === 2) {
+          statuses.push("http-500");
+          throw new Error(
+            `npm registry query for ${PUBLIC_CLI_PACKAGE_NAME}@1.1.0 failed with HTTP 500`
+          );
+        }
+        if (queries === 3) {
+          statuses.push("transport");
+          throw new Error(
+            `Failed to query npm registry for ${PUBLIC_CLI_PACKAGE_NAME}: ECONNRESET`
+          );
+        }
+        statuses.push("version-exists");
+        return {
+          packageExists: true,
+          versionExists: true,
+          status: "version-exists",
+        };
+      },
+    });
+    assert.equal(calls.publish, 1);
+    assert.equal(result.visible.status, "version-exists");
+    assert.deepEqual(statuses, ["version-missing", "http-500", "transport", "version-exists"]);
+  });
+
+  it("does not wait for registry visibility on noop, bootstrap, or dry-run", async () => {
+    const waitCalls = { count: 0 };
+    const waitForRegistry = async () => {
+      waitCalls.count += 1;
+      throw new Error("must not wait when no live publish occurred");
+    };
+
+    const alreadyPublished = await run({
+      waitForRegistry,
+      queryRegistry: async () => ({
+        packageExists: true,
+        versionExists: true,
+        status: "version-exists",
+      }),
+    });
+    assert.equal(alreadyPublished.result.action, NPM_PUBLICATION_ACTIONS.noop);
+    assert.equal(alreadyPublished.calls.publish, 0);
+
+    const bootstrap = await run({
+      waitForRegistry,
+      queryRegistry: async () => ({
+        packageExists: false,
+        versionExists: false,
+        status: "missing-package",
+      }),
+    });
+    assert.equal(bootstrap.result.action, NPM_PUBLICATION_ACTIONS.bootstrapRequired);
+    assert.equal(bootstrap.calls.publish, 0);
+
+    const dryRun = await run({ waitForRegistry });
+    assert.equal(dryRun.result.action, NPM_PUBLICATION_ACTIONS.publish);
+    assert.equal(dryRun.calls.publish, 0);
+    assert.equal(waitCalls.count, 0);
+  });
+
+  it("emits redacted npm publish output and only reports Published after visibility", async () => {
+    const logs = [];
+    const order = [];
+    await run({
+      dryRun: false,
+      oidc: true,
+      githubActions: true,
+      stdout: {
+        write(chunk) {
+          logs.push(String(chunk));
+        },
+      },
+      publishTarball: () => {
+        order.push("publish");
+        return {
+          status: 0,
+          stdout: `+ ${PUBLIC_CLI_PACKAGE_NAME}@1.1.0\nnpm_LIVESECRETTOKENVALUE\n`,
+          stderr: "_authToken=supersecret\nBearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aaa.bbb\n",
+          timedOut: false,
+          error: "",
+        };
+      },
+      waitForRegistry: async () => {
+        order.push("wait");
+        const combined = logs.join("");
+        assert.match(combined, /npm accepted publish; waiting for registry availability/);
+        assert.doesNotMatch(combined, /✓ Published/);
+        return {
+          packageExists: true,
+          versionExists: true,
+          status: "version-exists",
+        };
+      },
+    });
+    assert.deepEqual(order, ["publish", "wait"]);
+    const combined = logs.join("");
+    assert.match(combined, /\+ @blitzcraftlabs\/atlas@1\.1\.0/);
+    assert.match(combined, /\[redacted\]/);
+    assert.doesNotMatch(combined, /LIVESECRETTOKENVALUE/);
+    assert.doesNotMatch(combined, /supersecret/);
+    assert.doesNotMatch(combined, /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/);
+    assert.match(combined, /✓ Published @blitzcraftlabs\/atlas@1\.1\.0 \(registry queryable\)/);
+  });
+
+  it("does not invoke consumer registry verification from the publisher", async () => {
+    const source = readFileSync(new URL("../lib/npm-publication.mjs", import.meta.url), "utf8");
+    assert.doesNotMatch(source, /verify-distribution-registry/);
+    assert.match(source, /waitForNpmPackageVersion/);
   });
 
   it("refuses OIDC publish outside GitHub Actions", async () => {
@@ -597,5 +825,193 @@ describe("exact tarball publish", () => {
         }),
       /substituted tarball/
     );
+  });
+});
+
+describe("npm publish output redaction", () => {
+  it("redacts credential-shaped tokens without dropping useful npm notices", () => {
+    const raw = [
+      `+ ${PUBLIC_CLI_PACKAGE_NAME}@1.2.0`,
+      "npm notice integrity npm_LIVESECRETTOKENVALUE",
+      "_authToken=supersecret",
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aaa.bbb",
+    ].join("\n");
+    const redacted = redactNpmProcessOutput(raw);
+    assert.match(redacted, /\+ @blitzcraftlabs\/atlas@1\.2\.0/);
+    assert.match(redacted, /npm notice integrity/);
+    assert.match(redacted, /\[redacted\]/);
+    assert.doesNotMatch(redacted, /LIVESECRETTOKENVALUE/);
+    assert.doesNotMatch(redacted, /supersecret/);
+    assert.equal(
+      formatNpmPublishProcessOutput({
+        stdout: `+ ${PUBLIC_CLI_PACKAGE_NAME}@1.2.0\n`,
+        stderr: "_authToken=supersecret\n",
+      }),
+      [
+        `npm publish stdout:\n+ ${PUBLIC_CLI_PACKAGE_NAME}@1.2.0`,
+        "npm publish stderr:\n_authToken=[redacted]",
+      ].join("\n")
+    );
+    assert.equal(formatNpmPublishProcessOutput(undefined), "");
+    assert.equal(formatNpmPublishProcessOutput({ stdout: "", stderr: "" }), "");
+  });
+});
+
+describe("registry availability polling", () => {
+  function silent() {
+    return { write() {} };
+  }
+
+  it("uses a bounded malware-scan window and a non-zero poll interval", () => {
+    assert.equal(NPM_REGISTRY_AVAILABILITY_TIMEOUT_MS, 15 * 60 * 1000);
+    assert.ok(NPM_REGISTRY_AVAILABILITY_POLL_INTERVAL_MS >= 10_000);
+    assert.ok(NPM_REGISTRY_AVAILABILITY_POLL_INTERVAL_MS <= 15_000);
+  });
+
+  it("returns version-exists after several version-missing polls", async () => {
+    const sleeps = [];
+    let now = 0;
+    let queries = 0;
+    const result = await waitForNpmPackageVersion({
+      version: "1.2.0",
+      timeoutMs: 1_000,
+      pollIntervalMs: 15,
+      now: () => now,
+      sleep: async (ms) => {
+        assert.ok(ms > 0);
+        sleeps.push(ms);
+        now += ms;
+      },
+      stdout: silent(),
+      queryRegistry: async ({ packageName, version }) => {
+        assert.equal(packageName, PUBLIC_CLI_PACKAGE_NAME);
+        assert.equal(version, "1.2.0");
+        queries += 1;
+        if (queries < 3) {
+          return {
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          };
+        }
+        return {
+          packageExists: true,
+          versionExists: true,
+          status: "version-exists",
+        };
+      },
+    });
+    assert.equal(result.status, "version-exists");
+    assert.deepEqual(sleeps, [15, 15]);
+    assert.equal(queries, 3);
+  });
+
+  it("fails closed with an accepted-but-not-queryable diagnostic when the version never appears", async () => {
+    let now = 0;
+    await assert.rejects(
+      () =>
+        waitForNpmPackageVersion({
+          version: "1.2.0",
+          timeoutMs: 40,
+          pollIntervalMs: 10,
+          now: () => now,
+          sleep: async (ms) => {
+            now += ms;
+          },
+          stdout: silent(),
+          queryRegistry: async () => ({
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          }),
+        }),
+      (error) => {
+        assert.match(error.message, /accepted publish of @blitzcraftlabs\/atlas@1\.2\.0/);
+        assert.match(error.message, /availability was not confirmed/);
+        assert.match(error.message, /version-missing/);
+        assert.doesNotMatch(error.message, /HTTP 500|ECONNRESET/);
+        assert.equal(
+          error.message,
+          formatRegistryAvailabilityTimeoutError({
+            packageName: PUBLIC_CLI_PACKAGE_NAME,
+            version: "1.2.0",
+            timeoutMs: 40,
+            lastStatus: "version-missing",
+            lastError: null,
+          })
+        );
+        return true;
+      }
+    );
+  });
+
+  it("preserves transport and HTTP failures as distinct last errors on timeout", async () => {
+    await assert.rejects(
+      () =>
+        waitForNpmPackageVersion({
+          version: "1.2.0",
+          timeoutMs: 0,
+          pollIntervalMs: 10,
+          stdout: silent(),
+          queryRegistry: async () => {
+            throw new Error(
+              `npm registry query for ${PUBLIC_CLI_PACKAGE_NAME}@1.2.0 failed with HTTP 500`
+            );
+          },
+        }),
+      (error) => {
+        assert.match(error.message, /accepted publish/);
+        assert.match(error.message, /HTTP 500/);
+        assert.doesNotMatch(error.message, /last registry status was version-missing/);
+        return true;
+      }
+    );
+    await assert.rejects(
+      () =>
+        waitForNpmPackageVersion({
+          version: "1.2.0",
+          timeoutMs: 0,
+          pollIntervalMs: 10,
+          stdout: silent(),
+          queryRegistry: async () => {
+            throw new Error(
+              `Failed to query npm registry for ${PUBLIC_CLI_PACKAGE_NAME}: ECONNRESET`
+            );
+          },
+        }),
+      /ECONNRESET/
+    );
+  });
+
+  it("does not busy-loop while waiting", async () => {
+    const sleeps = [];
+    let now = 0;
+    await waitForNpmPackageVersion({
+      version: "1.2.0",
+      timeoutMs: 50,
+      pollIntervalMs: 12,
+      now: () => now,
+      sleep: async (ms) => {
+        assert.notEqual(ms, 0);
+        sleeps.push(ms);
+        now += ms;
+      },
+      stdout: silent(),
+      queryRegistry: async () => {
+        if (now === 0) {
+          return {
+            packageExists: true,
+            versionExists: false,
+            status: "version-missing",
+          };
+        }
+        return {
+          packageExists: true,
+          versionExists: true,
+          status: "version-exists",
+        };
+      },
+    });
+    assert.deepEqual(sleeps, [12]);
   });
 });
