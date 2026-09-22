@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-22
+
+### Changed
+
+- Add `atlas enable` for opt-in consumer tooling, and fix first-commit hooks plus Playwright
+  alignment. Published npm 1.1.0 does not include `enable`. This changeset is how that command (and
+  the consumer-tooling follow-ups) enter the next CLI release. Generated enable invocations keep
+  `<next-cli-release>` until this Version PR assigns a version that is not in
+  `CLI_RELEASES_WITHOUT_ENABLE`; they pin that assigned CLI for `enable` even when a consumer
+  baseline is still 1.1.0. Doctor/generate stay on the consumer baseline. Do not treat `enable` as
+  live on npm until that release is published.
+
 ## [1.1.0] - 2026-09-19
 
 ### Added
@@ -133,7 +145,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/blitzcraftlabs/atlas/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/blitzcraftlabs/atlas/compare/v0.5.0...v1.0.0
