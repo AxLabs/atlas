@@ -60,6 +60,19 @@ describe("generated consumer workspace files", () => {
     expect(readme).not.toContain("api:check");
   });
 
+  it("pins enable to a running CLI that includes the command, not the 1.1.0 baseline", () => {
+    const readme = buildConsumerReadme({
+      projectName: "my-app",
+      atlasVersion: "1.1.0",
+      runningCliVersion: "99.0.0",
+    });
+
+    expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
+    expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@99.0.0 enable list --json");
+    expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
+    expect(readme).not.toContain(`@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list`);
+  });
+
   it("points enable at the upcoming-release placeholder for published 1.1.0", () => {
     const readme = buildConsumerReadme({
       projectName: "my-app",

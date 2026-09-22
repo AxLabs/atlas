@@ -35,6 +35,7 @@ import {
   captureConsumerPlatformBaseline,
   mergePlatformBaselineIntoContract,
 } from "../upgrade/baseline";
+import { readCliAtlasVersion } from "../version";
 
 import { listGeneratedConsumerDocs } from "./consumer-docs";
 import {
@@ -192,6 +193,7 @@ function writeGeneratedFiles(options: {
     buildConsumerReadme({
       projectName: options.projectName,
       atlasVersion: options.atlasVersion,
+      runningCliVersion: readCliAtlasVersion(),
     }),
     "utf8"
   );
@@ -204,6 +206,7 @@ function writeGeneratedFiles(options: {
   for (const file of listGeneratedConsumerDocs({
     projectName: options.projectName,
     atlasVersion: options.atlasVersion,
+    runningCliVersion: readCliAtlasVersion(),
   })) {
     const destinationPath = path.join(options.destinationRoot, file.destination);
     mkdirSync(path.dirname(destinationPath), { recursive: true });

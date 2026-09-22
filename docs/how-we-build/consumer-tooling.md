@@ -7,11 +7,12 @@ build, and local Lighthouse/bundle commands. Heavier tooling is **opt-in** throu
 Atlas publishing, release rehearsal, internal governance, and BlitzCraft runners stay
 maintainer-only.
 
-**Published Atlas 1.1.0 does not contain `atlas enable`.** Until the next CLI version is assigned,
-adoption commands use the placeholder `<next-cli-release>`. Replace that token with the published
-CLI version that actually includes `enable`. Existing consumers invoke a CLI release that contains
-the command; that version may differ from `platform.baseline.atlasVersion`. `atlas upgrade` —
-including a same-version upgrade — does **not** install this tooling.
+**Published Atlas 1.1.0 does not contain `atlas enable`.** Until Changesets assigns the next CLI
+version, adoption commands use the placeholder `<next-cli-release>`. Generated docs do **not** guess
+that number and do **not** reuse a consumer `platform.baseline.atlasVersion` that predates `enable`.
+After the Version PR lands, `atlasDlxForEnable` pins `pnpm dlx @blitzcraftlabs/atlas@<assigned>` for
+enable whenever that assigned version is not in `CLI_RELEASES_WITHOUT_ENABLE`. Doctor, generate,
+context, and upgrade stay pinned to the CLI you already use for those commands.
 
 ```bash
 pnpm dlx @blitzcraftlabs/atlas@<next-cli-release> enable list --json

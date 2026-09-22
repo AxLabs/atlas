@@ -5,6 +5,12 @@ import { shouldOmitConsumerUiDevDependency } from "../bootstrap/consumer-ui-mani
 import { listGeneratedConsumerDocs, listGeneratedCursorFiles } from "../init/consumer-docs";
 import { collectDependencyNames, selectConsumerPnpmOverrides } from "../init/consumer-overrides";
 
+import {
+  KNOWN_ATLAS_WEB_PLAYWRIGHT_SPECIFIERS,
+  PLAYWRIGHT_TEST_PACKAGE,
+  WEB_PLAYWRIGHT_PACKAGE_JSON,
+} from "./playwright-pin";
+
 import type { CapabilityDefinition, PackageManifestPatch } from "./types";
 
 interface PackageJsonLike {
@@ -94,8 +100,16 @@ export function computeCapabilityPackagePatches(options: {
   if (options.capability.id === "storybook" || options.capability.id === "visual") {
     const playwrightTest = options.canonicalUi.devDependencies?.["@playwright/test"];
     if (playwrightTest) {
-      relevantOverrides["@playwright/test"] = playwrightTest;
+      relevantOverrides[PLAYWRIGHT_TEST_PACKAGE] = playwrightTest;
       relevantOverrides.playwright = playwrightTest;
+      patches.push({
+        path: WEB_PLAYWRIGHT_PACKAGE_JSON,
+        devDependencies: { [PLAYWRIGHT_TEST_PACKAGE]: playwrightTest },
+        replaceableDevDependencies: {
+          [PLAYWRIGHT_TEST_PACKAGE]: [...KNOWN_ATLAS_WEB_PLAYWRIGHT_SPECIFIERS],
+        },
+        statusMode: "conflicts-only",
+      });
     }
   }
 
@@ -124,13 +138,21 @@ export function generatedFilesForCapability(options: {
   capabilityId: string;
   repoRoot: string;
   atlasVersion: string;
+  runningCliVersion?: string;
 }): { destination: string; content: string; isReplaceable?: (existing: string) => boolean }[] {
   const projectName = projectNameFromRepo(options.repoRoot);
   if (options.capabilityId === "docs") {
-    return listGeneratedConsumerDocs({ projectName, atlasVersion: options.atlasVersion });
+    return listGeneratedConsumerDocs({
+      projectName,
+      atlasVersion: options.atlasVersion,
+      runningCliVersion: options.runningCliVersion,
+    });
   }
   if (options.capabilityId === "cursor") {
-    return listGeneratedCursorFiles({ atlasVersion: options.atlasVersion });
+    return listGeneratedCursorFiles({
+      atlasVersion: options.atlasVersion,
+      runningCliVersion: options.runningCliVersion,
+    });
   }
   return [];
 }

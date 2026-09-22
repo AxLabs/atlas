@@ -1,17 +1,27 @@
-import { atlasDlx, atlasDlxForEnable, ENABLE_CLI_RELEASE_PLACEHOLDER } from "./cli-release";
+import { atlasDlx, atlasDlxForEnable, type EnableCliVersionOptions } from "./cli-release";
 import { isKnownShippedConsumerDocumentation } from "./shipped-docs";
 
 export { atlasDlx, atlasDlxForEnable };
 
-function cliPair(atlasVersion: string): { cli: string; enableCli: string } {
-  return { cli: atlasDlx(atlasVersion), enableCli: atlasDlxForEnable(atlasVersion) };
+export interface ConsumerDocVersionOptions extends EnableCliVersionOptions {
+  atlasVersion: string;
+}
+
+function cliPair(options: ConsumerDocVersionOptions): { cli: string; enableCli: string } {
+  return {
+    cli: atlasDlx(options.atlasVersion),
+    enableCli: atlasDlxForEnable(options.atlasVersion, {
+      runningCliVersion: options.runningCliVersion,
+    }),
+  };
 }
 
 export function buildConsumerAgentsMd(options: {
   projectName: string;
   atlasVersion: string;
+  runningCliVersion?: string;
 }): string {
-  const { cli, enableCli } = cliPair(options.atlasVersion);
+  const { cli, enableCli } = cliPair(options);
   return `# Atlas — Agent Guide
 
 This is **${options.projectName}**, an Atlas application generated from Atlas ${options.atlasVersion}.
@@ -167,8 +177,11 @@ guide and the CLI. Generic \`AGENTS.md\`-compatible agents are the portable path
 `;
 }
 
-export function buildConsumerAgentsWorkflow(options: { atlasVersion: string }): string {
-  const { cli, enableCli } = cliPair(options.atlasVersion);
+export function buildConsumerAgentsWorkflow(options: {
+  atlasVersion: string;
+  runningCliVersion?: string;
+}): string {
+  const { cli, enableCli } = cliPair(options);
   return `# Atlas agent workflow
 
 > **Canonical workflow for humans and coding agents in a generated Atlas consumer.**
@@ -389,8 +402,11 @@ See [consumer-tooling.md](consumer-tooling.md) and [architecture-ownership.md](a
 `;
 }
 
-export function buildConsumerExamplesDoc(options: { atlasVersion: string }): string {
-  const { cli } = cliPair(options.atlasVersion);
+export function buildConsumerExamplesDoc(options: {
+  atlasVersion: string;
+  runningCliVersion?: string;
+}): string {
+  const { cli } = cliPair(options);
   return `# Reference examples
 
 > Minimal patterns you can copy when building on Atlas.
@@ -447,8 +463,11 @@ repository's development-only reference harness. They are not an enablement targ
 `;
 }
 
-export function buildConsumerToolingDoc(options: { atlasVersion: string }): string {
-  const { cli, enableCli } = cliPair(options.atlasVersion);
+export function buildConsumerToolingDoc(options: {
+  atlasVersion: string;
+  runningCliVersion?: string;
+}): string {
+  const { cli, enableCli } = cliPair(options);
   return `# Consumer tooling
 
 > Optional development and quality tooling for generated Atlas applications.
@@ -525,9 +544,9 @@ matches.
 ## Existing-consumer adoption
 
 Published Atlas **1.1.0 does not contain** \`atlas enable\`. Optional tooling is not installed by
-\`atlas upgrade --to 1.1.0\` or any same-version upgrade. After a CLI release that includes \`enable\`
-is published, replace \`${ENABLE_CLI_RELEASE_PLACEHOLDER}\` below with that version. The CLI you invoke for
-\`enable\` may be newer than \`platform.baseline.atlasVersion\` in this repository.
+\`atlas upgrade --to 1.1.0\` or any same-version upgrade. Enable commands pin \`${enableCli}\` — a CLI
+release that includes \`enable\`, which may differ from \`platform.baseline.atlasVersion\` used for
+Doctor and generate (\`${cli}\`).
 
 1. Optionally apply platform upgrades with a supported \`atlas upgrade --to <platform-version>\` using
    whatever CLI you already use for Doctor. That step does not add Storybook, coverage, or other
@@ -558,8 +577,11 @@ is published, replace \`${ENABLE_CLI_RELEASE_PLACEHOLDER}\` below with that vers
 `;
 }
 
-export function buildConsumerReferencePatternsDoc(options: { atlasVersion: string }): string {
-  const { cli } = cliPair(options.atlasVersion);
+export function buildConsumerReferencePatternsDoc(options: {
+  atlasVersion: string;
+  runningCliVersion?: string;
+}): string {
+  const { cli } = cliPair(options);
   return `# Reference patterns
 
 > Adopt settings, permission-aware CRUD, and diagnostics without importing the Atlas reference app.
@@ -618,8 +640,11 @@ must not ship in production consumers.
 `;
 }
 
-export function buildConsumerCursorRule(options: { atlasVersion: string }): string {
-  const { cli, enableCli } = cliPair(options.atlasVersion);
+export function buildConsumerCursorRule(options: {
+  atlasVersion: string;
+  runningCliVersion?: string;
+}): string {
+  const { cli, enableCli } = cliPair(options);
   return `---
 description: Non-negotiable Atlas constraints for this generated consumer
 alwaysApply: true
@@ -654,8 +679,11 @@ Vendor guidance never overrides the executable contract or Doctor. If this rule 
 `;
 }
 
-export function buildConsumerCursorSkill(options: { atlasVersion: string }): string {
-  const { cli, enableCli } = cliPair(options.atlasVersion);
+export function buildConsumerCursorSkill(options: {
+  atlasVersion: string;
+  runningCliVersion?: string;
+}): string {
+  const { cli, enableCli } = cliPair(options);
   return `---
 name: build-atlas-feature
 description:
@@ -724,6 +752,7 @@ export interface GeneratedConsumerDoc {
 export function listGeneratedConsumerDocs(options: {
   projectName: string;
   atlasVersion: string;
+  runningCliVersion?: string;
 }): GeneratedConsumerDoc[] {
   return [
     {
@@ -762,6 +791,7 @@ export function listGeneratedConsumerDocs(options: {
 
 export function listGeneratedCursorFiles(options: {
   atlasVersion: string;
+  runningCliVersion?: string;
 }): GeneratedConsumerDoc[] {
   return [
     {

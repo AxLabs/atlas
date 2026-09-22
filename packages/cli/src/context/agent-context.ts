@@ -11,6 +11,7 @@ import {
   type AppInfrastructureManifest,
   loadAppInfrastructureManifest,
 } from "../template-sync/manifest";
+import { readCliAtlasVersion } from "../version";
 
 import {
   AGENT_ENTRY_POINT_PATH,
@@ -342,7 +343,9 @@ export function buildAgentContextReport(context: AtlasCliContext): AgentContextR
     workspaceKind,
     invocation: {
       cli: invocationCli,
-      enableCli: enableCliInvocation(context.atlasVersion, workspaceKind),
+      enableCli: enableCliInvocation(context.atlasVersion, workspaceKind, {
+        runningCliVersion: readCliAtlasVersion(),
+      }),
     },
     project: {
       root: ".",

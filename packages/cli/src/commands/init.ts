@@ -1,6 +1,7 @@
 import { runBootstrapInit } from "../init/bootstrap";
 import { runCheckoutInit } from "../init/checkout";
 import { atlasDlx, atlasDlxForEnable } from "../init/cli-release";
+import { readCliAtlasVersion } from "../version";
 
 import type { EnvPolicy, ReferencePolicy } from "../init/types";
 import type { CommandResult, PlannedAction } from "../types/result";
@@ -60,7 +61,7 @@ export function formatInitResult(result: CommandResult, dryRun: boolean): string
         "  pnpm dev",
         `  ${atlasDlx(result.atlasVersion)} doctor`,
         `  ${atlasDlx(result.atlasVersion)} context --json`,
-        `  ${atlasDlxForEnable(result.atlasVersion)} enable list --json`
+        `  ${atlasDlxForEnable(result.atlasVersion, { runningCliVersion: readCliAtlasVersion() })} enable list --json`
       );
     }
 

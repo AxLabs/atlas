@@ -46,7 +46,7 @@
     "@atlas/config": "workspace:*",
     "@jest/globals": "29.7.0",
     "@lhci/cli": "^0.14.0",
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.1.0",

@@ -10,6 +10,7 @@ import { sha256Bytes } from "../bootstrap/checksum";
 import { createAtlasContext } from "../context/atlas-context";
 import { detectWorkspaceKind } from "../context/workspace-kind";
 import { CliError, CliErrorCode } from "../errors/cli-error";
+import { readCliAtlasVersion } from "../version";
 
 import {
   applyCanonicalChromeFlags,
@@ -101,11 +102,12 @@ function mergeStringRecord(options: {
   patch: Record<string, string>;
   destination: string;
   field: string;
+  replaceableCurrent?: Record<string, string[]>;
 }): { next: Record<string, string>; actions: PlannedAction[]; dirty: boolean } {
   const next = { ...options.existing };
   const actions: PlannedAction[] = [];
   let dirty = false;
-  for (const [key, value] of Object.entries(options.patch)) {
+  for (const [key, value] of options.patch ? Object.entries(options.patch) : []) {
     const current = options.existing[key];
     if (current === undefined) {
       next[key] = value;
@@ -125,6 +127,16 @@ function mergeStringRecord(options: {
       });
       continue;
     }
+    if (options.replaceableCurrent?.[key]?.includes(current)) {
+      next[key] = value;
+      dirty = true;
+      actions.push({
+        kind: "copy",
+        path: `${options.destination}#${options.field}.${key}`,
+        reason: `Replace known Atlas ${options.field} specifier`,
+      });
+      continue;
+    }
     actions.push({
       kind: "conflict",
       path: `${options.destination}#${options.field}.${key}`,
@@ -136,12 +148,7 @@ function mergeStringRecord(options: {
 
 function planPackagePatch(options: {
   repoRoot: string;
-  patch: {
-    path: string;
-    scripts?: Record<string, string>;
-    devDependencies?: Record<string, string>;
-    pnpmOverrides?: Record<string, string>;
-  };
+  patch: PackagedCapability["packagePatches"][number];
 }): DeferredWrite[] {
   const destinationPath = path.join(options.repoRoot, options.patch.path);
   if (!existsSync(destinationPath)) {
@@ -183,6 +190,7 @@ function planPackagePatch(options: {
       patch: options.patch.devDependencies,
       destination: options.patch.path,
       field: "devDependencies",
+      replaceableCurrent: options.patch.replaceableDevDependencies,
     });
     actions.push(...merged.actions);
     if (merged.dirty) {
@@ -213,10 +221,12 @@ function planPackagePatch(options: {
       }
     : () => undefined;
 
-  const firstCreate = actions.findIndex((action) => action.kind === "create");
+  const firstWrite = actions.findIndex(
+    (action) => action.kind === "create" || action.kind === "copy"
+  );
   return actions.map((action, index) => ({
     action,
-    apply: index === firstCreate && firstCreate >= 0 ? apply : () => undefined,
+    apply: index === firstWrite && firstWrite >= 0 ? apply : () => undefined,
   }));
 }
 
@@ -476,13 +486,23 @@ function observePackageKeys(options: {
     if (!patch) {
       return;
     }
-    void field;
     for (const [key, value] of Object.entries(patch)) {
       const existing = current[key];
       if (existing === undefined) {
-        states.push("missing");
+        if (options.patch.statusMode !== "conflicts-only") {
+          states.push("missing");
+        }
       } else if (existing === value) {
-        states.push("match");
+        if (options.patch.statusMode !== "conflicts-only") {
+          states.push("match");
+        }
+      } else if (
+        field === "devDependencies" &&
+        options.patch.replaceableDevDependencies?.[key]?.includes(existing)
+      ) {
+        if (options.patch.statusMode !== "conflicts-only") {
+          states.push("replaceable");
+        }
       } else {
         states.push("conflict");
       }
@@ -508,6 +528,7 @@ export function inspectCapabilityStatus(options: {
   atlasVersion: string;
   capability: CapabilityDefinition;
   assetRoot?: string;
+  runningCliVersion?: string;
 }): CapabilityInstallStatus {
   const states: FileObservationState[] = [];
   const assetRoot = tryCapabilitiesAssetRoot(options.assetRoot);
@@ -517,6 +538,7 @@ export function inspectCapabilityStatus(options: {
       capabilityId: options.capability.id,
       repoRoot: options.repoRoot,
       atlasVersion: options.atlasVersion,
+      runningCliVersion: options.runningCliVersion,
     });
     for (const file of generated) {
       const absolutePath = path.join(options.repoRoot, file.destination);
@@ -574,6 +596,7 @@ export function listConsumerCapabilities(options: {
 }): EnableListResult {
   const context = createAtlasContext({ cwd: options.cwd, requireProject: true });
   const kind = detectWorkspaceKind(context.repoRoot);
+  const runningCliVersion = readCliAtlasVersion();
   return {
     repoRoot: context.repoRoot,
     atlasVersion: context.atlasVersion,
@@ -585,6 +608,7 @@ export function listConsumerCapabilities(options: {
         atlasVersion: context.atlasVersion,
         capability,
         assetRoot: options.assetRoot,
+        runningCliVersion,
       });
       return {
         id: capability.id,
@@ -606,6 +630,7 @@ function planCapability(options: {
   atlasVersion: string;
   definition: CapabilityDefinition;
   assetRoot?: string;
+  runningCliVersion?: string;
 }): DeferredWrite[] {
   const planned: DeferredWrite[] = [];
 
@@ -614,6 +639,7 @@ function planCapability(options: {
       capabilityId: options.definition.id,
       repoRoot: options.repoRoot,
       atlasVersion: options.atlasVersion,
+      runningCliVersion: options.runningCliVersion,
     });
     for (const file of generated) {
       planned.push(
@@ -679,6 +705,7 @@ export function enableConsumerCapability(options: {
   const context = createAtlasContext({ cwd: options.cwd, requireProject: true });
   const repoRoot = context.repoRoot;
   const atlasVersion = context.atlasVersion;
+  const runningCliVersion = readCliAtlasVersion();
   const dryRun = options.dryRun === true;
   const warnings: EnableResult["warnings"] = [];
 
@@ -695,6 +722,7 @@ export function enableConsumerCapability(options: {
       atlasVersion,
       capability: requiredDefinition,
       assetRoot: options.assetRoot,
+      runningCliVersion,
     });
     if (requiredStatus !== "installed") {
       throw new CliError(
@@ -709,6 +737,7 @@ export function enableConsumerCapability(options: {
     atlasVersion,
     definition,
     assetRoot: options.assetRoot,
+    runningCliVersion,
   });
   const actions = applyDeferredWrites(planned, dryRun);
 

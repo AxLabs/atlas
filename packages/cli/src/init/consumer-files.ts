@@ -81,6 +81,7 @@ export function buildConsumerPackageManifest(options: {
 export function buildConsumerReadme(options: {
   projectName: string;
   atlasVersion: string;
+  runningCliVersion?: string;
 }): string {
   return `# ${options.projectName}
 
@@ -104,7 +105,7 @@ ${atlasDlx(options.atlasVersion)} doctor
 ${atlasDlx(options.atlasVersion)} context --json
 ${atlasDlx(options.atlasVersion)} generate list --json
 ${atlasDlx(options.atlasVersion)} upgrade --to <version> --dry-run --json
-${atlasDlxForEnable(options.atlasVersion)} enable list --json
+${atlasDlxForEnable(options.atlasVersion, { runningCliVersion: options.runningCliVersion })} enable list --json
 \`\`\`
 
 Optional Storybook, visual tests, performance CI, security auditing, Dependabot, coverage floors,

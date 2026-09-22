@@ -357,6 +357,15 @@ describe("capability asset build", () => {
         expect(existsSync(path.join(outputDir, "files", "coverage", "coverage-policy.json"))).toBe(
           true
         );
+        expect(storybook?.packagePatches).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              path: "apps/web/package.json",
+              replaceableDevDependencies: { "@playwright/test": ["^1.61.0"] },
+              statusMode: "conflicts-only",
+            }),
+          ])
+        );
       } finally {
         rmSync(outputDir, { recursive: true, force: true });
       }
