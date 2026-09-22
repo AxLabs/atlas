@@ -141,9 +141,19 @@ jobs:
 
       - name: Report Version PR outcome
         if: always()
+        env:
+          CHANGESETS_OUTCOME: ${{ steps.changesets.outcome }}
+          HAS_CHANGESETS: ${{ steps.changesets.outputs.hasChangesets }}
+          VERSION_PR_NUMBER: ${{ steps.changesets.outputs.pullRequestNumber }}
         run: |
-          if [ "${{ steps.changesets.outputs.hasChangesets }}" = "true" ]; then
-            echo "ℹ️ Pending changesets — Version PR opened or updated."
+          if [ "${CHANGESETS_OUTCOME}" != "success" ]; then
+            echo "::error::Changesets action failed (outcome=${CHANGESETS_OUTCOME}, hasChangesets=${HAS_CHANGESETS}, pullRequestNumber=${VERSION_PR_NUMBER}). Do not treat hasChangesets as Version PR success."
+            exit 1
+          fi
+          if [ -n "${VERSION_PR_NUMBER}" ]; then
+            echo "✓ Version PR created or updated (#${VERSION_PR_NUMBER})."
+          elif [ "${HAS_CHANGESETS}" = "true" ]; then
+            echo "ℹ️ Pending changesets remain; Changesets did not report a Version PR number."
           else
             echo "ℹ️ No pending changesets — no Version PR action required."
           fi

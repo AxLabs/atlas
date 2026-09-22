@@ -66,17 +66,35 @@ describe("generated consumer workspace files", () => {
       atlasVersion: "1.1.0",
       runningCliVersion: "99.0.0",
     });
+    const lines = formatInitResult(
+      {
+        repoRoot: "/tmp/my-app",
+        atlasVersion: "1.1.0",
+        initMode: "bootstrap",
+        actions: [],
+        warnings: [],
+      },
+      false,
+      { runningCliVersion: "99.0.0" }
+    ).join("\n");
 
     expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
+    expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 context --json");
     expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@99.0.0 enable list --json");
     expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
     expect(readme).not.toContain(`@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list`);
+    expect(lines).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
+    expect(lines).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 context --json");
+    expect(lines).toContain("pnpm dlx @blitzcraftlabs/atlas@99.0.0 enable list --json");
+    expect(lines).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
+    expect(lines).not.toContain(`@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list`);
   });
 
-  it("points enable at the upcoming-release placeholder for published 1.1.0", () => {
+  it("points enable at the upcoming-release placeholder when the running CLI lacks enable", () => {
     const readme = buildConsumerReadme({
       projectName: "my-app",
       atlasVersion: "1.1.0",
+      runningCliVersion: "1.1.0",
     });
     const lines = formatInitResult(
       {
@@ -86,15 +104,19 @@ describe("generated consumer workspace files", () => {
         actions: [],
         warnings: [],
       },
-      false
+      false,
+      { runningCliVersion: "1.1.0" }
     ).join("\n");
+    const enableCommand = `${atlasDlxForEnable("1.1.0", { runningCliVersion: "1.1.0" })} enable list --json`;
 
     expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
-    expect(readme).toContain(`${atlasDlxForEnable("1.1.0")} enable list --json`);
+    expect(readme).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 context --json");
+    expect(readme).toContain(enableCommand);
     expect(readme).toContain(`@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list`);
     expect(readme).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
     expect(lines).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
-    expect(lines).toContain(`${atlasDlxForEnable("1.1.0")} enable list --json`);
+    expect(lines).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 context --json");
+    expect(lines).toContain(enableCommand);
     expect(lines).not.toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 enable");
   });
 
@@ -108,7 +130,8 @@ describe("generated consumer workspace files", () => {
         actions: [],
         warnings: [],
       },
-      false
+      false,
+      { runningCliVersion: atlasVersion }
     ).join("\n");
 
     expect(lines).toContain("pnpm install");

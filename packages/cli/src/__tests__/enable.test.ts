@@ -10,6 +10,7 @@ import {
   CUSTOM_CHROME_FLAGS_REASON,
   LEGACY_CHROME_FLAGS_REASON,
 } from "../enable/lighthouse-chrome-flags";
+import { ENABLE_CLI_RELEASE_PLACEHOLDER } from "../init/cli-release";
 import { selectConsumerPnpmOverrides } from "../init/consumer-overrides";
 import { isKnownShippedConsumerDocumentation } from "../init/shipped-docs";
 import { verifyGeneratedGitHook } from "./helpers/verify-generated-git-hook";
@@ -17,6 +18,9 @@ import { verifyGeneratedGitHook } from "./helpers/verify-generated-git-hook";
 const GENERATED_TIMEOUT_MS = 60_000;
 const SHIPPED_AGENTS = path.resolve(__dirname, "fixtures/shipped-1.1.0/AGENTS.md");
 const SHIPPED_LIGHTHOUSE = path.resolve(__dirname, "fixtures/shipped-1.1.0/lighthouserc.json");
+const CONSUMER_BASELINE_WITHOUT_ENABLE = "1.1.0";
+const CLI_WITHOUT_ENABLE = "1.1.0";
+const CLI_WITH_ENABLE = "99.0.0";
 
 function snapshotTree(root: string, relative: string[]): Record<string, string | false> {
   const snapshot: Record<string, string | false> = {};
@@ -25,6 +29,18 @@ function snapshotTree(root: string, relative: string[]): Record<string, string |
     snapshot[entry] = existsSync(absolute) ? readFileSync(absolute, "utf8") : false;
   }
   return snapshot;
+}
+
+function pinConsumerBaseline(repoRoot: string, atlasVersion: string): void {
+  const contractPath = path.join(repoRoot, "atlas.config.json");
+  const contract = JSON.parse(readFileSync(contractPath, "utf8")) as {
+    platform?: { baseline?: { atlasVersion?: string } };
+  };
+  if (!contract.platform?.baseline) {
+    throw new Error(`Expected platform.baseline in ${contractPath}`);
+  }
+  contract.platform.baseline.atlasVersion = atlasVersion;
+  writeFileSync(contractPath, `${JSON.stringify(contract, null, 2)}\n`);
 }
 
 describe("atlas enable", () => {
@@ -127,17 +143,34 @@ describe("atlas enable", () => {
         const shipped = readFileSync(SHIPPED_AGENTS, "utf8");
         expect(isKnownShippedConsumerDocumentation("AGENTS.md", shipped)).toBe(true);
         writeFileSync(path.join(destination, "AGENTS.md"), shipped);
+        pinConsumerBaseline(destination, CONSUMER_BASELINE_WITHOUT_ENABLE);
 
-        const replaced = enableConsumerCapability({ cwd: destination, capability: "docs" });
+        const replaced = enableConsumerCapability({
+          cwd: destination,
+          capability: "docs",
+          runningCliVersion: CLI_WITHOUT_ENABLE,
+        });
         const agentsAction = replaced.actions.find((action) => action.path === "AGENTS.md");
         expect(agentsAction?.kind).toBe("copy");
         const updated = readFileSync(path.join(destination, "AGENTS.md"), "utf8");
         expect(updated).toContain("enable list --json");
-        expect(updated).toContain("<next-cli-release>");
+        expect(updated).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} doctor`
+        );
+        expect(updated).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list --json`
+        );
+        expect(updated).not.toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} enable`
+        );
         expect(updated).not.toContain("pnpm atlas");
 
         writeFileSync(path.join(destination, "AGENTS.md"), "# Custom agent notes\n");
-        const preserved = enableConsumerCapability({ cwd: destination, capability: "docs" });
+        const preserved = enableConsumerCapability({
+          cwd: destination,
+          capability: "docs",
+          runningCliVersion: CLI_WITHOUT_ENABLE,
+        });
         expect(preserved.actions.find((action) => action.path === "AGENTS.md")?.kind).toBe(
           "conflict"
         );
@@ -318,24 +351,79 @@ describe("atlas enable", () => {
   );
 
   it(
-    "pins generated enable commands to a running CLI that includes enable, not the baseline",
+    "uses the enable placeholder when the running CLI does not include the command",
     () => {
-      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-cli-pin-"));
+      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-placeholder-"));
       try {
         runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
         const destination = path.join(cwd, "test-app");
         const files = generatedFilesForCapability({
           capabilityId: "docs",
           repoRoot: destination,
-          atlasVersion: "1.1.0",
-          runningCliVersion: "99.0.0",
+          atlasVersion: CONSUMER_BASELINE_WITHOUT_ENABLE,
+          runningCliVersion: CLI_WITHOUT_ENABLE,
         });
         const agents = files.find((file) => file.destination === "AGENTS.md");
-        expect(agents?.content).toContain("pnpm dlx @blitzcraftlabs/atlas@1.1.0 doctor");
         expect(agents?.content).toContain(
-          "pnpm dlx @blitzcraftlabs/atlas@99.0.0 enable list --json"
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} doctor`
         );
-        expect(agents?.content).not.toContain("<next-cli-release>");
+        expect(agents?.content).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} context --json`
+        );
+        expect(agents?.content).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${ENABLE_CLI_RELEASE_PLACEHOLDER} enable list --json`
+        );
+        expect(agents?.content).not.toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} enable`
+        );
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    },
+    GENERATED_TIMEOUT_MS
+  );
+
+  it(
+    "pins generated enable commands to a running CLI that includes enable, not the baseline",
+    () => {
+      const cwd = mkdtempSync(path.join(os.tmpdir(), "atlas-enable-cli-pin-"));
+      try {
+        runInit({ cwd, project: "test-app", reference: "keep", env: "skip" });
+        const destination = path.join(cwd, "test-app");
+        pinConsumerBaseline(destination, CONSUMER_BASELINE_WITHOUT_ENABLE);
+        writeFileSync(path.join(destination, "AGENTS.md"), readFileSync(SHIPPED_AGENTS, "utf8"));
+        const files = generatedFilesForCapability({
+          capabilityId: "docs",
+          repoRoot: destination,
+          atlasVersion: CONSUMER_BASELINE_WITHOUT_ENABLE,
+          runningCliVersion: CLI_WITH_ENABLE,
+        });
+        const agents = files.find((file) => file.destination === "AGENTS.md");
+        expect(agents?.content).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} doctor`
+        );
+        expect(agents?.content).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} context --json`
+        );
+        expect(agents?.content).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CLI_WITH_ENABLE} enable list --json`
+        );
+        expect(agents?.content).not.toContain(ENABLE_CLI_RELEASE_PLACEHOLDER);
+
+        const applied = enableConsumerCapability({
+          cwd: destination,
+          capability: "docs",
+          runningCliVersion: CLI_WITH_ENABLE,
+        });
+        expect(applied.actions.find((action) => action.path === "AGENTS.md")?.kind).toBe("copy");
+        const updated = readFileSync(path.join(destination, "AGENTS.md"), "utf8");
+        expect(updated).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CONSUMER_BASELINE_WITHOUT_ENABLE} doctor`
+        );
+        expect(updated).toContain(
+          `pnpm dlx @blitzcraftlabs/atlas@${CLI_WITH_ENABLE} enable list --json`
+        );
+        expect(updated).not.toContain(ENABLE_CLI_RELEASE_PLACEHOLDER);
       } finally {
         rmSync(cwd, { recursive: true, force: true });
       }

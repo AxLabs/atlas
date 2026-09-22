@@ -693,6 +693,7 @@ export function enableConsumerCapability(options: {
   capability: string;
   dryRun?: boolean;
   assetRoot?: string;
+  runningCliVersion?: string;
 }): EnableResult {
   const definition = getCapabilityDefinition(options.capability);
   if (!definition) {
@@ -705,7 +706,7 @@ export function enableConsumerCapability(options: {
   const context = createAtlasContext({ cwd: options.cwd, requireProject: true });
   const repoRoot = context.repoRoot;
   const atlasVersion = context.atlasVersion;
-  const runningCliVersion = readCliAtlasVersion();
+  const runningCliVersion = options.runningCliVersion ?? readCliAtlasVersion();
   const dryRun = options.dryRun === true;
   const warnings: EnableResult["warnings"] = [];
 
