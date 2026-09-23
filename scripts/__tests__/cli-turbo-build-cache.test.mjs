@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { PUBLIC_CLI_PACKAGE_NAME } from "../atlas-workspaces.mjs";
 
-// Mutates shared packages/cli build outputs via Turbo. scripts/run-script-tests.mjs
+// Mutates shared packages/cli build outputs via Turbo. scripts/lib/script-test-schedule.mjs
 // runs this file after the rest of scripts/__tests__ so it does not race
 // validate-dependencies.test.mjs (also invokes turbo build for @blitzcraftlabs/atlas).
 import { verifyNpmPublishDryRun } from "../lib/npm-publish-dry-run.mjs";
