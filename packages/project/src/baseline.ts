@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 
 import { joinRepoPath } from "./paths";
 
@@ -81,7 +80,7 @@ export function captureSyncedPathChecksums(
   for (const relativePath of [...options.syncedPaths].sort((left, right) =>
     left.localeCompare(right)
   )) {
-    const absolutePath = path.join(
+    const absolutePath = joinRepoPath(
       joinRepoPath(options.repoRoot, options.applicationRoot),
       relativePath
     );
@@ -221,7 +220,7 @@ export function getSyncedPathBaselineStatus(
   if (options.consumerContent !== undefined) {
     consumerChecksum = computeBaselineChecksum(options.consumerContent);
   } else {
-    const consumerPath = path.join(options.consumerApplicationRoot, options.relativePath);
+    const consumerPath = joinRepoPath(options.consumerApplicationRoot, options.relativePath);
     consumerChecksum = readFileBaselineChecksum(consumerPath);
   }
 

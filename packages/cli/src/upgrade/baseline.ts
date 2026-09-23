@@ -1,10 +1,9 @@
-import path from "node:path";
-
 import {
   buildPlatformBaseline,
   captureRepositorySyncedPathChecksumsStrict,
   captureSyncedPathChecksumsStrict,
   computeBaselineChecksum,
+  joinRepoPath,
   type PlatformBaseline,
   type RawAtlasProjectContract,
   readFileBaselineChecksum,
@@ -70,7 +69,7 @@ export function selectRepositorySyncedPathChecksumsForUpgrade(options: {
     }
 
     if (item?.action === "create" || item?.action === "replace") {
-      const diskChecksum = readFileBaselineChecksum(path.join(options.repoRoot, relativePath));
+      const diskChecksum = readFileBaselineChecksum(joinRepoPath(options.repoRoot, relativePath));
       if (diskChecksum) {
         next[relativePath] = diskChecksum;
       }

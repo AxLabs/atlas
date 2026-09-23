@@ -69,7 +69,7 @@ function readConsumerFile(
   applicationAbsoluteRoot: string,
   relativePath: string
 ): string | undefined {
-  const absolutePath = path.join(applicationAbsoluteRoot, relativePath);
+  const absolutePath = joinRepoPath(applicationAbsoluteRoot, relativePath);
   if (!existsSync(absolutePath)) {
     return undefined;
   }

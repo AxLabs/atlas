@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { joinRepoPath } from "@atlas/project";
+
 import { CliError, CliErrorCode } from "../errors/cli-error";
 
 export function validateReleaseRelativePath(relativePath: string, context: string): void {
@@ -61,23 +63,22 @@ function validateRelativePath(relativePath: string, context: string): void {
   }
 }
 
+export function resolvePathUnderRoot(root: string, relativePath: string, context: string): string {
+  try {
+    return joinRepoPath(root, relativePath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new CliError(CliErrorCode.UPGRADE_PREREQUISITE, `${context}: ${message}`);
+  }
+}
+
 export function resolvePathUnderReleaseRoot(
   releaseRoot: string,
   relativePath: string,
   context: string
 ): string {
   validateReleaseRelativePath(relativePath, context);
-  const resolvedRoot = path.resolve(releaseRoot);
-  const resolvedPath = path.resolve(releaseRoot, relativePath);
-
-  if (resolvedPath !== resolvedRoot && !resolvedPath.startsWith(`${resolvedRoot}${path.sep}`)) {
-    throw new CliError(
-      CliErrorCode.UPGRADE_PREREQUISITE,
-      `${context}: path "${relativePath}" resolves outside release root.`
-    );
-  }
-
-  return resolvedPath;
+  return resolvePathUnderRoot(releaseRoot, relativePath, context);
 }
 
 export function resolvePathUnderApplicationRoot(
@@ -86,17 +87,7 @@ export function resolvePathUnderApplicationRoot(
   context: string
 ): string {
   validateReleaseRelativePath(relativePath, context);
-  const resolvedRoot = path.resolve(applicationRoot);
-  const resolvedPath = path.resolve(applicationRoot, relativePath);
-
-  if (resolvedPath !== resolvedRoot && !resolvedPath.startsWith(`${resolvedRoot}${path.sep}`)) {
-    throw new CliError(
-      CliErrorCode.UPGRADE_PREREQUISITE,
-      `${context}: path "${relativePath}" resolves outside application root.`
-    );
-  }
-
-  return resolvedPath;
+  return resolvePathUnderRoot(applicationRoot, relativePath, context);
 }
 
 export function assertNoPathListDuplicates(paths: string[], listName: string): void {

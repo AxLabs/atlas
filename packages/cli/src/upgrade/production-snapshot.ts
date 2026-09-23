@@ -8,6 +8,7 @@ import {
   loadAppInfrastructureManifest,
 } from "../template-sync/manifest";
 
+import { resolvePathUnderRoot } from "./path-safety";
 import {
   DEFAULT_OPENAPI_SPEC_RELATIVE_PATH,
   RELEASE_SNAPSHOT_FILENAME,
@@ -141,7 +142,11 @@ function copyReleaseFile(options: {
   outputDir: string;
   relativeFromRepo: string;
 }): void {
-  const sourcePath = path.join(options.repoRoot, options.relativeFromRepo);
+  const sourcePath = resolvePathUnderRoot(
+    options.repoRoot,
+    options.relativeFromRepo,
+    `production snapshot source ${options.relativeFromRepo}`
+  );
   if (!existsSync(sourcePath)) {
     throw new CliError(
       CliErrorCode.UPGRADE_PREREQUISITE,
@@ -149,7 +154,11 @@ function copyReleaseFile(options: {
     );
   }
 
-  const destinationPath = path.join(options.outputDir, options.relativeFromRepo);
+  const destinationPath = resolvePathUnderRoot(
+    options.outputDir,
+    options.relativeFromRepo,
+    `production snapshot destination ${options.relativeFromRepo}`
+  );
   mkdirSync(path.dirname(destinationPath), { recursive: true });
   writeFileSync(destinationPath, readFileSync(sourcePath));
 }

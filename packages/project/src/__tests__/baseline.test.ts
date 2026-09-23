@@ -1,10 +1,11 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import {
   AtlasBaselineCaptureError,
   AtlasContractError,
+  captureRepositorySyncedPathChecksums,
   captureSyncedPathChecksums,
   captureSyncedPathChecksumsStrict,
   computeBaselineChecksum,
@@ -239,5 +240,53 @@ describe("platform.baseline schema validation", () => {
     });
 
     expect(parsed.platform?.baseline?.repositorySyncedPathChecksums).toBeUndefined();
+  });
+});
+
+describe("captureRepositorySyncedPathChecksums", () => {
+  it("checksums repository files inside the repo root", () => {
+    const parent = mkdtempSync(path.join(os.tmpdir(), "atlas-repo-checksum-"));
+    const repoRoot = path.join(parent, "repo");
+    mkdirSync(repoRoot, { recursive: true });
+    writeFileSync(path.join(repoRoot, "Dockerfile"), "FROM alpine\n");
+
+    const result = captureRepositorySyncedPathChecksums({
+      repoRoot,
+      repositorySyncedPaths: ["Dockerfile"],
+    });
+
+    expect(result.isComplete).toBe(true);
+    expect(result.checksums.Dockerfile).toBe(computeBaselineChecksum("FROM alpine\n"));
+
+    rmSync(parent, { recursive: true, force: true });
+  });
+
+  it("does not checksum files outside the repository root", () => {
+    const parent = mkdtempSync(path.join(os.tmpdir(), "atlas-repo-checksum-escape-"));
+    const repoRoot = path.join(parent, "repo");
+    mkdirSync(repoRoot, { recursive: true });
+    writeFileSync(path.join(repoRoot, "Dockerfile"), "FROM alpine\n");
+    writeFileSync(path.join(parent, "outside"), "SECRET\n");
+
+    for (const relativePath of [
+      "../outside",
+      "../../outside",
+      "/tmp/outside",
+      "C:\\outside",
+      "..\\..\\outside",
+      "foo/../../../outside",
+      "foo\\..\\..\\outside",
+    ]) {
+      expect(() =>
+        captureRepositorySyncedPathChecksums({
+          repoRoot,
+          repositorySyncedPaths: [relativePath],
+        })
+      ).toThrow();
+    }
+
+    expect(readFileSync(path.join(parent, "outside"), "utf8")).toBe("SECRET\n");
+
+    rmSync(parent, { recursive: true, force: true });
   });
 });
