@@ -509,7 +509,7 @@ ${enableCli} enable <id>
 | \`coverage\` | Critical-subsystem coverage floors | Auth, API, UI form infrastructure |
 | \`hooks\` | Husky + lint-staged | No Docker/Gitleaks requirement |
 | \`cursor\` | Cursor rule + skill adapters | Delegates to AGENTS.md and this CLI |
-| \`docker\` | Compose scaffold, infra example, Dockerfile | Atlas needs no database by default |
+| \`docker\` | Compose scaffold and infra example | Dockerfile and \`.dockerignore\` already ship with \`atlas init\`. Atlas needs no database by default |
 
 After \`storybook\`, install Playwright browsers for interaction and accessibility tests:
 
@@ -531,8 +531,9 @@ silence a host or CI failure. To recapture after an intentional UI change, run t
 **Update Visual Baselines** workflow (or \`node packages/ui/scripts/run-visual-in-playwright-docker.mjs --update\`),
 review every PNG, then commit. The comparison workflow never updates snapshots.
 
-The Docker capability copies a production-ish Dockerfile that uses \`pnpm install --frozen-lockfile\`.
-Commit \`pnpm-lock.yaml\` first and change image labels to your repository. Lighthouse CI accepts an
+The Docker Compose capability is opt-in. Root \`Dockerfile\` and \`.dockerignore\` already ship with
+\`atlas init\` and use \`pnpm install --frozen-lockfile\`. Commit \`pnpm-lock.yaml\` before building the
+image. Customized Dockerfiles are never overwritten by \`atlas upgrade\`. Lighthouse CI accepts an
 optional \`LHCI_GITHUB_APP_TOKEN\` secret. The generated Lighthouse workflow installs Chrome and
 sets \`CHROME_PATH\`. Local \`pnpm perf:lhci\` needs Chrome or Chromium on \`PATH\` or \`CHROME_PATH\`.
 

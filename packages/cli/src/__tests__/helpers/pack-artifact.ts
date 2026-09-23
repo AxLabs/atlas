@@ -53,7 +53,9 @@ export const REQUIRED_BOOTSTRAP_FILE_PATHS = [
   "packages/config/package.json",
   "pnpm-workspace.yaml",
   "lighthouserc.json",
-  ".github/workflows/ci.yml",
+  "scripts/ensure-pnpm.js",
+  "Dockerfile",
+  ".dockerignore",
 ] as const;
 
 export const CONSUMER_CI_WORKFLOW_DESTINATION = ".github/workflows/ci.yml";

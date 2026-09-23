@@ -1,10 +1,13 @@
 import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { joinRepoPath } from "@atlas/project";
+
 import type { UpgradePlan, UpgradePlanItem } from "./types";
 
 export interface ApplySafeUpgradeOptions {
   applicationRoot: string;
+  repoRoot?: string;
   plan: UpgradePlan;
   targetSnapshot: Record<string, string>;
   dryRun?: boolean;
@@ -36,7 +39,11 @@ export function applySafeUpgradeReplacements(
       continue;
     }
 
-    const absolutePath = path.join(options.applicationRoot, item.relativePath);
+    const root =
+      item.pathScope === "repository"
+        ? (options.repoRoot ?? options.applicationRoot)
+        : options.applicationRoot;
+    const absolutePath = joinRepoPath(root, item.relativePath);
 
     if (item.action === "remove") {
       if (!options.dryRun) {

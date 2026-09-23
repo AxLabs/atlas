@@ -47,6 +47,7 @@ export interface AgentOwnershipSnapshot {
   independentPaths: Record<string, Record<string, string>>;
   referenceOnlyPaths: string[];
   starterOnlyPaths: string[];
+  repositorySyncedPaths: string[];
 }
 
 export interface AgentContextReport {
@@ -285,6 +286,7 @@ function buildOwnershipSnapshot(repoRoot: string): AgentOwnershipSnapshot {
       independentPaths: {},
       referenceOnlyPaths: [],
       starterOnlyPaths: [],
+      repositorySyncedPaths: [],
     };
   }
 
@@ -303,6 +305,7 @@ function serializeOwnershipManifest(manifest: AppInfrastructureManifest): AgentO
     independentPaths: sortIndependentPaths(manifest.independentPaths),
     referenceOnlyPaths: sortPaths(manifest.referenceOnlyPaths),
     starterOnlyPaths: sortPaths(manifest.starterOnlyPaths),
+    repositorySyncedPaths: sortPaths(manifest.repositorySyncedPaths ?? []),
   };
 }
 

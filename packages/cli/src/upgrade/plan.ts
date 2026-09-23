@@ -267,6 +267,219 @@ function planRemovedSyncedPath(options: {
   };
 }
 
+function planNewRepositorySyncedPath(options: {
+  relativePath: string;
+  targetAtlasVersion: string;
+  consumerContent?: string;
+  targetContent?: string;
+}): UpgradePlanItem {
+  if (options.targetContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Missing target snapshot for repository-level Atlas path ${options.relativePath}.`,
+      conflict: false,
+    };
+  }
+
+  if (options.consumerContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "create",
+      message: `Atlas ${options.targetAtlasVersion} introduced repository-level path ${options.relativePath}. The consumer copy is absent and can be created from the target release.`,
+      conflict: false,
+    };
+  }
+
+  if (options.consumerContent === options.targetContent) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "skip",
+      message: `Consumer repository path ${options.relativePath} already matches Atlas ${options.targetAtlasVersion} and can be adopted without rewriting the file.`,
+      conflict: false,
+    };
+  }
+
+  return {
+    relativePath: options.relativePath,
+    pathScope: "repository",
+    ownershipChannel: "atlas-managed-template",
+    category: "manual",
+    action: "manual-review",
+    message: `Consumer customized repository-level path ${options.relativePath}. Atlas ${options.targetAtlasVersion} will not overwrite it. Manual review is required; the rest of the upgrade may proceed.`,
+    conflict: false,
+  };
+}
+
+function planExistingRepositorySyncedPath(options: {
+  relativePath: string;
+  repoRoot: string;
+  baselineAtlasVersion: string;
+  targetAtlasVersion: string;
+  baselineChecksums: Record<string, string>;
+  consumerContent?: string;
+  sourceContent?: string;
+  targetContent?: string;
+}): UpgradePlanItem {
+  const baselineStatus = getSyncedPathBaselineStatus({
+    relativePath: options.relativePath,
+    consumerApplicationRoot: options.repoRoot,
+    baselineChecksums: options.baselineChecksums,
+    consumerContent: options.consumerContent,
+  });
+
+  if (options.sourceContent === undefined || options.targetContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Missing source or target snapshot for repository-level path ${options.relativePath}.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (options.sourceContent === options.targetContent) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "skip",
+      message: `Repository-level path ${options.relativePath} is unchanged in Atlas ${options.targetAtlasVersion}.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (options.consumerContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "create",
+      message: `Consumer repository path ${options.relativePath} is absent. Atlas ${options.targetAtlasVersion} can create it from the target release.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (options.consumerContent === options.targetContent) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "skip",
+      message: `Consumer repository path ${options.relativePath} already matches Atlas ${options.targetAtlasVersion} and can be adopted without rewriting the file.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (baselineStatus === "unknown") {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Consumer repository path ${options.relativePath} differs from Atlas ${options.targetAtlasVersion} and has no recorded Atlas checksum. The file will not be overwritten. Manual review is required; the rest of the upgrade may proceed.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (baselineStatus === "modified") {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "manual",
+      action: "manual-review",
+      message: `Consumer modified repository-level path ${options.relativePath} after Atlas ${options.baselineAtlasVersion}. Atlas ${options.targetAtlasVersion} will not overwrite it. Manual review is required; the rest of the upgrade may proceed.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  return {
+    relativePath: options.relativePath,
+    pathScope: "repository",
+    ownershipChannel: "atlas-managed-template",
+    category: "patch-safe",
+    action: "replace",
+    message: `Repository-level path ${options.relativePath} still matches the recorded Atlas baseline and can be replaced from Atlas ${options.targetAtlasVersion}.`,
+    conflict: false,
+    baselineStatus,
+  };
+}
+
+function planRemovedRepositorySyncedPath(options: {
+  relativePath: string;
+  baselineAtlasVersion: string;
+  targetAtlasVersion: string;
+  repoRoot: string;
+  baselineChecksums: Record<string, string>;
+  consumerContent?: string;
+}): UpgradePlanItem {
+  const baselineStatus = getSyncedPathBaselineStatus({
+    relativePath: options.relativePath,
+    consumerApplicationRoot: options.repoRoot,
+    baselineChecksums: options.baselineChecksums,
+    consumerContent: options.consumerContent,
+  });
+
+  if (options.consumerContent === undefined) {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "skip",
+      message: `Atlas ${options.targetAtlasVersion} removed repository-level path ${options.relativePath} and the consumer copy is already absent.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  if (baselineStatus === "unchanged") {
+    return {
+      relativePath: options.relativePath,
+      pathScope: "repository",
+      ownershipChannel: "atlas-managed-template",
+      category: "patch-safe",
+      action: "remove",
+      message: `Atlas ${options.targetAtlasVersion} removed repository-level path ${options.relativePath}. The consumer copy still matches the Atlas ${options.baselineAtlasVersion} baseline and can be removed.`,
+      conflict: false,
+      baselineStatus,
+    };
+  }
+
+  return {
+    relativePath: options.relativePath,
+    pathScope: "repository",
+    ownershipChannel: "atlas-managed-template",
+    category: "manual",
+    action: "manual-review",
+    message: `Atlas ${options.targetAtlasVersion} removed repository-level path ${options.relativePath}, but the consumer copy does not match the recorded Atlas baseline. The file will not be deleted. Manual review is required; the rest of the upgrade may proceed.`,
+    conflict: false,
+    baselineStatus,
+  };
+}
+
 function planMigrationChainItems(migrationChain: AtlasMigrationDefinition[]): UpgradePlanItem[] {
   return migrationChain.map((migration) => ({
     relativePath: "atlas.config.json",
@@ -368,6 +581,69 @@ export function planUpgrade(
         baselineChecksums: options.baselineChecksums,
         consumerContent,
         sourceContent,
+      })
+    );
+  }
+
+  const sourceRepositorySyncedPaths = options.sourceRepositorySyncedPaths ?? [];
+  const targetRepositorySyncedPaths = options.repositorySyncedPaths ?? [];
+  const repositoryTransitions = classifySyncedPathTransitions({
+    sourceManifest: {
+      syncedPaths: sourceRepositorySyncedPaths,
+      generatedPaths: [],
+      independentPaths: [],
+    },
+    targetManifest: {
+      syncedPaths: targetRepositorySyncedPaths,
+      generatedPaths: [],
+      independentPaths: [],
+    },
+  });
+  const repositoryRoot = options.repositoryRoot ?? options.applicationRoot;
+  const baselineRepositoryChecksums = options.baselineRepositoryChecksums ?? {};
+  const consumerRepositoryFiles = options.consumerRepositoryFiles ?? {};
+
+  for (const transition of repositoryTransitions) {
+    const consumerContent = consumerRepositoryFiles[transition.relativePath];
+    const sourceContent = options.sourceSnapshot.repositorySyncedPaths?.[transition.relativePath];
+    const targetContent = options.targetSnapshot.repositorySyncedPaths?.[transition.relativePath];
+
+    if (transition.kind === "existing") {
+      items.push(
+        planExistingRepositorySyncedPath({
+          relativePath: transition.relativePath,
+          repoRoot: repositoryRoot,
+          baselineAtlasVersion: options.baselineAtlasVersion,
+          targetAtlasVersion: options.targetAtlasVersion,
+          baselineChecksums: baselineRepositoryChecksums,
+          consumerContent,
+          sourceContent,
+          targetContent,
+        })
+      );
+      continue;
+    }
+
+    if (transition.kind === "new") {
+      items.push(
+        planNewRepositorySyncedPath({
+          relativePath: transition.relativePath,
+          targetAtlasVersion: options.targetAtlasVersion,
+          consumerContent,
+          targetContent,
+        })
+      );
+      continue;
+    }
+
+    items.push(
+      planRemovedRepositorySyncedPath({
+        relativePath: transition.relativePath,
+        baselineAtlasVersion: options.baselineAtlasVersion,
+        targetAtlasVersion: options.targetAtlasVersion,
+        repoRoot: repositoryRoot,
+        baselineChecksums: baselineRepositoryChecksums,
+        consumerContent,
       })
     );
   }

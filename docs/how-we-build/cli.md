@@ -97,6 +97,8 @@ package/
         ├── packages/consent/...
         ├── packages/config/...
         ├── .github/workflows/ci.yml
+        ├── Dockerfile
+        ├── .dockerignore
         └── selected root files
 ```
 
@@ -270,9 +272,10 @@ Generated-at-init files are written deliberately rather than copied from the Atl
 
 Packaged (not generated-at-init) consumer CI:
 
-| Path                       | Responsibility                                                                                  |
-| -------------------------- | ----------------------------------------------------------------------------------------------- |
-| `.github/workflows/ci.yml` | Source-owned GitHub-hosted quality baseline. Consumers may replace it. Not Atlas maintainer CI. |
+| Path                          | Responsibility                                                                                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/ci.yml`    | Source-owned GitHub-hosted quality baseline. Consumers may replace it. Not Atlas maintainer CI.                               |
+| `Dockerfile`, `.dockerignore` | Repository-level image build templates. Unchanged copies may receive Atlas upgrades; customized copies are never overwritten. |
 
 `--reference` is checkout-init only. The generated project does not include `apps/reference`.
 

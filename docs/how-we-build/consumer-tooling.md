@@ -29,6 +29,7 @@ Doctor, generate, context, and upgrade stay pinned to the CLI you already use fo
 | Lint / typecheck / test / build | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`                                     |
 | Consumer GitHub CI              | `.github/workflows/ci.yml` (GitHub-hosted Ubuntu)                                            |
 | Local performance               | `pnpm start`, `pnpm perf:lhci`, `pnpm perf:analyze` (no CI workflows until `enable perf-ci`) |
+| Container build files           | Root `Dockerfile` and `.dockerignore` (repository-level Atlas templates)                     |
 | OpenAPI client                  | `pnpm api:gen`                                                                               |
 
 ## Opt-in capabilities
@@ -58,7 +59,7 @@ that Storybook, Docker, coverage, or hooks are operational. Each capability list
 | `coverage`  | Critical-subsystem coverage floors                     | No                     | `pnpm test:risk-coverage`                                                               |
 | `hooks`     | Husky + lint-staged                                    | No                     | exercise the hook in a Git repository                                                   |
 | `cursor`    | Cursor rule + skill adapters                           | No                     | `enable cursor --dry-run --json`                                                        |
-| `docker`    | Compose scaffold, infra example, Dockerfile            | No                     | `docker build` then hit `/api/health`                                                   |
+| `docker`    | Compose scaffold and infra example                     | No                     | `docker compose` locally; image build files already exist from init                     |
 
 `security` fails on high/critical advisories unless a documented exception matches **advisory id,
 package name, version, and every finding path**. An exempt finding that is also reachable through a

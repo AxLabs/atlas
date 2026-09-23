@@ -546,6 +546,30 @@ describe("atlas init bootstrap generated project", () => {
         expect(existsSync(path.join(destination, "packages/ui/visual-tests"))).toBe(false);
         expect(existsSync(path.join(destination, "packages/ui/.husky"))).toBe(false);
         expect(existsSync(path.join(destination, "docker-compose.yml"))).toBe(false);
+        expect(existsSync(path.join(destination, "Dockerfile"))).toBe(true);
+        expect(existsSync(path.join(destination, ".dockerignore"))).toBe(true);
+        expect(existsSync(path.join(destination, "scripts/ensure-pnpm.js"))).toBe(true);
+        const generatedDockerfile = readFileSync(path.join(destination, "Dockerfile"), "utf8");
+        expect(generatedDockerfile).toContain("COPY packages/ui/package.json");
+        expect(generatedDockerfile).toContain("COPY packages/consent/package.json");
+        expect(generatedDockerfile).toContain("COPY packages/config/package.json");
+        expect(generatedDockerfile).toContain("COPY scripts/ensure-pnpm.js");
+        expect(generatedDockerfile).not.toContain("thedanielmark/atlas");
+        expect(generatedDockerfile).not.toContain("packages/cli");
+        expect(generatedDockerfile).not.toContain("apps/reference");
+        const generatedContract = JSON.parse(
+          readFileSync(path.join(destination, ATLAS_CONTRACT_FILENAME), "utf8")
+        ) as {
+          platform?: {
+            baseline?: { repositorySyncedPathChecksums?: Record<string, string> };
+          };
+        };
+        expect(
+          generatedContract.platform?.baseline?.repositorySyncedPathChecksums?.Dockerfile
+        ).toMatch(/^sha256:/);
+        expect(
+          generatedContract.platform?.baseline?.repositorySyncedPathChecksums?.[".dockerignore"]
+        ).toMatch(/^sha256:/);
         expect(existsSync(path.join(destination, "coverage-policy.json"))).toBe(false);
         expect(existsSync(path.join(destination, ".husky"))).toBe(false);
         expect(existsSync(path.join(destination, ".github/dependabot.yml"))).toBe(false);

@@ -95,6 +95,9 @@ const platformBaselineSchema = z
     contractSchemaVersion: z.number().int().positive(),
     templateManifestSchemaVersion: z.number().int().positive(),
     syncedPathChecksums: z.record(z.string().min(1), baselineChecksumValueSchema),
+    repositorySyncedPathChecksums: z
+      .record(z.string().min(1), baselineChecksumValueSchema)
+      .optional(),
   })
   .strict();
 

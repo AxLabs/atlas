@@ -37,47 +37,48 @@ Atlas optimizes for **predictability and preservation**, not zero human involvem
 Paths use the starter application (`apps/web`) unless noted. “Consumer customization” describes
 typical fork behavior — not requirements.
 
-| Surface                                            | Ownership category               | Current update channel                                    | Downstream customization expectation               | Future upgrade mechanism                               |
-| -------------------------------------------------- | -------------------------------- | --------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------ |
-| `@atlas/ui`                                        | Versioned package                | Workspace version bump + changelog                        | Theme/composition in app code; not primitive forks | Package upgrade in monorepo/snapshot                   |
-| `@atlas/consent`                                   | Versioned package                | Workspace version bump                                    | Enable/disable via app config                      | Package upgrade                                        |
-| `@atlas/config`                                    | Versioned package                | Workspace version bump                                    | Rare; ESLint/TS extends                            | Package upgrade                                        |
-| `@atlas/project`                                   | Versioned package                | Workspace version bump                                    | `atlas.config.json` author fields                  | Package upgrade + contract migration (`atlas upgrade`) |
-| `@blitzcraftlabs/atlas`                            | Versioned package                | Workspace link / future snapshot                          | None in consumer apps                              | Install matching CLI snapshot                          |
-| CLI generators                                     | Structural contract              | `atlas generate …`                                        | Generated files become consumer-owned              | Regenerate/add; no silent overwrite (`atlas upgrade`)  |
-| Doctor                                             | Versioned package + conventions  | `atlas doctor`                                            | None                                               | New diagnostics via CLI upgrade                        |
-| `atlas.config.json`                                | Structural contract              | Author + `atlas init`                                     | Feature roots, capabilities                        | Contract migration (`atlas upgrade`)                   |
-| `platform.baseline`                                | Structural contract              | `atlas init` / future upgrade (`atlas upgrade`)           | Updated after successful upgrade                   | Checksum refresh (`atlas upgrade`)                     |
-| OpenAPI `openapi.json`                             | Consumer-owned (typical)         | Author maintains spec                                     | Replace with product API                           | Manual merge; triggers regeneration                    |
-| `lib/api/contracts/schema.ts`                      | Generated artifact               | `pnpm api:gen`, `pnpm api:check`                          | Never hand-edit                                    | Regenerate per app                                     |
-| `lib/api/contracts/index.ts`                       | Atlas-managed template           | Manifest `syncedPaths`                                    | Rare customization                                 | Baseline checksum replace                              |
-| Manifest `syncedPaths` (`lib/api`, auth, RQ, etc.) | Atlas-managed template           | Canonical starter + `atlas sync infrastructure`           | Possible but discouraged                           | Baseline checksum replace                              |
-| Manifest `independentPaths`                        | Consumer-owned wiring            | Per-app edit                                              | Expected (authz, breadcrumbs, analytics glue)      | Manual review only                                     |
-| Manifest `generatedPaths`                          | Generated artifact               | `pnpm api:gen`                                            | Never hand-edit                                    | Regenerate                                             |
-| Manifest `referenceOnlyPaths`                      | Reference-only                   | `apps/reference` only                                     | N/A in starter-only forks                          | Optional delete                                        |
-| Manifest `starterOnlyPaths`                        | Starter-only                     | `apps/web`                                                | Delete when building product                       | Optional delete                                        |
-| Auth session core (`lib/auth/session.ts`)          | Atlas-managed template           | Synced path                                               | **High-risk customization**                        | Merge-required if customized                           |
-| Google OAuth routes/providers                      | Starter reference                | Synced + examples                                         | Replace with consumer IdP                          | Manual replacement                                     |
-| Authorization core (`lib/authz/**`)                | Atlas-managed template           | Synced path                                               | Policy composition in `lib/application/authz.ts`   | Checksum replace + manual wiring review                |
-| React Query infrastructure                         | Atlas-managed template           | Synced path                                               | Extend via feature hooks                           | Checksum replace                                       |
-| Feature flags                                      | Atlas-managed template           | Synced path                                               | Define keys in `flags.ts`                          | Checksum replace + key review                          |
-| Analytics adapters                                 | Reference integration + template | Synced adapters; app `lib/analytics/index.ts` independent | Vendor choice                                      | Package/template paths                                 |
-| Telemetry / Sentry                                 | Atlas-managed template           | Synced + root Sentry configs                              | DSN via config only                                | Checksum replace                                       |
-| Security helpers (`lib/security/**`)               | Atlas-managed template           | Synced path                                               | Rare; high scrutiny                                | Security-critical checksum replace                     |
-| Config facade (`src/config/**`)                    | Mixed                            | Synced client/index; schema/server often independent      | Env fields per product                             | Partial manual                                         |
-| Providers                                          | App-owned composition            | Manifest synced stack; wiring varies                      | Expected                                           | Manual composition review                              |
-| `src/features/*` (non-examples)                    | Consumer-owned source            | Product development                                       | Full ownership                                     | Never auto-touch                                       |
-| `src/app/*` (non-examples)                         | Consumer-owned source            | Route composition                                         | Full ownership                                     | Never auto-touch                                       |
-| `src/components/*` (product)                       | Consumer-owned source            | App compositions                                          | Full ownership                                     | Never auto-touch                                       |
-| CI workflows (`.github/**`)                        | Consumer-owned after init        | Default GitHub-hosted workflow shipped at bootstrap       | Replace or extend freely                           | Not Atlas-upgrade-synced                               |
-| ESLint / architecture policy                       | Structural contract              | Per-app `eslint.config.mjs`                               | Policy tuning                                      | Doctor + manual                                        |
-| Storybook (`@atlas/ui`)                            | Opt-in capability                | `atlas enable storybook`                                  | Visual overrides in app                            | Enable; not silent upgrade                             |
-| Consumer optional tooling                          | Opt-in capability                | `atlas enable <id>`                                       | Replace or extend freely                           | Conflicts skip customized files                        |
-| Testing infrastructure                             | Structural contract              | `@atlas/config`, app test utils                           | Consumer tests                                     | Manual merge                                           |
-| Docs / conventions                                 | Documentation/procedure          | Follow when building                                      | N/A                                                | Read upgrade guide                                     |
-| `apps/reference/**`                                | Reference-only                   | Optional workspace                                        | Delete or keep independently                       | Out of starter upgrade scope                           |
-| `/examples` starter routes                         | Starter reference                | Optional                                                  | Delete with examples                               | Out of scope                                           |
-| Deployment / Vercel                                | Consumer-owned                   | Platform docs                                             | Full ownership                                     | Manual                                                 |
+| Surface                                            | Ownership category               | Current update channel                                    | Downstream customization expectation               | Future upgrade mechanism                                                   |
+| -------------------------------------------------- | -------------------------------- | --------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
+| `@atlas/ui`                                        | Versioned package                | Workspace version bump + changelog                        | Theme/composition in app code; not primitive forks | Package upgrade in monorepo/snapshot                                       |
+| `@atlas/consent`                                   | Versioned package                | Workspace version bump                                    | Enable/disable via app config                      | Package upgrade                                                            |
+| `@atlas/config`                                    | Versioned package                | Workspace version bump                                    | Rare; ESLint/TS extends                            | Package upgrade                                                            |
+| `@atlas/project`                                   | Versioned package                | Workspace version bump                                    | `atlas.config.json` author fields                  | Package upgrade + contract migration (`atlas upgrade`)                     |
+| `@blitzcraftlabs/atlas`                            | Versioned package                | Workspace link / future snapshot                          | None in consumer apps                              | Install matching CLI snapshot                                              |
+| CLI generators                                     | Structural contract              | `atlas generate …`                                        | Generated files become consumer-owned              | Regenerate/add; no silent overwrite (`atlas upgrade`)                      |
+| Doctor                                             | Versioned package + conventions  | `atlas doctor`                                            | None                                               | New diagnostics via CLI upgrade                                            |
+| `atlas.config.json`                                | Structural contract              | Author + `atlas init`                                     | Feature roots, capabilities                        | Contract migration (`atlas upgrade`)                                       |
+| `platform.baseline`                                | Structural contract              | `atlas init` / future upgrade (`atlas upgrade`)           | Updated after successful upgrade                   | Checksum refresh (`atlas upgrade`)                                         |
+| OpenAPI `openapi.json`                             | Consumer-owned (typical)         | Author maintains spec                                     | Replace with product API                           | Manual merge; triggers regeneration                                        |
+| `lib/api/contracts/schema.ts`                      | Generated artifact               | `pnpm api:gen`, `pnpm api:check`                          | Never hand-edit                                    | Regenerate per app                                                         |
+| `lib/api/contracts/index.ts`                       | Atlas-managed template           | Manifest `syncedPaths`                                    | Rare customization                                 | Baseline checksum replace                                                  |
+| Manifest `syncedPaths` (`lib/api`, auth, RQ, etc.) | Atlas-managed template           | Canonical starter + `atlas sync infrastructure`           | Possible but discouraged                           | Baseline checksum replace                                                  |
+| Manifest `independentPaths`                        | Consumer-owned wiring            | Per-app edit                                              | Expected (authz, breadcrumbs, analytics glue)      | Manual review only                                                         |
+| Manifest `generatedPaths`                          | Generated artifact               | `pnpm api:gen`                                            | Never hand-edit                                    | Regenerate                                                                 |
+| Manifest `referenceOnlyPaths`                      | Reference-only                   | `apps/reference` only                                     | N/A in starter-only forks                          | Optional delete                                                            |
+| Manifest `starterOnlyPaths`                        | Starter-only                     | `apps/web`                                                | Delete when building product                       | Optional delete                                                            |
+| Auth session core (`lib/auth/session.ts`)          | Atlas-managed template           | Synced path                                               | **High-risk customization**                        | Merge-required if customized                                               |
+| Google OAuth routes/providers                      | Starter reference                | Synced + examples                                         | Replace with consumer IdP                          | Manual replacement                                                         |
+| Authorization core (`lib/authz/**`)                | Atlas-managed template           | Synced path                                               | Policy composition in `lib/application/authz.ts`   | Checksum replace + manual wiring review                                    |
+| React Query infrastructure                         | Atlas-managed template           | Synced path                                               | Extend via feature hooks                           | Checksum replace                                                           |
+| Feature flags                                      | Atlas-managed template           | Synced path                                               | Define keys in `flags.ts`                          | Checksum replace + key review                                              |
+| Analytics adapters                                 | Reference integration + template | Synced adapters; app `lib/analytics/index.ts` independent | Vendor choice                                      | Package/template paths                                                     |
+| Telemetry / Sentry                                 | Atlas-managed template           | Synced + root Sentry configs                              | DSN via config only                                | Checksum replace                                                           |
+| Security helpers (`lib/security/**`)               | Atlas-managed template           | Synced path                                               | Rare; high scrutiny                                | Security-critical checksum replace                                         |
+| Config facade (`src/config/**`)                    | Mixed                            | Synced client/index; schema/server often independent      | Env fields per product                             | Partial manual                                                             |
+| Providers                                          | App-owned composition            | Manifest synced stack; wiring varies                      | Expected                                           | Manual composition review                                                  |
+| `src/features/*` (non-examples)                    | Consumer-owned source            | Product development                                       | Full ownership                                     | Never auto-touch                                                           |
+| `src/app/*` (non-examples)                         | Consumer-owned source            | Route composition                                         | Full ownership                                     | Never auto-touch                                                           |
+| `src/components/*` (product)                       | Consumer-owned source            | App compositions                                          | Full ownership                                     | Never auto-touch                                                           |
+| Root `Dockerfile` / `.dockerignore`                | Repository-level Atlas template  | `atlas init` + manifest `repositorySyncedPaths`           | Optional customization (multi-target images, etc.) | Unchanged copies may be replaced; customized copies get manual review only |
+| CI workflows (`.github/**`)                        | Consumer-owned after init        | Default GitHub-hosted workflow shipped at bootstrap       | Replace or extend freely                           | Not Atlas-upgrade-synced                                                   |
+| ESLint / architecture policy                       | Structural contract              | Per-app `eslint.config.mjs`                               | Policy tuning                                      | Doctor + manual                                                            |
+| Storybook (`@atlas/ui`)                            | Opt-in capability                | `atlas enable storybook`                                  | Visual overrides in app                            | Enable; not silent upgrade                                                 |
+| Consumer optional tooling                          | Opt-in capability                | `atlas enable <id>`                                       | Replace or extend freely                           | Conflicts skip customized files                                            |
+| Testing infrastructure                             | Structural contract              | `@atlas/config`, app test utils                           | Consumer tests                                     | Manual merge                                                               |
+| Docs / conventions                                 | Documentation/procedure          | Follow when building                                      | N/A                                                | Read upgrade guide                                                         |
+| `apps/reference/**`                                | Reference-only                   | Optional workspace                                        | Delete or keep independently                       | Out of starter upgrade scope                                               |
+| `/examples` starter routes                         | Starter reference                | Optional                                                  | Delete with examples                               | Out of scope                                                               |
+| Deployment / Vercel                                | Consumer-owned                   | Platform docs                                             | Full ownership                                     | Manual                                                                     |
 
 ### Classification legend
 
@@ -98,15 +99,15 @@ typical fork behavior — not requirements.
 
 ### At bootstrap (`atlas init`)
 
-| Question                       | Answer (v0.1)                                                                                           |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| What version is recorded?      | Root `@atlas/monorepo` SemVer → `platform.baseline.atlasVersion`                                        |
-| Where stored?                  | `atlas.config.json` → `platform.baseline`                                                               |
-| CLI vs template vs contract?   | **Atlas release** is primary; contract `schemaVersion` and manifest `schemaVersion` recorded separately |
-| Enough metadata?               | Yes — version triple + per-synced-path checksums                                                        |
-| Strict when manifest present?  | Yes — missing synced paths or invalid manifest/version setup fail init rather than omitting baseline    |
-| Atlas-managed after bootstrap? | Manifest `syncedPaths`, generated paths, workspace packages                                             |
-| Immediately consumer-owned?    | Product features, routes, shell, env, deployment, independent paths                                     |
+| Question                       | Answer (v0.1)                                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| What version is recorded?      | Root `@atlas/monorepo` SemVer → `platform.baseline.atlasVersion`                                                     |
+| Where stored?                  | `atlas.config.json` → `platform.baseline`                                                                            |
+| CLI vs template vs contract?   | **Atlas release** is primary; contract `schemaVersion` and manifest `schemaVersion` recorded separately              |
+| Enough metadata?               | Yes — version triple + per-synced-path checksums                                                                     |
+| Strict when manifest present?  | Yes — missing synced paths or invalid manifest/version setup fail init rather than omitting baseline                 |
+| Atlas-managed after bootstrap? | Manifest `syncedPaths`, `repositorySyncedPaths` (`Dockerfile`, `.dockerignore`), generated paths, workspace packages |
+| Immediately consumer-owned?    | Product features, routes, shell, env, customized Docker, independent paths                                           |
 
 ### During normal development
 
@@ -120,22 +121,25 @@ typical fork behavior — not requirements.
 
 ### During upgrade (by channel)
 
-| Channel                                | Operation                                                 |
-| -------------------------------------- | --------------------------------------------------------- |
-| Versioned package                      | Bump workspace/package versions; read changelog           |
-| Generated artifact                     | Update spec if needed → `pnpm api:gen` → `pnpm api:check` |
-| Unchanged synced file (checksum match) | Replace from target Atlas snapshot                        |
-| Consumer-modified synced file          | **Conflict** — manual merge                               |
-| Independent / consumer-owned           | Never overwrite; optional review notes                    |
-| Structural convention                  | Doctor + migration docs                                   |
-| Breaking architecture                  | Migration guide + `atlas upgrade` codemod                 |
-| Documentation only                     | Read `docs/migrations/` + changelog                       |
+| Channel                                   | Operation                                                                    |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| Versioned package                         | Bump workspace/package versions; read changelog                              |
+| Generated artifact                        | Update spec if needed → `pnpm api:gen` → `pnpm api:check`                    |
+| Unchanged synced file (checksum match)    | Replace from target Atlas snapshot                                           |
+| Consumer-modified synced file             | **Conflict** — manual merge                                                  |
+| Unchanged repository-level template       | Replace from target Atlas snapshot when checksum evidence matches            |
+| Consumer-customized repository-level file | **Never overwrite** — manual review; remainder of a safe upgrade may proceed |
+| Independent / consumer-owned              | Never overwrite; optional review notes                                       |
+| Structural convention                     | Doctor + migration docs                                                      |
+| Breaking architecture                     | Migration guide + `atlas upgrade` codemod                                    |
+| Documentation only                        | Read `docs/migrations/` + changelog                                          |
 
 Optional consumer tooling (Storybook, visual tests, performance CI, security workflows, Dependabot,
-coverage floors, Git hooks, Cursor adapters, Docker) is **not** applied by `atlas upgrade`,
-including a same-version upgrade. Published Atlas 1.1.0 does not contain `atlas enable`. After a CLI
-release that includes `enable` is published, adopt those capabilities with that CLI — which may
-differ from the recorded platform baseline — using `atlas enable <id> --dry-run` then
+coverage floors, Git hooks, Cursor adapters, Docker Compose) is **not** applied by `atlas upgrade`,
+including a same-version upgrade. Root `Dockerfile` and `.dockerignore` are repository-level Atlas
+template surfaces, not opt-in enablement. Published Atlas 1.1.0 does not contain `atlas enable`.
+After a CLI release that includes `enable` is published, adopt those capabilities with that CLI —
+which may differ from the recorded platform baseline — using `atlas enable <id> --dry-run` then
 `atlas enable <id>`. See [consumer-tooling.md](consumer-tooling.md).
 
 ---

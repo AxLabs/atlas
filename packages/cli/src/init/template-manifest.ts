@@ -39,6 +39,9 @@ export function serializeInfrastructureManifest(manifest: AppInfrastructureManif
       independentPaths: manifest.independentPaths,
       referenceOnlyPaths: manifest.referenceOnlyPaths,
       starterOnlyPaths: manifest.starterOnlyPaths,
+      ...(manifest.repositorySyncedPaths.length > 0
+        ? { repositorySyncedPaths: manifest.repositorySyncedPaths }
+        : {}),
       ...(manifest.structuralConformance
         ? { structuralConformance: manifest.structuralConformance }
         : {}),
