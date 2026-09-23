@@ -6,7 +6,10 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { PUBLIC_CLI_PACKAGE_NAME } from "../atlas-workspaces.mjs";
-import { withCliPackageBuildLock } from "../lib/cli-package-build-lock.mjs";
+
+// Mutates shared packages/cli build outputs via Turbo. scripts/run-script-tests.mjs
+// runs this file after the rest of scripts/__tests__ so it does not race
+// validate-dependencies.test.mjs (also invokes turbo build for @blitzcraftlabs/atlas).
 import { verifyNpmPublishDryRun } from "../lib/npm-publish-dry-run.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -42,19 +45,17 @@ describe("CLI Turbo build cache restores npm-packaged legal files", () => {
   });
 
   it("restores legal files on a warm Turbo cache hit after outputs are removed", () => {
-    withCliPackageBuildLock(() => {
-      runTurboBuild({ force: true });
-      assertCliPublishArtifactsPresent();
+    runTurboBuild({ force: true });
+    assertCliPublishArtifactsPresent();
 
-      // Simulate a clean checkout that still hits Turbo's build cache: dist/assets restore
-      // from cache, but gitignored legal files do not exist until outputs declare them.
-      rmSync(path.join(cliRoot, "LICENSE"), { force: true });
-      rmSync(path.join(cliRoot, "THIRD_PARTY_NOTICES.md"), { force: true });
-      assert.equal(existsSync(path.join(cliRoot, "dist/cli.js")), true);
+    // Simulate a clean checkout that still hits Turbo's build cache: dist/assets restore
+    // from cache, but gitignored legal files do not exist until outputs declare them.
+    rmSync(path.join(cliRoot, "LICENSE"), { force: true });
+    rmSync(path.join(cliRoot, "THIRD_PARTY_NOTICES.md"), { force: true });
+    assert.equal(existsSync(path.join(cliRoot, "dist/cli.js")), true);
 
-      runTurboBuild();
-      assertCliPublishArtifactsPresent();
-      verifyNpmPublishDryRun({ packageRoot: cliRoot });
-    });
+    runTurboBuild();
+    assertCliPublishArtifactsPresent();
+    verifyNpmPublishDryRun({ packageRoot: cliRoot });
   });
 });
