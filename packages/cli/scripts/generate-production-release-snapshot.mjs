@@ -1,15 +1,16 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import * as esbuild from "esbuild";
 
+import { ensureAtlasProjectBuilt } from "./ensure-atlas-project-built.mjs";
+
+export { ensureAtlasProjectBuilt };
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(scriptDir, "..");
-const monorepoRoot = path.resolve(packageRoot, "../..");
-const projectPackageName = "@atlas/project";
-const projectDir = path.join(monorepoRoot, "packages", "project");
 const cacheDir = path.join(scriptDir, ".cache");
 const outfile = path.join(cacheDir, "generate-production-release-snapshot.cjs");
 
@@ -57,50 +58,6 @@ export function shouldGenerateProductionSnapshot(repoRoot) {
     existsSync(path.join(repoRoot, "packages", "cli", "package.json")) &&
     existsSync(path.join(repoRoot, "atlas.config.json"))
   );
-}
-
-/**
- * Version PR / `pnpm changeset:version` only installs dependencies. The snapshot
- * generator bundles CLI TypeScript that imports `@atlas/project`, whose package
- * exports point at `dist/`. Build that private workspace before esbuild.
- */
-export function ensureAtlasProjectBuilt() {
-  const projectManifest = path.join(projectDir, "package.json");
-  if (!existsSync(projectManifest)) {
-    throw new Error(
-      `Cannot generate a production snapshot without ${projectPackageName} at ${projectDir}.`
-    );
-  }
-
-  const distIndex = path.join(projectDir, "dist", "index.js");
-  if (!existsSync(distIndex)) {
-    // Incremental tsc can succeed without emitting when dist/ was removed but
-    // tsbuildinfo remains. Drop the stale cache so a clean checkout actually builds.
-    rmSync(path.join(projectDir, "tsconfig.build.tsbuildinfo"), { force: true });
-  }
-
-  const result = spawnSync("pnpm", ["--filter", projectPackageName, "build"], {
-    cwd: monorepoRoot,
-    encoding: "utf8",
-    env: process.env,
-    stdio: "inherit",
-  });
-
-  if (result.error) {
-    throw new Error(
-      `Failed to start ${projectPackageName} build before production snapshot generation: ${result.error.message}`
-    );
-  }
-
-  if (result.status !== 0) {
-    throw new Error(
-      `Failed to build ${projectPackageName} before production snapshot generation (exit ${result.status ?? "null"}). The snapshot generator bundles TypeScript that imports ${projectPackageName}, whose package exports point at dist/.`
-    );
-  }
-
-  if (!existsSync(distIndex)) {
-    throw new Error(`${projectPackageName} build completed without writing ${distIndex}.`);
-  }
 }
 
 export async function generateProductionReleaseSnapshotFromTree(options) {

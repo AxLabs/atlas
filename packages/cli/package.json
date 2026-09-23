@@ -51,7 +51,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "rm -rf dist assets && tsc -p tsconfig.build.json && node scripts/bundle-cli.mjs",
+    "build": "node scripts/ensure-atlas-project-built.mjs && rm -rf dist assets && tsc -p tsconfig.build.json && node scripts/bundle-cli.mjs",
     "build:bootstrap": "node scripts/build-bootstrap-assets.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
