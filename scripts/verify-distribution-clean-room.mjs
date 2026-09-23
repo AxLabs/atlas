@@ -3,7 +3,7 @@ import { existsSync, realpathSync, statSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { PUBLIC_CLI_PACKAGE_NAME } from "./atlas-workspaces.mjs";
+import { PUBLIC_CLI_PACKAGE_NAME, PUBLIC_CLI_WORKSPACE_BUILD_ARGS } from "./atlas-workspaces.mjs";
 import {
   CLEAN_ROOM_STAGE_PREFIX,
   CLEAN_ROOM_STAGES,
@@ -282,7 +282,7 @@ async function main() {
       FORCE_COLOR: "0",
     };
 
-    runStage(CLEAN_ROOM_STAGES.packCli, pnpm, ["--filter", PUBLIC_CLI_PACKAGE_NAME, "build"], {
+    runStage(CLEAN_ROOM_STAGES.packCli, pnpm, PUBLIC_CLI_WORKSPACE_BUILD_ARGS, {
       cwd: repoRoot,
       env: packEnv,
       timeout: CLEAN_ROOM_TIMEOUTS_MS.packCli,

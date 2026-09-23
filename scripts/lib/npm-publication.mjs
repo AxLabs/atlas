@@ -24,6 +24,7 @@ import {
   ATLAS_WORKSPACE_PACKAGES,
   PUBLIC_CLI_PACKAGE_NAME,
   PUBLIC_CLI_RELATIVE_PATH,
+  PUBLIC_CLI_WORKSPACE_BUILD_ARGS,
   readJson,
   readRootVersion,
 } from "../atlas-workspaces.mjs";
@@ -591,7 +592,7 @@ export function packExactPublicCliTarball(options) {
   mkdirSync(destinationDir, { recursive: true });
 
   if (!options.skipBuild) {
-    const build = runProcess(pnpmCommand, ["turbo", "build", "--filter", PUBLIC_CLI_PACKAGE_NAME], {
+    const build = runProcess(pnpmCommand, PUBLIC_CLI_WORKSPACE_BUILD_ARGS, {
       cwd: repoRoot,
       env,
       timeout: 5 * 60 * 1000,

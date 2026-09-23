@@ -117,7 +117,7 @@ runs:
     - name: Run Atlas Doctor
       if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
       shell: bash
-      run: pnpm --filter @blitzcraftlabs/atlas build && pnpm atlas doctor --json
+      run: pnpm turbo build --filter=@blitzcraftlabs/atlas && pnpm atlas doctor --json
 
     - name: Run TypeScript check
       if: steps.detect.outputs.app == 'true' || github.event_name == 'push'
