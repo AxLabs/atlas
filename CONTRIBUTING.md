@@ -115,6 +115,14 @@ Also run when your change touches the affected areas:
 CI runs internal documentation link checks on every pull request. External URL checks are optional
 locally: `pnpm docs:check --external`.
 
+Required merge checks on `main` are Atlas-owned GitHub Actions jobs: **Governance**, **CI**,
+**Secrets Scan**, **Security Audit**, and **UI Quality**. GitHub CodeQL default setup also runs on
+this repository and may show a **CodeQL** check on pull requests; that check is **not** a required
+merge gate. GitHub Code Quality is a separate GitHub product and is **not currently configured**.
+Neither GitHub-native setting is copied into repositories created with `atlas init`. See
+[Continuous integration](docs/how-we-build/ci.md) and
+[Security engineering](docs/how-we-build/security.md).
+
 ## Documentation updates
 
 - Public capability claims must map to evidence in the
@@ -171,8 +179,9 @@ product's tracker.
 - Use
   [GitHub Private Vulnerability Reporting](https://github.com/blitzcraftlabs/atlas/security/advisories/new)
   on this repository. See [SECURITY.md](SECURITY.md).
-- Do not commit secrets, `.env.local`, or credentials. Gitleaks runs in CI.
-- Consumer applications own their deployment hardening, WAF rules, and data classification.
+- Do not commit secrets, `.env.local`, or credentials. Gitleaks runs in CI (**Secrets Scan**).
+- Consumer applications own their deployment hardening, WAF rules, data classification, and any
+  GitHub-native CodeQL / Code Quality settings on their own repositories.
 
 ## Accessibility expectations
 
