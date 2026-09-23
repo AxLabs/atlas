@@ -71,8 +71,23 @@ security fix → Atlas main → versioned Atlas snapshot / migration notes → c
 Auth session code and `lib/security/**` are high-scrutiny synced surfaces. Customized consumer
 copies are merge-required during upgrades.
 
+## Automated scanning on this repository
+
+Keep Atlas CI distinct from GitHub-native products:
+
+- **Atlas-owned merge gates** — **Secrets Scan** (Gitleaks) and **Security Audit**
+  (`pnpm security:check`) are required status checks on `main`, with **Governance**, **CI**, and
+  **UI Quality**.
+- **GitHub CodeQL code scanning** — default setup is enabled on `blitzcraftlabs/atlas`. It is not a
+  required merge gate and is not a substitute for private vulnerability reports.
+- **GitHub Code Quality** — a separate GitHub maintainability product; **not currently configured**.
+
+Those GitHub-native settings are not packaged into generated Atlas consumers. See
+[security engineering](docs/how-we-build/security.md).
+
 ## Related documents
 
 - [Atlas threat model](docs/security/threat-model.md)
 - [Security engineering](docs/how-we-build/security.md)
 - [Continuous integration](docs/how-we-build/ci.md)
+- [Repository integrations](docs/how-we-build/repository-integrations.md)

@@ -100,7 +100,9 @@ fully installed (`status: installed`), not merely present.
 
 Not offered to generated consumers: npm publication, release rehearsal, BlitzCraft runners,
 `pnpm governance:check`, `pnpm docs:check`, `pnpm template:check`, Gitleaks fixtures, and the
-`apps/reference` harness.
+`apps/reference` harness. GitHub-native repository settings on `blitzcraftlabs/atlas` (CodeQL
+default setup, GitHub Code Quality, secret scanning, Dependabot, branch protection) are also **not**
+copied by `atlas init` or `atlas enable`.
 
 See [agents.md](agents.md), [testing.md](testing.md),
 [reference-patterns.md](reference-patterns.md), and [upgrades.md](upgrades.md).

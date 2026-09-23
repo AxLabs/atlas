@@ -5,8 +5,9 @@ Maintainer-facing record of how the canonical public repository
 and third-party apps. Public contributors do not need this page to open issues or pull requests;
 start from [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
-Inspected **2026-09-12** against repository ID `1366318006`. Do not assume pre-cutover settings from
-a previous GitHub repository identity still apply.
+Inspected **2026-09-23** against repository ID `1366318006`. Do not assume pre-cutover settings from
+a previous GitHub repository identity still apply. GitHub-native repository settings on this public
+repo are **not** shipped to projects created with `atlas init`.
 
 ## Canonical remotes
 
@@ -24,22 +25,23 @@ Automation in this repository uses `github.repository` / `GITHUB_REPOSITORY` and
 
 ## Integration matrix
 
-| Integration / capability              | State                        | Scope                    | Verification                                                                                        |
-| ------------------------------------- | ---------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------- |
-| GitHub Actions                        | active                       | public repo              | Workflows green on `main` at `cbd5828` (`v0.2.0` published)                                         |
-| Required checks                       | enabled                      | `main` branch protection | Governance, CI, Secrets Scan, Security Audit, UI Quality                                            |
-| Private vulnerability reporting       | enabled                      | public repo              | `GET /repos/.../private-vulnerability-reporting` → `{"enabled":true}`                               |
-| Secret scanning                       | enabled                      | public repo              | `security_and_analysis.secret_scanning`                                                             |
-| Secret scanning push protection       | enabled                      | public repo              | `security_and_analysis.secret_scanning_push_protection`                                             |
-| Secret scanning validity checks       | intentionally disabled       | public repo              | Optional provider-liveness check; Gitleaks + scanning + push protection already cover known secrets |
-| Secret scanning non-provider patterns | intentionally disabled       | public repo              | Likely noise on a template with example credentials; Gitleaks remains the CI gate                   |
-| Dependabot vulnerability alerts       | enabled                      | public repo              | `GET /repos/.../vulnerability-alerts` → HTTP 204                                                    |
-| Dependabot security updates           | enabled                      | public repo              | Native GitHub security-update workflow; no `dependabot.yml` version-update file                     |
-| GitHub code scanning                  | not applicable               | public repo              | No CodeQL workflow; Atlas uses Gitleaks + `pnpm security:check`                                     |
-| Codecov                               | reporting                    | public repo              | CI uploads the repository aggregate; `fail_ci_if_error: false`; risk floors stay local              |
-| Vercel GitHub App                     | intentionally not connected  | public Atlas repo        | No Vercel project linked to `blitzcraftlabs/atlas`; showcase lives in `atlas-showcase`              |
-| ChatGPT / Codex GitHub App            | manual verification required | selected-repo org app    | Org installation exists; user token cannot list selected repositories                               |
-| Cursor GitHub App                     | organization-wide            | all org repos            | `repository_selection: all`; no repo-specific action                                                |
+| Integration / capability              | State                        | Scope                    | Verification                                                                                                              |
+| ------------------------------------- | ---------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| GitHub Actions                        | active                       | public repo              | Workflows green on `main` at `cbd5828` (`v0.2.0` published)                                                               |
+| Required checks                       | enabled                      | `main` branch protection | Governance, CI, Secrets Scan, Security Audit, UI Quality                                                                  |
+| Private vulnerability reporting       | enabled                      | public repo              | `GET /repos/.../private-vulnerability-reporting` → `{"enabled":true}`                                                     |
+| Secret scanning                       | enabled                      | public repo              | `security_and_analysis.secret_scanning`                                                                                   |
+| Secret scanning push protection       | enabled                      | public repo              | `security_and_analysis.secret_scanning_push_protection`                                                                   |
+| Secret scanning validity checks       | intentionally disabled       | public repo              | Optional provider-liveness check; Gitleaks + scanning + push protection already cover known secrets                       |
+| Secret scanning non-provider patterns | intentionally disabled       | public repo              | Likely noise on a template with example credentials; Gitleaks remains the CI gate                                         |
+| Dependabot vulnerability alerts       | enabled                      | public repo              | `GET /repos/.../vulnerability-alerts` → HTTP 204                                                                          |
+| Dependabot security updates           | enabled                      | public repo              | Native GitHub security-update workflow; no `dependabot.yml` version-update file                                           |
+| GitHub CodeQL code scanning           | enabled                      | public repo              | Default setup `configured` (2026-09-22); dynamic workflow `dynamic/github-code-scanning/codeql`; **not** a required check |
+| GitHub Code Quality                   | not configured               | public repo              | `GET /code-quality/setup` → `not-configured`; distinct from CodeQL security scanning and Atlas UI Quality                 |
+| Codecov                               | reporting                    | public repo              | CI uploads the repository aggregate; `fail_ci_if_error: false`; risk floors stay local                                    |
+| Vercel GitHub App                     | intentionally not connected  | public Atlas repo        | No Vercel project linked to `blitzcraftlabs/atlas`; showcase lives in `atlas-showcase`                                    |
+| ChatGPT / Codex GitHub App            | manual verification required | selected-repo org app    | Org installation exists; user token cannot list selected repositories                                                     |
+| Cursor GitHub App                     | organization-wide            | all org repos            | `repository_selection: all`; no repo-specific action                                                                      |
 
 ## Codecov
 
@@ -76,6 +78,20 @@ which this audit did not have.
 ChatGPT Codex connector → confirm `blitzcraftlabs/atlas` (ID `1366318006`) is selected. Do not
 broaden the app to every organization repository unless that is already intended.
 
+## Scanning layers
+
+Three different products can appear in GitHub's UI. Only the first set is an Atlas merge contract.
+
+| Layer                       | Where it lives                                                               | Merge gate?                                        | Ships to `atlas init` consumers?                                   |
+| --------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------ |
+| Atlas-owned CI              | `.github/workflows/ci.yml`, `security-audit.yml`, `ui-quality.yml`           | Yes — required checks listed below                 | Portable `ci.yml` only; not these jobs' names or branch protection |
+| GitHub CodeQL code scanning | GitHub default setup; dynamic workflow `dynamic/github-code-scanning/codeql` | No — PRs may show a **CodeQL** check; not required | No                                                                 |
+| GitHub Code Quality         | Separate GitHub product (`/code-quality/setup`)                              | No — not configured                                | No                                                                 |
+
+CodeQL security scanning and GitHub Code Quality both can use CodeQL queries, but they are different
+GitHub products. Atlas **UI Quality** is a third, unrelated Storybook/a11y/visual workflow. Details:
+[security engineering](security.md).
+
 ## GitHub-native security settings
 
 | Setting                         | Disposition            | Rationale                                                                                                             |
@@ -87,17 +103,19 @@ broaden the app to every organization repository unless that is already intended
 | Push protection                 | enabled                | Blocks known-provider secrets on push                                                                                 |
 | Validity checks                 | intentionally disabled | Optional after a secret is found; enable in GitHub UI later if maintainers want liveness checks                       |
 | Non-provider patterns           | intentionally disabled | High false-positive risk on example env/template files                                                                |
-| Code scanning / CodeQL          | not applicable         | Not claimed as Atlas evidence; do not enable casually                                                                 |
+| Code scanning / CodeQL          | enabled                | Default setup on this public repo. Complements Atlas gates; **not** a required check and not consumer template CI     |
+| GitHub Code Quality             | not configured         | Separate maintainability product. Do not confuse with CodeQL security scanning or Atlas **UI Quality**                |
 | Branch protection on `main`     | enabled                | Classic protection (no rulesets). Required checks must stay: Governance, CI, Secrets Scan, Security Audit, UI Quality |
 | Required reviews                | not applicable         | Unset; single maintainer. Do not add a review requirement that blocks the only admin                                  |
 | Enforce admins                  | intentionally disabled | Current setting; do not weaken required checks. Enabling later is a maintainer choice                                 |
 | Required signatures             | intentionally disabled | Not part of the Atlas contributor contract                                                                            |
 
-Do **not** remove or rename the required checks listed above.
+Do **not** remove or rename the required checks listed above. Do **not** treat CodeQL or Code
+Quality as required unless branch protection is updated to include them.
 
 ## Repository metadata
 
-Expected public state (verified 2026-09-12):
+Expected public state (verified 2026-09-23):
 
 - Public template repository, default branch `main`
 - Homepage `https://shipwithatlas.com`

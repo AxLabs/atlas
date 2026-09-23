@@ -5,6 +5,11 @@ projects receive a separate portable workflow from `atlas init` (`.github/workfl
 new repo). That file is consumer-owned, uses GitHub-hosted Ubuntu, and does not require BlitzCraft
 infrastructure. See [Atlas CLI](cli.md).
 
+GitHub-native repository settings on `blitzcraftlabs/atlas` (CodeQL default setup, GitHub Code
+Quality, secret scanning, branch protection) are **not** copied into generated consumer
+repositories. Those consumers enable GitHub features themselves. See
+[repository integrations](repository-integrations.md).
+
 Atlas ships a single portable CI workflow (`.github/workflows/ci.yml`) that runs on **GitHub-hosted
 runners by default**. Teams with a self-hosted fleet can opt in without replacing workflow files.
 
@@ -27,6 +32,12 @@ pull_request / push to main
 | **Bundle Analysis** | When application/UI/dependency/build-config can change emitted bundles, or push to `main`                | Always GitHub-hosted Ubuntu. Size budgets unchanged. Skips changeset/version/changelog-only and generated `packages/cli/release-assets/production/**` diffs                                                                                                                                                                      |
 | **Secrets Scan**    | Always                                                                                                   | Gitleaks Docker scan on `ubuntu-latest` (immutable digest)                                                                                                                                                                                                                                                                       |
 | **Security Audit**  | Always (also weekly cron)                                                                                | Full `pnpm audit --json` evaluated by Atlas policy (HIGH/CRITICAL block)                                                                                                                                                                                                                                                         |
+
+GitHub also runs managed **CodeQL** default setup (`dynamic/github-code-scanning/codeql`) on pull
+requests and pushes to `main`. That is GitHub-native security code scanning, **not** an Atlas job in
+the table above, and **not** a required status check. Pull requests may still show a **CodeQL**
+check that fails when new alerts are introduced. GitHub Code Quality (a separate maintainability
+product) is **not configured** on this repository. See [security engineering](security.md).
 
 **Docs-only PRs** still run Node setup and `pnpm docs:check` (via
 `node scripts/check-doc-links.mjs`). They skip install, lint, typecheck, tests, build, and E2E after
@@ -213,9 +224,12 @@ These are **consumer-app** concerns, not reference-platform defaults:
 
 - Pre-seeded Postgres images or `pg_dump` artifacts
 - Content-audit or DB-backed link checks
+- GitHub CodeQL default setup, GitHub Code Quality, secret scanning, Dependabot, or branch
+  protection from the canonical `blitzcraftlabs/atlas` repository
 
-Add those in your product repo when you have a real database and content pipeline. Aviatopia's
-`infra/docker/scripts/` is a reference implementation.
+Add database and content-audit checks in your product repo when you have a real database and content
+pipeline. Aviatopia's `infra/docker/scripts/` is a reference implementation. Enable GitHub-native
+scanning on the consumer repository in GitHub settings if you want it.
 
 ## Optional workflows
 
@@ -274,7 +288,7 @@ Push a branch and open a PR against `main`. In the Actions tab confirm:
 
 ## Branch protection
 
-Required status checks for `main` (verified 2026-09-12 on public `blitzcraftlabs/atlas`):
+Required status checks for `main` (verified 2026-09-23 on public `blitzcraftlabs/atlas`):
 
 - **Governance** — licensing, provenance, and dependency-ownership gates
 - **CI** — consolidated application pipeline
@@ -282,7 +296,8 @@ Required status checks for `main` (verified 2026-09-12 on public `blitzcraftlabs
 - **Security Audit** — Atlas dependency vulnerability policy
 - **UI Quality** — Storybook axe, interaction, and visual gates
 
-Do not remove or rename those checks. See [repository integrations](repository-integrations.md) and
+Do not remove or rename those checks. **CodeQL** (GitHub code scanning) and GitHub Code Quality are
+**not** required merge gates. See [repository integrations](repository-integrations.md) and
 [security engineering](security.md).
 
 If branch protection still references retired job names (**Detect Changes**, **Quality**, **Build

@@ -120,9 +120,61 @@ code.
 `pnpm security:workflow-check` fails if another workflow targets trusted runner infrastructure,
 removes the fork trust gate, drops the GitHub-hosted fallback, or introduces `pull_request_target`.
 
+## Scanning layers
+
+Keep these three surfaces distinct. They are not interchangeable evidence.
+
+### 1. Atlas-owned CI gates
+
+These GitHub Actions jobs are the **required merge checks** on `main` (see below):
+
+- **Governance** — licenses, provenance, dependency ownership
+- **CI** — application pipeline
+- **Secrets Scan** — digest-pinned Gitleaks
+- **Security Audit** — Atlas `pnpm security:check` HIGH/CRITICAL policy plus workflow pins
+- **UI Quality** — Storybook axe, interaction, and visual gates
+
+They live in this repository's workflows and are the Atlas contributor contract.
+
+### 2. GitHub CodeQL security / code scanning
+
+GitHub **default setup** is configured on public `blitzcraftlabs/atlas` (inspected **2026-09-23**):
+
+```text
+GET /repos/blitzcraftlabs/atlas/code-scanning/default-setup
+  state: configured
+  languages: actions, javascript, javascript-typescript, typescript
+  query_suite: default
+  threat_model: remote
+  schedule: weekly
+  updated_at: 2026-09-22T08:12:11Z
+```
+
+GitHub owns the dynamic workflow `dynamic/github-code-scanning/codeql`. There is **no** in-repo
+CodeQL workflow file. Analyses run on pulls and on `main`. Findings appear under Security → Code
+scanning. Pull requests may show a **CodeQL** check that fails when the PR introduces new alerts.
+That check is **not** a required status check and does **not** replace Secrets Scan or Security
+Audit.
+
+### 3. GitHub Code Quality
+
+GitHub Code Quality is a **separate** product (maintainability / reliability findings, actor
+`github-code-quality`). It is not CodeQL security scanning and not the Atlas **UI Quality** job.
+
+Inspected **2026-09-23**: `GET /repos/blitzcraftlabs/atlas/code-quality/setup` →
+`state: not-configured`. The findings API returns 403 until the product is enabled. No
+`github-code-quality` workflow runs exist. Do not document it as enabled or as a merge gate.
+
+### What generated consumers receive
+
+GitHub-native repository settings — CodeQL default setup, GitHub Code Quality, secret scanning,
+Dependabot, branch protection — are **not** packaged by `atlas init` or `atlas enable`. Downstream
+repositories must enable those GitHub features themselves. Optional Atlas consumer security CI is
+`atlas enable security` (`pnpm security:check` only). See [consumer tooling](consumer-tooling.md).
+
 ## Branch protection / rulesets (expected)
 
-Canonical inventory: [repository integrations](repository-integrations.md). Inspected **2026-09-12**
+Canonical inventory: [repository integrations](repository-integrations.md). Inspected **2026-09-23**
 on public `blitzcraftlabs/atlas` (ID `1366318006`).
 
 | Setting                           | Public-repo result                                       |
@@ -140,7 +192,8 @@ on public `blitzcraftlabs/atlas` (ID `1366318006`).
 | Secret scanning validity checks   | Intentionally disabled                                   |
 | Secret scanning non-provider      | Intentionally disabled                                   |
 | Dependabot security updates       | Enabled                                                  |
-| GitHub code scanning              | Not configured; not Atlas evidence                       |
+| GitHub CodeQL code scanning       | Enabled (default setup); not a required check            |
+| GitHub Code Quality               | Not configured; not a required check                     |
 
 **Do not remove or rename the required checks.** On the public repository, require:
 
@@ -150,8 +203,11 @@ on public `blitzcraftlabs/atlas` (ID `1366318006`).
 - **Security Audit**
 - **UI Quality**
 
-Do not treat GitHub Dependency Graph, Advanced Security code scanning, or a formal penetration test
-as currently proven Atlas evidence.
+Do **not** add **CodeQL** or GitHub Code Quality checks to that list unless maintainers deliberately
+change branch protection. Do not treat GitHub Dependency Graph SBOM export, GitHub Code Quality, or
+a formal penetration test as currently proven Atlas evidence. CodeQL default setup is GitHub-native
+scanning on this repository; it is not an Atlas merge gate and does not replace
+`pnpm security:check` or Gitleaks.
 
 ## Security-fix propagation
 
