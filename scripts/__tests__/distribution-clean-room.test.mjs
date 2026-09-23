@@ -216,7 +216,8 @@ describe("distribution clean-room helpers", () => {
     assert.match(verifier, /\["build"\]/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.installConsumer/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.build/);
-    assert.match(verifier, /@blitzcraftlabs\/atlas/);
+    assert.match(verifier, /PUBLIC_CLI_WORKSPACE_BUILD_ARGS/);
+    assert.doesNotMatch(verifier, /\["--filter", PUBLIC_CLI_PACKAGE_NAME, "build"\]/);
     assert.match(verifier, /verifyNpmPublishDryRun/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.npmPublishDryRun/);
     assert.match(verifier, /CLEAN_ROOM_STAGES\.upgrade/);
@@ -421,10 +422,7 @@ describe("distribution clean-room helpers", () => {
       version: "10.19.0",
       source: "corepack",
     });
-    assert.deepEqual(generatedProjectPnpmArgs(resolved, ["install"]), [
-      "pnpm@10.19.0",
-      "install",
-    ]);
+    assert.deepEqual(generatedProjectPnpmArgs(resolved, ["install"]), ["pnpm@10.19.0", "install"]);
   });
 
   it("falls back to ambient pnpm only when it matches the declared version", () => {

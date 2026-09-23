@@ -6,6 +6,18 @@ export const PUBLIC_CLI_PACKAGE_NAME = "@blitzcraftlabs/atlas";
 export const PUBLIC_CLI_BIN_NAME = "atlas";
 export const PUBLIC_CLI_RELATIVE_PATH = "packages/cli";
 
+/**
+ * Graph-aware CLI build used for pack, publish, and doctor.
+ * Turbo `build.dependsOn: ["^build"]` compiles `@atlas/project` (`exports` → `dist/`)
+ * before `packages/cli` `tsc`. `pnpm --filter <cli> build` does not.
+ */
+export const PUBLIC_CLI_WORKSPACE_BUILD_ARGS = [
+  "turbo",
+  "build",
+  "--filter",
+  PUBLIC_CLI_PACKAGE_NAME,
+];
+
 /** Workspace packages that share the Atlas release version (not independent products). */
 export const ATLAS_WORKSPACE_PACKAGES = [
   { name: "@atlas/web", relativePath: "apps/web" },

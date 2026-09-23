@@ -508,6 +508,14 @@ describe("CI runner policy", () => {
     }
 
     assert.match(ciAction, /node scripts\/ci-change-paths\.mjs --git-diff/);
+    assert.match(
+      ciAction,
+      /pnpm turbo build --filter=@blitzcraftlabs\/atlas && pnpm atlas doctor --json/
+    );
+    assert.doesNotMatch(
+      ciAction,
+      /pnpm --filter @blitzcraftlabs\/atlas build && pnpm atlas doctor/
+    );
     assert.match(ciAction, /pnpm test:coverage:all/);
     assert.match(ciAction, /pnpm test:boundaries/);
     assert.doesNotMatch(ciAction, /^\s+run: pnpm test$/m);
