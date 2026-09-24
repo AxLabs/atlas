@@ -91,25 +91,47 @@ export function getNavigationType(): string | undefined {
   }
 }
 
+const WEB_VITALS_SESSION_STORAGE_KEY = "web-vitals-session-id";
+
+/**
+ * Create a new ephemeral session identifier (not tied to user identity).
+ * Uses the Web Crypto API; does not use Math.random().
+ */
+function createWebVitalsSessionId(): string {
+  const cryptoApi = globalThis.crypto;
+
+  if (cryptoApi && typeof cryptoApi.randomUUID === "function") {
+    return cryptoApi.randomUUID();
+  }
+
+  if (cryptoApi && typeof cryptoApi.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    cryptoApi.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  return `session-${Date.now()}`;
+}
+
 /**
  * Generate a session ID for this browser session
  * Not tied to user identity, just for grouping metrics
  */
 export function getSessionId(): string {
   if (typeof window === "undefined" || typeof sessionStorage === "undefined") {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    return createWebVitalsSessionId();
   }
 
   try {
-    let sessionId = sessionStorage.getItem("web-vitals-session-id");
+    let sessionId = sessionStorage.getItem(WEB_VITALS_SESSION_STORAGE_KEY);
     if (!sessionId) {
-      sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-      sessionStorage.setItem("web-vitals-session-id", sessionId);
+      sessionId = createWebVitalsSessionId();
+      sessionStorage.setItem(WEB_VITALS_SESSION_STORAGE_KEY, sessionId);
     }
     return sessionId;
   } catch {
     // sessionStorage not available
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    return createWebVitalsSessionId();
   }
 }
 

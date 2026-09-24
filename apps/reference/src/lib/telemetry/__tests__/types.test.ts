@@ -2,9 +2,11 @@
  * Web Vitals Types Tests
  */
 
-import { describe, it, expect } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-import { sanitizeRoute, getSessionId } from "../types";
+import { getSessionId, sanitizeRoute } from "../types";
+
+const WEB_VITALS_SESSION_STORAGE_KEY = "web-vitals-session-id";
 
 describe("Web Vitals Types", () => {
   describe("sanitizeRoute", () => {
@@ -61,32 +63,90 @@ describe("Web Vitals Types", () => {
   });
 
   describe("getSessionId", () => {
+    let mathRandomSpy: jest.SpiedFunction<typeof Math.random>;
+
     beforeEach(() => {
-      // Clear sessionStorage before each test
+      sessionStorage.clear();
+      mathRandomSpy = jest.spyOn(Math, "random");
+    });
+
+    afterEach(() => {
+      mathRandomSpy.mockRestore();
       sessionStorage.clear();
     });
 
-    it("should generate a session ID", () => {
+    it("should generate a session ID using crypto.randomUUID when available", () => {
+      const randomUuid = jest.fn(() => "550e8400-e29b-41d4-a716-446655440000");
+      const originalCrypto = globalThis.crypto;
+
+      Object.defineProperty(globalThis, "crypto", {
+        configurable: true,
+        value: { randomUUID: randomUuid },
+      });
+
       const sessionId = getSessionId();
 
-      expect(sessionId).toBeDefined();
-      expect(typeof sessionId).toBe("string");
-      expect(sessionId.length).toBeGreaterThan(0);
+      expect(sessionId).toBe("550e8400-e29b-41d4-a716-446655440000");
+      expect(randomUuid).toHaveBeenCalledTimes(1);
+      expect(mathRandomSpy).not.toHaveBeenCalled();
+
+      Object.defineProperty(globalThis, "crypto", {
+        configurable: true,
+        value: originalCrypto,
+      });
     });
 
     it("should return consistent ID within same session", () => {
       const id1 = getSessionId();
       const id2 = getSessionId();
 
-      // Should be the same within the same test run (session)
       expect(id1).toBe(id2);
+      expect(sessionStorage.getItem(WEB_VITALS_SESSION_STORAGE_KEY)).toBe(id1);
+      expect(mathRandomSpy).not.toHaveBeenCalled();
     });
 
-    it("should include timestamp and random component", () => {
+    it("should reuse an existing sessionStorage value", () => {
+      const existingId = "existing-session-id";
+      sessionStorage.setItem(WEB_VITALS_SESSION_STORAGE_KEY, existingId);
+
+      expect(getSessionId()).toBe(existingId);
+      expect(mathRandomSpy).not.toHaveBeenCalled();
+    });
+
+    it("should generate an ID when sessionStorage throws", () => {
+      const getItemSpy = jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("sessionStorage blocked");
+      });
+
       const sessionId = getSessionId();
 
-      // Format: {timestamp}-{random}
-      expect(sessionId).toMatch(/^\d+-[a-z0-9]+$/);
+      expect(sessionId).toBeDefined();
+      expect(typeof sessionId).toBe("string");
+      expect(sessionId.length).toBeGreaterThan(0);
+      expect(mathRandomSpy).not.toHaveBeenCalled();
+
+      getItemSpy.mockRestore();
+    });
+
+    it("should generate an ID when sessionStorage is unavailable", () => {
+      const originalSessionStorage = global.sessionStorage;
+
+      Object.defineProperty(global, "sessionStorage", {
+        configurable: true,
+        value: undefined,
+      });
+
+      const sessionId = getSessionId();
+
+      expect(sessionId).toBeDefined();
+      expect(typeof sessionId).toBe("string");
+      expect(sessionId.length).toBeGreaterThan(0);
+      expect(mathRandomSpy).not.toHaveBeenCalled();
+
+      Object.defineProperty(global, "sessionStorage", {
+        configurable: true,
+        value: originalSessionStorage,
+      });
     });
   });
 });
