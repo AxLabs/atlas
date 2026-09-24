@@ -5,21 +5,20 @@
  * This is measurement only — it does not enforce a coverage floor.
  *
  * Script tests share the schedule in `scripts/lib/script-test-schedule.mjs`.
- * Isolated integration tests (CLI Turbo cache regression) run after the
- * instrumented batch without coverage: they only exercise already-covered
- * publish helpers plus live Turbo builds, and a second LCOV stream would
- * duplicate `scripts/lib/npm-publish-dry-run.mjs` hit records.
+ * Isolated shared-build-output integration tests run sequentially after the
+ * instrumented batch without coverage: they exercise live Turbo/project builds
+ * and already-covered release helpers, and a second LCOV stream would
+ * duplicate hit records.
  */
-import { spawnSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  discoverScriptTestFileNames,
-  partitionScriptTests,
-  scriptTestRelativePath,
-} from "./lib/script-test-schedule.mjs";
+  runIsolatedScriptTestsSequentially,
+  runScriptTestBatch,
+} from "./lib/script-test-execution.mjs";
+import { discoverScriptTestFileNames, partitionScriptTests } from "./lib/script-test-schedule.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = path.join(repoRoot, "coverage", "scripts");
@@ -34,69 +33,30 @@ if (allTests.length === 0) {
 
 mkdirSync(outputDir, { recursive: true });
 
-function runInstrumentedTests(fileNames) {
-  if (fileNames.length === 0) {
-    return 0;
-  }
+const instrumentedCoverageArgs = [
+  "--experimental-test-coverage",
+  "--test-reporter=spec",
+  "--test-reporter=lcov",
+  "--test-reporter-destination=stdout",
+  `--test-reporter-destination=${lcovPath}`,
+  "--test-coverage-include=scripts/**/*.mjs",
+  "--test-coverage-exclude=scripts/__tests__/**",
+  "--test-coverage-exclude=scripts/__fixtures__/**",
+];
 
-  const testFiles = fileNames.map((name) => scriptTestRelativePath(name));
-  const result = spawnSync(
-    process.execPath,
-    [
-      "--test",
-      "--experimental-test-coverage",
-      "--test-reporter=spec",
-      "--test-reporter=lcov",
-      "--test-reporter-destination=stdout",
-      `--test-reporter-destination=${lcovPath}`,
-      "--test-coverage-include=scripts/**/*.mjs",
-      "--test-coverage-exclude=scripts/__tests__/**",
-      "--test-coverage-exclude=scripts/__fixtures__/**",
-      ...testFiles,
-    ],
-    {
-      cwd: repoRoot,
-      stdio: "inherit",
-      env: process.env,
-    },
-  );
+const uninstrumentedReporterArgs = ["--test-reporter=spec"];
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  return result.status ?? 1;
-}
-
-function runUninstrumentedTests(fileNames) {
-  if (fileNames.length === 0) {
-    return 0;
-  }
-
-  const testFiles = fileNames.map((name) => scriptTestRelativePath(name));
-  const result = spawnSync(
-    process.execPath,
-    ["--test", "--test-reporter=spec", ...testFiles],
-    {
-      cwd: repoRoot,
-      stdio: "inherit",
-      env: process.env,
-    },
-  );
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  return result.status ?? 1;
-}
-
-const parallelStatus = runInstrumentedTests(parallelTests);
+const parallelStatus = runScriptTestBatch(repoRoot, parallelTests, instrumentedCoverageArgs);
 if (parallelStatus !== 0) {
   process.exit(parallelStatus);
 }
 
-const isolatedStatus = runUninstrumentedTests(isolatedAfterParallelTests);
+const isolatedStatus = runIsolatedScriptTestsSequentially(
+  repoRoot,
+  isolatedAfterParallelTests,
+  runScriptTestBatch,
+  uninstrumentedReporterArgs,
+);
 if (isolatedStatus !== 0) {
   process.exit(isolatedStatus);
 }
