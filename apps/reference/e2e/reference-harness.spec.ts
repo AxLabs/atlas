@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { setReferenceSession } from "./helpers/reference-session";
+import { gotoWithReferenceSessionReady, setReferenceSession } from "./helpers/reference-session";
 
 const SEEDED_USER_EMAILS = [
   "reference.user@atlas.local",
@@ -298,14 +298,14 @@ test.describe("Authorization", () => {
   test("reference-user does not see create user action on users list", async ({ page }) => {
     await setReferenceSession(page, "reference-user", "success");
 
-    await page.goto("/users");
+    await gotoWithReferenceSessionReady(page, "/users");
     await expect(page.getByRole("link", { name: "New user" })).toHaveCount(0);
   });
 
   test("reference-admin sees create user action on users list", async ({ page }) => {
     await setReferenceSession(page, "reference-admin", "success");
 
-    await page.goto("/users");
+    await gotoWithReferenceSessionReady(page, "/users");
     await expect(page.getByRole("link", { name: "New user" })).toBeVisible();
   });
 });
