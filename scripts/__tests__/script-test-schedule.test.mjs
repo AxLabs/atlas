@@ -34,6 +34,7 @@ describe("script test schedule", () => {
 
   it("keeps shared-build-output integration tests out of the parallel batch", () => {
     assert.deepEqual(ISOLATED_AFTER_PARALLEL_SCRIPT_TESTS, [
+      "cli-workspace-build.test.mjs",
       "consolidate-production-snapshot-refresh.test.mjs",
       "cli-turbo-build-cache.test.mjs",
     ]);
@@ -43,8 +44,10 @@ describe("script test schedule", () => {
     );
 
     assert.deepEqual(isolatedAfterParallelTests, [...ISOLATED_AFTER_PARALLEL_SCRIPT_TESTS]);
-    assert.equal(parallelTests.includes("consolidate-production-snapshot-refresh.test.mjs"), false);
-    assert.equal(parallelTests.includes("cli-turbo-build-cache.test.mjs"), false);
+    assert.equal(isolatedAfterParallelTests.at(-1), "cli-turbo-build-cache.test.mjs");
+    for (const isolatedName of ISOLATED_AFTER_PARALLEL_SCRIPT_TESTS) {
+      assert.equal(parallelTests.includes(isolatedName), false, `${isolatedName} must be isolated`);
+    }
     assert.equal(parallelTests.includes("validate-dependencies.test.mjs"), true);
     assert.equal(isolatedAfterParallelTests.includes("validate-dependencies.test.mjs"), false);
   });
