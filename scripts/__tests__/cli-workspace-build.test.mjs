@@ -23,6 +23,9 @@ import {
   ensureAtlasProjectBuilt,
 } from "../../packages/cli/scripts/ensure-atlas-project-built.mjs";
 
+// Mutates shared `packages/project/dist` and `tsconfig.build.tsbuildinfo`.
+// scripts/lib/script-test-schedule.mjs runs this file after the parallel batch.
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const projectDir = path.join(repoRoot, "packages", "project");
 const cliPackageJsonPath = path.join(repoRoot, "packages", "cli", "package.json");
