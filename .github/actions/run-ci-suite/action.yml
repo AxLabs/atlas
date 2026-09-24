@@ -180,6 +180,8 @@ runs:
     - name: Verify packed CLI clean-room lifecycle
       if: steps.detect.outputs.distribution == 'true' || github.event_name == 'push'
       shell: bash
+      env:
+        TMPDIR: ${{ runner.temp }}
       run: pnpm distribution:verify
 
     - name: Skip application checks (docs-only change)
