@@ -347,7 +347,7 @@ export function consolidateAtlasRelease(repoRoot = process.cwd()) {
   );
 
   syncWorkspaceVersions(version, repoRoot);
-  generateCurrentProductionReleaseSnapshot(repoRoot);
+  generateCurrentProductionReleaseSnapshot(repoRoot, { replace: true });
 
   return { version, mergedBody: workspaceBody, dateLine };
 }
