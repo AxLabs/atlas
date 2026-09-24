@@ -12,6 +12,9 @@ import {
 } from "../consolidate-atlas-release.mjs";
 import { generateProductionReleaseSnapshotFromTree } from "../../packages/cli/scripts/generate-production-release-snapshot.mjs";
 
+// Invokes real `ensureAtlasProjectBuilt()` against shared `packages/project/dist`.
+// scripts/lib/script-test-schedule.mjs runs this file after the parallel batch and
+// before other isolated shared-output tests so it does not race them.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function writeMiniAtlasReleaseTree(root, version, syncedSourceBody) {
