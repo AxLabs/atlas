@@ -23,3 +23,29 @@ export async function setReferenceSession(
     `Failed to set reference session (${persona}/${usersScenario}): ${response.status()}`
   ).toBeTruthy();
 }
+
+function isAuthMeResponse(response: {
+  request: () => { method: () => string };
+  url: () => string;
+}) {
+  return response.request().method() === "GET" && response.url().includes("/api/auth/me");
+}
+
+/**
+ * Wait until client-side `useSession()` finishes hydrating.
+ * Permission-gated UI (for example the users list actions) renders only after this.
+ */
+export async function waitForReferenceSessionReady(page: Page): Promise<void> {
+  await expect(page.getByRole("status", { name: "Loading session" })).toBeHidden();
+}
+
+/**
+ * Navigate and wait for the page's `useSession()` hook to finish hydrating.
+ */
+export async function gotoWithReferenceSessionReady(page: Page, path: string): Promise<void> {
+  await Promise.all([
+    page.waitForResponse((response) => isAuthMeResponse(response)),
+    page.goto(path),
+  ]);
+  await waitForReferenceSessionReady(page);
+}
