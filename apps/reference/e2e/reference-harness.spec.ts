@@ -32,7 +32,7 @@ async function createUserViaUi(page: Page, email: string, name: string) {
 }
 
 async function expectSeededUsersList(page: Page) {
-  await page.goto("/users");
+  await gotoWithReferenceSessionReady(page, "/users");
   await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
   for (const email of SEEDED_USER_EMAILS) {
     await expect(page.getByRole("cell", { name: email, exact: true })).toBeVisible();
@@ -82,7 +82,7 @@ test.describe("Reference application", () => {
   test("reference-user can view users list in success scenario", async ({ page }) => {
     await setReferenceSession(page, "reference-user", "success");
 
-    await page.goto("/users");
+    await gotoWithReferenceSessionReady(page, "/users");
     await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
     await expect(page.getByRole("cell", { name: "Reference User", exact: true })).toBeVisible();
     await expect(
@@ -119,7 +119,7 @@ test.describe("Reference application", () => {
   test("server-error scenario shows retry path on users list", async ({ page }) => {
     await setReferenceSession(page, "reference-user", "server-error");
 
-    await page.goto("/users");
+    await gotoWithReferenceSessionReady(page, "/users");
     await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   });
@@ -336,7 +336,7 @@ test.describe("API recovery, flags, and consent traffic", () => {
       await route.continue();
     });
 
-    await page.goto("/users");
+    await gotoWithReferenceSessionReady(page, "/users");
     await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
 
     await page.getByRole("button", { name: "Try again" }).click();
@@ -364,7 +364,7 @@ test.describe("API recovery, flags, and consent traffic", () => {
       await route.continue();
     });
 
-    await page.goto("/users");
+    await gotoWithReferenceSessionReady(page, "/users");
     await expect(page.getByRole("heading", { name: "Failed to load users" })).toBeVisible();
   });
 
@@ -380,10 +380,13 @@ test.describe("API recovery, flags, and consent traffic", () => {
   test("example feature flag shows export and kill switch disables it", async ({ page }) => {
     await setReferenceSession(page, "reference-admin", "success");
 
-    await page.goto("/users?ff_example_feature=1");
+    await gotoWithReferenceSessionReady(page, "/users?ff_example_feature=1");
     await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
 
-    await page.goto("/users?ff_example_feature=1&ff_kill_example_feature=1");
+    await gotoWithReferenceSessionReady(
+      page,
+      "/users?ff_example_feature=1&ff_kill_example_feature=1"
+    );
     await expect(page.getByRole("button", { name: "Export (killed)" })).toBeVisible();
   });
 
@@ -440,7 +443,7 @@ test.describe("Cookie-scoped store isolation", () => {
       await expect(pageA.getByRole("cell", { name: emailA, exact: true })).toHaveCount(0);
       await expect(pageA.getByRole("cell", { name: emailB, exact: true })).toHaveCount(0);
 
-      await pageB.goto("/users");
+      await gotoWithReferenceSessionReady(pageB, "/users");
       await expect(pageB.getByRole("cell", { name: emailB, exact: true })).toBeVisible();
       await expect(pageB.getByRole("cell", { name: emailA, exact: true })).toHaveCount(0);
     } finally {
