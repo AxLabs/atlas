@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-25
+
+### Changed
+
+- Ship working Docker build files to generated Atlas consumers and add safe upgrade handling for
+  repository-level Docker infrastructure.
+- Harden Atlas distribution builds so clean-room CLI builds prepare required workspace dependencies
+  and cached builds restore required npm package metadata and legal files.
+
+### Security
+
+- Use cryptographically secure Web Vitals session identifiers instead of Math.random() so telemetry
+  grouping IDs meet security scanning expectations in supported browsers.
+
 ## [1.2.0] - 2026-09-22
 
 ### Changed
@@ -145,7 +159,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/blitzcraftlabs/atlas/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.0.0...v1.0.1

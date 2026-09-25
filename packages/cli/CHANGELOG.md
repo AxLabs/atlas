@@ -1,5 +1,16 @@
 # @blitzcraftlabs/atlas
 
+## 1.2.1
+
+### Patch Changes
+
+- e7c785c: Ship working Docker build files to generated Atlas consumers and add safe upgrade
+  handling for repository-level Docker infrastructure.
+- dbab657: Harden Atlas distribution builds so clean-room CLI builds prepare required workspace
+  dependencies and cached builds restore required npm package metadata and legal files.
+- 36d5124: Use cryptographically secure Web Vitals session identifiers instead of Math.random() so
+  telemetry grouping IDs meet security scanning expectations in supported browsers.
+
 ## 1.2.0
 
 ### Minor Changes
