@@ -1,5 +1,12 @@
 # @atlas/web
 
+## 1.2.1
+
+### Patch Changes
+
+- @atlas/ui@1.2.1
+- @atlas/consent@1.2.1
+
 ## 1.2.0
 
 ### Patch Changes
