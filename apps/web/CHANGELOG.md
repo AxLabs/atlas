@@ -1,5 +1,19 @@
 # @atlas/web
 
+## 1.3.3
+
+### Patch Changes
+
+- Security remediation: upgrade Next.js and eslint-config-next to 16.4.5, @sentry/nextjs to 10.78.0,
+  Storybook to 8.6.19, Vite to 6.4.5 and shadcn to 4.23.0, and refresh pnpm overrides for patched
+  transitive dependencies (handlebars, sharp, proxy-addr, body-parser, compression,
+  follow-redirects, joi, source-map-js, systeminformation, zod 4). The Web Vitals telemetry route
+  now enforces its body size limit on bytes actually read and rejects oversized metric batches
+  before schema validation.
+- Updated dependencies
+  - @atlas/ui@1.3.3
+  - @atlas/consent@1.3.3
+
 ## 1.3.2
 
 ### Patch Changes

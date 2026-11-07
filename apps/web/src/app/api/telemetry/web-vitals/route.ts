@@ -19,6 +19,12 @@ import type { NextRequest } from "next/server";
 const MAX_BODY_SIZE = 100 * 1024;
 
 /**
+ * Maximum metrics per batch. Mirrors WebVitalsBatchSchema and is checked before schema
+ * validation so oversized arrays are rejected without per-element parsing.
+ */
+const MAX_METRICS_PER_BATCH = 50;
+
+/**
  * Rate limiting: track requests per IP
  * In production, use Redis or a proper rate limiting service
  */
@@ -55,6 +61,48 @@ function getClientIp(request: NextRequest): string {
     return forwarded.split(",")[0]?.trim() ?? "unknown";
   }
   return request.headers.get("x-real-ip") ?? "unknown";
+}
+
+/**
+ * Read the request body, enforcing MAX_BODY_SIZE on the bytes actually received.
+ * The Content-Length header is optional (chunked requests omit it), so it cannot be the only cap.
+ * Returns null when the body exceeds the limit.
+ */
+async function readBodyWithLimit(request: NextRequest, maxBytes: number): Promise<string | null> {
+  if (!request.body) {
+    return "";
+  }
+
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let text = "";
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    received += value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+
+  return text + decoder.decode();
+}
+
+/**
+ * Reject batches whose metrics array is longer than allowed before schema validation runs.
+ */
+function exceedsMetricsLimit(body: unknown): boolean {
+  if (typeof body !== "object" || body === null || !("metrics" in body)) {
+    return false;
+  }
+  const { metrics } = body as { metrics: unknown };
+  return Array.isArray(metrics) && metrics.length > MAX_METRICS_PER_BATCH;
 }
 
 /**
@@ -127,8 +175,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
-    // Parse and validate request body
-    const body = (await request.json()) as unknown;
+    // Read the body with an enforced byte limit, then validate
+    const rawBody = await readBodyWithLimit(request, MAX_BODY_SIZE);
+    if (rawBody === null) {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
+
+    const body = JSON.parse(rawBody) as unknown;
+    if (exceedsMetricsLimit(body)) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
     const validationResult = WebVitalsBatchSchema.safeParse(body);
 
     if (!validationResult.success) {

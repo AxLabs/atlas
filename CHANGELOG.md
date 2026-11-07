@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-11-07
+
+### Security
+
+- Security remediation: upgrade Next.js and eslint-config-next to 16.4.5, @sentry/nextjs to 10.78.0,
+  Storybook to 8.6.19, Vite to 6.4.5 and shadcn to 4.23.0, and refresh pnpm overrides for patched
+  transitive dependencies (handlebars, sharp, proxy-addr, body-parser, compression,
+  follow-redirects, joi, source-map-js, systeminformation, zod 4). The Web Vitals telemetry route
+  now enforces its body size limit on bytes actually read and rejects oversized metric batches
+  before schema validation.
+
 ## [1.3.2] - 2026-10-05
 
 ### Changed
@@ -218,7 +229,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/blitzcraftlabs/atlas/compare/v1.2.4...v1.3.0
