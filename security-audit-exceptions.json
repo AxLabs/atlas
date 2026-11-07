@@ -29,13 +29,13 @@
       "expiresOn": "2026-11-27"
     },
     {
-      "advisory": "GHSA-vfj7-8cjw-p6xm",
-      "packageName": "braces",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "packageName": "zod",
       "owner": "@atlas-maintainers",
-      "reason": "braces@3.0.3 is transitive only through dev/build tooling (micromatch → fast-glob/chokidar on changesets, ESLint, Storybook, and similar). npm reports no patched braces line (patched_versions <0.0.0).",
-      "compensatingControl": "Dev/CI glob expansion uses repository-controlled patterns, not attacker-supplied brace sequences. braces is not shipped in production Next.js bundles or runtime request handling.",
-      "reviewedOn": "2026-10-03",
-      "expiresOn": "2027-01-01"
+      "reason": "zod has no patched 3.x line; the fix is zod >=4.6.6. Atlas depends directly on zod 3.24.1 in apps/web, apps/reference, packages/ui, packages/project and the published @blitzcraftlabs/atlas CLI, and transitively through @lhci/cli → lighthouse → puppeteer-core → chromium-bidi (dev-only). Moving to zod 4 also requires @hookform/resolvers 5 and API migration across synced consumer templates, so it is tracked as a dedicated follow-up migration rather than folded into this remediation. The eslint-plugin-react-hooks zod 4 path is overridden to a patched 4.6.x release.",
+      "compensatingControl": "The only untrusted input validated with an array schema is POST /api/telemetry/web-vitals. Both apps now enforce the 100KB body limit on bytes actually read (not only the optional Content-Length header) and reject metrics arrays longer than 50 before schema validation, so per-element issue accumulation is bounded. Env, contract and CLI schemas parse repository-controlled input; form schemas run in the submitting user's own browser.",
+      "reviewedOn": "2026-11-07",
+      "expiresOn": "2026-12-07"
     }
   ]
 }
