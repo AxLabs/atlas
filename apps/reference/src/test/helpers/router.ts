@@ -7,18 +7,39 @@
 
 import { jest } from "@jest/globals";
 
+// Exported mocks carry explicit `jest.Mock` annotations from `@jest/globals`. Inferred types would
+// reference `jest-mock` by its install location, which TS2742 rejects as non-portable whenever the
+// package manager does not hoist `jest-mock` where this workspace can resolve it.
+type VoidMock = jest.Mock<() => void>;
+
+interface MockRouterState {
+  pathname: string;
+  searchParams: URLSearchParams;
+  push: VoidMock;
+  replace: VoidMock;
+  refresh: VoidMock;
+  back: VoidMock;
+  forward: VoidMock;
+  prefetch: VoidMock;
+}
+
+type MockRouter = Pick<
+  MockRouterState,
+  "push" | "replace" | "refresh" | "back" | "forward" | "prefetch"
+>;
+
 /**
  * Mock router state that can be modified per test.
  */
-export const mockRouterState = {
+export const mockRouterState: MockRouterState = {
   pathname: "/",
   searchParams: new URLSearchParams(),
-  push: jest.fn(),
-  replace: jest.fn(),
-  refresh: jest.fn(),
-  back: jest.fn(),
-  forward: jest.fn(),
-  prefetch: jest.fn(),
+  push: jest.fn<() => void>(),
+  replace: jest.fn<() => void>(),
+  refresh: jest.fn<() => void>(),
+  back: jest.fn<() => void>(),
+  forward: jest.fn<() => void>(),
+  prefetch: jest.fn<() => void>(),
 };
 
 /**
@@ -48,7 +69,7 @@ export function resetRouterMocks() {
  * }));
  * ```
  */
-export const mockUseRouter = jest.fn(() => ({
+export const mockUseRouter: jest.Mock<() => MockRouter> = jest.fn(() => ({
   push: mockRouterState.push,
   replace: mockRouterState.replace,
   refresh: mockRouterState.refresh,
@@ -60,29 +81,33 @@ export const mockUseRouter = jest.fn(() => ({
 /**
  * Mock implementation of usePathname from next/navigation.
  */
-export const mockUsePathname = jest.fn(() => mockRouterState.pathname);
+export const mockUsePathname: jest.Mock<() => string> = jest.fn(() => mockRouterState.pathname);
 
 /**
  * Mock implementation of useSearchParams from next/navigation.
  */
-export const mockUseSearchParams = jest.fn(() => mockRouterState.searchParams);
+export const mockUseSearchParams: jest.Mock<() => URLSearchParams> = jest.fn(
+  () => mockRouterState.searchParams
+);
 
 /**
  * Mock implementation of useParams from next/navigation.
  */
-export const mockUseParams = jest.fn(() => ({}));
+export const mockUseParams: jest.Mock<() => Record<string, string | string[]>> = jest.fn(
+  () => ({})
+);
 
 /**
  * Mock implementation of redirect from next/navigation.
  */
-export const mockRedirect = jest.fn((url: string) => {
+export const mockRedirect: jest.Mock<(url: string) => never> = jest.fn((url: string) => {
   throw new Error(`NEXT_REDIRECT: ${url}`);
 });
 
 /**
  * Mock implementation of notFound from next/navigation.
  */
-export const mockNotFound = jest.fn(() => {
+export const mockNotFound: jest.Mock<() => never> = jest.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
 
