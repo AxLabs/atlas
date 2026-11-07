@@ -8,6 +8,7 @@ import { PUBLIC_CLI_PACKAGE_NAME } from "../atlas-workspaces.mjs";
 import {
   assertRegistryInstallSpecifier,
   collectRegistryFallbackIssues,
+  isRegistryPropagationLag,
   parseRegistryVersionArgument,
   registryInstallSpecifier,
 } from "../lib/distribution-registry.mjs";
@@ -55,5 +56,45 @@ describe("registry verification arguments", () => {
     assert.doesNotMatch(verifier, /publishExactTarball/);
     assert.doesNotMatch(verifier, /runNpmPublication/);
     assert.match(verifier, /--registry/);
+  });
+});
+
+describe("registry propagation lag", () => {
+  const lagOutput = `ERR_PNPM_NO_MATCHING_VERSION  No matching version found for ${PUBLIC_CLI_PACKAGE_NAME}@1.3.3 while fetching it from https://registry.npmjs.org/`;
+
+  it("retries a stale packument for the published CLI", () => {
+    assert.equal(isRegistryPropagationLag({ status: 1, stdout: lagOutput, stderr: "" }), true);
+    assert.equal(
+      isRegistryPropagationLag({
+        status: 1,
+        stdout: "",
+        stderr: `npm error code ETARGET\nnpm error notarget No matching version found for ${PUBLIC_CLI_PACKAGE_NAME}@1.3.3.`,
+      }),
+      true
+    );
+  });
+
+  it("does not retry success, timeouts, or unrelated install failures", () => {
+    assert.equal(isRegistryPropagationLag({ status: 0, stdout: lagOutput, stderr: "" }), false);
+    assert.equal(
+      isRegistryPropagationLag({ status: null, timedOut: true, stdout: lagOutput, stderr: "" }),
+      false
+    );
+    assert.equal(
+      isRegistryPropagationLag({
+        status: 1,
+        stdout: "ERR_PNPM_NO_MATCHING_VERSION  No matching version found for left-pad@9.9.9",
+        stderr: "",
+      }),
+      false
+    );
+    assert.equal(
+      isRegistryPropagationLag({
+        status: 1,
+        stdout: `ERR_PNPM_TARBALL_INTEGRITY ${PUBLIC_CLI_PACKAGE_NAME}`,
+        stderr: "",
+      }),
+      false
+    );
   });
 });
