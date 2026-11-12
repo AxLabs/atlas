@@ -20,7 +20,13 @@ import {
 import { URL as NodeURL } from "node:url";
 import { NextRequest } from "next/server";
 
+import { log } from "@/lib/logging/logger.server";
+
 import { POST } from "../route";
+
+jest.mock("@/lib/logging/logger.server", () => ({
+  log: { warn: jest.fn() },
+}));
 
 const CLIENT_DSN = "https://publickey@o123.ingest.us.sentry.io/456";
 const UPSTREAM = "https://o123.ingest.us.sentry.io/api/456/envelope/";
@@ -48,6 +54,7 @@ describe("POST /monitoring", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
+    jest.mocked(log.warn).mockClear();
     process.env.NEXT_PUBLIC_SENTRY_DSN = CLIENT_DSN;
     delete process.env.SENTRY_DSN;
     fetchMock = jest.fn<typeof fetch>().mockResolvedValue(new Response("{}", { status: 200 }));
@@ -143,6 +150,10 @@ describe("POST /monitoring", () => {
 
     expect(response.status).toBe(413);
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "sentry_tunnel_envelope_rejected", projectId: "456" }),
+      expect.any(String)
+    );
   });
 
   it("returns 502 when the upstream request fails", async () => {
@@ -151,5 +162,9 @@ describe("POST /monitoring", () => {
     const response = await POST(tunnelRequest("o=123&p=456"));
 
     expect(response.status).toBe(502);
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "sentry_tunnel_upstream_failed" }),
+      expect.any(String)
+    );
   });
 });

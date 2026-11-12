@@ -22,6 +22,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveSentryTunnelTarget } from "@/config/sentry-tunnel";
+import { log } from "@/lib/logging/logger.server";
 
 import type { NextRequest } from "next/server";
 
@@ -91,6 +92,10 @@ export async function POST(request: NextRequest) {
 
   const body = await readBodyWithLimit(request, MAX_ENVELOPE_BYTES);
   if (body === null) {
+    log.warn(
+      { event: "sentry_tunnel_envelope_rejected", projectId, maxBytes: MAX_ENVELOPE_BYTES },
+      "Sentry envelope dropped: exceeds tunnel size limit"
+    );
     return NextResponse.json({ error: "Envelope too large" }, { status: 413 });
   }
 
@@ -104,7 +109,15 @@ export async function POST(request: NextRequest) {
       body,
       redirect: "manual",
     });
-  } catch {
+  } catch (error) {
+    log.warn(
+      {
+        event: "sentry_tunnel_upstream_failed",
+        projectId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Sentry envelope dropped: upstream request failed"
+    );
     return NextResponse.json({ error: "Sentry upstream unavailable" }, { status: 502 });
   }
 
