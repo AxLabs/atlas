@@ -28,6 +28,7 @@ import {
   collectWorkspaceResolutionIssues,
   createCleanRoomLayout,
   finalizeCleanRoom,
+  formatStageFailure,
   generatedProjectPnpmArgs,
   isCiEnvironment,
   isExplicitKeepRequested,
@@ -36,6 +37,7 @@ import {
   resolveAtlasRepoRoot,
   resolveCommandPath,
   resolveGeneratedProjectPnpm,
+  runCommand,
   runStage,
   sanitizeCleanRoomEnv,
 } from "./lib/distribution-clean-room.mjs";
@@ -43,6 +45,7 @@ import {
   assertInstalledRegistryPackage,
   assertRegistryInstallSpecifier,
   collectRegistryFallbackIssues,
+  isRegistryPropagationLag,
   parseRegistryVersionArgument,
   registryInstallSpecifier,
 } from "./lib/distribution-registry.mjs";
@@ -136,6 +139,35 @@ async function queryPublishedVersion(version, retries, retryWaitMs) {
   return registry;
 }
 
+/**
+ * `npm view` can see a fresh version before every registry edge serves the
+ * updated packument, so `pnpm add` may still resolve the previous `latest`.
+ * Retry only that propagation-lag signature, within the same retry budget.
+ */
+async function installRegistryCli({ pnpm, specifier, cwd, env, retries, retryWaitMs }) {
+  const args = ["add", specifier, "--registry", NPM_REGISTRY_URL];
+  for (let attempt = 0; ; attempt += 1) {
+    if (attempt === 0) {
+      process.stdout.write(`${CLEAN_ROOM_STAGE_PREFIX} ${CLEAN_ROOM_STAGES.installCli}\n`);
+    }
+    const result = runCommand(pnpm, args, {
+      cwd,
+      env,
+      timeout: CLEAN_ROOM_TIMEOUTS_MS.installCli,
+    });
+    if (result.status === 0 && !result.timedOut) {
+      return result;
+    }
+    if (attempt >= retries || !isRegistryPropagationLag(result)) {
+      throw new Error(formatStageFailure({ ...result, stage: CLEAN_ROOM_STAGES.installCli }));
+    }
+    process.stdout.write(
+      `${CLEAN_ROOM_STAGE_PREFIX} npm has not propagated ${specifier} to install metadata yet; retrying (attempt ${attempt + 1}/${retries + 1})\n`
+    );
+    await sleep(retryWaitMs);
+  }
+}
+
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   if (options.help) {
@@ -174,16 +206,14 @@ async function main(argv = process.argv.slice(2)) {
   try {
     layout = createCleanRoomLayout(repoRoot);
     const harnessEnv = sanitizeCleanRoomEnv({ repoRoot, cwd: layout.harness });
-    runStage(
-      CLEAN_ROOM_STAGES.installCli,
+    await installRegistryCli({
       pnpm,
-      ["add", specifier, "--registry", NPM_REGISTRY_URL],
-      {
-        cwd: layout.harness,
-        env: harnessEnv,
-        timeout: CLEAN_ROOM_TIMEOUTS_MS.installCli,
-      }
-    );
+      specifier,
+      cwd: layout.harness,
+      env: harnessEnv,
+      retries: options.retries,
+      retryWaitMs: options.retryWaitMs,
+    });
 
     const installed = assertInstalledRegistryPackage({
       harness: layout.harness,

@@ -11,3 +11,12 @@ supportedArchitectures:
   cpu:
     - x64
     - arm64
+
+# @hookform/resolvers@4 imports Zod types from `zod` without declaring it as a dependency, so
+# pnpm resolves whichever `zod` happens to be hoisted. Fresh installs can hoist a transitive
+# Zod 4 (for example via eslint-plugin-react-hooks), breaking `zodResolver(schema)` typing for the
+# Zod 3 schemas Atlas uses. Declaring the peer binds the resolver to the importing workspace's Zod.
+packageExtensions:
+  "@hookform/resolvers@4":
+    peerDependencies:
+      zod: "^3.24.0"

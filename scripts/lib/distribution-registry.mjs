@@ -76,6 +76,31 @@ export function registryInstallSpecifier(version) {
   return `${PUBLIC_CLI_PACKAGE_NAME}@${exact}`;
 }
 
+const REGISTRY_LAG_SIGNATURES = Object.freeze([
+  "ERR_PNPM_NO_MATCHING_VERSION",
+  "ERR_PNPM_FETCH_404",
+  "ETARGET",
+]);
+
+/**
+ * True when a failed install looks like npm CDN/packument propagation lag for
+ * the just-published version: the registry query already saw the version, but
+ * a separate metadata fetch was served a stale document. Any other failure is
+ * not retried.
+ *
+ * @param {{ status: number | null; timedOut?: boolean; stdout?: string; stderr?: string }} result
+ */
+export function isRegistryPropagationLag(result) {
+  if (result.status === 0 || result.timedOut) {
+    return false;
+  }
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  return (
+    output.includes(PUBLIC_CLI_PACKAGE_NAME) &&
+    REGISTRY_LAG_SIGNATURES.some((signature) => output.includes(signature))
+  );
+}
+
 /**
  * @param {{
  *   harness: string;
