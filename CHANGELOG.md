@@ -8,12 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-11-13
+
 ### Security
 
 - Fix SSRF in the Sentry tunnel route (`/monitoring`) in `apps/web` and `apps/reference`: the
   upstream ingest URL was built from request query parameters, so unauthenticated callers could make
   the server POST to arbitrary HTTPS hosts. The route now only forwards to the configured Sentry
   DSNs, rejects other projects, and caps envelope size at 2 MiB.
+- Security: the starter's Sentry tunnel route (`apps/web/src/app/monitoring/route.ts`) no longer
+  builds its upstream URL from the `o`/`r` query parameters, which allowed unauthenticated requests
+  to make the server POST to arbitrary HTTPS hosts (SSRF / open proxy). The tunnel now forwards only
+  to the ingest endpoints of the app's configured DSNs (`NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`),
+  rejects other projects with 403, caps envelopes at 2 MiB (logging a
+  `sentry_tunnel_envelope_rejected` warning when it drops one), and forwards bodies as bytes.
+  Projects generated from earlier Atlas versions own this route and should copy the fix
+  (`src/app/monitoring/route.ts` and `src/config/sentry-tunnel.ts`).
 
 ## [1.3.3] - 2026-11-07
 
@@ -236,7 +246,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enterprise frontend platform monorepo: `@atlas/web` template app, `@atlas/ui`, `@atlas/config`,
   `@atlas/consent`, conventions, and documentation.
 
-[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.3...HEAD
+[Unreleased]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.4...HEAD
+[1.3.4]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/blitzcraftlabs/atlas/compare/v1.3.0...v1.3.1
